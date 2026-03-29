@@ -291,7 +291,9 @@ public static class CombatAnalyticsExporter
             return [];
         }
 
-        return csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return csv.Split(',')
+            .Select(s => s.Trim())
+            .Where(s => s.Length > 0);
     }
 
     private static string Esc(string value)

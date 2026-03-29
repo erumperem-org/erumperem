@@ -20,11 +20,7 @@ public sealed class BattleSimulator
 
     public BattleState Simulate(BattleState state, int maxTurns = 100)
     {
-        Emit(
-            state,
-            BattleEventType.BattleStarted,
-            battleResult: string.Empty,
-            passiveLoadoutCsv: state.GetPassiveLoadoutCsv());
+        EmitBattleStarted(state);
 
         while (!state.IsFinished && state.TurnNumber < maxTurns)
         {
@@ -35,34 +31,74 @@ public sealed class BattleSimulator
                 if (state.IsFinished) break;
                 if (actor.Health.IsDead) continue;
 
-                Emit(state, BattleEventType.TurnStarted, actorId: actor.Identity.Id, battleResult: string.Empty);
-                PassiveRuleApplier.ApplyTurnStartPassives(
-                    state,
-                    actor,
-                    (tok, delta) => Emit(
-                        state,
-                        BattleEventType.TokenApplied,
-                        actorId: actor.Identity.Id,
-                        targetId: actor.Identity.Id,
-                        tokenType: tok.ToString(),
-                        tokenDelta: delta,
-                        battleResult: string.Empty));
-                ResolveDotTick(state, actor);
-                if (actor.Health.IsDead || state.IsFinished) continue;
-                if (actor.Tokens.ConsumeOne(TokenType.Stun)) continue;
+                if (!TryPrepareActorTurn(state, actor))
+                {
+                    continue;
+                }
 
-                var action = ChooseAction(state, actor);
+                var action = ChooseAiAction(state, actor);
                 if (action is null) continue;
-                ResolveAction(state, action);
+                ResolveChosenAction(state, action);
             }
         }
 
-        var winner = state.Winner?.ToString() ?? "None";
-        Emit(state, BattleEventType.BattleEnded, battleResult: winner);
+        EmitBattleEnded(state);
         return state;
     }
 
-    private List<Combatant> BuildInitiativeOrder(BattleState state)
+    /// <summary>Evento inicial de batalha (telemetria / UI).</summary>
+    public void EmitBattleStarted(BattleState state)
+    {
+        Emit(
+            state,
+            BattleEventType.BattleStarted,
+            battleResult: string.Empty,
+            passiveLoadoutCsv: state.GetPassiveLoadoutCsv());
+    }
+
+    /// <summary>Evento de fim com vencedor atual.</summary>
+    public void EmitBattleEnded(BattleState state)
+    {
+        var winner = state.Winner?.ToString() ?? "None";
+        Emit(state, BattleEventType.BattleEnded, battleResult: winner);
+    }
+
+    /// <summary>TurnStarted, passivas de início de turno, DOTs e stun. Devolve false se o actor não age (morto, stun, etc.).</summary>
+    public bool TryPrepareActorTurn(BattleState state, Combatant actor)
+    {
+        if (actor.Health.IsDead || state.IsFinished)
+        {
+            return false;
+        }
+
+        Emit(state, BattleEventType.TurnStarted, actorId: actor.Identity.Id, battleResult: string.Empty);
+        PassiveRuleApplier.ApplyTurnStartPassives(
+            state,
+            actor,
+            (tok, delta) => Emit(
+                state,
+                BattleEventType.TokenApplied,
+                actorId: actor.Identity.Id,
+                targetId: actor.Identity.Id,
+                tokenType: tok.ToString(),
+                tokenDelta: delta,
+                battleResult: string.Empty));
+        ResolveDotTick(state, actor);
+        if (actor.Health.IsDead || state.IsFinished)
+        {
+            return false;
+        }
+
+        if (actor.Tokens.ConsumeOne(TokenType.Stun))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>Ordem de iniciativa do estado atual (vivo).</summary>
+    public List<Combatant> BuildInitiativeOrder(BattleState state)
     {
         return state.GetAllCombatants()
             .Where(c => !c.Health.IsDead)
@@ -109,7 +145,8 @@ public sealed class BattleSimulator
         }
     }
 
-    private ChosenAction? ChooseAction(BattleState state, Combatant actor)
+    /// <summary>Escolha automática (AI / simulação headless).</summary>
+    public ChosenAction? ChooseAiAction(BattleState state, Combatant actor)
     {
         var enemies = actor.Position.Side == Side.Allies ? state.Enemies : state.Allies;
         var availableTargets = enemies.Where(e => !e.Health.IsDead).ToList();
@@ -127,7 +164,7 @@ public sealed class BattleSimulator
         SkillDefinition selectedSkill;
         if (actor.AI?.DecisionPolicyId == "KillThenWeighted")
         {
-            selectedSkill = ChooseEnemySkill(state, actor, availableTargets, availableSkills);
+            selectedSkill = ChooseEnemySkillForAi(state, actor, availableTargets, availableSkills);
         }
         else
         {
@@ -161,7 +198,7 @@ public sealed class BattleSimulator
         };
     }
 
-    private SkillDefinition ChooseEnemySkill(
+    private SkillDefinition ChooseEnemySkillForAi(
         BattleState state,
         Combatant actor,
         IReadOnlyList<Combatant> targets,
@@ -239,7 +276,7 @@ public sealed class BattleSimulator
         return inRankTargets[_random.Next(0, inRankTargets.Count)];
     }
 
-    private bool IsSkillUsable(Combatant actor, SkillDefinition skill)
+    public bool IsSkillUsable(Combatant actor, SkillDefinition skill)
     {
         var inRank = actor.Position.OccupiedRanks.Any(r => skill.AllowedCasterRanks.Contains(r));
         if (!inRank) return false;
@@ -252,7 +289,8 @@ public sealed class BattleSimulator
         return true;
     }
 
-    private void ResolveAction(BattleState state, ChosenAction action)
+    /// <summary>Resolve uma ação já escolhida (player ou AI).</summary>
+    public void ResolveChosenAction(BattleState state, ChosenAction action)
     {
         var actor = action.Actor;
         var target = action.Target;
