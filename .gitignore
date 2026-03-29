@@ -5,7 +5,9 @@
 .utmp/
 /[Ll]ibrary/
 /[Tt]emp/
-/[Oo]bj/
+# .NET / MSBuild: obj & bin under each project (leading /obj only matched repo root)
+[Oo]bj/
+[Bb]in/
 /[Bb]uild/
 /[Bb]uilds/
 /[Ll]ogs/
@@ -105,4 +107,3 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
-*.cache
