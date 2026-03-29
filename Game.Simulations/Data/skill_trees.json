@@ -33,6 +33,70 @@
             ]
           }
         ]
+      },
+      {
+        "element": "Metal",
+        "tiers": [
+          {
+            "tier": 1,
+            "nodes": [
+              { "id": "m_t1_p1", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "m_t1_p2", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "m_t1_p3", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "m_t1_a1", "type": "Active", "cost": 1, "requires": ["m_t1_p1", "m_t1_p2", "m_t1_p3"] }
+            ]
+          },
+          {
+            "tier": 2,
+            "nodes": [
+              { "id": "m_t2_p1", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "m_t2_p2", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "m_t2_p3", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "m_t2_a1", "type": "Active", "cost": 1, "requires": ["m_t2_p1", "m_t2_p2", "m_t2_p3"] }
+            ]
+          },
+          {
+            "tier": 3,
+            "nodes": [
+              { "id": "m_t3_p1", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "m_t3_p2", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "m_t3_p3", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "m_t3_a1", "type": "Active", "cost": 1, "requires": ["m_t3_p1", "m_t3_p2", "m_t3_p3"] }
+            ]
+          }
+        ]
+      },
+      {
+        "element": "Anomaly",
+        "tiers": [
+          {
+            "tier": 1,
+            "nodes": [
+              { "id": "a_t1_p1", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "a_t1_p2", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "a_t1_p3", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "a_t1_a1", "type": "Active", "cost": 1, "requires": ["a_t1_p1", "a_t1_p2", "a_t1_p3"] }
+            ]
+          },
+          {
+            "tier": 2,
+            "nodes": [
+              { "id": "a_t2_p1", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "a_t2_p2", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "a_t2_p3", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "a_t2_a1", "type": "Active", "cost": 1, "requires": ["a_t2_p1", "a_t2_p2", "a_t2_p3"] }
+            ]
+          },
+          {
+            "tier": 3,
+            "nodes": [
+              { "id": "a_t3_p1", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "a_t3_p2", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "a_t3_p3", "type": "Passive", "cost": 1, "requires": [] },
+              { "id": "a_t3_a1", "type": "Active", "cost": 1, "requires": ["a_t3_p1", "a_t3_p2", "a_t3_p3"] }
+            ]
+          }
+        ]
       }
     ]
   }

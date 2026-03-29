@@ -5,7 +5,9 @@ using Game.Core.Data;
 using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
+using Game.Core.Passives;
 using Game.Core.Progression;
+using Game.Simulations;
 
 namespace Game.Tests;
 
@@ -307,5 +309,206 @@ public class UnitTest1
         return collector.Events
             .Select(e => $"{e.Turn}|{e.EventType}|{e.ActorId}|{e.TargetId}|{e.SkillId}|{e.DamageAmount}|{e.IsHit}|{e.IsCrit}|{e.CorruptionTier}")
             .ToList();
+    }
+
+    [Fact]
+    public void Passive_OutgoingDamageVsSkillId_IncreasesDamageDealt()
+    {
+        var smack = new SkillDefinition
+        {
+            Id = "test_smack",
+            Name = "Test Smack",
+            Element = ElementType.None,
+            Type = "Active",
+            AllowedCasterRanks = [1, 2, 3, 4],
+            AllowedTargetRanks = [1, 2, 3, 4],
+            BaseDamage = new DamageRange { Min = 100, Max = 100 },
+            BaseCritChance = 0,
+            Accuracy = 1.0,
+            Cooldown = 0,
+            TargetKind = SkillTargetKind.Enemy,
+        };
+        var passive = new PassiveDefinition
+        {
+            Id = "p_damage_bonus",
+            EffectKind = PassiveEffectKind.OutgoingDamageVsSkillId,
+            SkillId = smack.Id,
+            Additive = 0.15,
+        };
+        var byId = new Dictionary<string, PassiveDefinition> { [passive.Id] = passive };
+
+        var random = new SeededRandomSource(42);
+        var collector = new CombatEventCollector();
+        var simulator = new BattleSimulator(random, collector);
+        var battle = BattleFactory.CreateSampleBattle(
+            [smack],
+            allyCount: 1,
+            enemyCount: 1,
+            corruptionValue: 0,
+            passivesById: byId,
+            unlockAllPassiveNodesForAllies: true);
+        battle.Allies[0].Stats = new StatsComponent { Speed = 100, Accuracy = 1.0, CritChance = 0.0 };
+        battle.Allies[0].ElementAffinity = new ElementAffinityComponent { Element = ElementType.None };
+        battle.Allies[0].SkillLoadout.Skills.Clear();
+        battle.Allies[0].SkillLoadout.Skills.Add(smack.Id);
+        battle.Enemies[0].Stats = new StatsComponent { Speed = 1, Accuracy = 1.0, CritChance = 0.0 };
+        battle.Enemies[0].ElementAffinity = new ElementAffinityComponent { Element = ElementType.None };
+
+        simulator.Simulate(battle, maxTurns: 2);
+
+        var dmg = collector.Events
+            .Where(e => e.EventType == BattleEventType.DamageApplied && e.SkillId == smack.Id)
+            .Select(e => e.DamageAmount)
+            .ToList();
+        Assert.NotEmpty(dmg);
+        Assert.All(dmg, d => Assert.Equal(115, d));
+    }
+
+    [Fact]
+    public void Passive_ApplyExtraDotAfterShove_WhenTargetHasBleed()
+    {
+        var skills = SampleCombatData.CreateSkills();
+        var shove = skills.First(s => s.Id == "wulfric_innate_shove");
+        var passive = new PassiveDefinition
+        {
+            Id = "f_t1_p3",
+            EffectKind = PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot,
+            SkillId = shove.Id,
+            DotType = DotType.Bleed,
+            IntValue = 4,
+            IntValue2 = 2,
+        };
+        var byId = new Dictionary<string, PassiveDefinition> { [passive.Id] = passive };
+        var random = new SeededRandomSource(7);
+        var collector = new CombatEventCollector();
+        var simulator = new BattleSimulator(random, collector);
+        var battle = BattleFactory.CreateSampleBattle(
+            skills.ToList(),
+            allyCount: 1,
+            enemyCount: 1,
+            corruptionValue: 0,
+            allySkillIds: [shove.Id],
+            passivesById: byId,
+            unlockAllPassiveNodesForAllies: true);
+
+        var ally = battle.Allies[0];
+        var enemy = battle.Enemies[0];
+        ally.Stats = new StatsComponent { Speed = 100, Accuracy = 1.0, CritChance = 0.0 };
+        enemy.Stats = new StatsComponent { Speed = 1, Accuracy = 1.0, CritChance = 0.0 };
+        enemy.Dots.ActiveDots.Add(new DotInstance
+        {
+            Type = DotType.Bleed,
+            Potency = 1,
+            RemainingTurns = 3,
+            AppliedById = ally.Identity.Id,
+        });
+
+        simulator.Simulate(battle, maxTurns: 1);
+
+        var bleedDots = enemy.Dots.ActiveDots.Count(d => d.Type == DotType.Bleed);
+        Assert.True(bleedDots >= 2);
+    }
+
+    [Fact]
+    public void LoadPassivesJson_ParsesDefaultFile()
+    {
+        var list = SampleCombatData.CreatePassives();
+        Assert.NotEmpty(list);
+        Assert.Contains(list, p => p.Id == "f_t1_p1" && p.EffectKind == PassiveEffectKind.OutgoingDamageVsSkillId);
+    }
+
+    [Fact]
+    public void BuildPassiveAggregates_MatchesBattlesAndWins()
+    {
+        var t = DateTime.UtcNow;
+        var events = new List<CombatEvent>
+        {
+            new()
+            {
+                EventId = "e1",
+                BattleId = "b1",
+                Turn = 0,
+                TimestampUtc = t,
+                EventType = BattleEventType.BattleStarted,
+                PassiveLoadoutCsv = "f_t1_p1,f_t1_p2",
+            },
+            new()
+            {
+                EventId = "e2",
+                BattleId = "b1",
+                Turn = 1,
+                TimestampUtc = t,
+                EventType = BattleEventType.BattleEnded,
+                BattleResult = Side.Allies.ToString(),
+            },
+            new()
+            {
+                EventId = "e3",
+                BattleId = "b2",
+                Turn = 0,
+                TimestampUtc = t,
+                EventType = BattleEventType.BattleStarted,
+                PassiveLoadoutCsv = "f_t1_p1",
+            },
+            new()
+            {
+                EventId = "e4",
+                BattleId = "b2",
+                Turn = 1,
+                TimestampUtc = t,
+                EventType = BattleEventType.BattleEnded,
+                BattleResult = Side.Enemies.ToString(),
+            },
+        };
+
+        var rows = CombatAnalyticsExporter.BuildPassiveAggregates(events, allPassiveIdsInCatalog: null)
+            .ToDictionary(r => r.PassiveId);
+        Assert.Equal(2, rows["f_t1_p1"].BattlesWithPassive);
+        Assert.Equal(1, rows["f_t1_p1"].Wins);
+        Assert.Equal(0.5, rows["f_t1_p1"].WinRate);
+        Assert.Equal(1, rows["f_t1_p2"].BattlesWithPassive);
+        Assert.Equal(1, rows["f_t1_p2"].Wins);
+    }
+
+    [Fact]
+    public void BuildPassiveAggregates_IncludesCatalogIdsWithZeroBattles()
+    {
+        var t = DateTime.UtcNow;
+        var events = new List<CombatEvent>
+        {
+            new()
+            {
+                EventId = "e1",
+                BattleId = "b1",
+                Turn = 0,
+                TimestampUtc = t,
+                EventType = BattleEventType.BattleStarted,
+                PassiveLoadoutCsv = "f_t1_p1",
+            },
+            new()
+            {
+                EventId = "e2",
+                BattleId = "b1",
+                Turn = 1,
+                TimestampUtc = t,
+                EventType = BattleEventType.BattleEnded,
+                BattleResult = Side.Allies.ToString(),
+            },
+        };
+
+        var rows = CombatAnalyticsExporter.BuildPassiveAggregates(events, ["f_t1_p1", "f_t3_p1"]).ToDictionary(r => r.PassiveId);
+        Assert.Equal(0, rows["f_t3_p1"].BattlesWithPassive);
+        Assert.Equal(0, rows["f_t3_p1"].WinRate);
+    }
+
+    [Fact]
+    public void SimulationSkillTreeSetup_Tree1Tier3_IncludesFireActives()
+    {
+        var trees = CombatDataLoader.LoadSkillTrees(CombatDataLoader.ResolveDefaultSkillTreesPath());
+        var wulfric = SimulationSkillTreeSetup.GetCharacter(trees);
+        var ids = SimulationSkillTreeSetup.GetNodeIdsForTreeMaxTier(wulfric, treeIndex1Based: 1, maxTierInclusive: 3);
+        Assert.Contains("f_t3_a1", ids);
+        Assert.Contains("f_t1_p1", ids);
+        Assert.DoesNotContain("m_t1_p1", ids);
     }
 }

@@ -3,32 +3,52 @@ using Game.Core.Analytics;
 using Game.Core.Data;
 using Game.Core.Engine;
 using Game.Core.Models;
+using Game.Simulations;
 
 var parsed = ArgsParser.Parse(args);
+if (parsed.ShowHelp)
+{
+    PrintHelp();
+    return;
+}
+
+var baseSeed = parsed.SeedProvided ? parsed.Seed : Random.Shared.Next();
+if (!parsed.SeedProvided)
+{
+    Console.WriteLine($"Random base seed: {baseSeed}  (re-run with --seed {baseSeed} for identical results)");
+    Console.WriteLine();
+}
+
 Directory.CreateDirectory(parsed.OutputDirectory);
 
 var skills = string.IsNullOrWhiteSpace(parsed.SkillsPath)
-    ? SampleCombatData.CreateSkills()
+    ? CombatDataLoader.LoadSkills(CombatDataLoader.ResolveDefaultSkillsPath())
     : CombatDataLoader.LoadSkills(parsed.SkillsPath);
+
+var passivesFile = string.IsNullOrWhiteSpace(parsed.PassivesPath)
+    ? CombatDataLoader.ResolveDefaultPassivesPath()
+    : parsed.PassivesPath;
+var passivesById = CombatDataLoader.LoadPassives(passivesFile)
+    .ToDictionary(p => p.Id, p => p);
+
+var skillTreesPath = string.IsNullOrWhiteSpace(parsed.SkillTreesPath)
+    ? CombatDataLoader.ResolveDefaultSkillTreesPath()
+    : parsed.SkillTreesPath;
+var skillTreesRoots = CombatDataLoader.LoadSkillTrees(skillTreesPath);
 
 if (!string.IsNullOrWhiteSpace(parsed.EnemiesPath))
 {
     _ = CombatDataLoader.LoadEnemies(parsed.EnemiesPath);
 }
 
-if (!string.IsNullOrWhiteSpace(parsed.SkillTreesPath))
-{
-    _ = CombatDataLoader.LoadSkillTrees(parsed.SkillTreesPath);
-}
-
 var allEvents = new List<CombatEvent>();
 for (var i = 0; i < parsed.Battles; i++)
 {
-    var seed = parsed.Seed + i;
+    var seed = baseSeed + i;
     var random = new SeededRandomSource(seed);
     var collector = new CombatEventCollector();
     var simulator = new BattleSimulator(random, collector);
-    var battle = BuildRandomizedBattle(skills, random);
+    var battle = BuildBattle(parsed, skills, passivesById, skillTreesRoots, random);
     simulator.Simulate(battle, maxTurns: 100);
     allEvents.AddRange(collector.Events);
 }
@@ -36,34 +56,93 @@ for (var i = 0; i < parsed.Battles; i++)
 var eventsCsv = CombatAnalyticsExporter.BuildEventsCsv(allEvents);
 var aggregates = CombatAnalyticsExporter.BuildAggregates(allEvents);
 var aggregatesCsv = CombatAnalyticsExporter.BuildAggregatesCsv(aggregates);
+var passiveAgg = CombatAnalyticsExporter.BuildPassiveAggregates(allEvents, passivesById.Keys);
+var passiveCsv = CombatAnalyticsExporter.BuildPassiveAggregatesCsv(passiveAgg);
+
 var eventsPath = Path.Combine(parsed.OutputDirectory, "combat_events.csv");
 var aggregatesPath = Path.Combine(parsed.OutputDirectory, "combat_aggregates.csv");
+var passivePath = Path.Combine(parsed.OutputDirectory, "passive_aggregates.csv");
 File.WriteAllText(eventsPath, eventsCsv);
 File.WriteAllText(aggregatesPath, aggregatesCsv);
+File.WriteAllText(passivePath, passiveCsv);
 
-Console.WriteLine($"Simulations: {parsed.Battles}");
+Console.WriteLine($"Simulations: {parsed.Battles}  (seed base: {baseSeed}{(parsed.SeedProvided ? ", fixed" : ", random")})");
+Console.WriteLine($"Preset: {DescribePreset(parsed)}");
 Console.WriteLine($"Events CSV: {eventsPath}");
-Console.WriteLine($"Aggregates CSV: {aggregatesPath}");
-
+Console.WriteLine($"Skill aggregates CSV: {aggregatesPath}");
+Console.WriteLine($"Passive aggregates CSV: {passivePath}");
+Console.WriteLine();
+Console.WriteLine("Skill win rates (Allies):");
 foreach (var row in aggregates.OrderBy(r => r.EntityId))
 {
-    Console.WriteLine($"Skill {row.EntityId}: win_rate={row.WinRate:0.###} ({row.Wins}/{row.Matches} matches)");
+    Console.WriteLine($"  {row.EntityId}: win_rate={row.WinRate:0.###} ({row.Wins}/{row.Matches} matches)");
 }
 
-static BattleState BuildRandomizedBattle(IReadOnlyList<SkillDefinition> skills, IRandomSource random)
+Console.WriteLine();
+Console.WriteLine("Passive win rates (battles where passive was unlocked on at least one ally):");
+foreach (var row in passiveAgg.OrderBy(r => r.PassiveId))
 {
-    // Enough allied bodies that wins are common; 3v3 keeps both sides plausible for aggregate stats.
+    Console.WriteLine(
+        $"  {row.PassiveId}: win_rate={row.WinRate:0.###} ({row.Wins}/{row.BattlesWithPassive} battles), presence={row.PresenceRate:0.###}");
+}
+
+static string DescribePreset(ParsedArgs p) => p.Preset switch
+{
+    SimulationUnlockPreset.Random => $"random tree unlocks (0..{p.MaxPointsBudget} points)",
+    SimulationUnlockPreset.SingleTreeTier => $"tree {p.TreeIndex} through tier {p.TierCap}",
+    SimulationUnlockPreset.AllTreesTier => $"all trees tier 1..{p.AllTreesTierCap}",
+    SimulationUnlockPreset.FullPassivesCatalog => "all passives from passives.json (stress)",
+    _ => p.Preset.ToString(),
+};
+
+static BattleState BuildBattle(
+    ParsedArgs parsed,
+    IReadOnlyList<SkillDefinition> skills,
+    IReadOnlyDictionary<string, PassiveDefinition> passivesById,
+    IReadOnlyList<CharacterSkillTreesDefinition> skillTreesRoots,
+    IRandomSource random)
+{
     var battle = BattleFactory.CreateSampleBattle(
         skills,
-        allyCount: 3,
-        enemyCount: 3,
-        corruptionValue: random.Next(0, 101));
+        allyCount: parsed.AllyCount,
+        enemyCount: parsed.EnemyCount,
+        corruptionValue: random.Next(0, 101),
+        allySkillIds: BattleFactory.WulfricFullSkillLoadout,
+        passivesById: passivesById,
+        unlockAllPassiveNodesForAllies: false);
 
-    // Light randomization for headless bulk checks.
+    var charTrees = SimulationSkillTreeSetup.GetCharacter(skillTreesRoots);
+
+    switch (parsed.Preset)
+    {
+        case SimulationUnlockPreset.Random:
+            SimulationSkillTreeSetup.ApplyRandomTreeUnlocks(battle.Allies, charTrees, random, parsed.MaxPointsBudget);
+            break;
+        case SimulationUnlockPreset.SingleTreeTier:
+            var single = SimulationSkillTreeSetup.GetNodeIdsForTreeMaxTier(
+                charTrees,
+                parsed.TreeIndex!.Value,
+                parsed.TierCap!.Value);
+            SimulationSkillTreeSetup.ApplyNodeUnlocks(battle.Allies, charTrees, single);
+            break;
+        case SimulationUnlockPreset.AllTreesTier:
+            var allT = SimulationSkillTreeSetup.GetNodeIdsAllTreesMaxTier(charTrees, parsed.AllTreesTierCap!.Value);
+            SimulationSkillTreeSetup.ApplyNodeUnlocks(battle.Allies, charTrees, allT);
+            break;
+        case SimulationUnlockPreset.FullPassivesCatalog:
+            BattleFactory.UnlockAllPassivesFromCatalog(battle, passivesById);
+            foreach (var ally in battle.Allies)
+            {
+                ally.Progression.Level = passivesById.Count;
+                ally.Progression.SpentPoints = passivesById.Count;
+            }
+
+            break;
+    }
+
     foreach (var ally in battle.Allies)
     {
-        ally.Progression.Level = random.Next(0, 13);
-        ally.Health.CurrentHp = random.Next(20, ally.Health.MaxHp + 1);
+        ally.Health.CurrentHp = random.Next((int)(ally.Health.MaxHp * 0.5), ally.Health.MaxHp + 1);
     }
 
     foreach (var enemy in battle.Enemies)
@@ -74,14 +153,69 @@ static BattleState BuildRandomizedBattle(IReadOnlyList<SkillDefinition> skills, 
     return battle;
 }
 
+static void PrintHelp()
+{
+    Console.WriteLine(
+        """
+        Game.Simulations — batch combat runs
+
+        Presets (default: random unlocks, 0..12 skill points per battle):
+          --maxPoints N       Cap for random unlock budget (default 12). Hero level = points spent.
+                              Tier-3 passives need the full tier 1+2 of that tree first (8 pts); random
+                              spreads points across trees, so t3 passives are often absent — use
+                              --tree/--tier or --allTreesTier to force them, or see passive_aggregates.csv
+                              (all passives listed; zeros = never rolled in sample).
+          --tree I --tier T   Single element tree I (1=Fogo, 2=Metal, 3=Anomalia), tiers 1..T unlocked.
+          --allTreesTier T    All three trees: tiers 1..T unlocked.
+          --fullPassives      Unlock every passive from passives.json (ignores tree; stress test).
+
+        Other:
+          --battles N         Number of battles (default 100)
+          --seed N            Fixed base RNG seed (reproducible). Omit for a random seed each run.
+          --out DIR           Output directory (default SimulationOutput under project)
+          --allies N          Ally count (default 2)
+          --enemyCount N      Enemy count (default 4)
+          --skills PATH       skills.json
+          --passives PATH     passives.json
+          --skillTrees PATH   skill_trees.json
+
+        Outputs:
+          combat_events.csv      All events; BattleStarted includes passive_loadout (comma-separated passive ids).
+          combat_aggregates.csv  Win rates per skill (ActionUsed).
+          passive_aggregates.csv All passives from passives.json; battles_with_passive=0 if never rolled.
+
+        Examples:
+          dotnet run -- --tree 1 --tier 3 --battles 200
+          dotnet run -- --allTreesTier 1 --seed 0
+        """);
+}
+
+internal enum SimulationUnlockPreset
+{
+    Random,
+    SingleTreeTier,
+    AllTreesTier,
+    FullPassivesCatalog,
+}
+
 internal sealed class ParsedArgs
 {
     public required int Battles { get; init; }
     public required int Seed { get; init; }
+    public required bool SeedProvided { get; init; }
     public required string OutputDirectory { get; init; }
     public required string SkillsPath { get; init; }
+    public required string PassivesPath { get; init; }
     public required string EnemiesPath { get; init; }
     public required string SkillTreesPath { get; init; }
+    public required int AllyCount { get; init; }
+    public required int EnemyCount { get; init; }
+    public required int MaxPointsBudget { get; init; }
+    public required SimulationUnlockPreset Preset { get; init; }
+    public int? TreeIndex { get; init; }
+    public int? TierCap { get; init; }
+    public int? AllTreesTierCap { get; init; }
+    public bool ShowHelp { get; init; }
 }
 
 internal static class ArgsParser
@@ -89,11 +223,21 @@ internal static class ArgsParser
     public static ParsedArgs Parse(string[] args)
     {
         var battles = 100;
-        var seed = 42;
+        var seed = 0;
+        var seedProvided = false;
         var output = DefaultSimulationOutputDirectory();
         var skillsPath = string.Empty;
+        var passivesPath = string.Empty;
         var enemiesPath = string.Empty;
         var skillTreesPath = string.Empty;
+        var allyCount = 2;
+        var enemyCount = 4;
+        var maxPoints = 12;
+        var fullPassives = false;
+        int? treeIdx = null;
+        int? tierCap = null;
+        int? allTreesTier = null;
+        var showHelp = args.Any(a => a is "-h" or "-?" or "--help");
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -106,6 +250,7 @@ internal static class ArgsParser
             else if (arg == "--seed" && i + 1 < args.Length && int.TryParse(args[i + 1], out var parsedSeed))
             {
                 seed = parsedSeed;
+                seedProvided = true;
                 i++;
             }
             else if (arg == "--out" && i + 1 < args.Length)
@@ -118,6 +263,11 @@ internal static class ArgsParser
                 skillsPath = args[i + 1];
                 i++;
             }
+            else if (arg == "--passives" && i + 1 < args.Length)
+            {
+                passivesPath = args[i + 1];
+                i++;
+            }
             else if (arg == "--enemies" && i + 1 < args.Length)
             {
                 enemiesPath = args[i + 1];
@@ -128,20 +278,96 @@ internal static class ArgsParser
                 skillTreesPath = args[i + 1];
                 i++;
             }
+            else if (arg == "--allies" && i + 1 < args.Length && int.TryParse(args[i + 1], out var ac))
+            {
+                allyCount = Math.Max(1, ac);
+                i++;
+            }
+            else if (arg == "--enemyCount" && i + 1 < args.Length && int.TryParse(args[i + 1], out var ec))
+            {
+                enemyCount = Math.Max(1, ec);
+                i++;
+            }
+            else if (arg == "--maxPoints" && i + 1 < args.Length && int.TryParse(args[i + 1], out var mp))
+            {
+                maxPoints = Math.Clamp(mp, 0, 999);
+                i++;
+            }
+            else if (arg == "--tree" && i + 1 < args.Length && int.TryParse(args[i + 1], out var ti))
+            {
+                treeIdx = ti;
+                i++;
+            }
+            else if (arg == "--tier" && i + 1 < args.Length && int.TryParse(args[i + 1], out var tt))
+            {
+                tierCap = tt;
+                i++;
+            }
+            else if (arg == "--allTreesTier" && i + 1 < args.Length && int.TryParse(args[i + 1], out var att))
+            {
+                allTreesTier = att;
+                i++;
+            }
+            else if (arg == "--fullPassives")
+            {
+                fullPassives = true;
+            }
+        }
+
+        SimulationUnlockPreset preset;
+        if (fullPassives)
+        {
+            preset = SimulationUnlockPreset.FullPassivesCatalog;
+        }
+        else if (treeIdx is not null || tierCap is not null)
+        {
+            if (treeIdx is null || tierCap is null)
+            {
+                throw new ArgumentException("Use --tree and --tier together (e.g. --tree 1 --tier 3).");
+            }
+
+            if (treeIdx is < 1 or > 3 || tierCap < 1)
+            {
+                throw new ArgumentException("--tree must be 1..3 and --tier at least 1.");
+            }
+
+            preset = SimulationUnlockPreset.SingleTreeTier;
+        }
+        else if (allTreesTier is not null)
+        {
+            if (allTreesTier < 1)
+            {
+                throw new ArgumentException("--allTreesTier must be >= 1.");
+            }
+
+            preset = SimulationUnlockPreset.AllTreesTier;
+        }
+        else
+        {
+            preset = SimulationUnlockPreset.Random;
         }
 
         return new ParsedArgs
         {
             Battles = Math.Max(1, battles),
             Seed = seed,
+            SeedProvided = seedProvided,
             OutputDirectory = output,
             SkillsPath = skillsPath,
+            PassivesPath = passivesPath,
             EnemiesPath = enemiesPath,
             SkillTreesPath = skillTreesPath,
+            AllyCount = allyCount,
+            EnemyCount = enemyCount,
+            MaxPointsBudget = maxPoints,
+            Preset = preset,
+            TreeIndex = treeIdx,
+            TierCap = tierCap,
+            AllTreesTierCap = allTreesTier,
+            ShowHelp = showHelp,
         };
     }
 
-    // CSV output folder for headless runs; authoritative game JSON is in Data/.
     private static string DefaultSimulationOutputDirectory()
     {
         var projectDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));

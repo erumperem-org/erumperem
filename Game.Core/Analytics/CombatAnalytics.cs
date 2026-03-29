@@ -24,6 +24,8 @@ public sealed class CombatEvent
     public int TokenDelta { get; init; }
     public double CorruptionValue { get; init; }
     public int CorruptionTier { get; init; }
+    /// <summary>Ids de passivas ativas no grupo (aliados), separados por vírgula; preenchido em <see cref="BattleEventType.BattleStarted"/>.</summary>
+    public string PassiveLoadoutCsv { get; init; } = string.Empty;
     public string BattleResult { get; init; } = string.Empty;
 }
 
@@ -52,12 +54,22 @@ public sealed class CombatAggregateRow
     public required double AvgDamageAtTier3 { get; init; }
 }
 
+/// <summary>Win rate por nó passivo (batalhas em que a passiva estava desbloqueada em pelo menos um aliado).</summary>
+public sealed class PassiveAggregateRow
+{
+    public required string PassiveId { get; init; }
+    public required int BattlesWithPassive { get; init; }
+    public required int Wins { get; init; }
+    public required double WinRate { get; init; }
+    public required double PresenceRate { get; init; }
+}
+
 public static class CombatAnalyticsExporter
 {
     public static string BuildEventsCsv(IEnumerable<CombatEvent> events)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("event_id,battle_id,turn,timestamp_utc,event_type,actor_id,target_id,skill_id,element,is_hit,is_crit,damage_amount,dot_type,dot_amount,token_type,token_delta,corruption_value,corruption_tier,battle_result");
+        sb.AppendLine("event_id,battle_id,turn,timestamp_utc,event_type,actor_id,target_id,skill_id,element,is_hit,is_crit,damage_amount,dot_type,dot_amount,token_type,token_delta,corruption_value,corruption_tier,passive_loadout,battle_result");
         foreach (var e in events)
         {
             sb.AppendLine(string.Join(",",
@@ -79,6 +91,7 @@ public static class CombatAnalyticsExporter
                 e.TokenDelta.ToString(CultureInfo.InvariantCulture),
                 e.CorruptionValue.ToString(CultureInfo.InvariantCulture),
                 e.CorruptionTier.ToString(CultureInfo.InvariantCulture),
+                Esc(e.PassiveLoadoutCsv),
                 Esc(e.BattleResult)));
         }
 
@@ -162,6 +175,123 @@ public static class CombatAnalyticsExporter
             });
 
         return skillRows.ToList();
+    }
+
+    /// <summary>
+    /// Win rate por passiva: cada batalha em que o id aparece no <see cref="CombatEvent.PassiveLoadoutCsv"/> do <see cref="BattleEventType.BattleStarted"/> conta como match;
+    /// vitória = <see cref="BattleEventType.BattleEnded"/> com resultado Allies.
+    /// </summary>
+    public static IReadOnlyList<PassiveAggregateRow> BuildPassiveAggregates(IEnumerable<CombatEvent> events) =>
+        BuildPassiveAggregates(events, allPassiveIdsInCatalog: null);
+
+    /// <param name="allPassiveIdsInCatalog">Se não for null, inclui todas estas ids (ex.: catálogo <c>passives.json</c>), com zeros quando a passiva não apareceu em nenhuma batalha.</param>
+    public static IReadOnlyList<PassiveAggregateRow> BuildPassiveAggregates(
+        IEnumerable<CombatEvent> events,
+        IReadOnlyCollection<string>? allPassiveIdsInCatalog)
+    {
+        var eventList = events.ToList();
+        var battleEnds = eventList
+            .Where(e => e.EventType == BattleEventType.BattleEnded)
+            .GroupBy(e => e.BattleId)
+            .ToDictionary(g => g.Key, g => g.Last().BattleResult);
+
+        var battleStarts = eventList
+            .Where(e => e.EventType == BattleEventType.BattleStarted)
+            .GroupBy(e => e.BattleId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var alliesVictory = Side.Allies.ToString();
+        var totalBattles = battleEnds.Count;
+        if (totalBattles == 0)
+        {
+            return [];
+        }
+
+        var perPassiveMatches = new Dictionary<string, int>(StringComparer.Ordinal);
+        var perPassiveWins = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (var (battleId, result) in battleEnds)
+        {
+            var win = string.Equals(result, alliesVictory, StringComparison.Ordinal);
+            if (!battleStarts.TryGetValue(battleId, out var started))
+            {
+                continue;
+            }
+
+            var passiveIds = SplitPassiveCsv(started.PassiveLoadoutCsv);
+            foreach (var pid in passiveIds)
+            {
+                perPassiveMatches.TryGetValue(pid, out var m);
+                perPassiveMatches[pid] = m + 1;
+                if (win)
+                {
+                    perPassiveWins.TryGetValue(pid, out var w);
+                    perPassiveWins[pid] = w + 1;
+                }
+            }
+        }
+
+        IEnumerable<string> rowIds = perPassiveMatches.Keys;
+        if (allPassiveIdsInCatalog is { Count: > 0 })
+        {
+            var union = new SortedSet<string>(perPassiveMatches.Keys, StringComparer.Ordinal);
+            foreach (var id in allPassiveIdsInCatalog)
+            {
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    union.Add(id);
+                }
+            }
+
+            rowIds = union;
+        }
+
+        var rows = new List<PassiveAggregateRow>();
+        foreach (var pid in rowIds.OrderBy(x => x, StringComparer.Ordinal))
+        {
+            perPassiveMatches.TryGetValue(pid, out var matches);
+            perPassiveWins.TryGetValue(pid, out var wins);
+            rows.Add(new PassiveAggregateRow
+            {
+                PassiveId = pid,
+                BattlesWithPassive = matches,
+                Wins = wins,
+                WinRate = SafeDiv(wins, matches),
+                PresenceRate = SafeDiv(matches, totalBattles),
+            });
+        }
+
+        return rows;
+    }
+
+    public static string BuildPassiveAggregatesCsv(IEnumerable<CombatEvent> events) =>
+        BuildPassiveAggregatesCsv(BuildPassiveAggregates(events));
+
+    public static string BuildPassiveAggregatesCsv(IReadOnlyList<PassiveAggregateRow> rows)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("passive_id,battles_with_passive,wins,win_rate,presence_rate");
+        foreach (var row in rows)
+        {
+            sb.AppendLine(string.Join(",",
+                Esc(row.PassiveId),
+                row.BattlesWithPassive.ToString(CultureInfo.InvariantCulture),
+                row.Wins.ToString(CultureInfo.InvariantCulture),
+                row.WinRate.ToString(CultureInfo.InvariantCulture),
+                row.PresenceRate.ToString(CultureInfo.InvariantCulture)));
+        }
+
+        return sb.ToString();
+    }
+
+    private static IEnumerable<string> SplitPassiveCsv(string csv)
+    {
+        if (string.IsNullOrWhiteSpace(csv))
+        {
+            return [];
+        }
+
+        return csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
     private static string Esc(string value)

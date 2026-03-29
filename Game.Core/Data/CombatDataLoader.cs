@@ -7,6 +7,61 @@ namespace Game.Core.Data;
 
 public static class CombatDataLoader
 {
+    /// <summary>
+    /// Locates <c>Game.Simulations/Data/skills.json</c> when running tests, simulations, or the IDE.
+    /// </summary>
+    public static string ResolveDefaultSkillsPath()
+    {
+        var candidates = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "Data", "skills.json"),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Data", "skills.json")),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Game.Simulations", "Data", "skills.json")),
+        };
+        foreach (var p in candidates)
+        {
+            if (File.Exists(p)) return p;
+        }
+
+        throw new FileNotFoundException("skills.json not found. Tried: " + string.Join("; ", candidates));
+    }
+
+    /// <summary>
+    /// Locates <c>Game.Simulations/Data/passives.json</c> (mesmo padrão que <see cref="ResolveDefaultSkillsPath"/>).
+    /// </summary>
+    public static string ResolveDefaultPassivesPath()
+    {
+        var candidates = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "Data", "passives.json"),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Data", "passives.json")),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Game.Simulations", "Data", "passives.json")),
+        };
+        foreach (var p in candidates)
+        {
+            if (File.Exists(p)) return p;
+        }
+
+        throw new FileNotFoundException("passives.json not found. Tried: " + string.Join("; ", candidates));
+    }
+
+    /// <summary>Localiza <c>Game.Simulations/Data/skill_trees.json</c>.</summary>
+    public static string ResolveDefaultSkillTreesPath()
+    {
+        var candidates = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "Data", "skill_trees.json"),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Data", "skill_trees.json")),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Game.Simulations", "Data", "skill_trees.json")),
+        };
+        foreach (var p in candidates)
+        {
+            if (File.Exists(p)) return p;
+        }
+
+        throw new FileNotFoundException("skill_trees.json not found. Tried: " + string.Join("; ", candidates));
+    }
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -36,6 +91,14 @@ public static class CombatDataLoader
         var trees = JsonSerializer.Deserialize<List<CharacterSkillTreesDefinition>>(json, JsonOptions) ?? [];
         ValidateSkillTrees(trees);
         return trees;
+    }
+
+    public static IReadOnlyList<PassiveDefinition> LoadPassives(string path)
+    {
+        var json = File.ReadAllText(path);
+        var passives = JsonSerializer.Deserialize<List<PassiveDefinition>>(json, JsonOptions) ?? [];
+        ValidatePassives(passives);
+        return passives;
     }
 
     private static void ValidateSkills(IEnumerable<SkillDefinition> skills)
@@ -81,63 +144,41 @@ public static class CombatDataLoader
             }
         }
     }
+
+    private static void ValidatePassives(IReadOnlyList<PassiveDefinition> passives)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var p in passives)
+        {
+            if (string.IsNullOrWhiteSpace(p.Id))
+            {
+                throw new InvalidDataException("Passive id is required.");
+            }
+
+            if (!seen.Add(p.Id))
+            {
+                throw new InvalidDataException($"Duplicate passive id: {p.Id}");
+            }
+        }
+    }
 }
 
 public static class SampleCombatData
 {
-    public static IReadOnlyList<SkillDefinition> CreateSkills()
+    /// <summary>Loads the canonical <c>skills.json</c> from <see cref="CombatDataLoader.ResolveDefaultSkillsPath"/>.</summary>
+    public static IReadOnlyList<SkillDefinition> CreateSkills() =>
+        CombatDataLoader.LoadSkills(CombatDataLoader.ResolveDefaultSkillsPath());
+
+    /// <summary>Loads <c>passives.json</c> quando existir; caso contrário lista vazia (combate sem catálogo de passivas).</summary>
+    public static IReadOnlyList<PassiveDefinition> CreatePassives()
     {
-        return
-        [
-            new SkillDefinition
-            {
-                Id = "wulfric_slash",
-                Name = "Slash",
-                Element = ElementType.Fire,
-                Type = "Active",
-                AllowedCasterRanks = [1, 2, 3, 4],
-                AllowedTargetRanks = [1, 2, 3, 4],
-                BaseDamage = new DamageRange { Min = 4, Max = 7 },
-                BaseCritChance = 0.1,
-                Accuracy = 0.9,
-                Cooldown = 0,
-                EffectsOnHit = [],
-            },
-            new SkillDefinition
-            {
-                Id = "spider_web",
-                Name = "Web",
-                Element = ElementType.Anomaly,
-                Type = "Active",
-                AllowedCasterRanks = [1, 2, 3, 4],
-                AllowedTargetRanks = [1, 2, 3, 4],
-                BaseDamage = new DamageRange { Min = 1, Max = 2 },
-                BaseCritChance = 0.05,
-                Accuracy = 0.85,
-                Cooldown = 1,
-                EffectsOnHit =
-                [
-                    new EffectSpec { Type = EffectType.ApplyToken, Token = TokenType.Combo, Stacks = 1, Chance = 1.0 },
-                    new EffectSpec { Type = EffectType.ApplyDot, Dot = DotType.Blight, Potency = 2, Duration = 2, Chance = 1.0 },
-                ],
-            },
-            new SkillDefinition
-            {
-                Id = "spider_bite",
-                Name = "Bite",
-                Element = ElementType.Fire,
-                Type = "Active",
-                AllowedCasterRanks = [1, 2, 3, 4],
-                AllowedTargetRanks = [1, 2, 3, 4],
-                BaseDamage = new DamageRange { Min = 2, Max = 4 },
-                BaseCritChance = 0.1,
-                Accuracy = 0.9,
-                Cooldown = 0,
-                EffectsOnHit =
-                [
-                    new EffectSpec { Type = EffectType.ApplyDot, Dot = DotType.Blight, Potency = 2, Duration = 2, Chance = 1.0 },
-                ],
-            },
-        ];
+        try
+        {
+            return CombatDataLoader.LoadPassives(CombatDataLoader.ResolveDefaultPassivesPath());
+        }
+        catch (FileNotFoundException)
+        {
+            return [];
+        }
     }
 }

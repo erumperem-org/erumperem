@@ -24,6 +24,9 @@ public sealed class EffectSpec
     public int Duration { get; init; }
     public int Steps { get; init; }
     public double Chance { get; init; } = 1.0;
+
+    /// <summary>Default = single target; AllAllies = same-side party (e.g. Muralha Block on everyone).</summary>
+    public string EffectScope { get; init; } = "Default";
 }
 
 public sealed class SkillDefinition
@@ -38,6 +41,7 @@ public sealed class SkillDefinition
     public required double BaseCritChance { get; init; }
     public required double Accuracy { get; init; }
     public int Cooldown { get; init; }
+    public SkillTargetKind TargetKind { get; init; } = SkillTargetKind.Enemy;
     public MoveSpec SelfMove { get; init; } = new MoveSpec { Type = "None", Steps = 0 };
     public IReadOnlyList<EffectSpec> EffectsOnHit { get; init; } = [];
     public IReadOnlyList<EffectSpec> ComboBonus { get; init; } = [];

@@ -131,6 +131,7 @@ public sealed class Combatant
     public required DotComponent Dots { get; set; }
     public required SkillLoadoutComponent SkillLoadout { get; set; }
     public required ProgressionComponent Progression { get; set; }
+    public PassiveRuntimeState PassiveRuntime { get; set; } = new();
     public AIComponent? AI { get; set; }
     public required ElementAffinityComponent ElementAffinity { get; set; }
 }

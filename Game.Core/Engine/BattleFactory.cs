@@ -6,24 +6,55 @@ namespace Game.Core.Engine;
 
 public static class BattleFactory
 {
+    public static readonly string[] DefaultAllySkillIds = ["wulfric_innate_cleave"];
+
+    public static readonly string[] WulfricFullSkillLoadout =
+    [
+        "wulfric_innate_cleave", "wulfric_innate_shove", "wulfric_innate_guard",
+        "f_t1_a1", "f_t2_a1", "f_t3_a1",
+        "m_t1_a1", "m_t2_a1", "m_t3_a1",
+        "a_t1_a1", "a_t2_a1", "a_t3_a1",
+    ];
+
+    public static readonly string[] DefaultEnemySkillIds = ["spider_bite", "spider_web", "enemy_claw"];
+
     public static BattleState CreateSampleBattle(
         IReadOnlyList<SkillDefinition> skills,
         int allyCount = 2,
         int enemyCount = 4,
-        double corruptionValue = 0)
+        double corruptionValue = 0,
+        IReadOnlyList<string>? allySkillIds = null,
+        IReadOnlyList<string>? enemySkillIds = null,
+        IReadOnlyDictionary<string, PassiveDefinition>? passivesById = null,
+        bool unlockAllPassiveNodesForAllies = false)
     {
         var skillsById = skills.ToDictionary(s => s.Id, s => s);
+        var passiveCatalog = passivesById ?? new Dictionary<string, PassiveDefinition>();
+
+        var allySkills = allySkillIds ?? DefaultAllySkillIds;
+        var foeSkills = enemySkillIds ?? DefaultEnemySkillIds;
 
         var allies = new List<Combatant>();
         for (var i = 0; i < allyCount; i++)
         {
-            allies.Add(CreatePlayer($"ally_{i + 1}", i + 1));
+            allies.Add(CreatePlayer($"ally_{i + 1}", i + 1, allySkills));
+        }
+
+        if (unlockAllPassiveNodesForAllies && passiveCatalog.Count > 0)
+        {
+            foreach (var ally in allies)
+            {
+                foreach (var pid in passiveCatalog.Keys)
+                {
+                    ally.Progression.UnlockedNodes[pid] = true;
+                }
+            }
         }
 
         var enemies = new List<Combatant>();
         for (var i = 0; i < enemyCount; i++)
         {
-            enemies.Add(CreateEnemy($"enemy_{i + 1}", i + 1));
+            enemies.Add(CreateEnemy($"enemy_{i + 1}", i + 1, foeSkills));
         }
 
         return new BattleState
@@ -31,6 +62,7 @@ public static class BattleFactory
             Allies = allies,
             Enemies = enemies,
             SkillsById = skillsById,
+            PassivesById = passiveCatalog,
             CorruptionValue = Math.Clamp(corruptionValue, 0, 100),
             BalanceConfig = CombatBalanceConfig.CreateDefault(),
             TurnNumber = 0,
@@ -38,8 +70,33 @@ public static class BattleFactory
         };
     }
 
-    private static Combatant CreatePlayer(string id, int rank)
+    /// <summary>Marca todas as entradas de <paramref name="passivesById"/> como desbloqueadas em cada aliado (modo stress / regressão).</summary>
+    public static void UnlockAllPassivesFromCatalog(
+        BattleState battle,
+        IReadOnlyDictionary<string, PassiveDefinition> passivesById)
     {
+        if (passivesById.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var ally in battle.Allies)
+        {
+            foreach (var pid in passivesById.Keys)
+            {
+                ally.Progression.UnlockedNodes[pid] = true;
+            }
+        }
+    }
+
+    private static Combatant CreatePlayer(string id, int rank, IReadOnlyList<string> skillIds)
+    {
+        var loadout = new SkillLoadoutComponent();
+        foreach (var sid in skillIds)
+        {
+            loadout.Skills.Add(sid);
+        }
+
         return new Combatant
         {
             Identity = new IdentityComponent
@@ -51,8 +108,8 @@ public static class BattleFactory
             },
             Health = new HealthComponent
             {
-                CurrentHp = 30,
-                MaxHp = 30,
+                CurrentHp = 40,
+                MaxHp = 40,
                 IsDead = false,
                 IsDeathblowPending = false,
             },
@@ -78,15 +135,21 @@ public static class BattleFactory
             },
             Tokens = new TokenComponent(),
             Dots = new DotComponent(),
-            SkillLoadout = new SkillLoadoutComponent { Skills = { "wulfric_slash" } },
+            SkillLoadout = loadout,
             Progression = new ProgressionComponent { Level = 0, SpentPoints = 0 },
             AI = null,
             ElementAffinity = new ElementAffinityComponent { Element = ElementType.Fire },
         };
     }
 
-    private static Combatant CreateEnemy(string id, int rank)
+    private static Combatant CreateEnemy(string id, int rank, IReadOnlyList<string> skillIds)
     {
+        var loadout = new SkillLoadoutComponent();
+        foreach (var sid in skillIds)
+        {
+            loadout.Skills.Add(sid);
+        }
+
         return new Combatant
         {
             Identity = new IdentityComponent
@@ -125,10 +188,7 @@ public static class BattleFactory
             },
             Tokens = new TokenComponent(),
             Dots = new DotComponent(),
-            SkillLoadout = new SkillLoadoutComponent
-            {
-                Skills = { "spider_bite", "spider_web", "wulfric_slash" },
-            },
+            SkillLoadout = loadout,
             Progression = new ProgressionComponent { Level = 0, SpentPoints = 0 },
             AI = new AIComponent { DecisionPolicyId = "KillThenWeighted" },
             ElementAffinity = new ElementAffinityComponent { Element = ElementType.Anomaly },

@@ -8,6 +8,11 @@ public sealed class BattleState
     public required IList<Combatant> Allies { get; init; }
     public required IList<Combatant> Enemies { get; init; }
     public required IDictionary<string, SkillDefinition> SkillsById { get; init; }
+
+    /// <summary>Catálogo de passivas (efeitos); chave = id do nó passivo.</summary>
+    public IReadOnlyDictionary<string, PassiveDefinition> PassivesById { get; init; } =
+        new Dictionary<string, PassiveDefinition>();
+
     public required CombatBalanceConfig BalanceConfig { get; init; }
     public required double CorruptionValue { get; set; }
     public required int TurnNumber { get; set; }
@@ -31,6 +36,24 @@ public sealed class BattleState
             if (Enemies.All(c => c.Health.IsDead)) return Side.Allies;
             return null;
         }
+    }
+
+    /// <summary>Ids de passivas desbloqueadas em pelo menos um aliado (intersecção com <see cref="PassivesById"/>), ordenados para telemetria.</summary>
+    public string GetPassiveLoadoutCsv()
+    {
+        var ids = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var passiveId in PassivesById.Keys)
+        {
+            foreach (var ally in Allies)
+            {
+                if (ally.Progression.UnlockedNodes.TryGetValue(passiveId, out var on) && on)
+                {
+                    ids.Add(passiveId);
+                }
+            }
+        }
+
+        return string.Join(",", ids);
     }
 }
 

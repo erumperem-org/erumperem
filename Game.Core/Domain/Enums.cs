@@ -37,6 +37,7 @@ public enum DotType
 {
     Burn = 0,
     Blight = 1,
+    Bleed = 2,
 }
 
 public enum EffectType
@@ -48,6 +49,15 @@ public enum EffectType
     HealHp = 4,
     HealCorruption = 5,
     ApplyStun = 6,
+    HealHpPercent = 7,
+    IncreaseCorruption = 8,
+}
+
+public enum SkillTargetKind
+{
+    Enemy = 0,
+    Ally = 1,
+    Self = 2,
 }
 
 public enum ActionType

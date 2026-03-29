@@ -1,0 +1,31 @@
+[
+  { "id": "f_t1_p1", "effectKind": "OutgoingDamageVsSkillId", "skillId": "wulfric_innate_cleave", "additive": 0.1 },
+  { "id": "f_t1_p2", "effectKind": "OutgoingDamageVsDotOnTarget", "dotType": "Bleed", "additivePerStack": 0.03, "cap": 0.12 },
+  { "id": "f_t1_p3", "effectKind": "ApplyExtraDotAfterSkillIfTargetHasDot", "skillId": "wulfric_innate_shove", "dotType": "Bleed", "intValue": 2, "intValue2": 2 },
+  { "id": "f_t2_p1", "effectKind": "DotDurationBonus", "dotType": "Bleed", "intValue": 1, "intValue2": 6 },
+  { "id": "f_t2_p2", "effectKind": "DotTickDamageBonusWhenTargetHpBelow", "dotType": "Bleed", "hpBelowPercent": 0.4, "additive": 0.2 },
+  { "id": "f_t2_p3", "effectKind": "OutgoingDamageVsSkillIfTargetHasDot", "skillId": "wulfric_innate_cleave", "dotType": "Bleed", "additive": 0.1 },
+  { "id": "f_t3_p1", "effectKind": "GrantTokenAtTurnStartIfCondition", "unlessHasTokenType": "Block", "grantTokenType": "Combo", "intValue": 1 },
+  { "id": "f_t3_p2", "effectKind": "OutgoingDamageAfterPrerequisiteSkill", "prerequisiteSkillId": "wulfric_innate_shove", "skillId": "wulfric_innate_cleave", "additive": 0.25 },
+  { "id": "f_t3_p3", "effectKind": "OutgoingDamageVsSkillIfTargetHasDot", "skillId": "f_t3_a1", "dotType": "Bleed", "additive": 0.15 },
+
+  { "id": "m_t1_p1", "effectKind": "IncomingDamageMultiplierWhenHpBelow", "hpBelowPercent": 0.5, "additive": 0.88 },
+  { "id": "m_t1_p2", "effectKind": "ExtraHealPercentOnSelfSkill", "skillId": "wulfric_innate_guard", "additive": 5 },
+  { "id": "m_t1_p3", "effectKind": "GrantTokenAtTurnStartIfCondition", "ifHasTokenType": "Taunt", "grantTokenType": "Block", "intValue": 1 },
+  { "id": "m_t2_p1", "effectKind": "OutgoingDamagePenaltyWhenToken", "tokenType": "Taunt", "additive": -0.12 },
+  { "id": "m_t2_p2", "effectKind": "ExtraTokenOnSelfSkillWhenRank", "skillId": "wulfric_innate_guard", "tokenType": "Block", "intValue": 1, "minCasterRank": 1, "maxCasterRank": 2 },
+  { "id": "m_t2_p3", "effectKind": "IncomingDamageMultiplierWhenHpBelow", "hpBelowPercent": 0.35, "additive": 0.92 },
+  { "id": "m_t3_p1", "effectKind": "IncomingDamageMultiplierWhenHpBelow", "hpBelowPercent": 0.25, "additive": 0.82 },
+  { "id": "m_t3_p2", "effectKind": "OutgoingDamageVsDotOnTarget", "dotType": "Blight", "additive": 0.08 },
+  { "id": "m_t3_p3", "effectKind": "ExtraHealPercentOnSelfSkill", "skillId": "m_t2_a1", "additive": 3 },
+
+  { "id": "a_t1_p1", "effectKind": "OutgoingDamageVsSkillId", "skillId": "a_t1_a1", "additive": 0.08 },
+  { "id": "a_t1_p2", "effectKind": "OutgoingDamageVsDotOnTarget", "dotType": "Blight", "additivePerStack": 0.04, "cap": 0.12 },
+  { "id": "a_t1_p3", "effectKind": "DotTickDamageBonusWhenTargetHpBelow", "dotType": "Blight", "hpBelowPercent": 0.45, "additive": 0.15 },
+  { "id": "a_t2_p1", "effectKind": "ExtraTokenOnSelfSkillWhenRank", "skillId": "m_t2_a1", "tokenType": "BlockPlus", "intValue": 1, "minCasterRank": 1, "maxCasterRank": 0 },
+  { "id": "a_t2_p2", "effectKind": "IncomingDamageMultiplierWhenHpBelow", "hpBelowPercent": 0.55, "additive": 0.9 },
+  { "id": "a_t2_p3", "effectKind": "DotDurationBonus", "dotType": "Blight", "intValue": 1, "intValue2": 5 },
+  { "id": "a_t3_p1", "effectKind": "OutgoingDamageVsSkillIfTargetHasDot", "skillId": "a_t3_a1", "dotType": "Blight", "additive": 0.12 },
+  { "id": "a_t3_p2", "effectKind": "OutgoingDamageAfterPrerequisiteSkill", "prerequisiteSkillId": "a_t2_a1", "skillId": "a_t3_a1", "additive": 0.2 },
+  { "id": "a_t3_p3", "effectKind": "ApplyExtraDotAfterSkillIfTargetHasDot", "skillId": "a_t2_a1", "dotType": "Blight", "intValue": 2, "intValue2": 2 }
+]
