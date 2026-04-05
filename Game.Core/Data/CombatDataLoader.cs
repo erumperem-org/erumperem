@@ -18,9 +18,9 @@ public static class CombatDataLoader
             Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Data", "skills.json")),
             Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Game.Simulations", "Data", "skills.json")),
         };
-        foreach (var p in candidates)
+        foreach (var candidatePath in candidates)
         {
-            if (File.Exists(p)) return p;
+            if (File.Exists(candidatePath)) return candidatePath;
         }
 
         throw new FileNotFoundException("skills.json not found. Tried: " + string.Join("; ", candidates));
@@ -37,9 +37,9 @@ public static class CombatDataLoader
             Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Data", "passives.json")),
             Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Game.Simulations", "Data", "passives.json")),
         };
-        foreach (var p in candidates)
+        foreach (var candidatePath in candidates)
         {
-            if (File.Exists(p)) return p;
+            if (File.Exists(candidatePath)) return candidatePath;
         }
 
         throw new FileNotFoundException("passives.json not found. Tried: " + string.Join("; ", candidates));
@@ -54,9 +54,9 @@ public static class CombatDataLoader
             Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Data", "skill_trees.json")),
             Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Game.Simulations", "Data", "skill_trees.json")),
         };
-        foreach (var p in candidates)
+        foreach (var candidatePath in candidates)
         {
-            if (File.Exists(p)) return p;
+            if (File.Exists(candidatePath)) return candidatePath;
         }
 
         throw new FileNotFoundException("skill_trees.json not found. Tried: " + string.Join("; ", candidates));
@@ -148,16 +148,16 @@ public static class CombatDataLoader
     private static void ValidatePassives(IReadOnlyList<PassiveDefinition> passives)
     {
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var p in passives)
+        foreach (var passiveDefinition in passives)
         {
-            if (string.IsNullOrWhiteSpace(p.Id))
+            if (string.IsNullOrWhiteSpace(passiveDefinition.Id))
             {
                 throw new InvalidDataException("Passive id is required.");
             }
 
-            if (!seen.Add(p.Id))
+            if (!seen.Add(passiveDefinition.Id))
             {
-                throw new InvalidDataException($"Duplicate passive id: {p.Id}");
+                throw new InvalidDataException($"Duplicate passive id: {passiveDefinition.Id}");
             }
         }
     }

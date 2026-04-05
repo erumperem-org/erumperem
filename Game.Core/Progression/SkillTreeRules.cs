@@ -10,14 +10,15 @@ public static class SkillTreeRules
         string nodeId,
         IReadOnlyDictionary<string, bool> unlockedNodes)
     {
-        var tree = treesDefinition.Trees.FirstOrDefault(t =>
-            string.Equals(t.Element.ToString(), elementName, StringComparison.OrdinalIgnoreCase));
+        var tree = treesDefinition.Trees.FirstOrDefault(elementTree =>
+            string.Equals(elementTree.Element.ToString(), elementName, StringComparison.OrdinalIgnoreCase));
         if (tree is null) return false;
 
-        var tierWithNode = tree.Tiers.FirstOrDefault(t => t.Nodes.Any(n => n.Id == nodeId));
+        var tierWithNode = tree.Tiers.FirstOrDefault(tier =>
+            tier.Nodes.Any(nodeDefinition => nodeDefinition.Id == nodeId));
         if (tierWithNode is null) return false;
 
-        var node = tierWithNode.Nodes.First(n => n.Id == nodeId);
+        var node = tierWithNode.Nodes.First(nodeDefinition => nodeDefinition.Id == nodeId);
         foreach (var requiredNode in node.Requires)
         {
             if (!unlockedNodes.TryGetValue(requiredNode, out var isUnlocked) || !isUnlocked)
@@ -28,9 +29,9 @@ public static class SkillTreeRules
 
         if (tierWithNode.Tier > 1)
         {
-            var previousTier = tree.Tiers.First(t => t.Tier == tierWithNode.Tier - 1);
-            var allPreviousUnlocked = previousTier.Nodes.All(n =>
-                unlockedNodes.TryGetValue(n.Id, out var isUnlocked) && isUnlocked);
+            var previousTier = tree.Tiers.First(tier => tier.Tier == tierWithNode.Tier - 1);
+            var allPreviousUnlocked = previousTier.Nodes.All(nodeDefinition =>
+                unlockedNodes.TryGetValue(nodeDefinition.Id, out var isUnlocked) && isUnlocked);
             if (!allPreviousUnlocked)
             {
                 return false;

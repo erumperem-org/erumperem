@@ -68,34 +68,34 @@ public static class CombatAnalyticsExporter
 {
     public static string BuildEventsCsv(IEnumerable<CombatEvent> events)
     {
-        var sb = new StringBuilder();
-        sb.AppendLine("event_id,battle_id,turn,timestamp_utc,event_type,actor_id,target_id,skill_id,element,is_hit,is_crit,damage_amount,dot_type,dot_amount,token_type,token_delta,corruption_value,corruption_tier,passive_loadout,battle_result");
-        foreach (var e in events)
+        var csvBuilder = new StringBuilder();
+        csvBuilder.AppendLine("event_id,battle_id,turn,timestamp_utc,event_type,actor_id,target_id,skill_id,element,is_hit,is_crit,damage_amount,dot_type,dot_amount,token_type,token_delta,corruption_value,corruption_tier,passive_loadout,battle_result");
+        foreach (var combatEvent in events)
         {
-            sb.AppendLine(string.Join(",",
-                Esc(e.EventId),
-                Esc(e.BattleId),
-                e.Turn.ToString(CultureInfo.InvariantCulture),
-                Esc(e.TimestampUtc.ToString("O", CultureInfo.InvariantCulture)),
-                Esc(e.EventType.ToString()),
-                Esc(e.ActorId),
-                Esc(e.TargetId),
-                Esc(e.SkillId),
-                Esc(e.Element.ToString()),
-                Esc(e.IsHit.ToString()),
-                Esc(e.IsCrit.ToString()),
-                e.DamageAmount.ToString(CultureInfo.InvariantCulture),
-                Esc(e.DotType),
-                e.DotAmount.ToString(CultureInfo.InvariantCulture),
-                Esc(e.TokenType),
-                e.TokenDelta.ToString(CultureInfo.InvariantCulture),
-                e.CorruptionValue.ToString(CultureInfo.InvariantCulture),
-                e.CorruptionTier.ToString(CultureInfo.InvariantCulture),
-                Esc(e.PassiveLoadoutCsv),
-                Esc(e.BattleResult)));
+            csvBuilder.AppendLine(string.Join(",",
+                Esc(combatEvent.EventId),
+                Esc(combatEvent.BattleId),
+                combatEvent.Turn.ToString(CultureInfo.InvariantCulture),
+                Esc(combatEvent.TimestampUtc.ToString("O", CultureInfo.InvariantCulture)),
+                Esc(combatEvent.EventType.ToString()),
+                Esc(combatEvent.ActorId),
+                Esc(combatEvent.TargetId),
+                Esc(combatEvent.SkillId),
+                Esc(combatEvent.Element.ToString()),
+                Esc(combatEvent.IsHit.ToString()),
+                Esc(combatEvent.IsCrit.ToString()),
+                combatEvent.DamageAmount.ToString(CultureInfo.InvariantCulture),
+                Esc(combatEvent.DotType),
+                combatEvent.DotAmount.ToString(CultureInfo.InvariantCulture),
+                Esc(combatEvent.TokenType),
+                combatEvent.TokenDelta.ToString(CultureInfo.InvariantCulture),
+                combatEvent.CorruptionValue.ToString(CultureInfo.InvariantCulture),
+                combatEvent.CorruptionTier.ToString(CultureInfo.InvariantCulture),
+                Esc(combatEvent.PassiveLoadoutCsv),
+                Esc(combatEvent.BattleResult)));
         }
 
-        return sb.ToString();
+        return csvBuilder.ToString();
     }
 
     public static string BuildAggregatesCsv(IEnumerable<CombatEvent> events) =>
@@ -103,11 +103,11 @@ public static class CombatAnalyticsExporter
 
     public static string BuildAggregatesCsv(IReadOnlyList<CombatAggregateRow> rows)
     {
-        var sb = new StringBuilder();
-        sb.AppendLine("entity_type,entity_id,matches,wins,win_rate,uses,pick_rate,avg_damage_per_use,hit_rate,crit_rate,avg_damage_at_tier0,avg_damage_at_tier1,avg_damage_at_tier2,avg_damage_at_tier3");
+        var csvBuilder = new StringBuilder();
+        csvBuilder.AppendLine("entity_type,entity_id,matches,wins,win_rate,uses,pick_rate,avg_damage_per_use,hit_rate,crit_rate,avg_damage_at_tier0,avg_damage_at_tier1,avg_damage_at_tier2,avg_damage_at_tier3");
         foreach (var row in rows)
         {
-            sb.AppendLine(string.Join(",",
+            csvBuilder.AppendLine(string.Join(",",
                 Esc(row.EntityType),
                 Esc(row.EntityId),
                 row.Matches.ToString(CultureInfo.InvariantCulture),
@@ -124,47 +124,49 @@ public static class CombatAnalyticsExporter
                 row.AvgDamageAtTier3.ToString(CultureInfo.InvariantCulture)));
         }
 
-        return sb.ToString();
+        return csvBuilder.ToString();
     }
 
     public static IReadOnlyList<CombatAggregateRow> BuildAggregates(IEnumerable<CombatEvent> events)
     {
         var eventList = events.ToList();
         var battleResults = eventList
-            .Where(e => e.EventType == BattleEventType.BattleEnded)
-            .GroupBy(e => e.BattleId)
-            .ToDictionary(g => g.Key, g => g.Last().BattleResult);
+            .Where(combatEvent => combatEvent.EventType == BattleEventType.BattleEnded)
+            .GroupBy(combatEvent => combatEvent.BattleId)
+            .ToDictionary(endedByBattle => endedByBattle.Key, endedByBattle => endedByBattle.Last().BattleResult);
 
-        var actionEvents = eventList.Where(e => e.EventType == BattleEventType.ActionUsed).ToList();
-        var hitResolvedEvents = eventList.Where(e => e.EventType == BattleEventType.HitResolved).ToList();
-        var damageEvents = eventList.Where(e => e.EventType == BattleEventType.DamageApplied).ToList();
+        var actionEvents = eventList.Where(combatEvent => combatEvent.EventType == BattleEventType.ActionUsed).ToList();
+        var hitResolvedEvents = eventList.Where(combatEvent => combatEvent.EventType == BattleEventType.HitResolved).ToList();
+        var damageEvents = eventList.Where(combatEvent => combatEvent.EventType == BattleEventType.DamageApplied).ToList();
 
         var alliesVictory = Side.Allies.ToString();
         var skillRows = actionEvents
-            .Where(e => !string.IsNullOrWhiteSpace(e.SkillId))
-            .GroupBy(e => e.SkillId)
-            .Select(g =>
+            .Where(skillUse => !string.IsNullOrWhiteSpace(skillUse.SkillId))
+            .GroupBy(skillUse => skillUse.SkillId)
+            .Select(skillGroup =>
             {
-                var groupedDamage = damageEvents.Where(d => d.SkillId == g.Key).ToList();
-                var groupedHitResolution = hitResolvedEvents.Where(h => h.SkillId == g.Key).ToList();
-                var tierGroups = groupedDamage.GroupBy(d => d.CorruptionTier).ToDictionary(x => x.Key, x => x.ToList());
-                var uses = g.Count();
-                var hits = groupedHitResolution.Count(x => x.IsHit);
-                var crits = groupedHitResolution.Count(x => x.IsCrit);
-                var distinctBattleIds = g.Select(x => x.BattleId).Distinct().ToList();
+                var groupedDamage = damageEvents.Where(damageEvent => damageEvent.SkillId == skillGroup.Key).ToList();
+                var groupedHitResolution = hitResolvedEvents.Where(hitEvent => hitEvent.SkillId == skillGroup.Key).ToList();
+                var tierGroups = groupedDamage
+                    .GroupBy(damageEvent => damageEvent.CorruptionTier)
+                    .ToDictionary(tierGroup => tierGroup.Key, tierGroup => tierGroup.ToList());
+                var uses = skillGroup.Count();
+                var hits = groupedHitResolution.Count(hitEvent => hitEvent.IsHit);
+                var crits = groupedHitResolution.Count(hitEvent => hitEvent.IsCrit);
+                var distinctBattleIds = skillGroup.Select(skillUse => skillUse.BattleId).Distinct().ToList();
                 var matches = distinctBattleIds.Count;
-                var wins = distinctBattleIds.Count(bid =>
-                    battleResults.TryGetValue(bid, out var result) && result == alliesVictory);
+                var wins = distinctBattleIds.Count(battleId =>
+                    battleResults.TryGetValue(battleId, out var result) && result == alliesVictory);
                 return new CombatAggregateRow
                 {
                     EntityType = "skill",
-                    EntityId = g.Key,
+                    EntityId = skillGroup.Key,
                     Matches = matches,
                     Wins = wins,
                     WinRate = SafeDiv(wins, matches),
                     Uses = uses,
                     PickRate = SafeDiv(uses, actionEvents.Count),
-                    AvgDamagePerUse = SafeDiv(groupedDamage.Sum(x => x.DamageAmount), uses),
+                    AvgDamagePerUse = SafeDiv(groupedDamage.Sum(damageEvent => damageEvent.DamageAmount), uses),
                     HitRate = SafeDiv(hits, uses),
                     CritRate = SafeDiv(crits, uses),
                     AvgDamageAtTier0 = SafeTierAverage(tierGroups, 0),
@@ -191,14 +193,14 @@ public static class CombatAnalyticsExporter
     {
         var eventList = events.ToList();
         var battleEnds = eventList
-            .Where(e => e.EventType == BattleEventType.BattleEnded)
-            .GroupBy(e => e.BattleId)
-            .ToDictionary(g => g.Key, g => g.Last().BattleResult);
+            .Where(combatEvent => combatEvent.EventType == BattleEventType.BattleEnded)
+            .GroupBy(combatEvent => combatEvent.BattleId)
+            .ToDictionary(endedByBattle => endedByBattle.Key, endedByBattle => endedByBattle.Last().BattleResult);
 
         var battleStarts = eventList
-            .Where(e => e.EventType == BattleEventType.BattleStarted)
-            .GroupBy(e => e.BattleId)
-            .ToDictionary(g => g.Key, g => g.First());
+            .Where(combatEvent => combatEvent.EventType == BattleEventType.BattleStarted)
+            .GroupBy(combatEvent => combatEvent.BattleId)
+            .ToDictionary(startedByBattle => startedByBattle.Key, startedByBattle => startedByBattle.First());
 
         var alliesVictory = Side.Allies.ToString();
         var totalBattles = battleEnds.Count;
@@ -219,14 +221,14 @@ public static class CombatAnalyticsExporter
             }
 
             var passiveIds = SplitPassiveCsv(started.PassiveLoadoutCsv);
-            foreach (var pid in passiveIds)
+            foreach (var passiveNodeId in passiveIds)
             {
-                perPassiveMatches.TryGetValue(pid, out var m);
-                perPassiveMatches[pid] = m + 1;
+                perPassiveMatches.TryGetValue(passiveNodeId, out var previousBattleCount);
+                perPassiveMatches[passiveNodeId] = previousBattleCount + 1;
                 if (win)
                 {
-                    perPassiveWins.TryGetValue(pid, out var w);
-                    perPassiveWins[pid] = w + 1;
+                    perPassiveWins.TryGetValue(passiveNodeId, out var previousWinCount);
+                    perPassiveWins[passiveNodeId] = previousWinCount + 1;
                 }
             }
         }
@@ -235,11 +237,11 @@ public static class CombatAnalyticsExporter
         if (allPassiveIdsInCatalog is { Count: > 0 })
         {
             var union = new SortedSet<string>(perPassiveMatches.Keys, StringComparer.Ordinal);
-            foreach (var id in allPassiveIdsInCatalog)
+            foreach (var catalogPassiveId in allPassiveIdsInCatalog)
             {
-                if (!string.IsNullOrWhiteSpace(id))
+                if (!string.IsNullOrWhiteSpace(catalogPassiveId))
                 {
-                    union.Add(id);
+                    union.Add(catalogPassiveId);
                 }
             }
 
@@ -247,13 +249,13 @@ public static class CombatAnalyticsExporter
         }
 
         var rows = new List<PassiveAggregateRow>();
-        foreach (var pid in rowIds.OrderBy(x => x, StringComparer.Ordinal))
+        foreach (var passiveNodeId in rowIds.OrderBy(id => id, StringComparer.Ordinal))
         {
-            perPassiveMatches.TryGetValue(pid, out var matches);
-            perPassiveWins.TryGetValue(pid, out var wins);
+            perPassiveMatches.TryGetValue(passiveNodeId, out var matches);
+            perPassiveWins.TryGetValue(passiveNodeId, out var wins);
             rows.Add(new PassiveAggregateRow
             {
-                PassiveId = pid,
+                PassiveId = passiveNodeId,
                 BattlesWithPassive = matches,
                 Wins = wins,
                 WinRate = SafeDiv(wins, matches),
@@ -269,11 +271,11 @@ public static class CombatAnalyticsExporter
 
     public static string BuildPassiveAggregatesCsv(IReadOnlyList<PassiveAggregateRow> rows)
     {
-        var sb = new StringBuilder();
-        sb.AppendLine("passive_id,battles_with_passive,wins,win_rate,presence_rate");
+        var csvBuilder = new StringBuilder();
+        csvBuilder.AppendLine("passive_id,battles_with_passive,wins,win_rate,presence_rate");
         foreach (var row in rows)
         {
-            sb.AppendLine(string.Join(",",
+            csvBuilder.AppendLine(string.Join(",",
                 Esc(row.PassiveId),
                 row.BattlesWithPassive.ToString(CultureInfo.InvariantCulture),
                 row.Wins.ToString(CultureInfo.InvariantCulture),
@@ -281,7 +283,7 @@ public static class CombatAnalyticsExporter
                 row.PresenceRate.ToString(CultureInfo.InvariantCulture)));
         }
 
-        return sb.ToString();
+        return csvBuilder.ToString();
     }
 
     private static IEnumerable<string> SplitPassiveCsv(string csv)
@@ -292,8 +294,8 @@ public static class CombatAnalyticsExporter
         }
 
         return csv.Split(',')
-            .Select(s => s.Trim())
-            .Where(s => s.Length > 0);
+            .Select(segment => segment.Trim())
+            .Where(segment => segment.Length > 0);
     }
 
     private static string Esc(string value)
@@ -314,6 +316,6 @@ public static class CombatAnalyticsExporter
             return 0;
         }
 
-        return values.Average(x => x.DamageAmount);
+        return values.Average(damageEvent => damageEvent.DamageAmount);
     }
 }

@@ -28,7 +28,7 @@ public static class BattleFactory
         IReadOnlyDictionary<string, PassiveDefinition>? passivesById = null,
         bool unlockAllPassiveNodesForAllies = false)
     {
-        var skillsById = skills.ToDictionary(s => s.Id, s => s);
+        var skillsById = skills.ToDictionary(skill => skill.Id, skill => skill);
         var passiveCatalog = passivesById ?? new Dictionary<string, PassiveDefinition>();
 
         var allySkills = allySkillIds ?? DefaultAllySkillIds;
@@ -44,9 +44,9 @@ public static class BattleFactory
         {
             foreach (var ally in allies)
             {
-                foreach (var pid in passiveCatalog.Keys)
+                foreach (var passiveNodeId in passiveCatalog.Keys)
                 {
-                    ally.Progression.UnlockedNodes[pid] = true;
+                    ally.Progression.UnlockedNodes[passiveNodeId] = true;
                 }
             }
         }
@@ -82,9 +82,9 @@ public static class BattleFactory
 
         foreach (var ally in battle.Allies)
         {
-            foreach (var pid in passivesById.Keys)
+            foreach (var passiveNodeId in passivesById.Keys)
             {
-                ally.Progression.UnlockedNodes[pid] = true;
+                ally.Progression.UnlockedNodes[passiveNodeId] = true;
             }
         }
     }
@@ -92,9 +92,9 @@ public static class BattleFactory
     private static Combatant CreatePlayer(string id, int rank, IReadOnlyList<string> skillIds)
     {
         var loadout = new SkillLoadoutComponent();
-        foreach (var sid in skillIds)
+        foreach (var skillId in skillIds)
         {
-            loadout.Skills.Add(sid);
+            loadout.Skills.Add(skillId);
         }
 
         return new Combatant
@@ -145,9 +145,9 @@ public static class BattleFactory
     private static Combatant CreateEnemy(string id, int rank, IReadOnlyList<string> skillIds)
     {
         var loadout = new SkillLoadoutComponent();
-        foreach (var sid in skillIds)
+        foreach (var skillId in skillIds)
         {
-            loadout.Skills.Add(sid);
+            loadout.Skills.Add(skillId);
         }
 
         return new Combatant

@@ -26,14 +26,14 @@ public sealed class BattleState
     public int CorruptionTier => CorruptionTierCalculator.GetTier(CorruptionValue);
 
     public bool IsFinished =>
-        Allies.All(c => c.Health.IsDead) || Enemies.All(c => c.Health.IsDead);
+        Allies.All(combatant => combatant.Health.IsDead) || Enemies.All(combatant => combatant.Health.IsDead);
 
     public Side? Winner
     {
         get
         {
-            if (Allies.All(c => c.Health.IsDead)) return Side.Enemies;
-            if (Enemies.All(c => c.Health.IsDead)) return Side.Allies;
+            if (Allies.All(combatant => combatant.Health.IsDead)) return Side.Enemies;
+            if (Enemies.All(combatant => combatant.Health.IsDead)) return Side.Allies;
             return null;
         }
     }
@@ -46,7 +46,7 @@ public sealed class BattleState
         {
             foreach (var ally in Allies)
             {
-                if (ally.Progression.UnlockedNodes.TryGetValue(passiveId, out var on) && on)
+                if (ally.Progression.UnlockedNodes.TryGetValue(passiveId, out var isPassiveUnlocked) && isPassiveUnlocked)
                 {
                     ids.Add(passiveId);
                 }

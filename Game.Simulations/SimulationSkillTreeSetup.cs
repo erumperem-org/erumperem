@@ -15,13 +15,13 @@ public static class SimulationSkillTreeSetup
         IReadOnlyList<CharacterSkillTreesDefinition> roots,
         string characterId = DefaultCharacterId)
     {
-        var c = roots.FirstOrDefault(x => x.CharacterId == characterId);
-        if (c is null)
+        var characterTrees = roots.FirstOrDefault(root => root.CharacterId == characterId);
+        if (characterTrees is null)
         {
             throw new InvalidOperationException($"No skill tree for character '{characterId}'.");
         }
 
-        return c;
+        return characterTrees;
     }
 
     /// <summary>Todos os nós (passivas + ativas) da árvore <paramref name="treeIndex1Based"/> até ao tier inclusive.</summary>
@@ -42,8 +42,8 @@ public static class SimulationSkillTreeSetup
 
         var tree = character.Trees[treeIndex1Based - 1];
         return tree.Tiers
-            .Where(t => t.Tier <= maxTierInclusive)
-            .SelectMany(t => t.Nodes.Select(n => n.Id))
+            .Where(tierDefinition => tierDefinition.Tier <= maxTierInclusive)
+            .SelectMany(tierDefinition => tierDefinition.Nodes.Select(node => node.Id))
             .ToList();
     }
 
@@ -55,7 +55,7 @@ public static class SimulationSkillTreeSetup
         var ids = new List<string>();
         foreach (var tree in character.Trees)
         {
-            foreach (var tier in tree.Tiers.Where(t => t.Tier <= maxTierInclusive))
+            foreach (var tier in tree.Tiers.Where(tierDefinition => tierDefinition.Tier <= maxTierInclusive))
             {
                 foreach (var node in tier.Nodes)
                 {
@@ -101,7 +101,7 @@ public static class SimulationSkillTreeSetup
             {
                 foreach (var node in tier.Nodes)
                 {
-                    if (unlockedSnapshot.TryGetValue(node.Id, out var u) && u)
+                    if (unlockedSnapshot.TryGetValue(node.Id, out var isNodeUnlocked) && isNodeUnlocked)
                     {
                         continue;
                     }
@@ -154,9 +154,9 @@ public static class SimulationSkillTreeSetup
 
         foreach (var ally in allies)
         {
-            foreach (var kv in unlocked)
+            foreach (var nodeIdAndUnlocked in unlocked)
             {
-                ally.Progression.UnlockedNodes[kv.Key] = kv.Value;
+                ally.Progression.UnlockedNodes[nodeIdAndUnlocked.Key] = nodeIdAndUnlocked.Value;
             }
 
             ally.Progression.Level = spent;
@@ -174,9 +174,9 @@ public static class SimulationSkillTreeSetup
 
         foreach (var ally in allies)
         {
-            foreach (var id in ids)
+            foreach (var nodeId in ids)
             {
-                ally.Progression.UnlockedNodes[id] = true;
+                ally.Progression.UnlockedNodes[nodeId] = true;
             }
 
             ally.Progression.Level = spent;

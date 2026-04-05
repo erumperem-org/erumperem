@@ -29,7 +29,7 @@ var passivesFile = string.IsNullOrWhiteSpace(parsed.PassivesPath)
     ? CombatDataLoader.ResolveDefaultPassivesPath()
     : parsed.PassivesPath;
 var passivesById = CombatDataLoader.LoadPassives(passivesFile)
-    .ToDictionary(p => p.Id, p => p);
+    .ToDictionary(passiveDefinition => passiveDefinition.Id, passiveDefinition => passiveDefinition);
 
 var skillTreesPath = string.IsNullOrWhiteSpace(parsed.SkillTreesPath)
     ? CombatDataLoader.ResolveDefaultSkillTreesPath()
@@ -73,26 +73,26 @@ Console.WriteLine($"Skill aggregates CSV: {aggregatesPath}");
 Console.WriteLine($"Passive aggregates CSV: {passivePath}");
 Console.WriteLine();
 Console.WriteLine("Skill win rates (Allies):");
-foreach (var row in aggregates.OrderBy(r => r.EntityId))
+foreach (var row in aggregates.OrderBy(aggregateRow => aggregateRow.EntityId))
 {
     Console.WriteLine($"  {row.EntityId}: win_rate={row.WinRate:0.###} ({row.Wins}/{row.Matches} matches)");
 }
 
 Console.WriteLine();
 Console.WriteLine("Passive win rates (battles where passive was unlocked on at least one ally):");
-foreach (var row in passiveAgg.OrderBy(r => r.PassiveId))
+foreach (var row in passiveAgg.OrderBy(passiveRow => passiveRow.PassiveId))
 {
     Console.WriteLine(
         $"  {row.PassiveId}: win_rate={row.WinRate:0.###} ({row.Wins}/{row.BattlesWithPassive} battles), presence={row.PresenceRate:0.###}");
 }
 
-static string DescribePreset(ParsedArgs p) => p.Preset switch
+static string DescribePreset(ParsedArgs parsedArgs) => parsedArgs.Preset switch
 {
-    SimulationUnlockPreset.Random => $"random tree unlocks (0..{p.MaxPointsBudget} points)",
-    SimulationUnlockPreset.SingleTreeTier => $"tree {p.TreeIndex} through tier {p.TierCap}",
-    SimulationUnlockPreset.AllTreesTier => $"all trees tier 1..{p.AllTreesTierCap}",
+    SimulationUnlockPreset.Random => $"random tree unlocks (0..{parsedArgs.MaxPointsBudget} points)",
+    SimulationUnlockPreset.SingleTreeTier => $"tree {parsedArgs.TreeIndex} through tier {parsedArgs.TierCap}",
+    SimulationUnlockPreset.AllTreesTier => $"all trees tier 1..{parsedArgs.AllTreesTierCap}",
     SimulationUnlockPreset.FullPassivesCatalog => "all passives from passives.json (stress)",
-    _ => p.Preset.ToString(),
+    _ => parsedArgs.Preset.ToString(),
 };
 
 static BattleState BuildBattle(
@@ -119,15 +119,15 @@ static BattleState BuildBattle(
             SimulationSkillTreeSetup.ApplyRandomTreeUnlocks(battle.Allies, charTrees, random, parsed.MaxPointsBudget);
             break;
         case SimulationUnlockPreset.SingleTreeTier:
-            var single = SimulationSkillTreeSetup.GetNodeIdsForTreeMaxTier(
+            var singleTreeNodeIds = SimulationSkillTreeSetup.GetNodeIdsForTreeMaxTier(
                 charTrees,
                 parsed.TreeIndex!.Value,
                 parsed.TierCap!.Value);
-            SimulationSkillTreeSetup.ApplyNodeUnlocks(battle.Allies, charTrees, single);
+            SimulationSkillTreeSetup.ApplyNodeUnlocks(battle.Allies, charTrees, singleTreeNodeIds);
             break;
         case SimulationUnlockPreset.AllTreesTier:
-            var allT = SimulationSkillTreeSetup.GetNodeIdsAllTreesMaxTier(charTrees, parsed.AllTreesTierCap!.Value);
-            SimulationSkillTreeSetup.ApplyNodeUnlocks(battle.Allies, charTrees, allT);
+            var allTreesNodeIds = SimulationSkillTreeSetup.GetNodeIdsAllTreesMaxTier(charTrees, parsed.AllTreesTierCap!.Value);
+            SimulationSkillTreeSetup.ApplyNodeUnlocks(battle.Allies, charTrees, allTreesNodeIds);
             break;
         case SimulationUnlockPreset.FullPassivesCatalog:
             BattleFactory.UnlockAllPassivesFromCatalog(battle, passivesById);
@@ -237,7 +237,7 @@ internal static class ArgsParser
         int? treeIdx = null;
         int? tierCap = null;
         int? allTreesTier = null;
-        var showHelp = args.Any(a => a is "-h" or "-?" or "--help");
+        var showHelp = args.Any(commandLineArg => commandLineArg is "-h" or "-?" or "--help");
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -278,34 +278,34 @@ internal static class ArgsParser
                 skillTreesPath = args[i + 1];
                 i++;
             }
-            else if (arg == "--allies" && i + 1 < args.Length && int.TryParse(args[i + 1], out var ac))
+            else if (arg == "--allies" && i + 1 < args.Length && int.TryParse(args[i + 1], out var parsedAllyCount))
             {
-                allyCount = Math.Max(1, ac);
+                allyCount = Math.Max(1, parsedAllyCount);
                 i++;
             }
-            else if (arg == "--enemyCount" && i + 1 < args.Length && int.TryParse(args[i + 1], out var ec))
+            else if (arg == "--enemyCount" && i + 1 < args.Length && int.TryParse(args[i + 1], out var parsedEnemyCount))
             {
-                enemyCount = Math.Max(1, ec);
+                enemyCount = Math.Max(1, parsedEnemyCount);
                 i++;
             }
-            else if (arg == "--maxPoints" && i + 1 < args.Length && int.TryParse(args[i + 1], out var mp))
+            else if (arg == "--maxPoints" && i + 1 < args.Length && int.TryParse(args[i + 1], out var parsedMaxPoints))
             {
-                maxPoints = Math.Clamp(mp, 0, 999);
+                maxPoints = Math.Clamp(parsedMaxPoints, 0, 999);
                 i++;
             }
-            else if (arg == "--tree" && i + 1 < args.Length && int.TryParse(args[i + 1], out var ti))
+            else if (arg == "--tree" && i + 1 < args.Length && int.TryParse(args[i + 1], out var parsedTreeIndex))
             {
-                treeIdx = ti;
+                treeIdx = parsedTreeIndex;
                 i++;
             }
-            else if (arg == "--tier" && i + 1 < args.Length && int.TryParse(args[i + 1], out var tt))
+            else if (arg == "--tier" && i + 1 < args.Length && int.TryParse(args[i + 1], out var parsedTierCap))
             {
-                tierCap = tt;
+                tierCap = parsedTierCap;
                 i++;
             }
-            else if (arg == "--allTreesTier" && i + 1 < args.Length && int.TryParse(args[i + 1], out var att))
+            else if (arg == "--allTreesTier" && i + 1 < args.Length && int.TryParse(args[i + 1], out var parsedAllTreesTier))
             {
-                allTreesTier = att;
+                allTreesTier = parsedAllTreesTier;
                 i++;
             }
             else if (arg == "--fullPassives")

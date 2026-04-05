@@ -1,0 +1,34 @@
+---
+description: Nomenclatura explícita — variáveis e métodos legíveis (Erumperem)
+alwaysApply: true
+---
+
+# Nomenclatura e legibilidade
+
+- **Prioridade:** o nome deve explicar o **papel** do identificador sem adivinhar; legibilidade acima de brevidade.
+- **Tamanho:** nomes longos são preferíveis a abreviações opacas (`t`, `kv`, `tmp`, `x`, `obj`, `data` genérico).
+- **Variáveis locais:** descreve o quê é e, se ajudar, o contexto (`capsuleTransform`, `selectedEnemyCombatant`, `damageAfterMitigation`).
+- **Dicionários em `foreach`:** evita `kv`; usa `entry` + nomes claros para Key/Value, ou desestruturação quando existir (`combatantId`, `capsuleTransform`).
+- **Métodos:** verbo + objeto (`SyncCapsuleVisualsWithHealth`, `TryResolveTarget`); evita `Handle`, `Process`, `DoStuff` sem significado.
+- **Booleanos:** `is` / `has` / `should` / `can` (`isBattleFinished`, `hasValidSelection`).
+- **Coleções:** plural ou sufixo claro (`skillDefinitions`, `eventsByBattleId`).
+- **Idioma dos identificadores:** inglês, alinhado ao código existente (C#, JSON de dados); comentários podem ser PT se o ficheiro já o fizer.
+- **Não reutilizar** a mesma variável local para conceitos diferentes no mesmo método.
+
+**Anti-exemplos:** `t`, `c`, `e` (exceto índices triviais em laços mínimos), `kv`, `tmp`, `res`, `ret`, `foo`.
+
+```csharp
+// ❌
+foreach (var kv in _views) {
+  var t = kv.Value;
+  var c = FindCombatant(kv.Key);
+}
+
+// ✅
+foreach (var combatantIdAndCapsule in _views) {
+  var capsuleTransform = combatantIdAndCapsule.Value;
+  var combatant = FindCombatant(combatantIdAndCapsule.Key);
+}
+```
+
+Ao editar ou criar código neste repo, **corrige nomes curtos ou genéricos** quando tocares nesses trechos.

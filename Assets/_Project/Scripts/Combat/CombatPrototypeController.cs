@@ -74,7 +74,8 @@ namespace Erumperem.Combat
             }
 
             var skills = CombatDataLoader.LoadSkills(skillsPath);
-            var passives = CombatDataLoader.LoadPassives(passivesPath).ToDictionary(p => p.Id, p => p);
+            var passives = CombatDataLoader.LoadPassives(passivesPath)
+                .ToDictionary(passiveDefinition => passiveDefinition.Id, passiveDefinition => passiveDefinition);
 
             _random = new SeededRandomSource(UnityEngine.Random.Range(int.MinValue / 2, int.MaxValue / 2));
             _collector = new CombatEventCollector();
@@ -94,8 +95,8 @@ namespace Erumperem.Combat
             BeginRound();
 
             Debug.Log(
-                "Combate: clique num inimigo para alvo; teclas 1–7 = skills (aliado atual). " +
-                "Inimigos jogam automaticamente até ser a vez de um herói.");
+                "Combate: clique num herói para listar skills [1]–[7] no console; clique num inimigo para alvo; " +
+                "teclas 1–7 = skill (no turno do herói). Inimigos jogam até ser a tua vez.");
         }
 
         private void BeginRound()
@@ -152,8 +153,26 @@ namespace Erumperem.Combat
                 return;
             }
 
-            var hitEnemy = _state.Enemies.FirstOrDefault(e =>
-                e.Identity.Id == tag.combatantId && !e.Health.IsDead);
+            var hitAlly = _state.Allies.FirstOrDefault(ally =>
+                ally.Identity.Id == tag.combatantId && !ally.Health.IsDead);
+            if (hitAlly != null)
+            {
+                var idx = 0;
+                for (var i = 0; i < _state.Allies.Count; i++)
+                {
+                    if (ReferenceEquals(_state.Allies[i], hitAlly))
+                    {
+                        idx = i;
+                        break;
+                    }
+                }
+
+                CombatSkillBarDebug.LogHotbar(hitAlly, idx, _state);
+                return;
+            }
+
+            var hitEnemy = _state.Enemies.FirstOrDefault(enemy =>
+                enemy.Identity.Id == tag.combatantId && !enemy.Health.IsDead);
             if (hitEnemy == null)
             {
                 return;
@@ -208,10 +227,10 @@ namespace Erumperem.Combat
                 return false;
             }
 
-            var ai = _sim.ChooseAiAction(_state, actor);
-            if (ai != null)
+            var chosenAiAction = _sim.ChooseAiAction(_state, actor);
+            if (chosenAiAction != null)
             {
-                _sim.ResolveChosenAction(_state, ai);
+                _sim.ResolveChosenAction(_state, chosenAiAction);
                 LogLastEvents();
             }
 
@@ -225,8 +244,8 @@ namespace Erumperem.Combat
 
         private void TryPlayerHotkeys()
         {
-            var kb = Keyboard.current;
-            if (kb == null || _pendingPlayerActor == null)
+            var keyboard = Keyboard.current;
+            if (keyboard == null || _pendingPlayerActor == null)
             {
                 return;
             }
@@ -234,7 +253,7 @@ namespace Erumperem.Combat
             for (var i = 0; i < 7; i++)
             {
                 var key = Key.Digit1 + i;
-                if (!kb[key].wasPressedThisFrame)
+                if (!keyboard[key].wasPressedThisFrame)
                 {
                     continue;
                 }
@@ -295,95 +314,106 @@ namespace Erumperem.Combat
 
             for (var i = 0; i < _state.Allies.Count; i++)
             {
-                var c = _state.Allies[i];
-                var x = (i - (_state.Allies.Count - 1) / 2f) * spacing;
-                var t = CreateCapsule(c.Identity.Id, new Vector3(x, 1f, allyZ), allyMaterial, new Color(0.3f, 0.5f, 1f));
-                _views[c.Identity.Id] = t;
+                var ally = _state.Allies[i];
+                var spawnOffsetX = (i - (_state.Allies.Count - 1) / 2f) * spacing;
+                var capsuleTransform = CreateCapsule(
+                    ally.Identity.Id,
+                    new Vector3(spawnOffsetX, 1f, allyZ),
+                    allyMaterial,
+                    new Color(0.3f, 0.5f, 1f));
+                _views[ally.Identity.Id] = capsuleTransform;
             }
 
             for (var i = 0; i < _state.Enemies.Count; i++)
             {
-                var c = _state.Enemies[i];
-                var x = (i - (_state.Enemies.Count - 1) / 2f) * spacing;
-                var t = CreateCapsule(c.Identity.Id, new Vector3(x, 1f, enemyZ), enemyMaterial, new Color(1f, 0.35f, 0.35f));
-                _views[c.Identity.Id] = t;
+                var enemy = _state.Enemies[i];
+                var spawnOffsetX = (i - (_state.Enemies.Count - 1) / 2f) * spacing;
+                var capsuleTransform = CreateCapsule(
+                    enemy.Identity.Id,
+                    new Vector3(spawnOffsetX, 1f, enemyZ),
+                    enemyMaterial,
+                    new Color(1f, 0.35f, 0.35f));
+                _views[enemy.Identity.Id] = capsuleTransform;
             }
         }
 
         private Transform CreateCapsule(string id, Vector3 position, Material mat, Color fallback)
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            go.name = $"Unit_{id}";
-            go.transform.position = position;
-            var tag = go.AddComponent<CombatCapsuleTag>();
-            tag.combatantId = id;
-            var r = go.GetComponent<Renderer>();
+            var capsuleObject = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            capsuleObject.name = $"Unit_{id}";
+            capsuleObject.transform.position = position;
+            var capsuleTag = capsuleObject.AddComponent<CombatCapsuleTag>();
+            capsuleTag.combatantId = id;
+            var capsuleRenderer = capsuleObject.GetComponent<Renderer>();
             if (mat != null)
             {
-                r.sharedMaterial = mat;
+                capsuleRenderer.sharedMaterial = mat;
             }
             else
             {
-                var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Unlit/Color");
-                var m = new Material(sh);
-                if (m.HasProperty("_BaseColor"))
+                var surfaceShader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Unlit/Color");
+                var runtimeMaterial = new Material(surfaceShader);
+                if (runtimeMaterial.HasProperty("_BaseColor"))
                 {
-                    m.SetColor("_BaseColor", fallback);
+                    runtimeMaterial.SetColor("_BaseColor", fallback);
                 }
-                else if (m.HasProperty("_Color"))
+                else if (runtimeMaterial.HasProperty("_Color"))
                 {
-                    m.SetColor("_Color", fallback);
+                    runtimeMaterial.SetColor("_Color", fallback);
                 }
 
-                r.sharedMaterial = m;
+                capsuleRenderer.sharedMaterial = runtimeMaterial;
             }
 
-            return go.transform;
+            return capsuleObject.transform;
         }
 
         private void SyncCapsuleVisuals()
         {
-            foreach (var kv in _views)
+            foreach (var combatantIdAndCapsule in _views)
             {
-                var id = kv.Key;
-                var t = kv.Value;
-                if (t == null)
+                var combatantId = combatantIdAndCapsule.Key;
+                var capsuleTransform = combatantIdAndCapsule.Value;
+                if (capsuleTransform == null)
                 {
                     continue;
                 }
 
-                var c = FindCombatant(id);
-                if (c == null)
+                var combatant = FindCombatant(combatantId);
+                if (combatant == null)
                 {
                     continue;
                 }
 
-                if (c.Health.IsDead)
+                if (combatant.Health.IsDead)
                 {
-                    t.gameObject.SetActive(false);
+                    capsuleTransform.gameObject.SetActive(false);
                 }
                 else
                 {
-                    t.localScale = new Vector3(1f, Mathf.Max(0.3f, c.Health.CurrentHp / (float)c.Health.MaxHp), 1f);
+                    capsuleTransform.localScale = new Vector3(
+                        1f,
+                        Mathf.Max(0.3f, combatant.Health.CurrentHp / (float)combatant.Health.MaxHp),
+                        1f);
                 }
             }
         }
 
         private Combatant FindCombatant(string id)
         {
-            foreach (var a in _state.Allies)
+            foreach (var ally in _state.Allies)
             {
-                if (a.Identity.Id == id)
+                if (ally.Identity.Id == id)
                 {
-                    return a;
+                    return ally;
                 }
             }
 
-            foreach (var e in _state.Enemies)
+            foreach (var enemy in _state.Enemies)
             {
-                if (e.Identity.Id == id)
+                if (enemy.Identity.Id == id)
                 {
-                    return e;
+                    return enemy;
                 }
             }
 

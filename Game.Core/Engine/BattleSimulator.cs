@@ -75,13 +75,13 @@ public sealed class BattleSimulator
         PassiveRuleApplier.ApplyTurnStartPassives(
             state,
             actor,
-            (tok, delta) => Emit(
+            (tokenType, stackDelta) => Emit(
                 state,
                 BattleEventType.TokenApplied,
                 actorId: actor.Identity.Id,
                 targetId: actor.Identity.Id,
-                tokenType: tok.ToString(),
-                tokenDelta: delta,
+                tokenType: tokenType.ToString(),
+                tokenDelta: stackDelta,
                 battleResult: string.Empty));
         ResolveDotTick(state, actor);
         if (actor.Health.IsDead || state.IsFinished)
@@ -101,8 +101,8 @@ public sealed class BattleSimulator
     public List<Combatant> BuildInitiativeOrder(BattleState state)
     {
         return state.GetAllCombatants()
-            .Where(c => !c.Health.IsDead)
-            .OrderByDescending(c => c.Stats.Speed)
+            .Where(combatant => !combatant.Health.IsDead)
+            .OrderByDescending(combatant => combatant.Stats.Speed)
             .ThenBy(_ => _random.Next(0, int.MaxValue))
             .ToList();
     }
@@ -149,7 +149,7 @@ public sealed class BattleSimulator
     public ChosenAction? ChooseAiAction(BattleState state, Combatant actor)
     {
         var enemies = actor.Position.Side == Side.Allies ? state.Enemies : state.Allies;
-        var availableTargets = enemies.Where(e => !e.Health.IsDead).ToList();
+        var availableTargets = enemies.Where(enemy => !enemy.Health.IsDead).ToList();
         if (availableTargets.Count == 0) return null;
 
         var availableSkills = actor.SkillLoadout.Skills
@@ -179,7 +179,7 @@ public sealed class BattleSimulator
         else if (selectedSkill.TargetKind == SkillTargetKind.Ally)
         {
             var roster = actor.Position.Side == Side.Allies ? state.Allies : state.Enemies;
-            var allies = roster.Where(c => !c.Health.IsDead).ToList();
+            var allies = roster.Where(combatant => !combatant.Health.IsDead).ToList();
             target = SelectAllyTarget(actor, allies, selectedSkill);
             if (target is null) return null;
         }
@@ -219,7 +219,7 @@ public sealed class BattleSimulator
         }
 
         var skillPool = lethalSkills.Count > 0 ? lethalSkills : skills.ToList();
-        var totalWeight = skillPool.Sum(s => Math.Max(1, s.Weight));
+        var totalWeight = skillPool.Sum(skill => Math.Max(1, skill.Weight));
         var roll = _random.Next(1, totalWeight + 1);
         var cumulative = 0;
         foreach (var skill in skillPool)
@@ -237,12 +237,12 @@ public sealed class BattleSimulator
         SkillDefinition skill)
     {
         var visible = allies
-            .Where(t => t.Tokens.GetStacks(TokenType.Stealth) == 0)
+            .Where(ally => ally.Tokens.GetStacks(TokenType.Stealth) == 0)
             .ToList();
         if (visible.Count == 0) return null;
 
         var inRank = visible
-            .Where(t => t.Position.OccupiedRanks.Any(r => skill.AllowedTargetRanks.Contains(r)))
+            .Where(ally => ally.Position.OccupiedRanks.Any(occupiedRank => skill.AllowedTargetRanks.Contains(occupiedRank)))
             .ToList();
         if (inRank.Count == 0) return null;
 
@@ -254,11 +254,11 @@ public sealed class BattleSimulator
         IReadOnlyList<Combatant> availableTargets,
         SkillDefinition skill)
     {
-        var tauntTargets = availableTargets.Where(t => t.Tokens.GetStacks(TokenType.Taunt) > 0).ToList();
+        var tauntTargets = availableTargets.Where(enemy => enemy.Tokens.GetStacks(TokenType.Taunt) > 0).ToList();
         var candidateTargets = tauntTargets.Count > 0 ? tauntTargets : availableTargets.ToList();
 
         var visibleTargets = candidateTargets
-            .Where(t => t.Tokens.GetStacks(TokenType.Stealth) == 0)
+            .Where(enemy => enemy.Tokens.GetStacks(TokenType.Stealth) == 0)
             .ToList();
         if (visibleTargets.Count == 0)
         {
@@ -266,7 +266,7 @@ public sealed class BattleSimulator
         }
 
         var inRankTargets = visibleTargets
-            .Where(t => t.Position.OccupiedRanks.Any(r => skill.AllowedTargetRanks.Contains(r)))
+            .Where(enemy => enemy.Position.OccupiedRanks.Any(occupiedRank => skill.AllowedTargetRanks.Contains(occupiedRank)))
             .ToList();
         if (inRankTargets.Count == 0)
         {
@@ -278,7 +278,7 @@ public sealed class BattleSimulator
 
     public bool IsSkillUsable(Combatant actor, SkillDefinition skill)
     {
-        var inRank = actor.Position.OccupiedRanks.Any(r => skill.AllowedCasterRanks.Contains(r));
+        var inRank = actor.Position.OccupiedRanks.Any(occupiedRank => skill.AllowedCasterRanks.Contains(occupiedRank));
         if (!inRank) return false;
 
         if (actor.SkillLoadout.Cooldowns.TryGetValue(skill.Id, out var turns) && turns > 0)
@@ -650,7 +650,7 @@ public sealed class BattleSimulator
     private static IEnumerable<Combatant> LivingSameSide(BattleState state, Combatant actor)
     {
         var roster = actor.Position.Side == Side.Allies ? state.Allies : state.Enemies;
-        return roster.Where(c => !c.Health.IsDead);
+        return roster.Where(combatant => !combatant.Health.IsDead);
     }
 
     private int ApplyMitigation(BattleState state, Combatant target, int damage)
@@ -692,7 +692,7 @@ public sealed class BattleSimulator
     private void HandleCompaction(BattleState state, Side side)
     {
         var roster = side == Side.Allies ? state.Allies : state.Enemies;
-        var alive = roster.Where(c => !c.Health.IsDead).OrderBy(c => c.Position.FrontRank).ToList();
+        var alive = roster.Where(combatant => !combatant.Health.IsDead).OrderBy(combatant => combatant.Position.FrontRank).ToList();
         var nextRank = 1;
         foreach (var unit in alive)
         {
@@ -813,10 +813,10 @@ public sealed class BattleSimulator
 
     private void TickCooldowns(Combatant actor)
     {
-        var keys = actor.SkillLoadout.Cooldowns.Keys.ToList();
-        foreach (var key in keys)
+        var skillIdsOnCooldown = actor.SkillLoadout.Cooldowns.Keys.ToList();
+        foreach (var skillId in skillIdsOnCooldown)
         {
-            actor.SkillLoadout.Cooldowns[key] = Math.Max(0, actor.SkillLoadout.Cooldowns[key] - 1);
+            actor.SkillLoadout.Cooldowns[skillId] = Math.Max(0, actor.SkillLoadout.Cooldowns[skillId] - 1);
         }
     }
 

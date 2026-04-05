@@ -39,6 +39,7 @@ O protótipo lê com `Application.streamingAssetsPath + "/Data/..."`. Se faltare
 
 ### Jogar
 
+- **Clique** numa cápsula **aliada** para imprimir no **Console** a hotbar simplificada `[1]`–`[7]` (nome, dano, alvo, efeitos).
 - **Clique** numa cápsula **inimiga** (raycast) para definir alvo de skills `Enemy`.
 - Teclas **1–7**: primeira a sétima skill do **loadout** do herói cuja vez é (apenas as que existem em `skills.json` e estão equipadas; até 7 slots).
 - Skills **Self** / **Ally** não exigem inimigo selecionado (alvo aliado usa regras do `PlayerActionBuilder`; por defeito o próprio actor para aliados).
@@ -50,6 +51,7 @@ O protótipo lê com `Application.streamingAssetsPath + "/Data/..."`. Se faltare
 |----------|--------|
 | `CombatPrototypeController.cs` | Arranque da batalha 2v4, loop de iniciativa, input, spawn de cápsulas. |
 | `CombatCapsuleTag.cs` | Liga o collider ao `Identity.Id` do `Combatant`. |
+| `CombatSkillBarDebug.cs` | Ao clicar num herói, imprime no console a hotbar [1]–[7] (mesma ordem que o combate). |
 
 O motor expõe API pública em `BattleSimulator`: `TryPrepareActorTurn`, `ChooseAiAction`, `ResolveChosenAction`, `BuildInitiativeOrder`, `EmitBattleStarted` / `EmitBattleEnded`. Montagem de ações do jogador: `PlayerActionBuilder.TryCreate`.
 

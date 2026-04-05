@@ -62,9 +62,9 @@ public class UnitTest1
         enemy.Tokens.Add(TokenType.Dodge, 2);
 
         simulator.Simulate(battle, maxTurns: 4);
-        var hitEvents = collector.Events.Where(e => e.EventType == BattleEventType.HitResolved).ToList();
+        var hitEvents = collector.Events.Where(combatEvent => combatEvent.EventType == BattleEventType.HitResolved).ToList();
         Assert.NotEmpty(hitEvents);
-        Assert.Contains(hitEvents, e => e.IsHit == false);
+        Assert.Contains(hitEvents, hitEvent => hitEvent.IsHit == false);
     }
 
     [Fact]
@@ -284,7 +284,7 @@ public class UnitTest1
                 combatant =>
                 {
                     Assert.True(combatant.Health.CurrentHp <= combatant.Health.MaxHp);
-                    Assert.True(combatant.Tokens.Entries.All(x => x.Stacks >= 0));
+                    Assert.True(combatant.Tokens.Entries.All(tokenEntry => tokenEntry.Stacks >= 0));
                     Assert.All(combatant.Position.OccupiedRanks, rank => Assert.InRange(rank, 1, 4));
                 });
             Assert.InRange(battle.CorruptionValue, 0, 100);
@@ -307,7 +307,7 @@ public class UnitTest1
         var battle = BattleFactory.CreateSampleBattle(SampleCombatData.CreateSkills(), corruptionValue: 40);
         simulator.Simulate(battle, maxTurns: 30);
         return collector.Events
-            .Select(e => $"{e.Turn}|{e.EventType}|{e.ActorId}|{e.TargetId}|{e.SkillId}|{e.DamageAmount}|{e.IsHit}|{e.IsCrit}|{e.CorruptionTier}")
+            .Select(combatEvent => $"{combatEvent.Turn}|{combatEvent.EventType}|{combatEvent.ActorId}|{combatEvent.TargetId}|{combatEvent.SkillId}|{combatEvent.DamageAmount}|{combatEvent.IsHit}|{combatEvent.IsCrit}|{combatEvent.CorruptionTier}")
             .ToList();
     }
 
@@ -356,19 +356,19 @@ public class UnitTest1
 
         simulator.Simulate(battle, maxTurns: 2);
 
-        var dmg = collector.Events
-            .Where(e => e.EventType == BattleEventType.DamageApplied && e.SkillId == smack.Id)
-            .Select(e => e.DamageAmount)
+        var damageAmounts = collector.Events
+            .Where(combatEvent => combatEvent.EventType == BattleEventType.DamageApplied && combatEvent.SkillId == smack.Id)
+            .Select(combatEvent => combatEvent.DamageAmount)
             .ToList();
-        Assert.NotEmpty(dmg);
-        Assert.All(dmg, d => Assert.Equal(115, d));
+        Assert.NotEmpty(damageAmounts);
+        Assert.All(damageAmounts, damageAmount => Assert.Equal(115, damageAmount));
     }
 
     [Fact]
     public void Passive_ApplyExtraDotAfterShove_WhenTargetHasBleed()
     {
         var skills = SampleCombatData.CreateSkills();
-        var shove = skills.First(s => s.Id == "wulfric_innate_shove");
+        var shove = skills.First(skill => skill.Id == "wulfric_innate_shove");
         var passive = new PassiveDefinition
         {
             Id = "f_t1_p3",
@@ -405,7 +405,7 @@ public class UnitTest1
 
         simulator.Simulate(battle, maxTurns: 1);
 
-        var bleedDots = enemy.Dots.ActiveDots.Count(d => d.Type == DotType.Bleed);
+        var bleedDots = enemy.Dots.ActiveDots.Count(dotInstance => dotInstance.Type == DotType.Bleed);
         Assert.True(bleedDots >= 2);
     }
 
@@ -414,13 +414,13 @@ public class UnitTest1
     {
         var list = SampleCombatData.CreatePassives();
         Assert.NotEmpty(list);
-        Assert.Contains(list, p => p.Id == "f_t1_p1" && p.EffectKind == PassiveEffectKind.OutgoingDamageVsSkillId);
+        Assert.Contains(list, passive => passive.Id == "f_t1_p1" && passive.EffectKind == PassiveEffectKind.OutgoingDamageVsSkillId);
     }
 
     [Fact]
     public void BuildPassiveAggregates_MatchesBattlesAndWins()
     {
-        var t = DateTime.UtcNow;
+        var sharedTimestampUtc = DateTime.UtcNow;
         var events = new List<CombatEvent>
         {
             new()
@@ -428,7 +428,7 @@ public class UnitTest1
                 EventId = "e1",
                 BattleId = "b1",
                 Turn = 0,
-                TimestampUtc = t,
+                TimestampUtc = sharedTimestampUtc,
                 EventType = BattleEventType.BattleStarted,
                 PassiveLoadoutCsv = "f_t1_p1,f_t1_p2",
             },
@@ -437,7 +437,7 @@ public class UnitTest1
                 EventId = "e2",
                 BattleId = "b1",
                 Turn = 1,
-                TimestampUtc = t,
+                TimestampUtc = sharedTimestampUtc,
                 EventType = BattleEventType.BattleEnded,
                 BattleResult = Side.Allies.ToString(),
             },
@@ -446,7 +446,7 @@ public class UnitTest1
                 EventId = "e3",
                 BattleId = "b2",
                 Turn = 0,
-                TimestampUtc = t,
+                TimestampUtc = sharedTimestampUtc,
                 EventType = BattleEventType.BattleStarted,
                 PassiveLoadoutCsv = "f_t1_p1",
             },
@@ -455,14 +455,14 @@ public class UnitTest1
                 EventId = "e4",
                 BattleId = "b2",
                 Turn = 1,
-                TimestampUtc = t,
+                TimestampUtc = sharedTimestampUtc,
                 EventType = BattleEventType.BattleEnded,
                 BattleResult = Side.Enemies.ToString(),
             },
         };
 
         var rows = CombatAnalyticsExporter.BuildPassiveAggregates(events, allPassiveIdsInCatalog: null)
-            .ToDictionary(r => r.PassiveId);
+            .ToDictionary(row => row.PassiveId);
         Assert.Equal(2, rows["f_t1_p1"].BattlesWithPassive);
         Assert.Equal(1, rows["f_t1_p1"].Wins);
         Assert.Equal(0.5, rows["f_t1_p1"].WinRate);
@@ -473,7 +473,7 @@ public class UnitTest1
     [Fact]
     public void BuildPassiveAggregates_IncludesCatalogIdsWithZeroBattles()
     {
-        var t = DateTime.UtcNow;
+        var sharedTimestampUtc = DateTime.UtcNow;
         var events = new List<CombatEvent>
         {
             new()
@@ -481,7 +481,7 @@ public class UnitTest1
                 EventId = "e1",
                 BattleId = "b1",
                 Turn = 0,
-                TimestampUtc = t,
+                TimestampUtc = sharedTimestampUtc,
                 EventType = BattleEventType.BattleStarted,
                 PassiveLoadoutCsv = "f_t1_p1",
             },
@@ -490,13 +490,13 @@ public class UnitTest1
                 EventId = "e2",
                 BattleId = "b1",
                 Turn = 1,
-                TimestampUtc = t,
+                TimestampUtc = sharedTimestampUtc,
                 EventType = BattleEventType.BattleEnded,
                 BattleResult = Side.Allies.ToString(),
             },
         };
 
-        var rows = CombatAnalyticsExporter.BuildPassiveAggregates(events, ["f_t1_p1", "f_t3_p1"]).ToDictionary(r => r.PassiveId);
+        var rows = CombatAnalyticsExporter.BuildPassiveAggregates(events, ["f_t1_p1", "f_t3_p1"]).ToDictionary(row => row.PassiveId);
         Assert.Equal(0, rows["f_t3_p1"].BattlesWithPassive);
         Assert.Equal(0, rows["f_t3_p1"].WinRate);
     }

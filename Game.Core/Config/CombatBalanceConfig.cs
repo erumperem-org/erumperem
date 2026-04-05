@@ -23,7 +23,7 @@ public sealed class CombatBalanceConfig
 
     public CorruptionTierModifiers GetTierModifiers(int corruptionTier)
     {
-        return CorruptionTiers.First(t => t.Tier == corruptionTier);
+        return CorruptionTiers.First(tierModifiers => tierModifiers.Tier == corruptionTier);
     }
 
     public static CombatBalanceConfig CreateDefault()

@@ -11,12 +11,12 @@ public static class PassiveRuleApplier
     public static IEnumerable<PassiveDefinition> EnumerateActivePassives(Combatant actor, BattleState state)
     {
         if (state.PassivesById.Count == 0) yield break;
-        foreach (var kv in actor.Progression.UnlockedNodes)
+        foreach (var nodeIdAndUnlocked in actor.Progression.UnlockedNodes)
         {
-            if (!kv.Value) continue;
-            if (state.PassivesById.TryGetValue(kv.Key, out var def))
+            if (!nodeIdAndUnlocked.Value) continue;
+            if (state.PassivesById.TryGetValue(nodeIdAndUnlocked.Key, out var passiveDefinition))
             {
-                yield return def;
+                yield return passiveDefinition;
             }
         }
     }
@@ -143,7 +143,7 @@ public static class PassiveRuleApplier
 
     public static double GetDotTickDamageMultiplier(BattleState state, Combatant victim, DotInstance dot)
     {
-        var applier = state.GetAllCombatants().FirstOrDefault(c => c.Identity.Id == dot.AppliedById);
+        var applier = state.GetAllCombatants().FirstOrDefault(combatant => combatant.Identity.Id == dot.AppliedById);
         if (applier is null) return 1.0;
         var mult = 1.0;
         foreach (var def in EnumerateActivePassives(applier, state))
@@ -168,8 +168,8 @@ public static class PassiveRuleApplier
             {
                 case PassiveEffectKind.ExtraTokenOnSelfSkillWhenRank:
                     if (skill.TargetKind != SkillTargetKind.Self || def.SkillId != skill.Id || def.TokenType is null) break;
-                    if (!actor.Position.OccupiedRanks.Any(r =>
-                            r >= def.MinCasterRank && (def.MaxCasterRank <= 0 || r <= def.MaxCasterRank))) break;
+                    if (!actor.Position.OccupiedRanks.Any(occupiedRank =>
+                            occupiedRank >= def.MinCasterRank && (def.MaxCasterRank <= 0 || occupiedRank <= def.MaxCasterRank))) break;
                     actor.Tokens.Add(def.TokenType.Value, Math.Max(1, def.IntValue));
                     break;
                 case PassiveEffectKind.ExtraHealPercentOnSelfSkill:
@@ -183,5 +183,5 @@ public static class PassiveRuleApplier
     }
 
     public static int CountDotStacks(Combatant target, DotType dotType) =>
-        target.Dots.ActiveDots.Count(d => d.Type == dotType);
+        target.Dots.ActiveDots.Count(dotInstance => dotInstance.Type == dotType);
 }

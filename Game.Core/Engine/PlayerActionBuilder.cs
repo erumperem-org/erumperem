@@ -40,7 +40,7 @@ public static class PlayerActionBuilder
         else if (skill.TargetKind == SkillTargetKind.Ally)
         {
             var sameSide = actor.Position.Side == Side.Allies ? state.Allies : state.Enemies;
-            var allies = sameSide.Where(c => !c.Health.IsDead).ToList();
+            var allies = sameSide.Where(combatant => !combatant.Health.IsDead).ToList();
             var pick = selectedTarget is not null && allies.Contains(selectedTarget) ? selectedTarget : actor;
             if (!allies.Contains(pick))
             {
@@ -52,7 +52,7 @@ public static class PlayerActionBuilder
                 return null;
             }
 
-            if (!pick.Position.OccupiedRanks.Any(r => skill.AllowedTargetRanks.Contains(r)))
+            if (!pick.Position.OccupiedRanks.Any(occupiedRank => skill.AllowedTargetRanks.Contains(occupiedRank)))
             {
                 return null;
             }
@@ -62,13 +62,13 @@ public static class PlayerActionBuilder
         else
         {
             var enemies = actor.Position.Side == Side.Allies ? state.Enemies : state.Allies;
-            var living = enemies.Where(e => !e.Health.IsDead).ToList();
+            var living = enemies.Where(enemy => !enemy.Health.IsDead).ToList();
             if (selectedTarget is null || !living.Contains(selectedTarget))
             {
                 return null;
             }
 
-            var taunt = living.Where(t => t.Tokens.GetStacks(TokenType.Taunt) > 0).ToList();
+            var taunt = living.Where(enemy => enemy.Tokens.GetStacks(TokenType.Taunt) > 0).ToList();
             var pool = taunt.Count > 0 ? taunt : living;
             if (!pool.Contains(selectedTarget))
             {
@@ -80,7 +80,7 @@ public static class PlayerActionBuilder
                 return null;
             }
 
-            if (!selectedTarget.Position.OccupiedRanks.Any(r => skill.AllowedTargetRanks.Contains(r)))
+            if (!selectedTarget.Position.OccupiedRanks.Any(occupiedRank => skill.AllowedTargetRanks.Contains(occupiedRank)))
             {
                 return null;
             }

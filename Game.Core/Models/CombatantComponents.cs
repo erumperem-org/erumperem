@@ -56,12 +56,12 @@ public sealed class TokenComponent
 
     public int GetStacks(TokenType tokenType)
     {
-        return Entries.FirstOrDefault(e => e.Type == tokenType)?.Stacks ?? 0;
+        return Entries.FirstOrDefault(tokenEntry => tokenEntry.Type == tokenType)?.Stacks ?? 0;
     }
 
     public void Add(TokenType tokenType, int stacks)
     {
-        var entry = Entries.FirstOrDefault(e => e.Type == tokenType);
+        var entry = Entries.FirstOrDefault(tokenEntry => tokenEntry.Type == tokenType);
         if (entry is null)
         {
             Entries.Add(new TokenEntry { Type = tokenType, Stacks = stacks });
@@ -73,7 +73,7 @@ public sealed class TokenComponent
 
     public bool ConsumeOne(TokenType tokenType)
     {
-        var entry = Entries.FirstOrDefault(e => e.Type == tokenType);
+        var entry = Entries.FirstOrDefault(tokenEntry => tokenEntry.Type == tokenType);
         if (entry is null || entry.Stacks <= 0)
         {
             return false;
