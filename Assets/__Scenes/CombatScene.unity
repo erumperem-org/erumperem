@@ -442,6 +442,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1797974471}
   - component: {fileID: 1797974470}
+  - component: {fileID: 1797974472}
   m_Layer: 0
   m_Name: CombatRoot
   m_TagString: Untagged
@@ -464,8 +465,7 @@ MonoBehaviour:
   createGroundIfMissing: 1
   allyMaterial: {fileID: 2100000, guid: 1fca86b72ad885c47b6a0dee25976df7, type: 2}
   enemyMaterial: {fileID: 2100000, guid: fa92cf3ab4b67584999ef0ea86c92094, type: 2}
-  hoverMarkerPrefab: {fileID: 370988019703706643, guid: 2c843bcb8e600a048a0decea72deb991, type: 3}
-  hoverMarkerVerticalOffset: 0.6
+  hoverFocusMarker: {fileID: 0}
   logEventsToConsole: 1
 --- !u!4 &1797974471
 Transform:
@@ -482,6 +482,25 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1797974472
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1797974469}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21fcd1ca5e936ab49bde0381c43881ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatHoverFocusMarker
+  markerPrefab: {fileID: 370988019703706643, guid: 2c843bcb8e600a048a0decea72deb991, type: 3}
+  verticalOffsetAboveUnit: 0.6
+  punchDuration: 0.15
+  punchScale: {x: 0.1, y: 0.1, z: 0.1}
+  punchVibrato: 10
+  punchElasticity: 0.45
+  spinPeriodSeconds: 3.5
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

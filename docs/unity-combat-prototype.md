@@ -34,8 +34,9 @@ O protótipo lê com `Application.streamingAssetsPath + "/Data/..."`. Se faltare
 1. Crie ou abra uma cena (ex.: duplique `Assets/Scenes/SampleScene.unity` ou cena nova).
 2. Garanta **Main Camera** (tag `MainCamera`) e iluminação básica.
 3. Crie um GameObject vazio **`CombatRoot`**.
-4. Adicione o componente **`CombatPrototypeController`** (`Assets/_Project/Scripts/Combat/`).
-5. **Play.**
+4. Adicione **`CombatPrototypeController`** (combate). Opcional: no mesmo objeto ou noutro, adicione **`CombatHoverFocusMarker`** — é **autónomo** (raycast + rato + DOTween), sem ligação ao controlador.
+5. No **`CombatHoverFocusMarker`**: prefab do cristal em **Marker Prefab**; opcional **Raycast Camera** (vazio = `Camera.main`); **Raycast Layer Mask** se precisares excluir layers.
+6. **Play.**
 
 ### Jogar
 
@@ -50,10 +51,15 @@ O protótipo lê com `Application.streamingAssetsPath + "/Data/..."`. Se faltare
 | Ficheiro | Função |
 |----------|--------|
 | `CombatPrototypeController.cs` | Arranque da batalha 2v4, loop de iniciativa, input, spawn de cápsulas. |
+| `CombatHoverFocusMarker.cs` | Marcador de hover autónomo: raycast ao `CombatCapsuleTag`, posição acima do renderer, punch/spin DOTween. |
 | `CombatCapsuleTag.cs` | Liga o collider ao `Identity.Id` do `Combatant`. |
 | `CombatSkillBarDebug.cs` | Ao clicar num herói, imprime no console a hotbar [1]–[7] (mesma ordem que o combate). |
 
 O motor expõe API pública em `BattleSimulator`: `TryPrepareActorTurn`, `ChooseAiAction`, `ResolveChosenAction`, `BuildInitiativeOrder`, `EmitBattleStarted` / `EmitBattleEnded`. Montagem de ações do jogador: `PlayerActionBuilder.TryCreate`.
+
+## DOTween
+
+O projeto inclui **DOTween** (Demigiant) para animações de “juice” (punch, fade, loops, etc.). Documentação: [DOTween — Documentation](https://dotween.demigiant.com/documentation.php).
 
 ## Versão Unity
 

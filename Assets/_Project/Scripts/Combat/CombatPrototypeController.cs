@@ -24,11 +24,6 @@ namespace Erumperem.Combat
         [SerializeField] private Material allyMaterial;
         [SerializeField] private Material enemyMaterial;
 
-        [Header("Hover focus")]
-        [Tooltip("Losango (ou outro marcador) acima da unidade sob o rato. Arrasta o prefab aqui.")]
-        [SerializeField] private GameObject hoverMarkerPrefab;
-        [SerializeField] private float hoverMarkerVerticalOffset = 0.35f;
-
         [Header("Debug")]
         [SerializeField] private bool logEventsToConsole = true;
 
@@ -47,7 +42,6 @@ namespace Erumperem.Combat
         private readonly Dictionary<string, Transform> _views = new(StringComparer.Ordinal);
         private Combatant _selectedEnemyTarget;
         private Camera _camera;
-        private GameObject _hoverMarkerInstance;
 
         private void Awake()
         {
@@ -56,6 +50,7 @@ namespace Erumperem.Combat
             {
                 Debug.LogError("CombatPrototypeController: defina a Main Camera na cena.");
             }
+
         }
 
         private void Start()
@@ -97,7 +92,6 @@ namespace Erumperem.Combat
                 unlockAllPassiveNodesForAllies: true);
 
             SpawnViews();
-            EnsureHoverMarkerInstance();
             _sim.EmitBattleStarted(_state);
             BeginRound();
 
@@ -119,7 +113,6 @@ namespace Erumperem.Combat
         {
             if (_battleEnded || _state == null)
             {
-                SetHoverMarkerVisible(false);
                 return;
             }
 
@@ -139,7 +132,6 @@ namespace Erumperem.Combat
             }
 
             SyncCapsuleVisuals();
-            UpdateHoverFocusMarker();
         }
 
         private void PickTargetFromMouse()
@@ -406,94 +398,6 @@ namespace Erumperem.Combat
                         1f);
                 }
             }
-        }
-
-        private void EnsureHoverMarkerInstance()
-        {
-            if (hoverMarkerPrefab == null || _hoverMarkerInstance != null)
-            {
-                return;
-            }
-
-            _hoverMarkerInstance = Instantiate(hoverMarkerPrefab);
-            _hoverMarkerInstance.name = "HoverFocusMarker";
-            _hoverMarkerInstance.SetActive(false);
-            var ignoreRaycastLayer = LayerMask.NameToLayer("Ignore Raycast");
-            if (ignoreRaycastLayer >= 0)
-            {
-                SetLayerRecursively(_hoverMarkerInstance, ignoreRaycastLayer);
-            }
-        }
-
-        private static void SetLayerRecursively(GameObject gameObject, int layer)
-        {
-            gameObject.layer = layer;
-            var transform = gameObject.transform;
-            for (var childIndex = 0; childIndex < transform.childCount; childIndex++)
-            {
-                SetLayerRecursively(transform.GetChild(childIndex).gameObject, layer);
-            }
-        }
-
-        private void SetHoverMarkerVisible(bool visible)
-        {
-            if (_hoverMarkerInstance != null)
-            {
-                _hoverMarkerInstance.SetActive(visible);
-            }
-        }
-
-        private void UpdateHoverFocusMarker()
-        {
-            if (_hoverMarkerInstance == null)
-            {
-                return;
-            }
-
-            var mouse = Mouse.current;
-            if (mouse == null || _camera == null)
-            {
-                SetHoverMarkerVisible(false);
-                return;
-            }
-
-            var ray = _camera.ScreenPointToRay(mouse.position.ReadValue());
-            if (!Physics.Raycast(ray, out var hit, 200f))
-            {
-                SetHoverMarkerVisible(false);
-                return;
-            }
-
-            var capsuleTag = hit.collider.GetComponentInParent<CombatCapsuleTag>();
-            if (capsuleTag == null || string.IsNullOrEmpty(capsuleTag.combatantId))
-            {
-                SetHoverMarkerVisible(false);
-                return;
-            }
-
-            var combatant = FindCombatant(capsuleTag.combatantId);
-            if (combatant == null || combatant.Health.IsDead)
-            {
-                SetHoverMarkerVisible(false);
-                return;
-            }
-
-            if (!_views.TryGetValue(capsuleTag.combatantId, out var unitView) || unitView == null ||
-                !unitView.gameObject.activeInHierarchy)
-            {
-                SetHoverMarkerVisible(false);
-                return;
-            }
-
-            var unitRenderer = unitView.GetComponentInChildren<Renderer>();
-            var topWorldY = unitRenderer != null
-                ? unitRenderer.bounds.max.y
-                : unitView.position.y + 1f;
-
-            var markerPosition = unitView.position;
-            markerPosition.y = topWorldY + hoverMarkerVerticalOffset;
-            _hoverMarkerInstance.transform.position = markerPosition;
-            SetHoverMarkerVisible(true);
         }
 
         private Combatant FindCombatant(string id)

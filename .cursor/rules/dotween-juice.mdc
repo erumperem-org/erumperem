@@ -1,0 +1,29 @@
+---
+description: DOTween para juice em Unity; link doc oficial
+alwaysApply: true
+---
+
+# DOTween — juice e animação
+
+**Âmbito:** código em `Assets/` (Unity). **Não** usar DOTween em `Game.Core` / projetos .NET puros.
+
+Documentação oficial: [DOTween — Documentation](https://dotween.demigiant.com/documentation.php).
+
+## Quando preferir DOTween
+
+- **Feedback imediato:** aparecer / desaparecer (`DOFade`, `DOScale`), **punch** / shake em marcadores ou hits (`DOPunchScale`, `DOShakePosition`).
+- **Movimento suave:** `DOMove`, `DOLocalMove`, `DOJump` em UI ou objetos 3D (com `SetEase`, `SetLink` ao `GameObject` quando fizer sentido).
+- **Loops contínuos:** rotação idle com `DOLocalRotate` + `SetLoops(-1, LoopType.Incremental)` + `Ease.Linear` (em alternativa a um `Update` manual, para manter easing e kill centralizado).
+- **Sequências:** `DOTween.Sequence()` para encadear vários passos.
+
+## Boas práticas neste projeto
+
+- **Matar tweens** no alvo ao desativar ou mudar de contexto: `transform.DOKill()` ou `DOTween.Kill(transform)` para não deixar tweens órfãos ou a lutar com posição/escala atribuídas no código.
+- **`SetLink(gameObject)`** em tweens de objetos que podem ser destruídos (ver documentação).
+- Não substituir animações complexas de personagem por DOTween se o projeto usar Animator; usar DOTween para **UI, VFX leves, câmara, marcadores**.
+
+## Anti-padrão
+
+- Animações que só precisam de **rotação constante** e zero outras curvas: um componente mínimo `Update` com `Rotate` é aceitável, mas se já há DOTween no fluxo, preferir um tween linear em loop para **um único sítio** para pausar/matar.
+
+Ao implementar feedback visual novo em `Assets/`, **pergunta-te** se um shortcut `DO*` resolve com menos código e melhor feel do que ler/escrever valores à mão em `Update`.
