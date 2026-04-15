@@ -21,6 +21,8 @@ namespace Erumperem.Combat
     /// </summary>
     public sealed class CombatPrototypeController : MonoBehaviour
     {
+        private const string ActionRockTweenId = "CombatActionRock";
+
         [Header("Unidades na cena")]
         [Tooltip("Ordem: índice 0 = ally_1, 1 = ally_2 (deve coincidir com BattleFactory).")]
         [SerializeField] private Transform[] allyVisualRoots = new Transform[2];
@@ -46,6 +48,12 @@ namespace Erumperem.Combat
         [SerializeField] private float damagePunchElasticity = 0.55f;
         [SerializeField] private float damageShrinkDuration = 0.42f;
 
+        [Header("Actor a agir (balanço frente–trás)")]
+        [Tooltip("Força do DOPunchPosition em espaço local (ex.: Z = profundidade / frente do boneco).")]
+        [SerializeField] private Vector3 actorActionRockPunch = new(0f, 0f, 0.14f);
+        [SerializeField] private int actorActionRockVibrato = 12;
+        [SerializeField] private float actorActionRockElasticity = 0.32f;
+
         private BattleState _state;
         private BattleSimulator _sim;
         private CombatEventCollector _collector;
@@ -61,6 +69,8 @@ namespace Erumperem.Combat
         private readonly Dictionary<string, Transform> _views = new(StringComparer.Ordinal);
         private readonly HashSet<string> _damageFeedbackBusy = new(StringComparer.Ordinal);
         private bool _presentationBusy;
+        private Transform _actionRockTransform;
+        private Vector3 _actionRockBaseLocalPosition;
         private Combatant _selectedEnemyTarget;
         private Camera _camera;
 
@@ -121,6 +131,7 @@ namespace Erumperem.Combat
 
         private void OnDisable()
         {
+            StopActorActionRock();
             foreach (var kv in _views)
             {
                 kv.Value?.DOKill(false);
@@ -383,6 +394,10 @@ namespace Erumperem.Combat
         {
             try
             {
+                StopActorActionRock();
+                GetTimingForSkill(action.Skill.Id, out var play, out var postPause);
+                var rockDuration = Mathf.Max(0f, play + postPause);
+
                 var startIdx = _collector.Events.Count;
                 _sim.ResolveChosenAction(_state, action);
                 var endIdx = _collector.Events.Count;
@@ -406,7 +421,12 @@ namespace Erumperem.Combat
                     LogLastEvents();
                 }
 
-                GetTimingForSkill(action.Skill.Id, out var play, out var postPause);
+                var actorAfter = FindCombatant(action.Actor.Identity.Id);
+                if (actorAfter != null && !actorAfter.Health.IsDead && rockDuration > 0.02f)
+                {
+                    BeginActorActionRock(action, rockDuration);
+                }
+
                 if (play > 0f)
                 {
                     yield return new WaitForSeconds(play);
@@ -424,6 +444,7 @@ namespace Erumperem.Combat
             }
             finally
             {
+                StopActorActionRock();
                 _presentationBusy = false;
                 onStepComplete?.Invoke();
                 if (_state.IsFinished && !_battleEnded)
@@ -431,6 +452,50 @@ namespace Erumperem.Combat
                     EndBattle();
                 }
             }
+        }
+
+        private void BeginActorActionRock(ChosenAction action, float totalDurationSeconds)
+        {
+            StopActorActionRock();
+            if (totalDurationSeconds <= 0.02f)
+            {
+                return;
+            }
+
+            if (!_views.TryGetValue(action.Actor.Identity.Id, out var root) || root == null)
+            {
+                return;
+            }
+
+            _actionRockTransform = root;
+            _actionRockBaseLocalPosition = root.localPosition;
+            root.DOPunchPosition(
+                    actorActionRockPunch,
+                    totalDurationSeconds,
+                    actorActionRockVibrato,
+                    actorActionRockElasticity)
+                .SetRelative(true)
+                .SetId(ActionRockTweenId)
+                .SetTarget(root)
+                .OnKill(RestoreActorActionRockLocal)
+                .OnComplete(RestoreActorActionRockLocal);
+        }
+
+        private void RestoreActorActionRockLocal()
+        {
+            if (_actionRockTransform == null)
+            {
+                return;
+            }
+
+            _actionRockTransform.localPosition = _actionRockBaseLocalPosition;
+            _actionRockTransform = null;
+        }
+
+        private void StopActorActionRock()
+        {
+            DOTween.Kill(ActionRockTweenId, false);
+            RestoreActorActionRockLocal();
         }
 
         private void PlayDamageVisualFeedback(string targetId)
