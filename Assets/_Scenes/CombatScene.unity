@@ -1343,9 +1343,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41bebe1c3f674bd47910a4e207f65de3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatPrototypeController
-  createGroundIfMissing: 1
-  allyMaterial: {fileID: 2100000, guid: 1fca86b72ad885c47b6a0dee25976df7, type: 2}
-  enemyMaterial: {fileID: 2100000, guid: fa92cf3ab4b67584999ef0ea86c92094, type: 2}
+  allyVisualRoots:
+  - {fileID: 522912037}
+  - {fileID: 1093073772}
+  enemyVisualRoots:
+  - {fileID: 19555210}
+  - {fileID: 1097321742}
+  - {fileID: 870166983}
+  - {fileID: 36199560}
+  syncHpAsVerticalScale: 1
   logEventsToConsole: 1
 --- !u!4 &1797974471
 Transform:
@@ -1375,7 +1381,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatHoverFocusMarker
   markerPrefab: {fileID: 6230526980531908440, guid: f24da76e8f8dab540a46c0f8f09a11b3, type: 3}
-  raycastCamera: {fileID: 0}
+  raycastCamera: {fileID: 330585545}
   raycastMaxDistance: 200
   raycastLayerMask:
     serializedVersion: 2

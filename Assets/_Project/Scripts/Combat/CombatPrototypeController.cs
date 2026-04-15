@@ -14,15 +14,18 @@ using UnityEngine.InputSystem;
 namespace Erumperem.Combat
 {
     /// <summary>
-    /// Protótipo 2v4: cápsulas, clique para alvo inimigo, teclas 1–7 para skills (primeiras 7 do loadout).
-    /// Orquestra <see cref="BattleSimulator"/> sem duplicar regras de combate.
+    /// Protótipo 2v4: unidades já colocadas na cena; liga <see cref="CombatCapsuleTag"/> ao estado do <see cref="BattleSimulator"/>.
+    /// Clique para alvo inimigo / hotbar; teclas 1–7 para skills.
     /// </summary>
     public sealed class CombatPrototypeController : MonoBehaviour
     {
-        [Header("Visual")]
-        [SerializeField] private bool createGroundIfMissing = true;
-        [SerializeField] private Material allyMaterial;
-        [SerializeField] private Material enemyMaterial;
+        [Header("Unidades na cena")]
+        [Tooltip("Ordem: índice 0 = ally_1, 1 = ally_2 (deve coincidir com BattleFactory).")]
+        [SerializeField] private Transform[] allyVisualRoots = new Transform[2];
+        [Tooltip("Ordem: índice 0..3 = enemy_1 .. enemy_4.")]
+        [SerializeField] private Transform[] enemyVisualRoots = new Transform[4];
+        [Tooltip("Se ativo, escala Y do root pela % de HP (como as cápsulas antigas). Desliga para prefabs com escala fixa.")]
+        [SerializeField] private bool syncHpAsVerticalScale = true;
 
         [Header("Debug")]
         [SerializeField] private bool logEventsToConsole = true;
@@ -55,13 +58,6 @@ namespace Erumperem.Combat
 
         private void Start()
         {
-            if (createGroundIfMissing && GameObject.Find("CombatGround") == null)
-            {
-                var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
-                ground.name = "CombatGround";
-                ground.transform.localScale = new Vector3(3f, 1f, 3f);
-            }
-
             var dataDir = Path.Combine(Application.streamingAssetsPath, "Data");
             var skillsPath = Path.Combine(dataDir, "skills.json");
             var passivesPath = Path.Combine(dataDir, "passives.json");
@@ -91,7 +87,12 @@ namespace Erumperem.Combat
                 passivesById: passives,
                 unlockAllPassiveNodesForAllies: true);
 
-            SpawnViews();
+            if (!TryBindSceneViewsToBattle())
+            {
+                enabled = false;
+                return;
+            }
+
             _sim.EmitBattleStarted(_state);
             BeginRound();
 
@@ -131,7 +132,7 @@ namespace Erumperem.Combat
                 TryPlayerHotkeys();
             }
 
-            SyncCapsuleVisuals();
+            SyncUnitVisuals();
         }
 
         private void PickTargetFromMouse()
@@ -307,75 +308,76 @@ namespace Erumperem.Combat
             Debug.Log($"[Combat] {last.EventType} turn={last.Turn} actor={last.ActorId} target={last.TargetId} skill={last.SkillId} dmg={last.DamageAmount}");
         }
 
-        private void SpawnViews()
+        private bool TryBindSceneViewsToBattle()
         {
-            const float spacing = 2f;
-            var allyZ = -3f;
-            var enemyZ = 3f;
+            var allyCount = _state.Allies.Count;
+            var enemyCount = _state.Enemies.Count;
 
-            for (var i = 0; i < _state.Allies.Count; i++)
+            if (allyVisualRoots == null || allyVisualRoots.Length != allyCount)
             {
-                var ally = _state.Allies[i];
-                var spawnOffsetX = (i - (_state.Allies.Count - 1) / 2f) * spacing;
-                var capsuleTransform = CreateCapsule(
-                    ally.Identity.Id,
-                    new Vector3(spawnOffsetX, 1f, allyZ),
-                    allyMaterial,
-                    new Color(0.3f, 0.5f, 1f));
-                _views[ally.Identity.Id] = capsuleTransform;
+                Debug.LogError(
+                    $"CombatPrototypeController: esperados {allyCount} Ally Visual Roots (ally_1..ally_{allyCount}). " +
+                    $"Atual: {(allyVisualRoots == null ? 0 : allyVisualRoots.Length)}.");
+                return false;
             }
 
-            for (var i = 0; i < _state.Enemies.Count; i++)
+            if (enemyVisualRoots == null || enemyVisualRoots.Length != enemyCount)
             {
-                var enemy = _state.Enemies[i];
-                var spawnOffsetX = (i - (_state.Enemies.Count - 1) / 2f) * spacing;
-                var capsuleTransform = CreateCapsule(
-                    enemy.Identity.Id,
-                    new Vector3(spawnOffsetX, 1f, enemyZ),
-                    enemyMaterial,
-                    new Color(1f, 0.35f, 0.35f));
-                _views[enemy.Identity.Id] = capsuleTransform;
+                Debug.LogError(
+                    $"CombatPrototypeController: esperados {enemyCount} Enemy Visual Roots (enemy_1..enemy_{enemyCount}). " +
+                    $"Atual: {(enemyVisualRoots == null ? 0 : enemyVisualRoots.Length)}.");
+                return false;
             }
-        }
 
-        private Transform CreateCapsule(string id, Vector3 position, Material mat, Color fallback)
-        {
-            var capsuleObject = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            capsuleObject.name = $"Unit_{id}";
-            capsuleObject.transform.position = position;
-            var capsuleTag = capsuleObject.AddComponent<CombatCapsuleTag>();
-            capsuleTag.combatantId = id;
-            var capsuleRenderer = capsuleObject.GetComponent<Renderer>();
-            if (mat != null)
+            for (var allyIndex = 0; allyIndex < allyCount; allyIndex++)
             {
-                capsuleRenderer.sharedMaterial = mat;
-            }
-            else
-            {
-                var surfaceShader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Unlit/Color");
-                var runtimeMaterial = new Material(surfaceShader);
-                if (runtimeMaterial.HasProperty("_BaseColor"))
+                var root = allyVisualRoots[allyIndex];
+                if (root == null)
                 {
-                    runtimeMaterial.SetColor("_BaseColor", fallback);
-                }
-                else if (runtimeMaterial.HasProperty("_Color"))
-                {
-                    runtimeMaterial.SetColor("_Color", fallback);
+                    Debug.LogError($"CombatPrototypeController: Ally Visual Roots[{allyIndex}] está vazio.");
+                    return false;
                 }
 
-                capsuleRenderer.sharedMaterial = runtimeMaterial;
+                var ally = _state.Allies[allyIndex];
+                EnsureCombatCapsuleTagOnUnit(root, ally.Identity.Id);
+                _views[ally.Identity.Id] = root;
             }
 
-            return capsuleObject.transform;
+            for (var enemyIndex = 0; enemyIndex < enemyCount; enemyIndex++)
+            {
+                var root = enemyVisualRoots[enemyIndex];
+                if (root == null)
+                {
+                    Debug.LogError($"CombatPrototypeController: Enemy Visual Roots[{enemyIndex}] está vazio.");
+                    return false;
+                }
+
+                var enemy = _state.Enemies[enemyIndex];
+                EnsureCombatCapsuleTagOnUnit(root, enemy.Identity.Id);
+                _views[enemy.Identity.Id] = root;
+            }
+
+            return true;
         }
 
-        private void SyncCapsuleVisuals()
+        private static void EnsureCombatCapsuleTagOnUnit(Transform unitRoot, string combatantId)
+        {
+            var tag = unitRoot.GetComponentInChildren<CombatCapsuleTag>(true);
+            if (tag == null)
+            {
+                tag = unitRoot.gameObject.AddComponent<CombatCapsuleTag>();
+            }
+
+            tag.combatantId = combatantId;
+        }
+
+        private void SyncUnitVisuals()
         {
             foreach (var combatantIdAndCapsule in _views)
             {
                 var combatantId = combatantIdAndCapsule.Key;
-                var capsuleTransform = combatantIdAndCapsule.Value;
-                if (capsuleTransform == null)
+                var unitRoot = combatantIdAndCapsule.Value;
+                if (unitRoot == null)
                 {
                     continue;
                 }
@@ -388,14 +390,18 @@ namespace Erumperem.Combat
 
                 if (combatant.Health.IsDead)
                 {
-                    capsuleTransform.gameObject.SetActive(false);
+                    unitRoot.gameObject.SetActive(false);
                 }
                 else
                 {
-                    capsuleTransform.localScale = new Vector3(
-                        1f,
-                        Mathf.Max(0.3f, combatant.Health.CurrentHp / (float)combatant.Health.MaxHp),
-                        1f);
+                    unitRoot.gameObject.SetActive(true);
+                    if (syncHpAsVerticalScale)
+                    {
+                        unitRoot.localScale = new Vector3(
+                            1f,
+                            Mathf.Max(0.3f, combatant.Health.CurrentHp / (float)combatant.Health.MaxHp),
+                            1f);
+                    }
                 }
             }
         }
