@@ -41,6 +41,9 @@ namespace Erumperem.Combat
         [SerializeField] private float defaultPostPauseSeconds = 1.5f;
         [SerializeField] private CombatSkillPresentationTiming[] skillTimings = Array.Empty<CombatSkillPresentationTiming>();
 
+        [Header("Cinemachine (opcional)")]
+        [SerializeField] private CombatCinemachineDirector combatCinemachineDirector;
+
         [Header("Feedback de dano (DOTween)")]
         [SerializeField] private Vector3 damagePunchScale = new(0.18f, 0.28f, 0.18f);
         [SerializeField] private float damagePunchDuration = 0.32f;
@@ -395,6 +398,7 @@ namespace Erumperem.Combat
             try
             {
                 StopActorActionRock();
+                combatCinemachineDirector?.EndActionFocus();
                 GetTimingForSkill(action.Skill.Id, out var play, out var postPause);
                 var rockDuration = Mathf.Max(0f, play + postPause);
 
@@ -422,6 +426,14 @@ namespace Erumperem.Combat
                 }
 
                 var actorAfter = FindCombatant(action.Actor.Identity.Id);
+                if (actorAfter != null &&
+                    !actorAfter.Health.IsDead &&
+                    _views.TryGetValue(action.Actor.Identity.Id, out var actorVisualRoot))
+                {
+                    _views.TryGetValue(action.Target.Identity.Id, out var targetVisualRoot);
+                    combatCinemachineDirector?.BeginActionFocus(actorVisualRoot, targetVisualRoot);
+                }
+
                 if (actorAfter != null && !actorAfter.Health.IsDead && rockDuration > 0.02f)
                 {
                     BeginActorActionRock(action, rockDuration);
@@ -444,6 +456,7 @@ namespace Erumperem.Combat
             }
             finally
             {
+                combatCinemachineDirector?.EndActionFocus();
                 StopActorActionRock();
                 _presentationBusy = false;
                 onStepComplete?.Invoke();
