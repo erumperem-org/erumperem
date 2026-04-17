@@ -4,14 +4,19 @@ using UnityEngine.InputSystem;
 
 namespace Erumperem.Combat
 {
+    public enum HoverMarkerSpinAxis
+    {
+        WorldY,
+        LocalZ,
+    }
+
     /// <summary>
-    /// Marcador 3D (ex.: cristal/losango) acima da cápsula sob o rato: instância, raycast, layer,
-    /// punch e rotação DOTween. Não depende do <see cref="CombatPrototypeController"/>.
+    /// Marcador sob unidade sob rato: mantém rotação local do prefab; spin só em eixo Y mundo (WorldAxisAdd).
     /// </summary>
     public sealed class CombatHoverFocusMarker : MonoBehaviour
     {
         [Header("Prefab")]
-        [Tooltip("Losango ou cristal acima da unidade sob o rato.")]
+        [Tooltip("Losango/cristal; rotação local do prefab (ex. 90,0,0) preservada.")]
         [SerializeField] private GameObject markerPrefab;
 
         [Header("Raycast")]
@@ -20,7 +25,8 @@ namespace Erumperem.Combat
         [SerializeField] private LayerMask raycastLayerMask = ~0;
 
         [Header("Posição")]
-        [SerializeField] private float verticalOffsetAboveUnit = 0.35f;
+        [Tooltip("Distância para baixo a partir da base do renderer (bounds.min.y).")]
+        [SerializeField] private float verticalOffsetBelowUnit = 0.35f;
 
         [Header("DOTween — aparecer")]
         [SerializeField] private float punchDuration = 0.35f;
@@ -29,11 +35,13 @@ namespace Erumperem.Combat
         [SerializeField] private float punchElasticity = 0.45f;
 
         [Header("DOTween — rotação contínua")]
-        [Tooltip("Segundos para uma volta completa no eixo Y.")]
+        [Tooltip("WorldY = DORotate WorldAxisAdd. LocalZ = DOLocalRotate LocalAxisAdd (útil se mesh alinhado em Z após tilt do prefab).")]
+        [SerializeField] private HoverMarkerSpinAxis spinAxis = HoverMarkerSpinAxis.WorldY;
         [SerializeField] private float spinPeriodSeconds = 3.5f;
 
         private GameObject _instance;
         private Vector3 _baseLocalScale = Vector3.one;
+        private Quaternion _prefabBaseLocalRotation = Quaternion.identity;
         private string _lastJuiceCombatantId;
 
         private void Awake()
@@ -96,12 +104,12 @@ namespace Erumperem.Combat
             }
 
             var unitRenderer = unitRoot.GetComponentInChildren<Renderer>();
-            var topWorldY = unitRenderer != null
-                ? unitRenderer.bounds.max.y
-                : unitRoot.position.y + 1f;
+            var bottomWorldY = unitRenderer != null
+                ? unitRenderer.bounds.min.y
+                : unitRoot.position.y;
 
             var markerPosition = unitRoot.position;
-            markerPosition.y = topWorldY + verticalOffsetAboveUnit;
+            markerPosition.y = bottomWorldY - verticalOffsetBelowUnit;
 
             PresentAt(markerPosition, capsuleTag.combatantId);
         }
@@ -116,6 +124,7 @@ namespace Erumperem.Combat
             _instance = Instantiate(markerPrefab);
             _instance.name = "HoverFocusMarker";
             _baseLocalScale = _instance.transform.localScale;
+            _prefabBaseLocalRotation = _instance.transform.localRotation;
             _instance.SetActive(false);
 
             var ignoreRaycastLayer = LayerMask.NameToLayer("Ignore Raycast");
@@ -133,7 +142,7 @@ namespace Erumperem.Combat
                 var markerTransform = _instance.transform;
                 markerTransform.DOKill();
                 markerTransform.localScale = _baseLocalScale;
-                markerTransform.localRotation = Quaternion.identity;
+                markerTransform.localRotation = _prefabBaseLocalRotation;
                 _instance.SetActive(false);
             }
         }
@@ -160,18 +169,29 @@ namespace Erumperem.Combat
         {
             markerTransform.DOKill();
             markerTransform.localScale = _baseLocalScale;
-            markerTransform.localRotation = Quaternion.identity;
+            markerTransform.localRotation = _prefabBaseLocalRotation;
 
             markerTransform
                 .DOPunchScale(punchScale, punchDuration, punchVibrato, punchElasticity)
                 .SetLink(_instance);
 
             var spinDuration = Mathf.Max(0.05f, spinPeriodSeconds);
-            markerTransform
-                .DOLocalRotate(new Vector3(0f, 360f, 0f), spinDuration, RotateMode.FastBeyond360)
-                .SetEase(Ease.Linear)
-                .SetLoops(-1, LoopType.Incremental)
-                .SetLink(_instance);
+            if (spinAxis == HoverMarkerSpinAxis.WorldY)
+            {
+                markerTransform
+                    .DORotate(new Vector3(0f, 360f, 0f), spinDuration, RotateMode.WorldAxisAdd)
+                    .SetEase(Ease.Linear)
+                    .SetLoops(-1, LoopType.Incremental)
+                    .SetLink(_instance);
+            }
+            else
+            {
+                markerTransform
+                    .DOLocalRotate(new Vector3(0f, 0f, 360f), spinDuration, RotateMode.LocalAxisAdd)
+                    .SetEase(Ease.Linear)
+                    .SetLoops(-1, LoopType.Incremental)
+                    .SetLink(_instance);
+            }
         }
 
         private static void SetLayerRecursively(GameObject gameObject, int layer)

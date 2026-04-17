@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using DG.Tweening;
 using Game.Core.Abstractions;
 using Game.Core.Analytics;
 using Game.Core.Data;
@@ -14,18 +16,46 @@ using UnityEngine.InputSystem;
 namespace Erumperem.Combat
 {
     /// <summary>
-    /// Protótipo 2v4: cápsulas, clique para alvo inimigo, teclas 1–7 para skills (primeiras 7 do loadout).
-    /// Orquestra <see cref="BattleSimulator"/> sem duplicar regras de combate.
+    /// Protótipo 2v4: unidades já colocadas na cena; liga <see cref="CombatCapsuleTag"/> ao estado do <see cref="BattleSimulator"/>.
+    /// Clique para alvo inimigo / hotbar; teclas 1–7 para skills.
     /// </summary>
     public sealed class CombatPrototypeController : MonoBehaviour
     {
-        [Header("Visual")]
-        [SerializeField] private bool createGroundIfMissing = true;
-        [SerializeField] private Material allyMaterial;
-        [SerializeField] private Material enemyMaterial;
+        private const string ActionRockTweenId = "CombatActionRock";
+
+        [Header("Unidades na cena")]
+        [Tooltip("Ordem: índice 0 = ally_1, 1 = ally_2 (deve coincidir com BattleFactory).")]
+        [SerializeField] private Transform[] allyVisualRoots = new Transform[2];
+        [Tooltip("Ordem: índice 0..3 = enemy_1 .. enemy_4.")]
+        [SerializeField] private Transform[] enemyVisualRoots = new Transform[4];
+        [Tooltip("Se ativo, escala Y do root pela % de HP (como as cápsulas antigas). Desliga para prefabs com escala fixa.")]
+        [SerializeField] private bool syncHpAsVerticalScale = true;
 
         [Header("Debug")]
         [SerializeField] private bool logEventsToConsole = true;
+
+        [Header("Apresentação por ação")]
+        [Tooltip("Opcional: pilha de mensagens (prefab com TMP).")]
+        [SerializeField] private CombatLogStackView combatLog;
+        [SerializeField] private float defaultPlaySeconds = 2.5f;
+        [SerializeField] private float defaultPostPauseSeconds = 1.5f;
+        [SerializeField] private CombatSkillPresentationTiming[] skillTimings = Array.Empty<CombatSkillPresentationTiming>();
+
+        [Header("Cinemachine (opcional)")]
+        [SerializeField] private CombatCinemachineDirector combatCinemachineDirector;
+
+        [Header("Feedback de dano (DOTween)")]
+        [SerializeField] private Vector3 damagePunchScale = new(0.18f, 0.28f, 0.18f);
+        [SerializeField] private float damagePunchDuration = 0.32f;
+        [SerializeField] private int damagePunchVibrato = 8;
+        [SerializeField] private float damagePunchElasticity = 0.55f;
+        [SerializeField] private float damageShrinkDuration = 0.42f;
+
+        [Header("Actor a agir (balanço frente–trás)")]
+        [Tooltip("Força do DOPunchPosition em espaço local (ex.: Z = profundidade / frente do boneco).")]
+        [SerializeField] private Vector3 actorActionRockPunch = new(0f, 0f, 0.14f);
+        [SerializeField] private int actorActionRockVibrato = 12;
+        [SerializeField] private float actorActionRockElasticity = 0.32f;
 
         private BattleState _state;
         private BattleSimulator _sim;
@@ -40,6 +70,10 @@ namespace Erumperem.Combat
         private Combatant _pendingPlayerActor;
 
         private readonly Dictionary<string, Transform> _views = new(StringComparer.Ordinal);
+        private readonly HashSet<string> _damageFeedbackBusy = new(StringComparer.Ordinal);
+        private bool _presentationBusy;
+        private Transform _actionRockTransform;
+        private Vector3 _actionRockBaseLocalPosition;
         private Combatant _selectedEnemyTarget;
         private Camera _camera;
 
@@ -55,13 +89,6 @@ namespace Erumperem.Combat
 
         private void Start()
         {
-            if (createGroundIfMissing && GameObject.Find("CombatGround") == null)
-            {
-                var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
-                ground.name = "CombatGround";
-                ground.transform.localScale = new Vector3(3f, 1f, 3f);
-            }
-
             var dataDir = Path.Combine(Application.streamingAssetsPath, "Data");
             var skillsPath = Path.Combine(dataDir, "skills.json");
             var passivesPath = Path.Combine(dataDir, "passives.json");
@@ -91,13 +118,27 @@ namespace Erumperem.Combat
                 passivesById: passives,
                 unlockAllPassiveNodesForAllies: true);
 
-            SpawnViews();
+            if (!TryBindSceneViewsToBattle())
+            {
+                enabled = false;
+                return;
+            }
+
             _sim.EmitBattleStarted(_state);
             BeginRound();
 
             Debug.Log(
                 "Combate: clique num herói para listar skills [1]–[7] no console; clique num inimigo para alvo; " +
                 "teclas 1–7 = skill (no turno do herói). Inimigos jogam até ser a tua vez.");
+        }
+
+        private void OnDisable()
+        {
+            StopActorActionRock();
+            foreach (var kv in _views)
+            {
+                kv.Value?.DOKill(false);
+            }
         }
 
         private void BeginRound()
@@ -118,7 +159,7 @@ namespace Erumperem.Combat
 
             PickTargetFromMouse();
 
-            while (!_battleEnded && !_needsPlayerInput)
+            while (!_battleEnded && !_needsPlayerInput && !_presentationBusy)
             {
                 if (!AdvanceCombatStep())
                 {
@@ -126,12 +167,12 @@ namespace Erumperem.Combat
                 }
             }
 
-            if (_needsPlayerInput)
+            if (_needsPlayerInput && !_presentationBusy)
             {
                 TryPlayerHotkeys();
             }
 
-            SyncCapsuleVisuals();
+            SyncUnitVisuals();
         }
 
         private void PickTargetFromMouse()
@@ -185,6 +226,11 @@ namespace Erumperem.Combat
 
         private bool AdvanceCombatStep()
         {
+            if (_presentationBusy)
+            {
+                return false;
+            }
+
             if (_state.IsFinished)
             {
                 EndBattle();
@@ -231,8 +277,16 @@ namespace Erumperem.Combat
             var chosenAiAction = _sim.ChooseAiAction(_state, actor);
             if (chosenAiAction != null)
             {
-                _sim.ResolveChosenAction(_state, chosenAiAction);
-                LogLastEvents();
+                _presentationBusy = true;
+                StartCoroutine(
+                    PresentActionRoutine(
+                        chosenAiAction,
+                        () =>
+                        {
+                            _actorIndex++;
+                            _preparedThisStep = false;
+                        }));
+                return false;
             }
 
             _actorIndex++;
@@ -246,7 +300,7 @@ namespace Erumperem.Combat
         private void TryPlayerHotkeys()
         {
             var keyboard = Keyboard.current;
-            if (keyboard == null || _pendingPlayerActor == null)
+            if (keyboard == null || _pendingPlayerActor == null || _presentationBusy)
             {
                 return;
             }
@@ -272,12 +326,17 @@ namespace Erumperem.Combat
                     return;
                 }
 
-                _sim.ResolveChosenAction(_state, action);
-                LogLastEvents();
-                _actorIndex++;
-                _preparedThisStep = false;
                 _needsPlayerInput = false;
                 _pendingPlayerActor = null;
+                _presentationBusy = true;
+                StartCoroutine(
+                    PresentActionRoutine(
+                        action,
+                        () =>
+                        {
+                            _actorIndex++;
+                            _preparedThisStep = false;
+                        }));
                 return;
             }
         }
@@ -307,75 +366,253 @@ namespace Erumperem.Combat
             Debug.Log($"[Combat] {last.EventType} turn={last.Turn} actor={last.ActorId} target={last.TargetId} skill={last.SkillId} dmg={last.DamageAmount}");
         }
 
-        private void SpawnViews()
+        private void GetTimingForSkill(string skillId, out float playSeconds, out float postPauseSeconds)
         {
-            const float spacing = 2f;
-            var allyZ = -3f;
-            var enemyZ = 3f;
-
-            for (var i = 0; i < _state.Allies.Count; i++)
+            playSeconds = defaultPlaySeconds;
+            postPauseSeconds = defaultPostPauseSeconds;
+            if (skillTimings == null)
             {
-                var ally = _state.Allies[i];
-                var spawnOffsetX = (i - (_state.Allies.Count - 1) / 2f) * spacing;
-                var capsuleTransform = CreateCapsule(
-                    ally.Identity.Id,
-                    new Vector3(spawnOffsetX, 1f, allyZ),
-                    allyMaterial,
-                    new Color(0.3f, 0.5f, 1f));
-                _views[ally.Identity.Id] = capsuleTransform;
+                return;
             }
 
-            for (var i = 0; i < _state.Enemies.Count; i++)
+            foreach (var entry in skillTimings)
             {
-                var enemy = _state.Enemies[i];
-                var spawnOffsetX = (i - (_state.Enemies.Count - 1) / 2f) * spacing;
-                var capsuleTransform = CreateCapsule(
-                    enemy.Identity.Id,
-                    new Vector3(spawnOffsetX, 1f, enemyZ),
-                    enemyMaterial,
-                    new Color(1f, 0.35f, 0.35f));
-                _views[enemy.Identity.Id] = capsuleTransform;
+                if (entry == null || string.IsNullOrEmpty(entry.skillId))
+                {
+                    continue;
+                }
+
+                if (!string.Equals(entry.skillId, skillId, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                playSeconds = Mathf.Max(0f, entry.playSeconds);
+                postPauseSeconds = Mathf.Max(0f, entry.postPauseSeconds);
+                return;
             }
         }
 
-        private Transform CreateCapsule(string id, Vector3 position, Material mat, Color fallback)
+        private IEnumerator PresentActionRoutine(ChosenAction action, Action onStepComplete)
         {
-            var capsuleObject = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            capsuleObject.name = $"Unit_{id}";
-            capsuleObject.transform.position = position;
-            var capsuleTag = capsuleObject.AddComponent<CombatCapsuleTag>();
-            capsuleTag.combatantId = id;
-            var capsuleRenderer = capsuleObject.GetComponent<Renderer>();
-            if (mat != null)
+            try
             {
-                capsuleRenderer.sharedMaterial = mat;
-            }
-            else
-            {
-                var surfaceShader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Unlit/Color");
-                var runtimeMaterial = new Material(surfaceShader);
-                if (runtimeMaterial.HasProperty("_BaseColor"))
+                StopActorActionRock();
+                combatCinemachineDirector?.EndActionFocus();
+                GetTimingForSkill(action.Skill.Id, out var play, out var postPause);
+                var rockDuration = Mathf.Max(0f, play + postPause);
+
+                var startIdx = _collector.Events.Count;
+                _sim.ResolveChosenAction(_state, action);
+                var endIdx = _collector.Events.Count;
+                var count = endIdx - startIdx;
+                if (count > 0)
                 {
-                    runtimeMaterial.SetColor("_BaseColor", fallback);
-                }
-                else if (runtimeMaterial.HasProperty("_Color"))
-                {
-                    runtimeMaterial.SetColor("_Color", fallback);
+                    var slice = _collector.Events.GetRange(startIdx, count);
+                    foreach (var line in CombatNarrativeFormatter.BuildLines(_state, action, slice))
+                    {
+                        combatLog?.Push(line);
+                    }
+
+                    foreach (var combatEvent in slice)
+                    {
+                        if (combatEvent.EventType == BattleEventType.DamageApplied && combatEvent.DamageAmount > 0)
+                        {
+                            PlayDamageVisualFeedback(combatEvent.TargetId);
+                        }
+                    }
+
+                    LogLastEvents();
                 }
 
-                capsuleRenderer.sharedMaterial = runtimeMaterial;
-            }
+                var actorAfter = FindCombatant(action.Actor.Identity.Id);
+                if (actorAfter != null &&
+                    !actorAfter.Health.IsDead &&
+                    _views.TryGetValue(action.Actor.Identity.Id, out var actorVisualRoot))
+                {
+                    _views.TryGetValue(action.Target.Identity.Id, out var targetVisualRoot);
+                    combatCinemachineDirector?.BeginActionFocus(actorVisualRoot, targetVisualRoot);
+                }
 
-            return capsuleObject.transform;
+                if (actorAfter != null && !actorAfter.Health.IsDead && rockDuration > 0.02f)
+                {
+                    BeginActorActionRock(action, rockDuration);
+                }
+
+                if (play > 0f)
+                {
+                    yield return new WaitForSeconds(play);
+                }
+
+                if (_battleEnded)
+                {
+                    yield break;
+                }
+
+                if (postPause > 0f)
+                {
+                    yield return new WaitForSeconds(postPause);
+                }
+            }
+            finally
+            {
+                combatCinemachineDirector?.EndActionFocus();
+                StopActorActionRock();
+                _presentationBusy = false;
+                onStepComplete?.Invoke();
+                if (_state.IsFinished && !_battleEnded)
+                {
+                    EndBattle();
+                }
+            }
         }
 
-        private void SyncCapsuleVisuals()
+        private void BeginActorActionRock(ChosenAction action, float totalDurationSeconds)
+        {
+            StopActorActionRock();
+            if (totalDurationSeconds <= 0.02f)
+            {
+                return;
+            }
+
+            if (!_views.TryGetValue(action.Actor.Identity.Id, out var root) || root == null)
+            {
+                return;
+            }
+
+            _actionRockTransform = root;
+            _actionRockBaseLocalPosition = root.localPosition;
+            root.DOPunchPosition(
+                    actorActionRockPunch,
+                    totalDurationSeconds,
+                    actorActionRockVibrato,
+                    actorActionRockElasticity)
+                .SetRelative(true)
+                .SetId(ActionRockTweenId)
+                .SetTarget(root)
+                .OnKill(RestoreActorActionRockLocal)
+                .OnComplete(RestoreActorActionRockLocal);
+        }
+
+        private void RestoreActorActionRockLocal()
+        {
+            if (_actionRockTransform == null)
+            {
+                return;
+            }
+
+            _actionRockTransform.localPosition = _actionRockBaseLocalPosition;
+            _actionRockTransform = null;
+        }
+
+        private void StopActorActionRock()
+        {
+            DOTween.Kill(ActionRockTweenId, false);
+            RestoreActorActionRockLocal();
+        }
+
+        private void PlayDamageVisualFeedback(string targetId)
+        {
+            if (!_views.TryGetValue(targetId, out var root) || root == null)
+            {
+                return;
+            }
+
+            var combatant = FindCombatant(targetId);
+            if (combatant == null || combatant.Health.IsDead)
+            {
+                return;
+            }
+
+            _damageFeedbackBusy.Add(targetId);
+            root.DOKill(false);
+            var sequence = DOTween.Sequence();
+            sequence.SetTarget(root);
+            sequence.Append(
+                root.DOPunchScale(
+                    damagePunchScale,
+                    damagePunchDuration,
+                    damagePunchVibrato,
+                    damagePunchElasticity));
+            if (syncHpAsVerticalScale)
+            {
+                var targetY = Mathf.Max(0.3f, combatant.Health.CurrentHp / (float)combatant.Health.MaxHp);
+                sequence.Append(root.DOScaleY(targetY, damageShrinkDuration).SetEase(Ease.OutCubic));
+            }
+
+            sequence.OnComplete(() => _damageFeedbackBusy.Remove(targetId));
+        }
+
+        private bool TryBindSceneViewsToBattle()
+        {
+            var allyCount = _state.Allies.Count;
+            var enemyCount = _state.Enemies.Count;
+
+            if (allyVisualRoots == null || allyVisualRoots.Length != allyCount)
+            {
+                Debug.LogError(
+                    $"CombatPrototypeController: esperados {allyCount} Ally Visual Roots (ally_1..ally_{allyCount}). " +
+                    $"Atual: {(allyVisualRoots == null ? 0 : allyVisualRoots.Length)}.");
+                return false;
+            }
+
+            if (enemyVisualRoots == null || enemyVisualRoots.Length != enemyCount)
+            {
+                Debug.LogError(
+                    $"CombatPrototypeController: esperados {enemyCount} Enemy Visual Roots (enemy_1..enemy_{enemyCount}). " +
+                    $"Atual: {(enemyVisualRoots == null ? 0 : enemyVisualRoots.Length)}.");
+                return false;
+            }
+
+            for (var allyIndex = 0; allyIndex < allyCount; allyIndex++)
+            {
+                var root = allyVisualRoots[allyIndex];
+                if (root == null)
+                {
+                    Debug.LogError($"CombatPrototypeController: Ally Visual Roots[{allyIndex}] está vazio.");
+                    return false;
+                }
+
+                var ally = _state.Allies[allyIndex];
+                EnsureCombatCapsuleTagOnUnit(root, ally.Identity.Id);
+                _views[ally.Identity.Id] = root;
+            }
+
+            for (var enemyIndex = 0; enemyIndex < enemyCount; enemyIndex++)
+            {
+                var root = enemyVisualRoots[enemyIndex];
+                if (root == null)
+                {
+                    Debug.LogError($"CombatPrototypeController: Enemy Visual Roots[{enemyIndex}] está vazio.");
+                    return false;
+                }
+
+                var enemy = _state.Enemies[enemyIndex];
+                EnsureCombatCapsuleTagOnUnit(root, enemy.Identity.Id);
+                _views[enemy.Identity.Id] = root;
+            }
+
+            return true;
+        }
+
+        private static void EnsureCombatCapsuleTagOnUnit(Transform unitRoot, string combatantId)
+        {
+            var tag = unitRoot.GetComponentInChildren<CombatCapsuleTag>(true);
+            if (tag == null)
+            {
+                tag = unitRoot.gameObject.AddComponent<CombatCapsuleTag>();
+            }
+
+            tag.combatantId = combatantId;
+        }
+
+        private void SyncUnitVisuals()
         {
             foreach (var combatantIdAndCapsule in _views)
             {
                 var combatantId = combatantIdAndCapsule.Key;
-                var capsuleTransform = combatantIdAndCapsule.Value;
-                if (capsuleTransform == null)
+                var unitRoot = combatantIdAndCapsule.Value;
+                if (unitRoot == null)
                 {
                     continue;
                 }
@@ -388,14 +625,18 @@ namespace Erumperem.Combat
 
                 if (combatant.Health.IsDead)
                 {
-                    capsuleTransform.gameObject.SetActive(false);
+                    unitRoot.gameObject.SetActive(false);
                 }
                 else
                 {
-                    capsuleTransform.localScale = new Vector3(
-                        1f,
-                        Mathf.Max(0.3f, combatant.Health.CurrentHp / (float)combatant.Health.MaxHp),
-                        1f);
+                    unitRoot.gameObject.SetActive(true);
+                    if (syncHpAsVerticalScale && !_damageFeedbackBusy.Contains(combatantId))
+                    {
+                        unitRoot.localScale = new Vector3(
+                            1f,
+                            Mathf.Max(0.3f, combatant.Health.CurrentHp / (float)combatant.Health.MaxHp),
+                            1f);
+                    }
                 }
             }
         }

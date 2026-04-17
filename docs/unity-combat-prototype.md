@@ -33,15 +33,18 @@ O protótipo lê com `Application.streamingAssetsPath + "/Data/..."`. Se faltare
 
 1. Crie ou abra uma cena (ex.: duplique `Assets/Scenes/SampleScene.unity` ou cena nova).
 2. Garanta **Main Camera** (tag `MainCamera`) e iluminação básica.
-3. Crie um GameObject vazio **`CombatRoot`**.
-4. Adicione **`CombatPrototypeController`** (combate). Opcional: no mesmo objeto ou noutro, adicione **`CombatHoverFocusMarker`** — é **autónomo** (raycast + rato + DOTween), sem ligação ao controlador.
-5. No **`CombatHoverFocusMarker`**: prefab do cristal em **Marker Prefab**; opcional **Raycast Camera** (vazio = `Camera.main`); **Raycast Layer Mask** se precisares excluir layers.
-6. **Play.**
+3. Coloca na cena **2** prefabs de herói e **4** de inimigo (posição/arte à tua escolha). Cada um precisa de **Collider** para raycast; o controlador adiciona ou atualiza **`CombatCapsuleTag`** no root (ou reutiliza o que já existir num filho).
+4. Crie um GameObject **`CombatRoot`** com **`CombatPrototypeController`**.
+5. No Inspector, preenche **Ally Visual Roots** (tamanho 2): índice `0` = `ally_1`, `1` = `ally_2`. **Enemy Visual Roots** (tamanho 4): `0`..`3` = `enemy_1`..`enemy_4` (mesma ordem que `BattleFactory.CreateSampleBattle`).
+6. Opcional: **`CombatHoverFocusMarker`** noutro objeto — autónomo (raycast + DOTween). **Marker Prefab**, câmara e layer mask conforme necessário.
+7. **Play.**
+
+**Nota:** **Sync Hp As Vertical Scale** escala o root pela % de HP (comportamento antigo das cápsulas). Desliga se os prefabs não devam ser escalados.
 
 ### Jogar
 
-- **Clique** numa cápsula **aliada** para imprimir no **Console** a hotbar simplificada `[1]`–`[7]` (nome, dano, alvo, efeitos).
-- **Clique** numa cápsula **inimiga** (raycast) para definir alvo de skills `Enemy`.
+- **Clique** numa unidade **aliada** (collider + tag) para imprimir no **Console** a hotbar simplificada `[1]`–`[7]` (nome, dano, alvo, efeitos).
+- **Clique** numa unidade **inimiga** (raycast) para definir alvo de skills `Enemy`.
 - Teclas **1–7**: primeira a sétima skill do **loadout** do herói cuja vez é (apenas as que existem em `skills.json` e estão equipadas; até 7 slots).
 - Skills **Self** / **Ally** não exigem inimigo selecionado (alvo aliado usa regras do `PlayerActionBuilder`; por defeito o próprio actor para aliados).
 - **Inimigos** resolvem turnos com a mesma AI que a simulação até ser vez de um herói.
@@ -50,7 +53,7 @@ O protótipo lê com `Application.streamingAssetsPath + "/Data/..."`. Se faltare
 
 | Ficheiro | Função |
 |----------|--------|
-| `CombatPrototypeController.cs` | Arranque da batalha 2v4, loop de iniciativa, input, spawn de cápsulas. |
+| `CombatPrototypeController.cs` | Batalha 2v4: liga unidades da cena ao estado, input, sync HP/visível. |
 | `CombatHoverFocusMarker.cs` | Marcador de hover autónomo: raycast ao `CombatCapsuleTag`, posição acima do renderer, punch/spin DOTween. |
 | `CombatCapsuleTag.cs` | Liga o collider ao `Identity.Id` do `Combatant`. |
 | `CombatSkillBarDebug.cs` | Ao clicar num herói, imprime no console a hotbar [1]–[7] (mesma ordem que o combate). |
