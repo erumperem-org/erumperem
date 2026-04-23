@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7735168291569889030
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: AnomalyDynamicMatBarrie
+  m_Shader: {fileID: -6465566751694194690, guid: 68a4da00c89d6014cad25724feba7219, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: 3019
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _AnomalyCubemap:
+        m_Texture: {fileID: 8900000, guid: a9cfc5bd16981aa48afd33e001177b6a, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MagicAnomalyCube:
+        m_Texture: {fileID: 8900000, guid: 46d9a7e081244cb4c8d1ec9991cc795e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _DisappearenceSrength: 0.4
+    - _DisappearenceStrentgh: 0.39
+    - _FresnelPower: 0.9
+    - _QueueControl: 0
+    - _QueueOffset: 19
+    m_Colors:
+    - _AnomalyColor: {r: 6.055746, g: 0, b: 6.498019, a: 1}
+    - _DisappearanceColor: {r: 1, g: 1, b: 1, a: 1}
+    - _FresnelColor: {r: 1, g: 1, b: 1, a: 1}
+    - _FresnelSpeed: {r: 1, g: -0.2, b: 0, a: 0}
+    - _MagicAnomalyColor: {r: 10.44612, g: 0, b: 55.364445, a: 1}
+    - _MagicOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _TextureSpped: {r: 0, g: 1.16, b: 0, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
