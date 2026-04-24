@@ -20,7 +20,7 @@ namespace Erumperem.Combat
     }
 
     [DisallowMultipleComponent]
-    public sealed class CharacterSkillButtonSlot : MonoBehaviour
+    public sealed class CharacterSkillButtonSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         private const float PointerEnterScale = 1.05f;
         private const float PointerEnterDuration = 0.08f;
@@ -55,6 +55,7 @@ namespace Erumperem.Combat
         private Vector3 _descriptionPanelBaseScale = Vector3.one;
         private SkillButtonSlotPointerRelay _pointerRelay;
         private CharacterSkillButtonsRowView _parentRow;
+        private CanvasGroup _buttonCanvasGroup;
 
         private Action _onClick;
         private bool _isInteractable;
@@ -66,6 +67,7 @@ namespace Erumperem.Combat
         private Vector3 _localScaleBase = Vector3.one;
         private Color _panelColorBase;
         private Color _buttonColorBase;
+        private bool? _lastAppliedIsSelected;
 
         private void Awake()
         {
@@ -87,6 +89,7 @@ namespace Erumperem.Combat
             if (_panelBackgroundImage != null)
             {
                 _panelColorBase = _panelBackgroundImage.color;
+                _panelBackgroundImage.raycastTarget = true;
             }
 
             if (_buttonImage != null)
@@ -128,8 +131,17 @@ namespace Erumperem.Combat
             }
 
             _pointerRelay.Init(this);
+            if (_skillButton != null && _skillButton.targetGraphic != null)
+            {
+                _skillButton.targetGraphic.raycastTarget = true;
+            }
+
             TryResolveDescriptionUi();
         }
+
+        public void OnPointerEnter(PointerEventData eventData) => HandlePointerEnter();
+
+        public void OnPointerExit(PointerEventData eventData) => HandlePointerExit();
 
         private void CacheParentRow() =>
             _parentRow = GetComponentInParent<CharacterSkillButtonsRowView>();
@@ -142,6 +154,7 @@ namespace Erumperem.Combat
             if (!visible)
             {
                 ForceHideDescriptionPanelImmediate();
+                _lastAppliedIsSelected = null;
             }
 
             gameObject.SetActive(visible);
@@ -155,6 +168,16 @@ namespace Erumperem.Combat
             if (_skillButton != null)
             {
                 _skillButton.interactable = interactable;
+                _buttonCanvasGroup = _buttonCanvasGroup != null
+                    ? _buttonCanvasGroup
+                    : _skillButton.GetComponent<CanvasGroup>();
+                if (_buttonCanvasGroup == null)
+                {
+                    _buttonCanvasGroup = _skillButton.gameObject.AddComponent<CanvasGroup>();
+                }
+
+                _buttonCanvasGroup.interactable = true;
+                _buttonCanvasGroup.blocksRaycasts = interactable;
             }
 
             if (_panelBackgroundImage != null)
@@ -176,29 +199,47 @@ namespace Erumperem.Combat
                 return;
             }
 
-            _rootRectTransform.DOKill(false);
-            if (_isSelected)
+            var wasFirstLayoutApply = !_lastAppliedIsSelected.HasValue;
+            var selectionStateChanged = !wasFirstLayoutApply && _lastAppliedIsSelected.Value != selected;
+            _lastAppliedIsSelected = selected;
+            if (selectionStateChanged || wasFirstLayoutApply)
             {
-                var targetScale = new Vector3(_localScaleBase.x, SelectedLocalScaleY * _localScaleBase.y, _localScaleBase.z);
-                _rootRectTransform
-                    .DOScale(targetScale, SelectionTweenDuration)
-                    .SetEase(Ease.OutCubic)
-                    .SetLink(gameObject);
-                _rootRectTransform
-                    .DOAnchorPosY(_anchoredBase.y + SelectedPositionYOffset, SelectionTweenDuration)
-                    .SetEase(Ease.OutCubic)
-                    .SetLink(gameObject);
-            }
-            else
-            {
-                _rootRectTransform
-                    .DOScale(_localScaleBase, SelectionTweenDuration)
-                    .SetEase(Ease.OutCubic)
-                    .SetLink(gameObject);
-                _rootRectTransform
-                    .DOAnchorPosY(_anchoredBase.y, SelectionTweenDuration)
-                    .SetEase(Ease.OutCubic)
-                    .SetLink(gameObject);
+                _rootRectTransform.DOKill(false);
+                if (wasFirstLayoutApply && !selected)
+                {
+                    _rootRectTransform.localScale = _localScaleBase;
+                    _rootRectTransform.anchoredPosition = new Vector2(
+                        _anchoredBase.x,
+                        _anchoredBase.y);
+                }
+                else if (selected)
+                {
+                    var targetScale = new Vector3(
+                        _localScaleBase.x,
+                        SelectedLocalScaleY * _localScaleBase.y,
+                        _localScaleBase.z);
+                    _rootRectTransform
+                        .DOScale(targetScale, SelectionTweenDuration)
+                        .SetEase(Ease.OutCubic)
+                        .SetLink(gameObject);
+                    _rootRectTransform
+                        .DOAnchorPosY(
+                            _anchoredBase.y + SelectedPositionYOffset,
+                            SelectionTweenDuration)
+                        .SetEase(Ease.OutCubic)
+                        .SetLink(gameObject);
+                }
+                else
+                {
+                    _rootRectTransform
+                        .DOScale(_localScaleBase, SelectionTweenDuration)
+                        .SetEase(Ease.OutCubic)
+                        .SetLink(gameObject);
+                    _rootRectTransform
+                        .DOAnchorPosY(_anchoredBase.y, SelectionTweenDuration)
+                        .SetEase(Ease.OutCubic)
+                        .SetLink(gameObject);
+                }
             }
 
             if (_isDescriptionPanelVisible && _descriptionText != null)
@@ -215,7 +256,12 @@ namespace Erumperem.Combat
             _parentRow?.DismissOtherDescriptionPanels(this);
             ShowDescriptionIfPossible();
             TweenButtonHoverEnter();
-            if (_rootRectTransform == null || !_isInteractable || _isSelected)
+            if (_rootRectTransform == null || _isSelected)
+            {
+                return;
+            }
+
+            if (!_isInteractable)
             {
                 return;
             }

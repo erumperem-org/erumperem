@@ -88,6 +88,16 @@ namespace Erumperem.Combat
                 .SetLink(_rowRect.gameObject);
         }
 
+        private void OnDisable()
+        {
+            if (_rowRect == null)
+            {
+                return;
+            }
+
+            _rowRect.DOKill(false);
+        }
+
         public void Refresh(
             BattleState battleState,
             BattleSimulator battleSimulator,

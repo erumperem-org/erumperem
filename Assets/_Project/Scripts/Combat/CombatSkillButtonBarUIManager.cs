@@ -198,8 +198,12 @@ namespace Erumperem.Combat
                 return;
             }
 
-            HideAllRows();
-            row.gameObject.SetActive(true);
+            SetRowVisibilityForActiveId(_activeSkillRowCombatantId);
+            if (!row.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
             _controller.GetSkillBarSelection(out var selectedSlot, out var owner);
             var canIssue = _controller.IsPlayerCommandingCombatant(displaySubject);
             row.Refresh(
@@ -210,6 +214,28 @@ namespace Erumperem.Combat
                 selectedSlot,
                 owner,
                 _controller.CurrentSelectedEnemy);
+        }
+
+        private void SetRowVisibilityForActiveId(string activeCombatantId)
+        {
+            foreach (var idAndRow in _rowsByCombatantId)
+            {
+                if (idAndRow.Value == null)
+                {
+                    continue;
+                }
+
+                var shouldShow = string.Equals(
+                    idAndRow.Key,
+                    activeCombatantId,
+                    StringComparison.Ordinal);
+                if (idAndRow.Value.gameObject.activeSelf == shouldShow)
+                {
+                    continue;
+                }
+
+                idAndRow.Value.gameObject.SetActive(shouldShow);
+            }
         }
 
         private void HideAllRows()
