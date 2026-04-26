@@ -29,11 +29,11 @@ Transform:
   m_GameObject: {fileID: 87098014652831447}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.2699619, z: -0, w: 0.962871}
-  m_LocalPosition: {x: 10.05289, y: 1, z: -3.8677497}
+  m_LocalPosition: {x: 10.052891, y: 1, z: -3.8677497}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1201926221946950269}
+  m_Father: {fileID: 640923819084337989}
   m_LocalEulerAnglesHint: {x: 0, y: 31.324, z: 0}
 --- !u!33 &5663912975489717629
 MeshFilter:
@@ -73,7 +73,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 87098014652831447}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -128,6 +128,37 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatCapsuleTag
   combatantId: ally_1
+--- !u!1 &434530567330452917
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5453809829374863056}
+  m_Layer: 0
+  m_Name: ---------------------------------------
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5453809829374863056
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 434530567330452917}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1201926221946950269}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &445212038184375345
 GameObject:
   m_ObjectHideFlags: 0
@@ -157,7 +188,7 @@ Transform:
   m_GameObject: {fileID: 445212038184375345}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 18.35, y: 1.16, z: 0.85}
+  m_LocalPosition: {x: 18.35, y: 1.16, z: 0.8499999}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -309,8 +340,11 @@ GameObject:
   - component: {fileID: 1799702433245041875}
   - component: {fileID: 8444318151394836212}
   - component: {fileID: 4500397179563821301}
+  - component: {fileID: 2275919338010125768}
+  - component: {fileID: 1123152280519613884}
+  - component: {fileID: 5213722406700642896}
   m_Layer: 0
-  m_Name: CombatBottomLogger
+  m_Name: CombatUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -363,6 +397,60 @@ MonoBehaviour:
   hideEase: 5
   showEase: 6
   alsoFadeCanvasGroup: 1
+--- !u!114 &2275919338010125768
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 919406058762249914}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd783aed04e10814f973350c62b7097f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatLogStackView
+  notificationsContainer: {fileID: 8233872340251891144}
+  notificationPanelPrefab: {fileID: 1574735677070693295, guid: aa3168e6f6b065244a0153e7d03a51cd, type: 3}
+  lifetimeSeconds: 20
+  spawnSlideOffset: {x: 180, y: 0}
+  spawnStartScale: 0.88
+  spawnEntryDuration: 0.32
+  skipSlideWhenOffsetZero: 1
+  spawnPunchScale: {x: 0.12, y: 0.12, z: 0.12}
+  spawnPunchDuration: 0.28
+  spawnPunchVibrato: 6
+  spawnPunchElasticity: 0.5
+  slideUpDuration: 0.35
+--- !u!114 &1123152280519613884
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 919406058762249914}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8e4a2b19d3f4a5e8c7b6a5948372610, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatSkillBarSelectionController
+  skillButtonBarUIManager: {fileID: 5213722406700642896}
+--- !u!114 &5213722406700642896
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 919406058762249914}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 954d97d729b11c04ea47c5ce4f3ff9a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatSkillButtonBarUIManager
+  rowsParent: {fileID: 4353263896009197133}
+  characterSkillButtonsRowPrefab: {fileID: 494412738750357235, guid: 52e7b7f0af1db434ba7b62185460c909, type: 3}
+  skillButtonPanelPrefab: {fileID: 278947936993341358, guid: d714ccc150807ed45a291c56e49c2019, type: 3}
+  worldRaycastDistance: 200
+  skillBarSelectionController: {fileID: 1123152280519613884}
 --- !u!1 &2618297627229827224
 GameObject:
   m_ObjectHideFlags: 0
@@ -396,7 +484,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1201926221946950269}
+  m_Father: {fileID: 640923819084337989}
   m_LocalEulerAnglesHint: {x: 0, y: -31.324, z: 0}
 --- !u!33 &4189730541261214358
 MeshFilter:
@@ -599,7 +687,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1201926221946950269}
+  m_Father: {fileID: 640923819084337989}
   m_LocalEulerAnglesHint: {x: 0, y: 31.324, z: 0}
 --- !u!33 &1591301503924082027
 MeshFilter:
@@ -639,7 +727,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2837712080529320851}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -694,6 +782,68 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatCapsuleTag
   combatantId: ally_2
+--- !u!1 &2863180445465792093
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2834357308639685449}
+  m_Layer: 0
+  m_Name: --CAMERA--
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2834357308639685449
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2863180445465792093}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1201926221946950269}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &3213411847048232471
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1206156277864555039}
+  m_Layer: 0
+  m_Name: ---------------------------------------
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1206156277864555039
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3213411847048232471}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1201926221946950269}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3283743037916375961
 GameObject:
   m_ObjectHideFlags: 0
@@ -897,13 +1047,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4734749639852041662}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0.71950954, z: 0, w: 0.69448256}
-  m_LocalPosition: {x: 22.18, y: 1.26, z: 0.79}
+  m_LocalRotation: {x: 0.05158595, y: -0.71752185, z: 0.053444948, w: 0.692564}
+  m_LocalPosition: {x: 18.24, y: 2.75, z: 0.71}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1201926221946950269}
-  m_LocalEulerAnglesHint: {x: 0, y: -92.028, z: 0}
+  m_LocalEulerAnglesHint: {x: 8.52, y: -92.028, z: 0}
 --- !u!114 &7127764260611148258
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -928,7 +1078,7 @@ MonoBehaviour:
     LookAtTarget: {fileID: 0}
     CustomLookAtTarget: 0
   Lens:
-    FieldOfView: 60.000004
+    FieldOfView: 70
     OrthographicSize: 5
     NearClipPlane: 0.3
     FarClipPlane: 1000
@@ -1089,11 +1239,11 @@ Transform:
   m_GameObject: {fileID: 5054607455915643749}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.26996532, z: -0, w: 0.96287006}
-  m_LocalPosition: {x: 10.134416, y: 1, z: 5.882484}
+  m_LocalPosition: {x: 10.134417, y: 1, z: 5.882484}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1201926221946950269}
+  m_Father: {fileID: 640923819084337989}
   m_LocalEulerAnglesHint: {x: 0, y: -31.324, z: 0}
 --- !u!33 &11844619001253957
 MeshFilter:
@@ -1188,54 +1338,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatCapsuleTag
   combatantId: enemy_3
---- !u!1 &5364024173472745173
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8073475907178252672}
-  - component: {fileID: 3605216740909457468}
-  m_Layer: 0
-  m_Name: CombatSkillsButtonsUIManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &8073475907178252672
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5364024173472745173}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1015.53876, y: 0, z: 1100.5166}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1201926221946950269}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3605216740909457468
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5364024173472745173}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 954d97d729b11c04ea47c5ce4f3ff9a7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatSkillButtonBarUIManager
-  rowsParent: {fileID: 4353263896009197133}
-  characterSkillButtonsRowPrefab: {fileID: 494412738750357235, guid: 52e7b7f0af1db434ba7b62185460c909, type: 3}
-  skillButtonPanelPrefab: {fileID: 278947936993341358, guid: d714ccc150807ed45a291c56e49c2019, type: 3}
-  worldRaycastDistance: 200
 --- !u!1 &5542756451522786421
 GameObject:
   m_ObjectHideFlags: 0
@@ -1269,7 +1371,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1201926221946950269}
+  m_Father: {fileID: 640923819084337989}
   m_LocalEulerAnglesHint: {x: 0, y: -31.324, z: 0}
 --- !u!33 &2937904991747389175
 MeshFilter:
@@ -1468,6 +1570,37 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!1 &5888484925452790565
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 477543086656297149}
+  m_Layer: 0
+  m_Name: ---------------------------------------
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &477543086656297149
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5888484925452790565}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1201926221946950269}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6370334789199048287
 GameObject:
   m_ObjectHideFlags: 0
@@ -1497,25 +1630,93 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 2069622823714994442}
+  - {fileID: 8828472054975250555}
+  - {fileID: 2931699597138162654}
+  - {fileID: 1799702433245041875}
+  - {fileID: 1206156277864555039}
+  - {fileID: 4782347712885319256}
+  - {fileID: 477543086656297149}
+  - {fileID: 2834357308639685449}
   - {fileID: 700127918518784528}
+  - {fileID: 713259878232779700}
+  - {fileID: 5279091798252058134}
+  - {fileID: 3330401419685256261}
   - {fileID: 8862556546695951674}
   - {fileID: 453244840671889781}
-  - {fileID: 2931699597138162654}
+  - {fileID: 5453809829374863056}
   - {fileID: 2783311184137285520}
+  - {fileID: 640923819084337989}
+  - {fileID: 3676224173959730243}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6398937517537999142
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 640923819084337989}
+  m_Layer: 0
+  m_Name: Units
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &640923819084337989
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6398937517537999142}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
   - {fileID: 7652696382368390521}
   - {fileID: 58845055904903848}
   - {fileID: 5021242702662112269}
   - {fileID: 4786553132515670833}
   - {fileID: 5926675025505596265}
   - {fileID: 2892356657232757551}
-  - {fileID: 3676224173959730243}
-  - {fileID: 4782347712885319256}
-  - {fileID: 713259878232779700}
-  - {fileID: 5279091798252058134}
-  - {fileID: 3330401419685256261}
-  - {fileID: 1799702433245041875}
-  - {fileID: 8073475907178252672}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1201926221946950269}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6608577842654833596
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2069622823714994442}
+  m_Layer: 0
+  m_Name: ---------------------------------------
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2069622823714994442
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6608577842654833596}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1201926221946950269}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6656784344468029839
 GameObject:
@@ -1528,9 +1729,10 @@ GameObject:
   - component: {fileID: 2931699597138162654}
   - component: {fileID: 7103085520931988737}
   - component: {fileID: 1677878620781844739}
-  - component: {fileID: 2419534351031168362}
+  - component: {fileID: 8100000000000000001}
+  - component: {fileID: 8100000000000000002}
   m_Layer: 0
-  m_Name: CombatRoot
+  m_Name: CombatLogic
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1563,6 +1765,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41bebe1c3f674bd47910a4e207f65de3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatPrototypeController
+  _sessionHub: {fileID: 8100000000000000001}
   allyVisualRoots:
   - {fileID: 7652696382368390521}
   - {fileID: 58845055904903848}
@@ -1573,17 +1776,9 @@ MonoBehaviour:
   - {fileID: 2892356657232757551}
   syncHpAsVerticalScale: 1
   logEventsToConsole: 1
-  combatLog: {fileID: 2419534351031168362}
-  presentationHub: {fileID: 8444318151394836212}
   defaultPlaySeconds: 2.5
   defaultPostPauseSeconds: 1.5
   skillTimings: []
-  combatCinemachineDirector: {fileID: 7663510450182754587}
-  skillButtonBarUIManager: {fileID: 3605216740909457468}
-  currentTurnMarkerPrefab: {fileID: 7541897798933782113, guid: 364b8b66bc5f22c42b47a0580ca31664, type: 3}
-  currentTurnMarkerLocalOffset: {x: 0, y: -0.9, z: 0}
-  currentTurnMarkerBaseEuler: {x: 90, y: 0, z: 0}
-  currentTurnMarkerZSpinDegreesPerSecond: 90
   damagePunchScale: {x: 0.18, y: 0.28, z: 0.18}
   damagePunchDuration: 0.32
   damagePunchVibrato: 8
@@ -1617,7 +1812,7 @@ MonoBehaviour:
   punchElasticity: 0.45
   spinAxis: 0
   spinPeriodSeconds: 3.5
---- !u!114 &2419534351031168362
+--- !u!114 &8100000000000000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1626,21 +1821,31 @@ MonoBehaviour:
   m_GameObject: {fileID: 6656784344468029839}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dd783aed04e10814f973350c62b7097f, type: 3}
+  m_Script: {fileID: 11500000, guid: 8a7f2c4e9b1d4a6f8e0c2b4a6d8f0e1a, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatLogStackView
-  notificationsContainer: {fileID: 8233872340251891144}
-  notificationPanelPrefab: {fileID: 1574735677070693295, guid: aa3168e6f6b065244a0153e7d03a51cd, type: 3}
-  lifetimeSeconds: 20
-  spawnSlideOffset: {x: 180, y: 0}
-  spawnStartScale: 0.88
-  spawnEntryDuration: 0.32
-  skipSlideWhenOffsetZero: 1
-  spawnPunchScale: {x: 0.12, y: 0.12, z: 0.12}
-  spawnPunchDuration: 0.28
-  spawnPunchVibrato: 6
-  spawnPunchElasticity: 0.5
-  slideUpDuration: 0.35
+  m_EditorClassIdentifier: 
+--- !u!114 &8100000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6656784344468029839}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b8e1d3f5a7c9e0b2d4f6a8c0e2b4d6a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  combatSession: {fileID: 7103085520931988737}
+  sessionHub: {fileID: 8100000000000000001}
+  combatLog: {fileID: 2275919338010125768}
+  presentationHub: {fileID: 8444318151394836212}
+  combatCinemachineDirector: {fileID: 7663510450182754587}
+  skillButtonBarUIManager: {fileID: 5213722406700642896}
+  currentTurnMarkerPrefab: {fileID: 7541897798933782113, guid: 364b8b66bc5f22c42b47a0580ca31664, type: 3}
+  currentTurnMarkerLocalOffset: {x: 0, y: -0.9, z: 0}
+  currentTurnMarkerBaseEuler: {x: 90, y: 0, z: 0}
+  currentTurnMarkerZSpinDegreesPerSecond: 90
 --- !u!1 &7744613084630586744
 GameObject:
   m_ObjectHideFlags: 0
@@ -1749,11 +1954,11 @@ Transform:
   m_GameObject: {fileID: 7797439526528401555}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.26996532, z: -0, w: 0.96287006}
-  m_LocalPosition: {x: 6.7174644, y: 1, z: 3.8029542}
+  m_LocalPosition: {x: 6.717464, y: 1, z: 3.8029542}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1201926221946950269}
+  m_Father: {fileID: 640923819084337989}
   m_LocalEulerAnglesHint: {x: 0, y: -31.324, z: 0}
 --- !u!33 &4311994803061867484
 MeshFilter:
@@ -2077,6 +2282,37 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!1 &9182670060629028766
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8828472054975250555}
+  m_Layer: 0
+  m_Name: --COMBAT-RELATED--
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8828472054975250555
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9182670060629028766}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1201926221946950269}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &111451220488163717
 PrefabInstance:
   m_ObjectHideFlags: 0

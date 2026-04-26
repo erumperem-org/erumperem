@@ -12,17 +12,22 @@ using Game.Core.Engine;
 using Game.Core.Models;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.Serialization;
 
 namespace Erumperem.Combat
 {
     /// <summary>
     /// Protótipo 2v4: unidades já colocadas na cena; liga <see cref="CombatCapsuleTag"/> ao estado do <see cref="BattleSimulator"/>.
     /// Clique no alvo para lançar a skill; teclas 1–7 só escolhem o slot (mesmo que o botão).
+    /// Apresentação (UI, log, câmera) subscreve <see cref="CombatSessionHub"/>; este script não referencia esses serviços.
     /// </summary>
+    [DefaultExecutionOrder(-20)]
     public sealed class CombatPrototypeController : MonoBehaviour
     {
         private const string ActionRockTweenId = "CombatActionRock";
+
+        [Header("Sessão (eventos)")]
+        [Tooltip("Opcional: emite apresentação e hooks de turno. Use CombatSceneViewBinder na cena para ligar UI.")]
+        [SerializeField] private CombatSessionHub _sessionHub;
 
         [Header("Unidades na cena")]
         [Tooltip("Ordem: índice 0 = ally_1, 1 = ally_2 (deve coincidir com BattleFactory).")]
@@ -35,31 +40,10 @@ namespace Erumperem.Combat
         [Header("Debug")]
         [SerializeField] private bool logEventsToConsole = true;
 
-        [Header("Apresentação por ação")]
-        [Tooltip("Opcional: pilha de mensagens (prefab com TMP).")]
-        [SerializeField] private CombatLogStackView combatLog;
-        [Tooltip("Opcional: UI subscreve eventos (texto hotbar / esconder durante ação).")]
-        [SerializeField] private CombatPresentationHub presentationHub;
+        [Header("Apresentação por ação (timings)")]
         [SerializeField] private float defaultPlaySeconds = 2.5f;
         [SerializeField] private float defaultPostPauseSeconds = 1.5f;
         [SerializeField] private CombatSkillPresentationTiming[] skillTimings = Array.Empty<CombatSkillPresentationTiming>();
-
-        [Header("Cinemachine (opcional)")]
-        [SerializeField] private CombatCinemachineDirector combatCinemachineDirector;
-
-        [Header("UI — barra de skills (hover)")]
-        [Tooltip("Opcional: uma row por combatente, hover 3D mostra a linha; clique no skill + clique no inimigo para lançar.")]
-        [SerializeField] private CombatSkillButtonBarUIManager skillButtonBarUIManager;
-
-        [Header("Indicador de turno (opcional)")]
-        [Tooltip("Instanciado abaixo do herói cujo input está a ser pedido. Atribui o prefab CurrentTurnMarker na cena.")]
-        [SerializeField] private GameObject currentTurnMarkerPrefab;
-        [SerializeField] private Vector3 currentTurnMarkerLocalOffset;
-        [Tooltip("Rotação base do prefab (ex.: 90,0,0). Só o eixo Z é animado (varia 0, 90, 270, …).")]
-        [SerializeField] private Vector3 currentTurnMarkerBaseEuler = new(90f, 0f, 0f);
-        [Tooltip("Graus por segundo a somar no Z local, em cima de base (ex.: 90,0,0) → 90,0,θ.")]
-        [FormerlySerializedAs("currentTurnMarkerSpinDegreesPerSecond")]
-        [SerializeField] private float currentTurnMarkerZSpinDegreesPerSecond = 90f;
 
         [Header("Feedback de dano (DOTween)")]
         [SerializeField] private Vector3 damagePunchScale = new(0.18f, 0.28f, 0.18f);
@@ -95,9 +79,6 @@ namespace Erumperem.Combat
         private Camera _camera;
         private int? _skillBarSelectedSlot;
         private string _skillBarSelectedOwnerId;
-        private Transform _currentTurnMarkerTransform;
-        private string _turnMarkerLastCombatantId;
-        private float _turnMarkerSpinZDegrees;
         private bool _leftClickPressedThisFrame;
         private bool _rightClickPressedThisFrame;
         private Vector2 _pointerScreenPosition;
@@ -106,6 +87,42 @@ namespace Erumperem.Combat
         public BattleState BattleState => _state;
         public BattleSimulator BattleSimulator => _sim;
         public Combatant CurrentSelectedEnemy => _selectedEnemyTarget;
+
+        public bool IsBattleOngoing => !_battleEnded && _state != null;
+
+        public Transform TryGetUnitVisualRoot(string combatantId)
+        {
+            if (string.IsNullOrEmpty(combatantId) || !_views.TryGetValue(combatantId, out var root))
+            {
+                return null;
+            }
+
+            return root;
+        }
+
+        /// <summary>Para o marcador de turno: indica se, neste frame, o jogador comanda um herói e o marcador deve mostrar.</summary>
+        public bool TryGetPlayerTurnMarkerState(out string combatantId, out bool shouldShowMarker)
+        {
+            combatantId = null;
+            shouldShowMarker = false;
+            if (_state == null || _battleEnded)
+            {
+                return false;
+            }
+
+            shouldShowMarker = _needsPlayerInput &&
+                !_presentationBusy &&
+                _pendingPlayerActor != null &&
+                !_pendingPlayerActor.Health.IsDead &&
+                IsPlayerControlled(_pendingPlayerActor);
+
+            if (shouldShowMarker)
+            {
+                combatantId = _pendingPlayerActor.Identity.Id;
+            }
+
+            return true;
+        }
 
         public Combatant FindCombatantById(string combatantId) => FindCombatant(combatantId);
 
@@ -171,7 +188,7 @@ namespace Erumperem.Combat
 
             _skillBarSelectedOwnerId = ownerCombatantId;
             _skillBarSelectedSlot = zeroBasedSlot;
-            skillButtonBarUIManager?.SyncVisibleRowWithBattle();
+            _sessionHub?.RaiseSkillBarBindingShouldSync();
             return true;
         }
 
@@ -184,7 +201,7 @@ namespace Erumperem.Combat
 
             _skillBarSelectedSlot = null;
             _skillBarSelectedOwnerId = null;
-            skillButtonBarUIManager?.OnSkillBarSelectionCleared();
+            _sessionHub?.RaiseSkillBarSelectionClearedBySession();
         }
 
         public void NotifySkillBarSlotRequestFailed(int zeroBasedSlot)
@@ -249,10 +266,9 @@ namespace Erumperem.Combat
                 return;
             }
 
-            skillButtonBarUIManager?.Initialize(this);
-
             _sim.EmitBattleStarted(_state);
             BeginRound();
+            _sessionHub?.RaiseCombatSessionReadyForUi(this);
 
             Debug.Log(
                 "Combate: clique num herói para listar skills [1]–[7] no console; clique num inimigo para alvo; " +
@@ -267,14 +283,6 @@ namespace Erumperem.Combat
             {
                 combatantIdAndTransform.Value?.DOKill(false);
             }
-
-            if (_currentTurnMarkerTransform != null)
-            {
-                Destroy(_currentTurnMarkerTransform.gameObject);
-                _currentTurnMarkerTransform = null;
-            }
-
-            _turnMarkerLastCombatantId = null;
         }
 
         private void SubscribeToInputEvents()
@@ -341,24 +349,21 @@ namespace Erumperem.Combat
                 }
             }
 
-            // Depois de preparar turno atual, a barra já sabe quem está a agir.
-            skillButtonBarUIManager?.Tick();
             TryDeselectSkillBarWithRightButton();
             PickTargetFromMouse();
             SyncUnitVisuals();
-            SyncCurrentTurnMarker();
             ConsumeFrameInputFlags();
         }
 
         private void PublishPlayerSkillHelpForAlly(Combatant ally, int allyIndex)
         {
-            if (presentationHub == null || ally == null)
+            if (ally == null)
             {
                 return;
             }
 
             var text = CombatSkillBarDebug.BuildHotbarPanelText(ally, allyIndex, _state, _sim, _selectedEnemyTarget);
-            presentationHub.PublishPlayerSkillHelp(text);
+            _sessionHub?.RaisePlayerSkillHelpText(text);
         }
 
 
@@ -569,12 +574,14 @@ namespace Erumperem.Combat
                 }
 
                 _preparedThisStep = true;
+                _sessionHub?.RaiseTurnStarted();
             }
 
             if (IsPlayerControlled(actor))
             {
                 _needsPlayerInput = true;
                 _pendingPlayerActor = actor;
+                _sessionHub?.RaisePlayerCommandRequired(actor);
                 PublishPlayerSkillHelpForAlly(actor, FindAllyIndex(actor));
                 return false;
             }
@@ -596,6 +603,7 @@ namespace Erumperem.Combat
 
             _actorIndex++;
             _preparedThisStep = false;
+            _sessionHub?.RaiseTurnEnded();
             return true;
         }
 
@@ -609,12 +617,10 @@ namespace Erumperem.Combat
                 return;
             }
 
-            presentationHub?.PublishCombatEnded();
+            _sessionHub?.RaiseCombatSessionClosed();
             _battleEnded = true;
             _needsPlayerInput = false;
             ClearSkillBarSelection();
-            DeactivateCurrentTurnMarker();
-            skillButtonBarUIManager?.OnBattleEnded();
             _sim.EmitBattleEnded(_state);
             LogLastEvents();
             Debug.Log($"Batalha terminou. Vencedor: {_state.Winner}");
@@ -663,8 +669,8 @@ namespace Erumperem.Combat
             try
             {
                 StopActorActionRock();
-                combatCinemachineDirector?.EndActionFocus();
-                presentationHub?.PublishActionPresentationStarted();
+                _sessionHub?.RaiseCinemachineFocusEnded();
+                _sessionHub?.RaiseActionPresentationStarted();
                 GetTimingForSkill(action.Skill.Id, out var play, out var postPause);
                 var rockDuration = Mathf.Max(0f, play + postPause);
 
@@ -675,9 +681,10 @@ namespace Erumperem.Combat
                 if (count > 0)
                 {
                     var slice = _collector.Events.GetRange(startIdx, count);
-                    foreach (var line in CombatNarrativeFormatter.BuildLines(_state, action, slice))
+                    var narrativeLines = CombatNarrativeFormatter.BuildLines(_state, action, slice).ToList();
+                    if (narrativeLines.Count > 0)
                     {
-                        combatLog?.Push(line);
+                        _sessionHub?.RaiseNarrativeLines(narrativeLines);
                     }
 
                     foreach (var combatEvent in slice)
@@ -697,7 +704,7 @@ namespace Erumperem.Combat
                     _views.TryGetValue(action.Actor.Identity.Id, out var actorVisualRoot))
                 {
                     _views.TryGetValue(action.Target.Identity.Id, out var targetVisualRoot);
-                    combatCinemachineDirector?.BeginActionFocus(actorVisualRoot, targetVisualRoot);
+                    _sessionHub?.RaiseCinemachineFocusBegan(actorVisualRoot, targetVisualRoot);
                 }
 
                 if (actorAfter != null && !actorAfter.Health.IsDead && rockDuration > 0.02f)
@@ -722,10 +729,11 @@ namespace Erumperem.Combat
             }
             finally
             {
-                combatCinemachineDirector?.EndActionFocus();
+                _sessionHub?.RaiseCinemachineFocusEnded();
                 StopActorActionRock();
                 _presentationBusy = false;
                 onStepComplete?.Invoke();
+                _sessionHub?.RaiseTurnEnded();
                 StartCoroutine(NotifyPresentationEndedDeferred());
                 if (_state.IsFinished && !_battleEnded)
                 {
@@ -737,7 +745,7 @@ namespace Erumperem.Combat
         private IEnumerator NotifyPresentationEndedDeferred()
         {
             yield return null;
-            presentationHub?.PublishActionPresentationEnded();
+            _sessionHub?.RaiseActionPresentationEnded();
         }
 
         private void BeginActorActionRock(ChosenAction action, float totalDurationSeconds)
@@ -877,85 +885,6 @@ namespace Erumperem.Combat
             }
 
             tag.combatantId = combatantId;
-        }
-
-        private void DeactivateCurrentTurnMarker()
-        {
-            if (_currentTurnMarkerTransform == null)
-            {
-                return;
-            }
-
-            _currentTurnMarkerTransform.gameObject.SetActive(false);
-            _turnMarkerLastCombatantId = null;
-        }
-
-        private void SyncCurrentTurnMarker()
-        {
-            if (currentTurnMarkerPrefab == null)
-            {
-                return;
-            }
-
-            if (_state == null || _battleEnded)
-            {
-                DeactivateCurrentTurnMarker();
-                return;
-            }
-
-            var shouldShow = _needsPlayerInput &&
-                !_presentationBusy &&
-                _pendingPlayerActor != null &&
-                !_pendingPlayerActor.Health.IsDead &&
-                IsPlayerControlled(_pendingPlayerActor);
-
-            if (!shouldShow)
-            {
-                DeactivateCurrentTurnMarker();
-                return;
-            }
-
-            if (!_views.TryGetValue(_pendingPlayerActor.Identity.Id, out var parent) || parent == null)
-            {
-                return;
-            }
-
-            if (_currentTurnMarkerTransform == null)
-            {
-                var go = Instantiate(currentTurnMarkerPrefab, parent, false);
-                _currentTurnMarkerTransform = go.transform;
-            }
-            else
-            {
-                if (_currentTurnMarkerTransform.parent != parent)
-                {
-                    _currentTurnMarkerTransform.SetParent(parent, false);
-                }
-
-                if (!_currentTurnMarkerTransform.gameObject.activeSelf)
-                {
-                    _currentTurnMarkerTransform.gameObject.SetActive(true);
-                }
-            }
-
-            if (!string.Equals(_turnMarkerLastCombatantId, _pendingPlayerActor.Identity.Id, StringComparison.Ordinal))
-            {
-                _turnMarkerLastCombatantId = _pendingPlayerActor.Identity.Id;
-                _turnMarkerSpinZDegrees = 0f;
-            }
-
-            _currentTurnMarkerTransform.localPosition = currentTurnMarkerLocalOffset;
-            _turnMarkerSpinZDegrees += currentTurnMarkerZSpinDegreesPerSecond * Time.deltaTime;
-            if (_turnMarkerSpinZDegrees >= 360f)
-            {
-                _turnMarkerSpinZDegrees -= 360f;
-            }
-
-            var baseE = currentTurnMarkerBaseEuler;
-            _currentTurnMarkerTransform.localEulerAngles = new Vector3(
-                baseE.x,
-                baseE.y,
-                baseE.z + _turnMarkerSpinZDegrees);
         }
 
         private void SyncUnitVisuals()
