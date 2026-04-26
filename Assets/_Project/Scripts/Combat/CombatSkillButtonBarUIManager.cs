@@ -15,6 +15,7 @@ namespace Erumperem.Combat
         [SerializeField] private GameObject characterSkillButtonsRowPrefab;
         [SerializeField] private GameObject skillButtonPanelPrefab;
         [SerializeField] private float worldRaycastDistance = 200f;
+        [SerializeField] private CombatSkillBarSelectionController skillBarSelectionController;
 
         private CombatPrototypeController _controller;
         private readonly Dictionary<string, CharacterSkillButtonsRowView> _rowsByCombatantId =
@@ -28,6 +29,13 @@ namespace Erumperem.Combat
             {
                 rowsParent = transform;
             }
+
+            if (skillBarSelectionController == null)
+            {
+                skillBarSelectionController = GetComponent<CombatSkillBarSelectionController>();
+            }
+
+            skillBarSelectionController?.Bind(controller);
 
             if (_controller == null)
             {
@@ -67,14 +75,20 @@ namespace Erumperem.Combat
                 rowObject.SetActive(false);
                 var row = rowObject.GetComponent<CharacterSkillButtonsRowView>() ??
                     rowObject.AddComponent<CharacterSkillButtonsRowView>();
-                row.Build(this, id, skillButtonPanelPrefab);
+                row.Build(this, id, skillButtonPanelPrefab, skillBarSelectionController);
                 _rowsByCombatantId[id] = row;
             }
         }
 
-        /// <summary>Clique num botão de skill — mesmo fluxo que a tecla 1–7 (<see cref="CombatPrototypeController.TrySelectSkillBarSlot"/>).</summary>
+        /// <summary>Fallback se não houver <see cref="CombatSkillBarSelectionController"/> na cena.</summary>
         public void NotifySkillBarSlotSelected(string ownerCombatantId, int zeroBasedSlot)
         {
+            if (skillBarSelectionController != null)
+            {
+                skillBarSelectionController.RequestSelectSkillSlot(ownerCombatantId, zeroBasedSlot);
+                return;
+            }
+
             if (_controller == null)
             {
                 return;

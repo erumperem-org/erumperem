@@ -7,20 +7,12 @@ using UnityEngine.UI;
 
 namespace Erumperem.Combat
 {
+    /// <summary>
+    /// Único local de DOTween para o painel do botão de skill: captura posição/escala iniciais no <see cref="Start"/>,
+    /// e repõe o layout real após animações. Emite clique/hover; descrição fica no mesmo sítio.
+    /// </summary>
     [DisallowMultipleComponent]
-    public sealed class SkillButtonSlotPointerRelay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
-    {
-        private CharacterSkillButtonSlot _host;
-
-        public void Init(CharacterSkillButtonSlot host) => _host = host;
-
-        public void OnPointerEnter(PointerEventData eventData) => _host?.HandlePointerEnter();
-
-        public void OnPointerExit(PointerEventData eventData) => _host?.HandlePointerExit();
-    }
-
-    [DisallowMultipleComponent]
-    public sealed class CharacterSkillButtonSlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    public sealed class SkillButtonPanelView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         private const float PointerEnterScale = 1.05f;
         private const float PointerEnterDuration = 0.08f;
@@ -43,6 +35,13 @@ namespace Erumperem.Combat
         [Tooltip("CanvasGroup (fade) no painel; se faltar, é criada em runtime.")]
         [SerializeField] private bool ensureCanvasGroupOnDescriptionPanel = true;
 
+        [Header("Animação (só neste painel)")]
+        [Tooltip("Aplicado no root do painel; depois de tweens, repõe valores capturados no Start.")]
+        [SerializeField] private bool useSelectionScaleTween = true;
+
+        public event Action<SkillButtonPanelView> PointerEntered;
+        public event Action<SkillButtonPanelView> PointerExited;
+
         private Button _skillButton;
         private RectTransform _buttonRect;
         private Image _panelBackgroundImage;
@@ -52,61 +51,44 @@ namespace Erumperem.Combat
         private TextMeshProUGUI _descriptionText;
         private CanvasGroup _descriptionCanvasGroup;
         private Vector3 _descriptionPanelBaseScale = Vector3.one;
+        private Vector2 _rootAnchoredBase;
+        private Vector3 _rootLocalScaleBase = Vector3.one;
+        private Vector2 _rootSizeDeltaBase;
+        private Vector2 _buttonAnchoredBase;
+        private Vector3 _buttonLocalScaleBase = Vector3.one;
+        private Vector2 _buttonSizeDeltaBase;
+        private Color _panelColorBase;
+        private Color _buttonColorBase;
+        private CanvasGroup _buttonCanvasGroup;
         private SkillButtonSlotPointerRelay _pointerRelay;
         private CharacterSkillButtonsRowView _parentRow;
-        private CanvasGroup _buttonCanvasGroup;
 
-        private Action _onClick;
         private bool _isInteractable;
         private bool _isSelected;
         private string _playerDescriptionLine = string.Empty;
         private bool _isDescriptionPanelVisible;
         private bool _descriptionLayoutInitialized;
-        private Vector2 _anchoredBase;
-        private Vector3 _localScaleBase = Vector3.one;
-        private Color _panelColorBase;
-        private Color _buttonColorBase;
         private bool? _lastAppliedIsSelected;
         private TextMeshProUGUI _hotkeyDigitLabel;
+        private int _zeroBasedSlotIndex;
+        private bool _initialLayoutCaptured;
 
         private void Awake()
         {
-            _rootRectTransform = (RectTransform)transform;
-            _panelBackgroundImage = GetComponent<Image>();
-            _skillButton = GetComponentInChildren<Button>(true);
-            if (_skillButton != null)
-            {
-                _buttonImage = _skillButton.targetGraphic as Image;
-                _buttonRect = _skillButton.transform as RectTransform;
-            }
-
-            if (_rootRectTransform != null)
-            {
-                _anchoredBase = _rootRectTransform.anchoredPosition;
-                _localScaleBase = _rootRectTransform.localScale;
-            }
-
-            if (_panelBackgroundImage != null)
-            {
-                _panelColorBase = _panelBackgroundImage.color;
-                _panelBackgroundImage.raycastTarget = true;
-            }
-
-            if (_buttonImage != null)
-            {
-                _buttonColorBase = _buttonImage.color;
-            }
+            EnsureButtonReferencesResolved();
         }
 
         private void Start()
         {
+            CaptureInitialLayout();
             CacheParentRow();
             TryResolveDescriptionUi();
         }
 
-        public void Wire(Action onClick)
+        public void Wire(int zeroBasedSlotIndex, Action onSlotClickRequested)
         {
-            _onClick = onClick;
+            EnsureButtonReferencesResolved();
+            _zeroBasedSlotIndex = zeroBasedSlotIndex;
             if (_skillButton == null)
             {
                 return;
@@ -121,7 +103,7 @@ namespace Erumperem.Combat
                 }
 
                 PlayClickFeedback();
-                _onClick?.Invoke();
+                onSlotClickRequested?.Invoke();
             });
 
             _pointerRelay = _skillButton.gameObject.GetComponent<SkillButtonSlotPointerRelay>();
@@ -131,7 +113,7 @@ namespace Erumperem.Combat
             }
 
             _pointerRelay.Init(this);
-            if (_skillButton != null && _skillButton.targetGraphic != null)
+            if (_skillButton.targetGraphic != null)
             {
                 _skillButton.targetGraphic.raycastTarget = true;
             }
@@ -140,14 +122,52 @@ namespace Erumperem.Combat
             TryResolveDescriptionUi();
         }
 
+        private void EnsureButtonReferencesResolved()
+        {
+            if (_rootRectTransform == null)
+            {
+                _rootRectTransform = (RectTransform)transform;
+            }
+
+            if (_panelBackgroundImage == null)
+            {
+                _panelBackgroundImage = GetComponent<Image>();
+                if (_panelBackgroundImage != null)
+                {
+                    _panelColorBase = _panelBackgroundImage.color;
+                    _panelBackgroundImage.raycastTarget = true;
+                }
+            }
+
+            if (_skillButton == null)
+            {
+                _skillButton = GetComponentInChildren<Button>(true);
+            }
+
+            if (_skillButton != null)
+            {
+                if (_buttonImage == null)
+                {
+                    _buttonImage = _skillButton.targetGraphic as Image;
+                    if (_buttonImage != null)
+                    {
+                        _buttonColorBase = _buttonImage.color;
+                    }
+                }
+
+                if (_buttonRect == null)
+                {
+                    _buttonRect = _skillButton.transform as RectTransform;
+                }
+            }
+        }
+
+        public int ZeroBasedSlotIndex => _zeroBasedSlotIndex;
+
         public void OnPointerEnter(PointerEventData eventData) => HandlePointerEnter();
 
         public void OnPointerExit(PointerEventData eventData) => HandlePointerExit();
 
-        private void CacheParentRow() =>
-            _parentRow = GetComponentInParent<CharacterSkillButtonsRowView>();
-
-        /// <summary>Fecha a modal deste slot (chamada pela row quando o rato muda de botão no mesmo ecrã).</summary>
         public void DismissDescriptionFromSiblings() => HideDescriptionPanel();
 
         public void SetVisible(bool visible)
@@ -172,10 +192,11 @@ namespace Erumperem.Combat
             _isInteractable = interactable;
             _isSelected = selected;
             TryCacheHotkeyDigitLabel();
-            if (_hotkeyDigitLabel != null && hotkeyLabelOneToSeven >= 1 && hotkeyLabelOneToSeven <= 7)
+            if (_hotkeyDigitLabel != null && hotkeyLabelOneToSeven >= 1 && hotkeyLabelOneToSeven <= 6)
             {
                 _hotkeyDigitLabel.text = hotkeyLabelOneToSeven.ToString();
             }
+
             if (_skillButton != null)
             {
                 _skillButton.interactable = interactable;
@@ -210,33 +231,47 @@ namespace Erumperem.Combat
                 return;
             }
 
+            if (!_initialLayoutCaptured)
+            {
+                CaptureInitialLayout();
+            }
+
             var wasFirstLayoutApply = !_lastAppliedIsSelected.HasValue;
             var selectionStateChanged = !wasFirstLayoutApply && _lastAppliedIsSelected.Value != selected;
             _lastAppliedIsSelected = selected;
             if (selectionStateChanged || wasFirstLayoutApply)
             {
-                _rootRectTransform.DOKill(false);
+                KillTweensOnButtonChrome();
                 if (wasFirstLayoutApply && !selected)
                 {
-                    _rootRectTransform.localScale = _localScaleBase;
+                    RestoreRootLayout();
                 }
-                else if (selected)
+                else if (useSelectionScaleTween)
                 {
-                    var targetScale = new Vector3(
-                        SelectedLocalScale * _localScaleBase.x,
-                        SelectedLocalScale * _localScaleBase.y,
-                        SelectedLocalScale * _localScaleBase.z);
-                    _rootRectTransform
-                        .DOScale(targetScale, SelectionTweenDuration)
-                        .SetEase(Ease.OutCubic)
-                        .SetLink(gameObject);
+                    if (selected)
+                    {
+                        var targetScale = new Vector3(
+                            SelectedLocalScale * _rootLocalScaleBase.x,
+                            SelectedLocalScale * _rootLocalScaleBase.y,
+                            SelectedLocalScale * _rootLocalScaleBase.z);
+                        _rootRectTransform
+                            .DOScale(targetScale, SelectionTweenDuration)
+                            .SetEase(Ease.OutCubic)
+                            .SetLink(gameObject)
+                            .OnComplete(RestoreRootLayoutForCurrentSelection);
+                    }
+                    else
+                    {
+                        _rootRectTransform
+                            .DOScale(_rootLocalScaleBase, SelectionTweenDuration)
+                            .SetEase(Ease.OutCubic)
+                            .SetLink(gameObject)
+                            .OnComplete(RestoreRootLayoutForCurrentSelection);
+                    }
                 }
                 else
                 {
-                    _rootRectTransform
-                        .DOScale(_localScaleBase, SelectionTweenDuration)
-                        .SetEase(Ease.OutCubic)
-                        .SetLink(gameObject);
+                    RestoreRootLayoutForCurrentSelection();
                 }
             }
 
@@ -254,6 +289,7 @@ namespace Erumperem.Combat
             _parentRow?.DismissOtherDescriptionPanels(this);
             ShowDescriptionIfPossible();
             TweenButtonHoverEnter();
+            PointerEntered?.Invoke(this);
             if (_rootRectTransform == null || _isSelected)
             {
                 return;
@@ -266,9 +302,10 @@ namespace Erumperem.Combat
 
             _rootRectTransform.DOKill(false);
             _rootRectTransform
-                .DOScale(_localScaleBase * PointerEnterScale, PointerEnterDuration)
+                .DOScale(_rootLocalScaleBase * PointerEnterScale, PointerEnterDuration)
                 .SetEase(Ease.OutQuad)
-                .SetLink(gameObject);
+                .SetLink(gameObject)
+                .OnComplete(RestoreRootLayoutForCurrentSelection);
         }
 
         public void HandlePointerExit()
@@ -276,6 +313,81 @@ namespace Erumperem.Combat
             HideDescriptionPanel();
             TweenButtonHoverExit();
             HandlePointerExited(animate: true);
+            PointerExited?.Invoke(this);
+        }
+
+        private void CaptureInitialLayout()
+        {
+            if (_rootRectTransform != null)
+            {
+                _rootAnchoredBase = _rootRectTransform.anchoredPosition;
+                _rootLocalScaleBase = _rootRectTransform.localScale;
+                _rootSizeDeltaBase = _rootRectTransform.sizeDelta;
+            }
+
+            if (_buttonRect != null)
+            {
+                _buttonAnchoredBase = _buttonRect.anchoredPosition;
+                _buttonLocalScaleBase = _buttonRect.localScale;
+                _buttonSizeDeltaBase = _buttonRect.sizeDelta;
+            }
+
+            _initialLayoutCaptured = _rootRectTransform != null;
+        }
+
+        private void RestoreRootLayout()
+        {
+            if (_rootRectTransform == null)
+            {
+                return;
+            }
+
+            _rootRectTransform.anchoredPosition = _rootAnchoredBase;
+            _rootRectTransform.localScale = _rootLocalScaleBase;
+            _rootRectTransform.sizeDelta = _rootSizeDeltaBase;
+        }
+
+        private void RestoreRootLayoutForCurrentSelection()
+        {
+            if (_rootRectTransform == null)
+            {
+                return;
+            }
+
+            _rootRectTransform.anchoredPosition = _rootAnchoredBase;
+            _rootRectTransform.sizeDelta = _rootSizeDeltaBase;
+            _rootRectTransform.localScale = _isSelected ? GetSelectedRootScale() : _rootLocalScaleBase;
+        }
+
+        private Vector3 GetSelectedRootScale() =>
+            new Vector3(
+                SelectedLocalScale * _rootLocalScaleBase.x,
+                SelectedLocalScale * _rootLocalScaleBase.y,
+                SelectedLocalScale * _rootLocalScaleBase.z);
+
+        private void RestoreButtonLayout()
+        {
+            if (_buttonRect == null)
+            {
+                return;
+            }
+
+            _buttonRect.anchoredPosition = _buttonAnchoredBase;
+            _buttonRect.localScale = _buttonLocalScaleBase;
+            _buttonRect.sizeDelta = _buttonSizeDeltaBase;
+        }
+
+        private void KillTweensOnButtonChrome()
+        {
+            if (_rootRectTransform != null)
+            {
+                _rootRectTransform.DOKill(false);
+            }
+
+            if (_buttonRect != null)
+            {
+                _buttonRect.DOKill(false);
+            }
         }
 
         private void TweenButtonHoverEnter()
@@ -288,7 +400,11 @@ namespace Erumperem.Combat
             _buttonRect.DOKill(false);
             _buttonRect
                 .DOPunchScale(new Vector3(0.06f, 0.06f, 0.06f), 0.14f, 6, 0.3f)
-                .SetLink(_buttonRect.gameObject);
+                .SetLink(_buttonRect.gameObject)
+                .OnComplete(() =>
+                {
+                    RestoreButtonLayout();
+                });
         }
 
         private void TweenButtonHoverExit()
@@ -299,6 +415,7 @@ namespace Erumperem.Combat
             }
 
             _buttonRect.DOKill(false);
+            RestoreButtonLayout();
         }
 
         private void HandlePointerExited(bool animate)
@@ -310,15 +427,16 @@ namespace Erumperem.Combat
 
             if (!animate)
             {
-                _rootRectTransform.localScale = _localScaleBase;
+                RestoreRootLayout();
                 return;
             }
 
             _rootRectTransform.DOKill(false);
             _rootRectTransform
-                .DOScale(_localScaleBase, PointerExitDuration)
+                .DOScale(_rootLocalScaleBase, PointerExitDuration)
                 .SetEase(Ease.OutQuad)
-                .SetLink(gameObject);
+                .SetLink(gameObject)
+                .OnComplete(RestoreRootLayoutForCurrentSelection);
         }
 
         private void PlayClickFeedback()
@@ -327,23 +445,32 @@ namespace Erumperem.Combat
             {
                 return;
             }
-
+            // Deixa o botão afundado/menor
             _rootRectTransform
-                .DOPunchScale(new Vector3(ClickPunchScale, ClickPunchScale * 1.2f, 0f), ClickPunchDuration, ClickPunchVibrato, ClickPunchElasticity)
-                .SetLink(gameObject);
+                .DOScale(new Vector3(0.95f, 0.95f, 0.95f), 0.1f)
+                .SetEase(Ease.OutQuad)
+                .SetLink(gameObject)
+                .OnComplete(RestoreRootLayoutForCurrentSelection);
+
+
+
         }
+
+        private void CacheParentRow() =>
+            _parentRow = GetComponentInParent<CharacterSkillButtonsRowView>();
 
         private void OnDisable()
         {
             ForceHideDescriptionPanelImmediate();
+            KillTweensOnButtonChrome();
             if (_rootRectTransform != null)
             {
-                _rootRectTransform.DOKill(false);
+                RestoreRootLayout();
             }
 
             if (_buttonRect != null)
             {
-                _buttonRect.DOKill(false);
+                RestoreButtonLayout();
             }
         }
 
@@ -576,5 +703,17 @@ namespace Erumperem.Combat
             _descriptionPanel.gameObject.SetActive(false);
             _isDescriptionPanelVisible = false;
         }
+    }
+
+    [DisallowMultipleComponent]
+    public sealed class SkillButtonSlotPointerRelay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    {
+        private SkillButtonPanelView _host;
+
+        public void Init(SkillButtonPanelView host) => _host = host;
+
+        public void OnPointerEnter(PointerEventData eventData) => _host?.HandlePointerEnter();
+
+        public void OnPointerExit(PointerEventData eventData) => _host?.HandlePointerExit();
     }
 }

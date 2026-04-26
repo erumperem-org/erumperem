@@ -9,8 +9,8 @@ using UnityEngine;
 namespace Erumperem.Combat
 {
     /// <summary>
-    /// Uma linha (prefab <c>CharacterSkillButtonsHorizontalContainer</c>) com até 7 instâncias de
-    /// <c>SkillButtonPanel</c>, reutilizável por combatente.
+    /// Uma linha (prefab <c>CharacterSkillButtonsHorizontalContainer</c>) com até
+    /// <see cref="MaxSlots"/> instâncias de <c>SkillButtonPanel</c>, reutilizável por combatente.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CharacterSkillButtonsRowView : MonoBehaviour
@@ -19,7 +19,7 @@ namespace Erumperem.Combat
         private const float RowIntroScaleFrom = 0.94f;
         private const float RowIntroDuration = 0.2f;
 
-        private readonly CharacterSkillButtonSlot[] _slots = new CharacterSkillButtonSlot[MaxSlots];
+        private readonly SkillButtonPanelView[] _slots = new SkillButtonPanelView[MaxSlots];
         private string _combatantId;
         private CombatSkillButtonBarUIManager _barManager;
         private GameObject _slotPrefab;
@@ -30,7 +30,8 @@ namespace Erumperem.Combat
         public void Build(
             CombatSkillButtonBarUIManager barManager,
             string combatantId,
-            GameObject skillButtonPanelPrefab)
+            GameObject skillButtonPanelPrefab,
+            CombatSkillBarSelectionController skillBarSelectionOrNull = null)
         {
             _barManager = barManager;
             _combatantId = combatantId;
@@ -47,14 +48,26 @@ namespace Erumperem.Combat
             for (var slotIndex = 0; slotIndex < MaxSlots; slotIndex++)
             {
                 var go = Instantiate(_slotPrefab, transform, false);
-                var slot = go.GetComponent<CharacterSkillButtonSlot>() ?? go.AddComponent<CharacterSkillButtonSlot>();
+                var slot = go.GetComponent<SkillButtonPanelView>() ?? go.AddComponent<SkillButtonPanelView>();
                 var indexCopy = slotIndex;
-                slot.Wire(() => _barManager.NotifySkillBarSlotSelected(_combatantId, indexCopy));
+                if (skillBarSelectionOrNull != null)
+                {
+                    slot.Wire(
+                        indexCopy,
+                        () => skillBarSelectionOrNull.RequestSelectSkillSlot(_combatantId, indexCopy));
+                }
+                else
+                {
+                    slot.Wire(
+                        indexCopy,
+                        () => _barManager.NotifySkillBarSlotSelected(_combatantId, indexCopy));
+                }
+
                 _slots[slotIndex] = slot;
             }
         }
 
-        public void DismissOtherDescriptionPanels(CharacterSkillButtonSlot openSlot)
+        public void DismissOtherDescriptionPanels(SkillButtonPanelView openSlot)
         {
             for (var slotIndex = 0; slotIndex < MaxSlots; slotIndex++)
             {

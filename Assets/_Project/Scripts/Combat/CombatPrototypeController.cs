@@ -100,7 +100,6 @@ namespace Erumperem.Combat
         private float _turnMarkerSpinZDegrees;
         private bool _leftClickPressedThisFrame;
         private bool _rightClickPressedThisFrame;
-        private int? _skillSlotPressedThisFrame;
         private Vector2 _pointerScreenPosition;
         private bool _hasPointerScreenPosition;
 
@@ -109,6 +108,9 @@ namespace Erumperem.Combat
         public Combatant CurrentSelectedEnemy => _selectedEnemyTarget;
 
         public Combatant FindCombatantById(string combatantId) => FindCombatant(combatantId);
+
+        /// <summary>Id do herói cujo input de turno está ativo (teclas 1–7 usam isto na barra).</summary>
+        public string PendingPlayerCombatantId => _pendingPlayerActor?.Identity?.Id;
 
         public bool IsPlayerCommandingCombatant(Combatant combatant)
         {
@@ -157,7 +159,6 @@ namespace Erumperem.Combat
                 return false;
             }
 
-ClearAllSkillBarSelections();
             if (!CombatSkillSlotUiEligibility.IsSlotUiInteractable(
                     _state,
                     _sim,
@@ -185,19 +186,17 @@ ClearAllSkillBarSelections();
             _skillBarSelectedOwnerId = null;
             skillButtonBarUIManager?.OnSkillBarSelectionCleared();
         }
-        public void ClearAllSkillBarSelections()
+
+        public void NotifySkillBarSlotRequestFailed(int zeroBasedSlot)
         {
-            // Actually goes through all the skill bar slots and clears them, not just the one that is selected, and clear all dotween tweens for all skill bar slots
-            for (var i = 0; i < 7; i++)
+            if (_pendingPlayerActor == null)
             {
-                ClearSkillBarSelection();
-                DOTween.Kill(GetSkillBarSlotTweenId(i)); // Get the tween id for the skill bar slot and kill it
-
+                return;
             }
-        }
-        private string GetSkillBarSlotTweenId(int zeroBasedSlot) => $"{_skillBarSelectedOwnerId}_SkillBarSlot_{zeroBasedSlot}";
-        private string GetSkillBarSlotTweenId(string ownerCombatantId, int zeroBasedSlot) => $"{ownerCombatantId}_SkillBarSlot_{zeroBasedSlot}";
 
+            Debug.LogWarning($"Skill slot {zeroBasedSlot + 1} indisponível (CD, alvo, rank ou fora do loadout).");
+            PublishPlayerSkillHelpForAlly(_pendingPlayerActor, FindAllyIndex(_pendingPlayerActor));
+        }
 
         private void Awake()
         {
@@ -288,7 +287,6 @@ ClearAllSkillBarSelections();
             InputManager.Instance.OnPointerPositionChanged += OnPointerPositionChanged;
             InputManager.Instance.OnLeftClickPressed += OnLeftClickPressed;
             InputManager.Instance.OnRightClickPressed += OnRightClickPressed;
-            InputManager.Instance.OnSkillSlotPressed += OnSkillSlotPressed;
         }
 
         private void UnsubscribeFromInputEvents()
@@ -301,7 +299,6 @@ ClearAllSkillBarSelections();
             InputManager.Instance.OnPointerPositionChanged -= OnPointerPositionChanged;
             InputManager.Instance.OnLeftClickPressed -= OnLeftClickPressed;
             InputManager.Instance.OnRightClickPressed -= OnRightClickPressed;
-            InputManager.Instance.OnSkillSlotPressed -= OnSkillSlotPressed;
         }
 
         private void OnPointerPositionChanged(Vector2 pointerScreenPosition)
@@ -312,13 +309,11 @@ ClearAllSkillBarSelections();
 
         private void OnLeftClickPressed() => _leftClickPressedThisFrame = true;
         private void OnRightClickPressed() => _rightClickPressedThisFrame = true;
-        private void OnSkillSlotPressed(int zeroBasedSlot) => _skillSlotPressedThisFrame = zeroBasedSlot;
 
         private void ConsumeFrameInputFlags()
         {
             _leftClickPressedThisFrame = false;
             _rightClickPressedThisFrame = false;
-            _skillSlotPressedThisFrame = null;
         }
 
         private void BeginRound()
@@ -346,11 +341,6 @@ ClearAllSkillBarSelections();
                 {
                     break;
                 }
-            }
-
-            if (_needsPlayerInput && !_presentationBusy)
-            {
-                TryPlayerHotkeys();
             }
 
             TryDeselectSkillBarWithRightButton();
@@ -611,21 +601,6 @@ ClearAllSkillBarSelections();
 
         private static bool IsPlayerControlled(Combatant actor) =>
             actor.AI == null && actor.Identity.Faction == Faction.Player;
-
-        private void TryPlayerHotkeys()
-        {
-            if (_pendingPlayerActor == null || _presentationBusy || !_skillSlotPressedThisFrame.HasValue)
-            {
-                return;
-            }
-
-            var requestedSkillSlot = _skillSlotPressedThisFrame.Value;
-            if (!TrySelectSkillBarSlot(_pendingPlayerActor.Identity.Id, requestedSkillSlot))
-            {
-                Debug.LogWarning($"Skill slot {requestedSkillSlot + 1} indisponível (CD, alvo, rank ou fora do loadout).");
-                PublishPlayerSkillHelpForAlly(_pendingPlayerActor, FindAllyIndex(_pendingPlayerActor));
-            }
-        }
 
         private void EndBattle()
         {
