@@ -407,10 +407,10 @@ namespace Erumperem.Combat
                 return;
             }
 
-            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
-            {
-                return;
-            }
+            //if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            //{
+            //    return;
+            //}
 
             var ray = _camera.ScreenPointToRay(_pointerScreenPosition);
             if (!Physics.Raycast(ray, out var hit, 200f))
