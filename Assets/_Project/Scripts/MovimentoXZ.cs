@@ -1,3 +1,4 @@
+using System;
 using UnityEditor.Animations;
 using UnityEngine;
 
@@ -37,7 +38,7 @@ public class MovimentoXZ : MonoBehaviour
 	private void HandleMoveChanged(Vector2 movementInput)
 	{
 		movimento = new Vector3(movementInput.x, 0f, movementInput.y).normalized;
-        wulfricAnimatorController.SetFloat("Speed", movementInput.x + movementInput.y);
+        wulfricAnimatorController.SetFloat("Speed", Math.Abs(movementInput.x) + Math.Abs(movementInput.y) );
 
     }
 
