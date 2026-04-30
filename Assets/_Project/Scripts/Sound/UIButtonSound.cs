@@ -5,8 +5,8 @@ using UnityEngine.UI;
 [RequireComponent(typeof(Button))]
 public class UIButtonSound : MonoBehaviour, IPointerEnterHandler, IPointerDownHandler
 {
-    public string hoverSound = "ButtonHover";
-    public string clickSound = "ButtonPress";
+    public string hoverSound = "Hover";
+    public string clickSound = "Press";
 
     private Button btn;
 
