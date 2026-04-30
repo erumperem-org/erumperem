@@ -811,6 +811,12 @@ namespace Erumperem.Combat
 
         private void PlayDamageVisualFeedback(string targetId)
         {
+                    // --- ÁUDIO!!! ---
+            if (AudioManager.instance != null)
+            {
+                AudioManager.instance.PlaySFX("Damage");
+            }
+  
             if (!_views.TryGetValue(targetId, out var root) || root == null)
             {
                 return;

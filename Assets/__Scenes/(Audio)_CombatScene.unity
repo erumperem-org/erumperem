@@ -1844,22 +1844,38 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 0a69c1d19a4ae4143a00bf5e40dda4e3, type: 3}
     - {fileID: 8300000, guid: 9c764c91eb09a8d43bae09e368641f78, type: 3}
     - {fileID: 8300000, guid: a11b87aa056521f45b2934a0cc5aa9f8, type: 3}
-    volume: 0.45
+    volume: 0.206
     pitch: 1
   sfxClips:
   - name: Hover
-    clip: {fileID: 8300000, guid: afa4daf96fb284942be0ff780fa5e55d, type: 3}
-    volume: 0.55
-    pitch: 0.6
+    clips: []
+    volume: 0.35
+    pitch: 0.45
+    lastPlayedIndex: -1
   - name: Press
-    clip: {fileID: 8300000, guid: 1b3b3047936f4cf40bb17ffa4fa4a0c5, type: 3}
+    clips: []
     volume: 0.65
     pitch: 1.45
-  ambientLoops:
-  - name: ExplorationAmbience
-    clip: {fileID: 8300000, guid: a37ee44e0dacfdd4d8a771ab6aca2afd, type: 3}
+    lastPlayedIndex: -1
+  - name: Damage
+    clips:
+    - {fileID: 8300000, guid: 39bc95284c7273a40b17afd3fb11f7b4, type: 3}
     volume: 0.25
     pitch: 1
+    lastPlayedIndex: -1
+  - name: CharacterHover
+    clips:
+    - {fileID: 8300000, guid: f7e8d02983048584cb3983830bfc28a8, type: 3}
+    volume: 0.25
+    pitch: 1
+    lastPlayedIndex: -1
+  ambientLoops:
+  - name: ExplorationAmbience
+    clips:
+    - {fileID: 8300000, guid: a37ee44e0dacfdd4d8a771ab6aca2afd, type: 3}
+    volume: 1
+    pitch: 1
+    lastPlayedIndex: -1
   bgmSource: {fileID: 1794985567}
   sfxSource: {fileID: 1794985566}
   ambientSource: {fileID: 1794985565}

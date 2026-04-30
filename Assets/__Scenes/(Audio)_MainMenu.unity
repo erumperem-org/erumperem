@@ -2494,13 +2494,17 @@ MonoBehaviour:
     pitch: 1
   sfxClips:
   - name: Hover
-    clip: {fileID: 8300000, guid: afa4daf96fb284942be0ff780fa5e55d, type: 3}
+    clips:
+    - {fileID: 8300000, guid: afa4daf96fb284942be0ff780fa5e55d, type: 3}
     volume: 0.55
     pitch: 0.6
+    lastPlayedIndex: -1
   - name: Press
-    clip: {fileID: 8300000, guid: 1b3b3047936f4cf40bb17ffa4fa4a0c5, type: 3}
+    clips:
+    - {fileID: 8300000, guid: 1b3b3047936f4cf40bb17ffa4fa4a0c5, type: 3}
     volume: 0.65
     pitch: 1.45
+    lastPlayedIndex: -1
   ambientLoops: []
   bgmSource: {fileID: 827082928}
   sfxSource: {fileID: 827082927}

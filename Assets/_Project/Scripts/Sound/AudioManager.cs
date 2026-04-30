@@ -76,19 +76,32 @@ public class AudioManager : MonoBehaviour
     public void PlaySFX(string soundName)
     {
         Sound s = Array.Find(sfxClips, x => x.name == soundName);
-        if (s != null)
+        if (s != null && s.clips.Length > 0)
         {
             sfxSource.pitch = s.pitch;
-            sfxSource.PlayOneShot(s.clip, s.volume); 
+
+            int randomIndex = 0;
+
+            // Se houver mais de um áudio, aplica a lógica matemática de não-repetição
+            if (s.clips.Length > 1)
+            {
+                do
+                {
+                    randomIndex = UnityEngine.Random.Range(0, s.clips.Length);
+                } while (randomIndex == s.lastPlayedIndex);
+            }
+
+            s.lastPlayedIndex = randomIndex;
+            sfxSource.PlayOneShot(s.clips[randomIndex], s.volume);
         }
     }
 
     public void PlayAmbientLoop(string soundName)
     {
         Sound s = Array.Find(ambientLoops, x => x.name == soundName);
-        if (s != null)
+        if (s != null && s.clips.Length > 0)
         {
-            ambientSource.clip = s.clip; 
+            ambientSource.clip = s.clips[0]; 
             ambientSource.volume = s.volume;
             ambientSource.pitch = s.pitch;
             ambientSource.loop = true;
