@@ -13,7 +13,7 @@ namespace Core.Tokens
     {
         HashSet<Type> evolutionSynergys { get; }
         int evolutionThreshold { get; }
-        EvolutionSynergyContext BuildContext(TokenAllocationContext context);
+        EvolutionSynergyContext BuildEvolutionContext(TokenAllocationContext context);
 
         bool ITokenSynergy.CanApply(TokenAllocationContext context) => TokenContainerController.CountByTypes(context.TokenContainerController, evolutionSynergys) >= evolutionThreshold;
 

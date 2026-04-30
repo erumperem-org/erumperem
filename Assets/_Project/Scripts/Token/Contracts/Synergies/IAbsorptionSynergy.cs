@@ -14,7 +14,7 @@ namespace Core.Tokens
     public interface IAbsorptionSynergy : ITokenSynergy
     {
         HashSet<Type> absorptionSynergys { get; }
-        AbsorptionSynergyContext BuildContext(TokenAllocationContext context);
+        AbsorptionSynergyContext BuildAbsorptionContext(TokenAllocationContext context);
         bool ITokenSynergy.CanApply(TokenAllocationContext context) => TokenContainerController.HasAnyByTypes(context.TokenContainerController, absorptionSynergys);
         public void ApplyAbsorptionSynergy(AbsorptionSynergyContext context) => TokenContainerController.RemoveByTypes(context.TokenContainerController, absorptionSynergys, token => context.onAbsorb?.Invoke(token));
     }

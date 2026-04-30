@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using System.Threading.Tasks;
+using UnityEngine.UI;
 
 namespace Services.AddressablesSystem
 {
@@ -48,7 +49,7 @@ namespace Services.AddressablesSystem
             GameObject instance = await prefabOp.Task;
             instance.name = objectName;
             instance.transform.SetParent(parent);
-            
+
             if (prefabOp.Status != AsyncOperationStatus.Succeeded)
             {
                 Debug.LogError($"Failed to spawn prefab: {prefabAddress}");
@@ -67,6 +68,47 @@ namespace Services.AddressablesSystem
             var renderer = instance.GetComponent<Renderer>();
             if (renderer != null)
                 renderer.material = mat;
+
+            return instance;
+        }
+
+        public async Task<GameObject> SpawnTokenReturningObject(string objectName, string prefabAddress, string imageAddress, Vector3 position, Quaternion rotation, Transform parent, Color backgroundColor, Color imageColor)
+        {
+            var prefabRef = new AssetReferenceGameObject(prefabAddress);
+            var imageRef = new AssetReferenceT<Sprite>(imageAddress);
+
+            var prefabOp = prefabRef.InstantiateAsync(position, rotation);
+            GameObject instance = await prefabOp.Task;
+            instance.name = objectName;
+            instance.transform.SetParent(parent);
+            var backgroundRef = instance.transform.Find("Token Background Image").GetComponent<Image>();
+            var logoRef = instance.transform.Find("Token Logo").GetComponent<Image>();
+
+            if (prefabOp.Status != AsyncOperationStatus.Succeeded)
+            {
+                Debug.LogError($"Failed to spawn prefab: {prefabAddress}");
+                return null;
+            }
+
+            var logo = imageRef.LoadAssetAsync();
+            Sprite img = await logo.Task;
+
+            if (logo.Status != AsyncOperationStatus.Succeeded)
+            {
+                Debug.LogError($"Failed to load image: {imageAddress}");
+                return instance;
+            }
+
+            if (logoRef != null)
+            {
+                logoRef.sprite = img;
+                logoRef.color = imageColor;
+            }
+
+            if (backgroundRef != null)
+            {
+                backgroundRef.color = backgroundColor;
+            }
 
             return instance;
         }

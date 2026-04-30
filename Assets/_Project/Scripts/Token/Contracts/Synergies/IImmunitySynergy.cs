@@ -13,7 +13,7 @@ namespace Core.Tokens
     public interface IImmunitySynergy : ITokenSynergy
     {
         HashSet<Type> immunitySynergys { get; }
-        ImmunitySynergyContext BuildContext(TokenAllocationContext context);
+        ImmunitySynergyContext BuildImmunityContext(TokenAllocationContext context);
 
         // Returns true if the token should be blocked.
         public bool CheckImmunity(ImmunitySynergyContext context) => TokenContainerController.HasAnyByTypes(context.TokenContainerController, immunitySynergys);

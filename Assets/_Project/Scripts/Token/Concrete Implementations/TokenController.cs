@@ -15,7 +15,7 @@ namespace Core.Tokens
 
         public TokenController(string displayName, TokenStackData stackingdata, ITokenAllocationStyle allocationStyle)
         {
-            data = new TokenModel(displayName, stackingdata, allocationStyle, $"Assets/_Project/Materials & Textures/Materials/{displayName}.mat");
+            data = new TokenModel(displayName, stackingdata, allocationStyle, $"Assets/_Project/Materials & Textures/Textures/UITextures/Tokens/{displayName}.png");
         }
 
         public virtual void ExecuteTokenEffect()

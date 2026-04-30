@@ -108,6 +108,8 @@ public sealed class InputManager : MonoBehaviour
         gameplay.SceneCheat1.performed += OnSceneCheat1Performed;
         gameplay.SceneCheat2.performed += OnSceneCheat2Performed;
         gameplay.SceneCheat3.performed += OnSceneCheat3Performed;
+        gameplay.SceneCheat4.performed += OnSceneCheat4Performed;
+        gameplay.SceneCheat5.performed += OnSceneCheat5Performed;
     }
 
     private void UnsubscribeGameplayInputEvents()
@@ -129,6 +131,8 @@ public sealed class InputManager : MonoBehaviour
         gameplay.SceneCheat1.performed -= OnSceneCheat1Performed;
         gameplay.SceneCheat2.performed -= OnSceneCheat2Performed;
         gameplay.SceneCheat3.performed -= OnSceneCheat3Performed;
+        gameplay.SceneCheat4.performed -= OnSceneCheat4Performed;
+        gameplay.SceneCheat5.performed -= OnSceneCheat5Performed;
     }
 
     private void OnMovePerformedOrCanceled(InputAction.CallbackContext callbackContext)
@@ -157,4 +161,6 @@ public sealed class InputManager : MonoBehaviour
     private void OnSceneCheat1Performed(InputAction.CallbackContext callbackContext) => OnSceneCheatPressed?.Invoke(0);
     private void OnSceneCheat2Performed(InputAction.CallbackContext callbackContext) => OnSceneCheatPressed?.Invoke(1);
     private void OnSceneCheat3Performed(InputAction.CallbackContext callbackContext) => OnSceneCheatPressed?.Invoke(2);
+    private void OnSceneCheat4Performed(InputAction.CallbackContext callbackContext) => OnSceneCheatPressed?.Invoke(3);
+    private void OnSceneCheat5Performed(InputAction.CallbackContext callbackContext) => OnSceneCheatPressed?.Invoke(4);
 }

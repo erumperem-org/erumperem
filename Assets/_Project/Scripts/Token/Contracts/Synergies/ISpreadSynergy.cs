@@ -11,7 +11,7 @@ namespace Core.Tokens
 {
     public interface ISpreadSynergy : ITokenSynergy
     {
-        SpreadSynergyContext BuildContext(TokenAllocationContext context);
+        SpreadSynergyContext BuildSpreadContext(TokenAllocationContext context);
 
         bool ITokenSynergy.CanApply(TokenAllocationContext context) => true;
 

@@ -43,13 +43,15 @@ namespace Core.Tokens
 
             Vector3 spawnPosition = transform.position + offset;
 
-            GameObject instance = await addressablesService.SpawnReturningObject(
+            GameObject instance = await addressablesService.SpawnTokenReturningObject(
                 token.GetType().Name.ToString(),
                 token.data.tokenModelAddress,
-                token.data.tokenMaterialAddress,
+                token.data.tokenLogoAddress,
                 spawnPosition,
-                Quaternion.Euler(-90f, 0f, 0f),
-                this.transform
+                Quaternion.identity,
+                this.transform,
+                token.data.backgroundColor,
+                token.data.logoColor
             );
 
             if (instance == null)

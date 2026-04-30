@@ -13,7 +13,7 @@ namespace Core.Tokens
     public interface ICancellationSynergy : ITokenSynergy
     {
         HashSet<Type> cancellationSynergys { get; }
-        CancellationSynergyContext BuildContext(TokenAllocationContext context);
+        CancellationSynergyContext BuildCancellationContext(TokenAllocationContext context);
 
         bool ITokenSynergy.CanApply(TokenAllocationContext context) => TokenContainerController.HasAnyByTypes(context.TokenContainerController, cancellationSynergys);
 

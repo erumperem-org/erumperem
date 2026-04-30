@@ -13,7 +13,7 @@ namespace Core.Tokens
     public interface IOverrideSynergy : ITokenSynergy
     {
         HashSet<Type> overrideSynergys { get; }
-        OverrideSynergyContext BuildContext(TokenAllocationContext context);
+        OverrideSynergyContext BuildOverrideContext(TokenAllocationContext context);
 
         bool ITokenSynergy.CanApply(TokenAllocationContext context) => TokenContainerController.HasAnyByTypes(context.TokenContainerController, overrideSynergys);
 

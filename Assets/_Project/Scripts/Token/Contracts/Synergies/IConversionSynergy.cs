@@ -9,7 +9,7 @@ namespace Core.Tokens
     public interface IConversionSynergy : ITokenSynergy, IReverseableSynergy
     {
         HashSet<Type> conversionSynergys { get; }
-        ConversionSynergyContext BuildContext(TokenAllocationContext context);
+        ConversionSynergyContext BuildConversionContext(TokenAllocationContext context);
 
         bool ITokenSynergy.CanApply(TokenAllocationContext context) => TokenContainerController.HasAnyByTypes(context.TokenContainerController, conversionSynergys);
 
@@ -24,7 +24,7 @@ namespace Core.Tokens
         // for each target that was being gradually transformed.
         void IReverseableSynergy.ReverseSynergy(TokenContainerController tokenContainer)
         {
-            var ctx = BuildContext(new TokenAllocationContext(string.Empty, tokenContainer, (TokenController)this));
+            var ctx = BuildConversionContext(new TokenAllocationContext(string.Empty, tokenContainer, (TokenController)this));
             var targets = TokenContainerController.GetTokensByTypes(tokenContainer, conversionSynergys);
             foreach (var target in targets)
                 ctx.onCancelConversion?.Invoke(target);

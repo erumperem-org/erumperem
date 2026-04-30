@@ -147,6 +147,10 @@ namespace Core.Tokens
             if (!container.model.tokens.Contains(controller)) return;
 
             UnApplySynergies(controller, container);
+            CanvasLoggerService.PrintLogMessage(LogLevel.Debug,
+            new HashSet<LogCategory> { LogCategory.Combat },
+            $"Removing Token [{controller.data.tokenDisplayName}] | " +
+            $"Target Container: [{container.name}]");
             container.model.tokens.Remove(controller);
             container.view.RemoveToken(controller);    // FIX: view removal now happens AFTER model removal,
                                                        // ensuring view always reflects actual model state.
@@ -159,7 +163,7 @@ namespace Core.Tokens
         {
             if (context.token is not IImmunitySynergy immunity) return false;
 
-            var ctx = immunity.BuildContext(context);
+            var ctx = immunity.BuildImmunityContext(context);
             bool blocked = immunity.CheckImmunity(ctx);
 
             if (blocked)
@@ -201,19 +205,19 @@ namespace Core.Tokens
                     $"{typeof(TInterface).Name} applied");
             }
 
-            Dispatch<ICancellationSynergy, CancellationSynergyContext>((s, ctx) => s.ApplyCancellationSynergy(ctx), s => s.BuildContext(context));
-            Dispatch<IOverrideSynergy, OverrideSynergyContext>((s, ctx) => s.ApplyOverrideSynergy(ctx), s => s.BuildContext(context));
-            Dispatch<IAbsorptionSynergy, AbsorptionSynergyContext>((s, ctx) => s.ApplyAbsorptionSynergy(ctx), s => s.BuildContext(context));
-            Dispatch<IResistanceSynergy, ResistanceSynergyContext>((s, ctx) => s.ApplyResistanceSynergy(ctx), s => s.BuildContext(context));
-            Dispatch<IAmplificationSynergy, AmplificationSynergyContext>((s, ctx) => s.ApplyAmplificationSynergy(ctx), s => s.BuildContext(context));
-            Dispatch<IAdditiveSynergy, AdditiveSynergyContext>((s, ctx) => s.ApplyAdditiveSynergy(ctx), s => s.BuildContext(context));
-            Dispatch<IInversionSynergy, InversionSynergyContext>((s, ctx) => s.ApplyInversionSynergy(ctx), s => s.BuildContext(context));
-            Dispatch<ITransformationSynergy, TransformationSynergyContext>(async (s, ctx) => await s.ApplyTransformationSynergy(ctx), s => s.BuildContext(context));
-            Dispatch<IEvolutionSynergy, EvolutionSynergyContext>(async (s, ctx) => await s.ApplyEvolutionSynergy(ctx), s => s.BuildContext(context));
-            Dispatch<IConversionSynergy, ConversionSynergyContext>((s, ctx) => s.ApplyConversionSynergy(ctx), s => s.BuildContext(context));
-            Dispatch<ISpreadSynergy, SpreadSynergyContext>((s, ctx) => s.ApplySpreadSynergy(ctx), s => s.BuildContext(context));
-            Dispatch<IConditionalSynergy, ConditionalSynergyContext>((s, ctx) => s.ApplyConditionalSynergy(ctx), s => s.BuildContext(context));
-            Dispatch<IPassiveSynergy, PassiveSynergyContext>((s, ctx) => s.ApplyPassiveSynergy(ctx), s => s.BuildContext(context));
+            Dispatch<ICancellationSynergy, CancellationSynergyContext>((s, ctx) => s.ApplyCancellationSynergy(ctx), s => s.BuildCancellationContext(context));
+            Dispatch<IOverrideSynergy, OverrideSynergyContext>((s, ctx) => s.ApplyOverrideSynergy(ctx), s => s.BuildOverrideContext(context));
+            Dispatch<IAbsorptionSynergy, AbsorptionSynergyContext>((s, ctx) => s.ApplyAbsorptionSynergy(ctx), s => s.BuildAbsorptionContext(context));
+            Dispatch<IResistanceSynergy, ResistanceSynergyContext>((s, ctx) => s.ApplyResistanceSynergy(ctx), s => s.BuildResistanceContext(context));
+            Dispatch<IAmplificationSynergy, AmplificationSynergyContext>((s, ctx) => s.ApplyAmplificationSynergy(ctx), s => s.BuildAmplificationContext(context));
+            Dispatch<IAdditiveSynergy, AdditiveSynergyContext>((s, ctx) => s.ApplyAdditiveSynergy(ctx), s => s.BuildAdditiveContext(context));
+            Dispatch<IInversionSynergy, InversionSynergyContext>((s, ctx) => s.ApplyInversionSynergy(ctx), s => s.BuildInversionContext(context));
+            Dispatch<ITransformationSynergy, TransformationSynergyContext>(async (s, ctx) => await s.ApplyTransformationSynergy(ctx), s => s.BuildTransformationContext(context));
+            Dispatch<IEvolutionSynergy, EvolutionSynergyContext>(async (s, ctx) => await s.ApplyEvolutionSynergy(ctx), s => s.BuildEvolutionContext(context));
+            Dispatch<IConversionSynergy, ConversionSynergyContext>((s, ctx) => s.ApplyConversionSynergy(ctx), s => s.BuildConversionContext(context));
+            Dispatch<ISpreadSynergy, SpreadSynergyContext>((s, ctx) => s.ApplySpreadSynergy(ctx), s => s.BuildSpreadContext(context));
+            Dispatch<IConditionalSynergy, ConditionalSynergyContext>((s, ctx) => s.ApplyConditionalSynergy(ctx), s => s.BuildConditionalContext(context));
+            Dispatch<IPassiveSynergy, PassiveSynergyContext>((s, ctx) => s.ApplyPassiveSynergy(ctx), s => s.BuildPassiveContext(context));
         }
 
         /// <summary>
@@ -370,7 +374,7 @@ namespace Core.Tokens
             foreach (var token in model.tokens)
             {
                 if (token is IPassiveSynergy passive)
-                    passive.ApplyPassiveSynergy(passive.BuildContext(
+                    passive.ApplyPassiveSynergy(passive.BuildPassiveContext(
                         new TokenAllocationContext("Tick", this, token)));
             }
         }
@@ -393,9 +397,8 @@ namespace Core.Tokens
             // Iterate backwards to avoid index invalidation during removal
             for (int i = model.tokens.Count - 1; i >= 0; i--)
             {
-                view.RemoveToken(model.tokens[i]);
+                TokenContainerController.RemoveTokenFromContainer(this, model.tokens[i]);
             }
-            model.tokens.Clear();
         }
     }
 }

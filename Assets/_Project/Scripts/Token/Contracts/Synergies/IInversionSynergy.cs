@@ -9,7 +9,7 @@ namespace Core.Tokens
     public interface IInversionSynergy : ITokenSynergy, IReverseableSynergy
     {
         HashSet<Type> inversionSynergys { get; }
-        InversionSynergyContext BuildContext(TokenAllocationContext context);
+        InversionSynergyContext BuildInversionContext(TokenAllocationContext context);
 
         bool ITokenSynergy.CanApply(TokenAllocationContext context) => TokenContainerController.HasAnyByTypes(context.TokenContainerController, inversionSynergys);
 
@@ -21,7 +21,7 @@ namespace Core.Tokens
         // Calls onRestore so the implementor flips the behaviour back to its original form.
         void IReverseableSynergy.ReverseSynergy(TokenContainerController tokenContainer)
         {
-            var ctx = BuildContext(new TokenAllocationContext(string.Empty, tokenContainer, (TokenController)this));
+            var ctx = BuildInversionContext(new TokenAllocationContext(string.Empty, tokenContainer, (TokenController)this));
             ctx.onRestore?.Invoke();
         }
     }

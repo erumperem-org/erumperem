@@ -15,7 +15,7 @@ class ContainerVisualizationTest : MonoBehaviour
     {
         tokenController = new AcidToken();
         Debug.Log($"MODEL: {tokenController.data.tokenModelAddress}");
-        Debug.Log($"MAT: {tokenController.data.tokenMaterialAddress}");
+        Debug.Log($"MAT: {tokenController.data.tokenLogoAddress}");
         instanceHandle = Addressables.InstantiateAsync(tokenController.data.tokenModelAddress, transform.position, transform.rotation);
 
         instanceHandle.Completed += op =>
@@ -35,7 +35,7 @@ class ContainerVisualizationTest : MonoBehaviour
     }
     else
     {
-        Debug.LogError("Failed to load material: " + tokenController.data.tokenMaterialAddress);
+        Debug.LogError("Failed to load material: " + tokenController.data.tokenLogoAddress);
     }
 };
 

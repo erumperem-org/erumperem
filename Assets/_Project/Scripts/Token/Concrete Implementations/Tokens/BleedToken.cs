@@ -1,31 +1,47 @@
 using System;
 using System.Collections.Generic;
 using Core.Tokens;
+using Services.DebugUtilities;
+using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
     /// <summary>
-    /// A wound-over-time token that accumulates independent stacks.
-    /// When 3 or more BleedToken instances are active in the same container,
-    /// all stacks are consumed and replaced by a <see cref="HemorrhageToken"/> —
-    /// representing a wound that has escalated into critical blood loss.
-    /// Allocation style: on-hit — a new independent instance is added per hit.
+    /// DOT — Físico. Causa dano por sangramento com stacks independentes (cada hit abre uma ferida).
+    /// Cada instância tem sua própria duração e valor — não se fundem.
+    /// Sinergias:
+    ///   - Absorption: consome BlockToken/BlockPlusToken presentes ao ser alocado,
+    ///     ignorando a mitigação (sangramento rasga a armadura) e ganhando +1 de dano por bloco consumido.
+    /// Allocation: on-hit.
     /// </summary>
-    public class BleedToken : TokenController, IEvolutionSynergy
+    public class BleedToken : TokenController, IAbsorptionSynergy
     {
-        public HashSet<Type> evolutionSynergys { get; } = new HashSet<Type> { typeof(BleedToken) };
-        public int evolutionThreshold { get; } = 3;
+        private readonly Action<float> applyDamage;
+        private float bonusDamage = 0f;
+        private readonly float baseDamage;
 
-        public BleedToken() : base(
+        public HashSet<Type> absorptionSynergys { get; } = new() { typeof(BlockToken), typeof(BlockPlusToken) };
+
+        public BleedToken(Action<float> applyDamage, float baseDamage = 4f) : base(
             typeof(BleedToken).Name,
             new IndependentStackData(),
             new IOnHitTokenAllocation())
-        { }
+        {
+            this.applyDamage = applyDamage;
+            this.baseDamage  = baseDamage;
+        }
 
-        public EvolutionSynergyContext BuildContext(TokenAllocationContext context) =>
-            new EvolutionSynergyContext(context.ownerName, context.TokenContainerController, this,
-                new HemorrhageToken());
+        public AbsorptionSynergyContext BuildAbsorptionContext(TokenAllocationContext context) =>
+            new(context.TokenContainerController, this,
+                onAbsorb: _ => bonusDamage += 1f);
 
-        public override void ExecuteTokenEffect() => base.ExecuteTokenEffect();
+        public override void ExecuteTokenEffect()
+        {
+            float total = baseDamage + bonusDamage;
+            applyDamage?.Invoke(total);
+            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
+                $"Bleed tick — {total:F1} damage (base {baseDamage} + {bonusDamage} armor-break bonus)");
+            base.ExecuteTokenEffect();
+        }
     }
 }

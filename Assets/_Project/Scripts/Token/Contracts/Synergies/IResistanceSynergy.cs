@@ -10,7 +10,7 @@ namespace Core.Tokens
     public interface IResistanceSynergy : ITokenSynergy, IReverseableSynergy
     {
         HashSet<Type> resistanceSynergys { get; }
-        ResistanceSynergyContext BuildContext(TokenAllocationContext context);
+        ResistanceSynergyContext BuildResistanceContext(TokenAllocationContext context);
 
         bool ITokenSynergy.CanApply(TokenAllocationContext context) => TokenContainerController.HasAnyByTypes(context.TokenContainerController, resistanceSynergys);
 
@@ -20,7 +20,7 @@ namespace Core.Tokens
         // so the resisted tokens return to full effect.
         void IReverseableSynergy.ReverseSynergy(TokenContainerController tokenContainer)
         {
-            var ctx = BuildContext(new TokenAllocationContext(string.Empty, tokenContainer, (TokenController)this));
+            var ctx = BuildResistanceContext(new TokenAllocationContext(string.Empty, tokenContainer, (TokenController)this));
             var restored = new ResistanceSynergyContext(ctx.TokenContainerController, ctx.self, 1f);
             ApplyResistanceSynergy(restored);
         }

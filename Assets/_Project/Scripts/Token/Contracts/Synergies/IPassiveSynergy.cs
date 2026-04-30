@@ -10,7 +10,7 @@ namespace Core.Tokens
     public interface IPassiveSynergy : ITokenSynergy, IReverseableSynergy
     {
         HashSet<Type> passiveSynergys { get; }
-        PassiveSynergyContext BuildContext(TokenAllocationContext context);
+        PassiveSynergyContext BuildPassiveContext(TokenAllocationContext context);
 
         bool ITokenSynergy.CanApply(TokenAllocationContext context) => true;
 
@@ -26,7 +26,7 @@ namespace Core.Tokens
         // If the passive had no lasting side-effects, onReverseAccumulated may be left null.
         void IReverseableSynergy.ReverseSynergy(TokenContainerController tokenContainer)
         {
-            var ctx = BuildContext(new TokenAllocationContext(string.Empty, tokenContainer, (TokenController)this));
+            var ctx = BuildPassiveContext(new TokenAllocationContext(string.Empty, tokenContainer, (TokenController)this));
             ctx.onReverseAccumulated?.Invoke();
         }
     }

@@ -10,7 +10,7 @@ namespace Core.Tokens
     public interface IAmplificationSynergy : ITokenSynergy, IReverseableSynergy
     {
         HashSet<Type> amplificationSynergys { get; }
-        AmplificationSynergyContext BuildContext(TokenAllocationContext context);
+        AmplificationSynergyContext BuildAmplificationContext(TokenAllocationContext context);
 
         bool ITokenSynergy.CanApply(TokenAllocationContext context) => TokenContainerController.HasAnyByTypes(context.TokenContainerController, amplificationSynergys);
 
@@ -26,7 +26,7 @@ namespace Core.Tokens
         // Convention: the implementor must treat 0 as "no amplification active".
         void IReverseableSynergy.ReverseSynergy(TokenContainerController tokenContainer)
         {
-            var ctx = BuildContext(new TokenAllocationContext(string.Empty, tokenContainer, (TokenController)this));
+            var ctx = BuildAmplificationContext(new TokenAllocationContext(string.Empty, tokenContainer, (TokenController)this));
             ctx.onAmplify?.Invoke(0f);
         }
     }

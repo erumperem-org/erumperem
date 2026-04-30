@@ -8,7 +8,7 @@ namespace Core.Tokens
 {
     public interface IConditionalSynergy : ITokenSynergy, IReverseableSynergy
     {
-        ConditionalSynergyContext BuildContext(TokenAllocationContext context);
+        ConditionalSynergyContext BuildConditionalContext(TokenAllocationContext context);
 
         bool ITokenSynergy.CanApply(TokenAllocationContext context) => true;
 
@@ -25,7 +25,7 @@ namespace Core.Tokens
         // so tokens whose condition never triggered do not attempt a spurious revert.
         void IReverseableSynergy.ReverseSynergy(TokenContainerController tokenContainer)
         {
-            var ctx = BuildContext(new TokenAllocationContext(string.Empty, tokenContainer, (TokenController)this));
+            var ctx = BuildConditionalContext(new TokenAllocationContext(string.Empty, tokenContainer, (TokenController)this));
             if (ctx.hasFired)
                 ctx.onRevert?.Invoke();
         }

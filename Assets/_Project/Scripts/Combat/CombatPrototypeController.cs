@@ -40,6 +40,10 @@ namespace Erumperem.Combat
         [Header("Debug")]
         [SerializeField] private bool logEventsToConsole = true;
 
+        [Header("Painéis de resultado")]
+        [SerializeField] private GameObject victoryPanel;
+        [SerializeField] private GameObject defeatPanel;
+
         [Header("Apresentação por ação (timings)")]
         [SerializeField] private float defaultPlaySeconds = 2.5f;
         [SerializeField] private float defaultPostPauseSeconds = 1.5f;
@@ -403,10 +407,10 @@ namespace Erumperem.Combat
                 return;
             }
 
-            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
-            {
-                return;
-            }
+            //if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            //{
+            //    return;
+            //}
 
             var ray = _camera.ScreenPointToRay(_pointerScreenPosition);
             if (!Physics.Raycast(ray, out var hit, 200f))
@@ -623,7 +627,20 @@ namespace Erumperem.Combat
             ClearSkillBarSelection();
             _sim.EmitBattleEnded(_state);
             LogLastEvents();
-            Debug.Log($"Batalha terminou. Vencedor: {_state.Winner}");
+            //Debug.Log($"Batalha terminou. Vencedor: {_state.Winner}");
+
+            if (_state.Winner == Side.Allies)
+            {
+                victoryPanel.SetActive(true);
+            }
+            else if (_state.Winner == Side.Enemies)
+            {
+                defeatPanel.SetActive(true);
+            }
+            else
+            {
+                Debug.Log("Empate?");
+            }
         }
 
         private void LogLastEvents()

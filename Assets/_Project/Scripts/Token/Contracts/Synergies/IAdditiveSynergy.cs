@@ -9,7 +9,7 @@ namespace Core.Tokens
     public interface IAdditiveSynergy : ITokenSynergy, IReverseableSynergy
     {
         HashSet<Type> additiveSynergys { get; }
-        AdditiveSynergyContext BuildContext(TokenAllocationContext context);
+        AdditiveSynergyContext BuildAdditiveContext(TokenAllocationContext context);
 
         bool ITokenSynergy.CanApply(TokenAllocationContext context) =>
             TokenContainerController.GetOtherToken(context.TokenContainerController, context.token) != null;
@@ -23,7 +23,7 @@ namespace Core.Tokens
             var surviving = TokenContainerController.GetOtherToken(tokenContainer, (TokenController)this);
             if (surviving == null) return;
 
-            var ctx = BuildContext(new TokenAllocationContext(string.Empty, tokenContainer, (TokenController)this));
+            var ctx = BuildAdditiveContext(new TokenAllocationContext(string.Empty, tokenContainer, (TokenController)this));
             ctx.onReverse?.Invoke(surviving);
         }
     }

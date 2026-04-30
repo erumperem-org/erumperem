@@ -28,6 +28,8 @@ public sealed class DefaultInputActions : IInputActionCollection, IDisposable
     private readonly InputAction _sceneCheat1Action;
     private readonly InputAction _sceneCheat2Action;
     private readonly InputAction _sceneCheat3Action;
+    private readonly InputAction _sceneCheat4Action;
+    private readonly InputAction _sceneCheat5Action;
 
     public DefaultInputActions()
     {
@@ -73,6 +75,10 @@ public sealed class DefaultInputActions : IInputActionCollection, IDisposable
         _sceneCheat2Action.AddBinding("<Keyboard>/f2");
         _sceneCheat3Action = _gameplayMap.AddAction("SceneCheat3", InputActionType.Button);
         _sceneCheat3Action.AddBinding("<Keyboard>/f3");
+        _sceneCheat4Action = _gameplayMap.AddAction("SceneCheat4", InputActionType.Button);
+        _sceneCheat4Action.AddBinding("<Keyboard>/f4");
+        _sceneCheat5Action = _gameplayMap.AddAction("SceneCheat5", InputActionType.Button);
+        _sceneCheat5Action.AddBinding("<Keyboard>/f5");
     }
 
     public InputBinding? bindingMask
@@ -125,5 +131,7 @@ public sealed class DefaultInputActions : IInputActionCollection, IDisposable
         public InputAction SceneCheat1 => _wrapper._sceneCheat1Action;
         public InputAction SceneCheat2 => _wrapper._sceneCheat2Action;
         public InputAction SceneCheat3 => _wrapper._sceneCheat3Action;
+        public InputAction SceneCheat4 => _wrapper._sceneCheat4Action;
+        public InputAction SceneCheat5 => _wrapper._sceneCheat5Action;  
     }
 }

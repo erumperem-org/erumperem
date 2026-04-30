@@ -12,7 +12,7 @@ namespace Core.Tokens
     public interface ITransformationSynergy : ITokenSynergy
     {
         HashSet<Type> transformationSynergys { get; }
-        TransformationSynergyContext BuildContext(TokenAllocationContext context);
+        TransformationSynergyContext BuildTransformationContext(TokenAllocationContext context);
         bool ITokenSynergy.CanApply(TokenAllocationContext context) => TokenContainerController.HasAnyByTypes(context.TokenContainerController, transformationSynergys);
         public async Task ApplyTransformationSynergy(TransformationSynergyContext context)
         {

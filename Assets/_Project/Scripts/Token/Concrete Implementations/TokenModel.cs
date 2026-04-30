@@ -7,7 +7,7 @@ public class TokenModel
 {
     [SerializeField]
     public string tokenDisplayName;
-    
+
     [SerializeField]
     private string _tokenStackingStrategyString;
 
@@ -15,18 +15,29 @@ public class TokenModel
     private string _tokenAllocationStyleString;
 
     [SerializeField]
-
-    public string tokenMaterialAddress;
-    public readonly string tokenModelAddress = "Assets/_Project/Prefabs/TokenBase.prefab";
+    public string tokenLogoAddress;
+    public readonly string tokenModelAddress = "Assets/_Project/Prefabs/Token (Canvas).prefab";
     public ITokenAllocationStyle TokenAllocationStyle;
     public TokenStackData tokenStackingdata;
-    public TokenModel(String displayName, TokenStackData Stackingdata, ITokenAllocationStyle allocationStyle, string tokenMaterialAddress)
+    public Color logoColor;
+    public Color backgroundColor;
+    public TokenModel(
+        string displayName,
+        TokenStackData stackingData,
+        ITokenAllocationStyle allocationStyle,
+        string tokenLogoAddress,
+        Color? logoColor = null,
+        Color? backgroundColor = null)
     {
         this.tokenDisplayName = displayName;
-        this.tokenStackingdata = Stackingdata;
+        this.tokenStackingdata = stackingData;
         this.TokenAllocationStyle = allocationStyle;
-        this.tokenMaterialAddress = tokenMaterialAddress;
-        this._tokenStackingStrategyString = Stackingdata.GetType().Name.ToString();
-        this._tokenAllocationStyleString = allocationStyle.GetType().Name.ToString();
+        this.tokenLogoAddress = tokenLogoAddress;
+
+        this._tokenStackingStrategyString = stackingData.GetType().Name;
+        this._tokenAllocationStyleString = allocationStyle.GetType().Name;
+
+        this.logoColor = logoColor ?? Color.white;
+        this.backgroundColor = backgroundColor ?? Color.white;
     }
 }
