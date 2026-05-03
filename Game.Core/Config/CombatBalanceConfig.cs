@@ -9,6 +9,9 @@ public sealed class CorruptionTierModifiers
     public required double PlayerDamageTakenMultiplier { get; init; }
     public required double PlayerCritBonus { get; init; }
     public required double EnemyCritBonusAgainstPlayer { get; init; }
+
+    /// <summary>Extra multiplier applied to critical hit damage when an enemy critically strikes a player.</summary>
+    public double EnemyCritDamageMultiplierAgainstPlayer { get; init; } = 1.0;
 }
 
 public sealed class CombatBalanceConfig
@@ -64,6 +67,15 @@ public sealed class CombatBalanceConfig
                     PlayerCritBonus = 0.10,
                     EnemyCritBonusAgainstPlayer = 0.10,
                 },
+                new CorruptionTierModifiers
+                {
+                    Tier = 4,
+                    PlayerDamageDealtMultiplier = 1.25,
+                    PlayerDamageTakenMultiplier = 1.45,
+                    PlayerCritBonus = 0.10,
+                    EnemyCritBonusAgainstPlayer = 0.18,
+                    EnemyCritDamageMultiplierAgainstPlayer = 1.35,
+                },
             ],
         };
     }
@@ -73,10 +85,28 @@ public static class CorruptionTierCalculator
 {
     public static int GetTier(double corruptionValue)
     {
-        if (corruptionValue >= 99) return 3;
-        if (corruptionValue >= 66) return 2;
-        if (corruptionValue >= 33) return 1;
-        return 0;
+        var clampedFloor = Math.Max(CorruptionRules.MinCorruptionValue, corruptionValue);
+        if (clampedFloor <= CorruptionRules.Tier0UpperInclusive)
+        {
+            return 0;
+        }
+
+        if (clampedFloor <= CorruptionRules.Tier1UpperInclusive)
+        {
+            return 1;
+        }
+
+        if (clampedFloor <= CorruptionRules.Tier2UpperInclusive)
+        {
+            return 2;
+        }
+
+        if (clampedFloor <= CorruptionRules.Tier3UpperInclusive)
+        {
+            return 3;
+        }
+
+        return 4;
     }
 }
 

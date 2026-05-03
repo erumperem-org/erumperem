@@ -24,6 +24,7 @@ namespace Erumperem.Combat
     public sealed class CombatPrototypeController : MonoBehaviour
     {
         private const string ActionRockTweenId = "CombatActionRock";
+        private const string CorruptionPulseTweenId = "CombatCorruptionPulse";
 
         [Header("Sessão (eventos)")]
         [Tooltip("Opcional: emite apresentação e hooks de turno. Use CombatSceneViewBinder na cena para ligar UI.")]
@@ -34,6 +35,13 @@ namespace Erumperem.Combat
         [SerializeField] private Transform[] allyVisualRoots = new Transform[2];
         [Tooltip("Ordem: índice 0..3 = enemy_1 .. enemy_4.")]
         [SerializeField] private Transform[] enemyVisualRoots = new Transform[4];
+
+        [Header("Inimigos visuais (prefabs)")]
+        [Tooltip("Se ativo e o catálogo tiver entradas válidas, instancia prefab por slot e injeta CombatCapsuleTag no root do instance.")]
+        [SerializeField] private bool spawnEnemyModelsFromCatalog = false;
+
+        [SerializeField] private EnemyVisualSpawnCatalog enemyVisualSpawnCatalog;
+
         [Tooltip("Se ativo, escala Y do root pela % de HP (como as cápsulas antigas). Desliga para prefabs com escala fixa.")]
         [SerializeField] private bool syncHpAsVerticalScale = true;
 
@@ -49,12 +57,24 @@ namespace Erumperem.Combat
         [SerializeField] private float defaultPostPauseSeconds = 1.5f;
         [SerializeField] private CombatSkillPresentationTiming[] skillTimings = Array.Empty<CombatSkillPresentationTiming>();
 
+        [Header("Inimigos — apresentação (EnemyAnimationController)")]
+        [SerializeField] private float enemyAttackClipMarginSeconds = 0.5f;
+        [SerializeField] private float enemyDeathClipMarginSeconds = 1f;
+
         [Header("Feedback de dano (DOTween)")]
         [SerializeField] private Vector3 damagePunchScale = new(0.18f, 0.28f, 0.18f);
         [SerializeField] private float damagePunchDuration = 0.32f;
         [SerializeField] private int damagePunchVibrato = 8;
         [SerializeField] private float damagePunchElasticity = 0.55f;
         [SerializeField] private float damageShrinkDuration = 0.42f;
+
+        [Header("Feedback de corrupção (DOTween)")]
+        [Tooltip("Opcional: objeto UI ou marcador que recebe punch quando a corrupção aumenta.")]
+        [SerializeField] private Transform corruptionIncreaseFeedbackRoot;
+        [SerializeField] private Vector3 corruptionPulseScale = new(0.14f, 0.14f, 0.14f);
+        [SerializeField] private float corruptionPulseDuration = 0.32f;
+        [SerializeField] private int corruptionPulseVibrato = 10;
+        [SerializeField] private float corruptionPulseElasticity = 0.45f;
 
         [Header("Actor a agir (balanço frente–trás)")]
         [Tooltip("Força do DOPunchPosition em espaço local (ex.: Z = profundidade / frente do boneco).")]
@@ -283,6 +303,7 @@ namespace Erumperem.Combat
         {
             UnsubscribeFromInputEvents();
             StopActorActionRock();
+            DOTween.Kill(CorruptionPulseTweenId, false);
             foreach (var combatantIdAndTransform in _views)
             {
                 combatantIdAndTransform.Value?.DOKill(false);
@@ -687,8 +708,21 @@ namespace Erumperem.Combat
             {
                 StopActorActionRock();
                 _sessionHub?.RaiseCinemachineFocusEnded();
-                _sessionHub?.RaiseActionPresentationStarted();
                 GetTimingForSkill(action.Skill.Id, out var play, out var postPause);
+                EnemyAnimationController enemyActorVisual = null;
+                if (action.Actor.Identity.Faction == Faction.Enemy &&
+                    TryGetEnemyAnimationController(action.Actor.Identity.Id, out enemyActorVisual))
+                {
+                    var attackHoldSeconds = enemyActorVisual.ComputeAttackPresentationDurationSeconds(
+                        enemyAttackClipMarginSeconds);
+                    play = Mathf.Max(play, attackHoldSeconds);
+                }
+
+                _sessionHub?.RaiseActionPresentationStarted();
+                _sessionHub?.RaiseCombatSkillExecutionPresentationStarted(
+                    action.Actor.Identity.Id,
+                    action.Target.Identity.Id);
+                enemyActorVisual?.NotifyAttackPresentationBegin(play);
                 var rockDuration = Mathf.Max(0f, play + postPause);
 
                 var startIdx = _collector.Events.Count;
@@ -706,6 +740,21 @@ namespace Erumperem.Combat
 
                     foreach (var combatEvent in slice)
                     {
+                        if (combatEvent.EventType == BattleEventType.CorruptionAdjusted)
+                        {
+                            PublishCorruptionPresentation(combatEvent);
+                        }
+
+                        if (combatEvent.EventType == BattleEventType.CombatantDied &&
+                            !string.IsNullOrEmpty(combatEvent.TargetId))
+                        {
+                            _sessionHub?.RaiseCombatantPresentationDeath(combatEvent.TargetId);
+                            if (TryGetEnemyAnimationController(combatEvent.TargetId, out var deadEnemyVisual))
+                            {
+                                deadEnemyVisual.EnsureDeathVisualSequenceStarted(enemyDeathClipMarginSeconds);
+                            }
+                        }
+
                         if (combatEvent.EventType == BattleEventType.DamageApplied && combatEvent.DamageAmount > 0)
                         {
                             PlayDamageVisualFeedback(combatEvent.TargetId);
@@ -809,6 +858,48 @@ namespace Erumperem.Combat
             RestoreActorActionRockLocal();
         }
 
+        private void PublishCorruptionPresentation(CombatEvent combatEvent)
+        {
+            if (combatEvent.CorruptionDelta > 1e-9)
+            {
+                PlayCorruptionIncreaseFeedback();
+                _sessionHub?.RaiseBattleCorruptionIncreasePulse(combatEvent.CorruptionDelta);
+            }
+
+            _sessionHub?.RaiseBattleCorruptionAdjusted(
+                combatEvent.CorruptionDelta,
+                combatEvent.CorruptionValue,
+                combatEvent.PreviousCorruptionTier,
+                combatEvent.CorruptionTier);
+
+            if (combatEvent.PreviousCorruptionTier.HasValue &&
+                combatEvent.PreviousCorruptionTier.Value != combatEvent.CorruptionTier)
+            {
+                _sessionHub?.RaiseBattleCorruptionTierReached(
+                    combatEvent.PreviousCorruptionTier.Value,
+                    combatEvent.CorruptionTier);
+            }
+
+            CorruptionManager.Instance?.NotifyCombatCorruptionAdjusted(combatEvent);
+        }
+
+        private void PlayCorruptionIncreaseFeedback()
+        {
+            if (corruptionIncreaseFeedbackRoot == null)
+            {
+                return;
+            }
+
+            DOTween.Kill(CorruptionPulseTweenId, false);
+            corruptionIncreaseFeedbackRoot.DOPunchScale(
+                    corruptionPulseScale,
+                    corruptionPulseDuration,
+                    corruptionPulseVibrato,
+                    corruptionPulseElasticity)
+                .SetId(CorruptionPulseTweenId)
+                .SetLink(corruptionIncreaseFeedbackRoot.gameObject);
+        }
+
         private void PlayDamageVisualFeedback(string targetId)
         {
             if (!_views.TryGetValue(targetId, out var root) || root == null)
@@ -886,22 +977,69 @@ namespace Erumperem.Combat
                 }
 
                 var enemy = _state.Enemies[enemyIndex];
-                EnsureCombatCapsuleTagOnUnit(root, enemy.Identity.Id);
-                _views[enemy.Identity.Id] = root;
+                var enemyViewRoot = root;
+                if (spawnEnemyModelsFromCatalog &&
+                    enemyVisualSpawnCatalog != null &&
+                    enemyVisualSpawnCatalog.TryPickDefinition(_random, out var enemyVisualDefinition) &&
+                    enemyVisualDefinition.battlePrefab != null)
+                {
+                    EnemyVisualBattleInstaller.ClearSlotForEnemyVisualPrefab(root);
+                    var instantiatedEnemyRoot = EnemyVisualBattleInstaller.InstantiateEnemyUnderSlot(
+                        root,
+                        enemyVisualDefinition.battlePrefab);
+                    if (instantiatedEnemyRoot != null)
+                    {
+                        enemyViewRoot = instantiatedEnemyRoot;
+                    }
+                }
+
+                EnsureCombatCapsuleTagOnUnit(enemyViewRoot, enemy.Identity.Id);
+                _views[enemy.Identity.Id] = enemyViewRoot;
             }
 
             return true;
         }
 
+        private bool TryGetEnemyAnimationController(string combatantId, out EnemyAnimationController enemyAnimationController)
+        {
+            enemyAnimationController = null;
+            if (string.IsNullOrEmpty(combatantId) || !_views.TryGetValue(combatantId, out var unitRoot) || unitRoot == null)
+            {
+                return false;
+            }
+
+            enemyAnimationController = unitRoot.GetComponent<EnemyAnimationController>() ??
+                                       unitRoot.GetComponentInChildren<EnemyAnimationController>(true);
+            return enemyAnimationController != null;
+        }
+
         private static void EnsureCombatCapsuleTagOnUnit(Transform unitRoot, string combatantId)
         {
-            var tag = unitRoot.GetComponentInChildren<CombatCapsuleTag>(true);
+            DestroyCombatCapsuleTagsOnDescendants(unitRoot);
+            var tag = unitRoot.GetComponent<CombatCapsuleTag>();
             if (tag == null)
             {
                 tag = unitRoot.gameObject.AddComponent<CombatCapsuleTag>();
             }
 
             tag.combatantId = combatantId;
+        }
+
+        /// <summary>
+        /// Um único <see cref="CombatCapsuleTag"/> no root do visual; filhos com tag quebram o raycast (<see cref="GetComponentInParent"/>).
+        /// </summary>
+        private static void DestroyCombatCapsuleTagsOnDescendants(Transform parentTransform)
+        {
+            for (var childIndex = 0; childIndex < parentTransform.childCount; childIndex++)
+            {
+                var childTransform = parentTransform.GetChild(childIndex);
+                foreach (var combatCapsuleTag in childTransform.GetComponents<CombatCapsuleTag>())
+                {
+                    UnityEngine.Object.Destroy(combatCapsuleTag);
+                }
+
+                DestroyCombatCapsuleTagsOnDescendants(childTransform);
+            }
         }
 
         private void SyncUnitVisuals()
@@ -923,12 +1061,23 @@ namespace Erumperem.Combat
 
                 if (combatant.Health.IsDead)
                 {
+                    var enemyAnimationController = unitRoot.GetComponentInChildren<EnemyAnimationController>(true);
+                    if (enemyAnimationController != null)
+                    {
+                        enemyAnimationController.EnsureDeathVisualSequenceStarted(enemyDeathClipMarginSeconds);
+                        if (!enemyAnimationController.IsDeathVisualSequenceFinished)
+                        {
+                            continue;
+                        }
+                    }
+
                     unitRoot.gameObject.SetActive(false);
                 }
                 else
                 {
                     unitRoot.gameObject.SetActive(true);
-                    if (syncHpAsVerticalScale && !_damageFeedbackBusy.Contains(combatantId))
+                    var skipHpVerticalScale = unitRoot.GetComponentInChildren<EnemyAnimationController>(true) != null;
+                    if (syncHpAsVerticalScale && !skipHpVerticalScale && !_damageFeedbackBusy.Contains(combatantId))
                     {
                         unitRoot.localScale = new Vector3(
                             1f,

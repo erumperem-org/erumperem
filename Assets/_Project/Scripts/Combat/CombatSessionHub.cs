@@ -33,6 +33,21 @@ namespace Erumperem.Combat
         public event Action<Transform, Transform> OnCinemachineFocusBegan;
         public event Action OnCinemachineFocusEnded;
 
+        /// <summary>delta, newValue, previousTier (nullable before first combat sync), newTier.</summary>
+        public event Action<double, double, int?, int> OnBattleCorruptionAdjusted;
+
+        /// <summary>Fires only when corruption tier crosses (exclusive).</summary>
+        public event Action<int, int> OnBattleCorruptionTierReached;
+
+        /// <summary>Positive corruption delta for lightweight presentation hooks.</summary>
+        public event Action<double> OnBattleCorruptionIncreasePulse;
+
+        /// <summary>Actor que está a executar a skill (apresentação), antes da resolução completa dos eventos.</summary>
+        public event Action<string, string> OnCombatSkillExecutionPresentationStarted;
+
+        /// <summary>Morte apresentável (após resolução da ação); <paramref name="combatantId"/> = combatente eliminado.</summary>
+        public event Action<string> OnCombatantPresentationDeath;
+
         internal void RaiseTurnStarted() => OnTurnStarted?.Invoke();
 
         internal void RaiseTurnEnded() => OnTurnEnded?.Invoke();
@@ -63,5 +78,20 @@ namespace Erumperem.Combat
             OnCinemachineFocusBegan?.Invoke(actorRoot, targetRoot);
 
         internal void RaiseCinemachineFocusEnded() => OnCinemachineFocusEnded?.Invoke();
+
+        internal void RaiseBattleCorruptionAdjusted(double delta, double newCorruptionValue, int? previousTier, int newTier) =>
+            OnBattleCorruptionAdjusted?.Invoke(delta, newCorruptionValue, previousTier, newTier);
+
+        internal void RaiseBattleCorruptionTierReached(int previousTier, int newTier) =>
+            OnBattleCorruptionTierReached?.Invoke(previousTier, newTier);
+
+        internal void RaiseBattleCorruptionIncreasePulse(double positiveDelta) =>
+            OnBattleCorruptionIncreasePulse?.Invoke(positiveDelta);
+
+        internal void RaiseCombatSkillExecutionPresentationStarted(string actorCombatantId, string targetCombatantId) =>
+            OnCombatSkillExecutionPresentationStarted?.Invoke(actorCombatantId, targetCombatantId);
+
+        internal void RaiseCombatantPresentationDeath(string combatantId) =>
+            OnCombatantPresentationDeath?.Invoke(combatantId);
     }
 }

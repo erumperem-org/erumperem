@@ -114,6 +114,11 @@ public static class CombatDataLoader
             {
                 throw new InvalidDataException($"Skill {skill.Id} has invalid damage range.");
             }
+
+            if (double.IsNaN(skill.CorruptionCost) || double.IsInfinity(skill.CorruptionCost))
+            {
+                throw new InvalidDataException($"Skill {skill.Id}: corruptionCost must be a finite number.");
+            }
         }
     }
 

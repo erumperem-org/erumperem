@@ -24,6 +24,12 @@ public sealed class CombatEvent
     public int TokenDelta { get; init; }
     public double CorruptionValue { get; init; }
     public int CorruptionTier { get; init; }
+
+    /// <summary>Change applied in this event; 0 when not applicable.</summary>
+    public double CorruptionDelta { get; init; }
+
+    /// <summary>Tier before <see cref="CorruptionDelta"/> was applied; set only for <see cref="BattleEventType.CorruptionAdjusted"/>.</summary>
+    public int? PreviousCorruptionTier { get; init; }
     /// <summary>Ids de passivas ativas no grupo (aliados), separados por vírgula; preenchido em <see cref="BattleEventType.BattleStarted"/>.</summary>
     public string PassiveLoadoutCsv { get; init; } = string.Empty;
     public string BattleResult { get; init; } = string.Empty;
@@ -69,7 +75,7 @@ public static class CombatAnalyticsExporter
     public static string BuildEventsCsv(IEnumerable<CombatEvent> events)
     {
         var csvBuilder = new StringBuilder();
-        csvBuilder.AppendLine("event_id,battle_id,turn,timestamp_utc,event_type,actor_id,target_id,skill_id,element,is_hit,is_crit,damage_amount,dot_type,dot_amount,token_type,token_delta,corruption_value,corruption_tier,passive_loadout,battle_result");
+        csvBuilder.AppendLine("event_id,battle_id,turn,timestamp_utc,event_type,actor_id,target_id,skill_id,element,is_hit,is_crit,damage_amount,dot_type,dot_amount,token_type,token_delta,corruption_value,corruption_tier,corruption_delta,previous_corruption_tier,passive_loadout,battle_result");
         foreach (var combatEvent in events)
         {
             csvBuilder.AppendLine(string.Join(",",
@@ -91,6 +97,10 @@ public static class CombatAnalyticsExporter
                 combatEvent.TokenDelta.ToString(CultureInfo.InvariantCulture),
                 combatEvent.CorruptionValue.ToString(CultureInfo.InvariantCulture),
                 combatEvent.CorruptionTier.ToString(CultureInfo.InvariantCulture),
+                combatEvent.CorruptionDelta.ToString(CultureInfo.InvariantCulture),
+                combatEvent.PreviousCorruptionTier.HasValue
+                    ? combatEvent.PreviousCorruptionTier.Value.ToString(CultureInfo.InvariantCulture)
+                    : string.Empty,
                 Esc(combatEvent.PassiveLoadoutCsv),
                 Esc(combatEvent.BattleResult)));
         }

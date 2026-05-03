@@ -1,3 +1,6 @@
+using System.Text.Json.Serialization;
+using Game.Core.Config;
+using Game.Core.Data;
 using Game.Core.Domain;
 
 namespace Game.Core.Models;
@@ -46,6 +49,12 @@ public sealed class SkillDefinition
     public IReadOnlyList<EffectSpec> EffectsOnHit { get; init; } = [];
     public IReadOnlyList<EffectSpec> ComboBonus { get; init; } = [];
     public int Weight { get; init; } = 1;
+
+    /// <summary>
+    /// When a <see cref="Faction.Player"/> uses this skill, applied to world corruption: positive increases, <c>0</c> no change, negative reduces.
+    /// Omitted in JSON defaults to <see cref="CorruptionRules.DefaultSkillCorruptionCost"/>.
+    /// </summary>
+    public double CorruptionCost { get; init; } = CorruptionRules.DefaultSkillCorruptionCost;
 }
 
 public sealed class EnemyDefinition
@@ -65,6 +74,8 @@ public sealed class SkillTreeNodeDefinition
 {
     public required string Id { get; init; }
     public required string Type { get; init; }
+
+    [JsonConverter(typeof(SkillTreeNodeCostJsonConverter))]
     public required int Cost { get; init; }
     public IReadOnlyList<string> Requires { get; init; } = [];
 }

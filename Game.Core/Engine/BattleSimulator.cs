@@ -387,6 +387,11 @@ public sealed class BattleSimulator
             }
         }
 
+        if (action.ActionType == ActionType.Skill && actor.Identity.Faction == Faction.Player)
+        {
+            ApplyBattleCorruptionDelta(state, skill.CorruptionCost, actor.Identity.Id, skill.Id);
+        }
+
         if (skill.Cooldown > 0)
         {
             actor.SkillLoadout.Cooldowns[skill.Id] = skill.Cooldown;
@@ -432,7 +437,15 @@ public sealed class BattleSimulator
         damage = (int)Math.Round(damage * elementalMultiplier);
         if (isCrit)
         {
-            damage = (int)Math.Round(damage * 1.5);
+            damage = (int)Math.Round(damage * CorruptionRules.BaseCriticalStrikeDamageMultiplier);
+        }
+
+        if (isCrit &&
+            actor.Identity.Faction == Faction.Enemy &&
+            target.Identity.Faction == Faction.Player)
+        {
+            var enemyCritTierModifiers = state.BalanceConfig.GetTierModifiers(state.CorruptionTier);
+            damage = (int)Math.Round(damage * enemyCritTierModifiers.EnemyCritDamageMultiplierAgainstPlayer);
         }
 
         damage = (int)Math.Round(damage * CorruptionDamageMultiplier(state, actor, target));
@@ -591,12 +604,6 @@ public sealed class BattleSimulator
                     whom.Health.CurrentHp = Math.Min(whom.Health.MaxHp, whom.Health.CurrentHp + healAmt);
                     break;
                 }
-                case EffectType.HealCorruption:
-                    state.CorruptionValue = Math.Max(0, state.CorruptionValue - Math.Max(0, effect.Potency));
-                    break;
-                case EffectType.IncreaseCorruption:
-                    state.CorruptionValue = Math.Min(100, state.CorruptionValue + Math.Max(0, effect.Potency));
-                    break;
                 case EffectType.ApplyStun:
                     if (_random.NextDouble() >= target.Resistances.StunRes)
                     {
@@ -820,6 +827,25 @@ public sealed class BattleSimulator
         }
     }
 
+    private void ApplyBattleCorruptionDelta(BattleState state, double delta, string actorId, string skillId)
+    {
+        if (double.IsNaN(delta) || double.IsInfinity(delta) || Math.Abs(delta) < 1e-12)
+        {
+            return;
+        }
+
+        var tierBeforeAdjustment = CorruptionTierCalculator.GetTier(state.CorruptionValue);
+        state.CorruptionValue = Math.Max(CorruptionRules.MinCorruptionValue, state.CorruptionValue + delta);
+
+        Emit(
+            state,
+            BattleEventType.CorruptionAdjusted,
+            actorId: actorId,
+            skillId: skillId,
+            corruptionDelta: delta,
+            previousCorruptionTier: tierBeforeAdjustment);
+    }
+
     private void Emit(
         BattleState state,
         BattleEventType eventType,
@@ -835,7 +861,9 @@ public sealed class BattleSimulator
         string tokenType = "",
         int tokenDelta = 0,
         string battleResult = "",
-        string passiveLoadoutCsv = "")
+        string passiveLoadoutCsv = "",
+        double corruptionDelta = 0,
+        int? previousCorruptionTier = null)
     {
         _eventCollector.Add(new CombatEvent
         {
@@ -857,6 +885,8 @@ public sealed class BattleSimulator
             TokenDelta = tokenDelta,
             CorruptionValue = state.CorruptionValue,
             CorruptionTier = state.CorruptionTier,
+            CorruptionDelta = corruptionDelta,
+            PreviousCorruptionTier = previousCorruptionTier,
             PassiveLoadoutCsv = passiveLoadoutCsv,
             BattleResult = battleResult,
         });

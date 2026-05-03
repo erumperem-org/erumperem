@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -122,6 +123,14 @@ namespace Erumperem.Combat
         private static string SummarizeEffects(SkillDefinition skillDefinition)
         {
             var bits = new List<string>();
+            if (Math.Abs(skillDefinition.CorruptionCost) > 1e-12)
+            {
+                bits.Add(
+                    skillDefinition.CorruptionCost > 0
+                        ? $"+corrupção (uso) {skillDefinition.CorruptionCost:0.##}"
+                        : $"-corrupção (uso) {-skillDefinition.CorruptionCost:0.##}");
+            }
+
             foreach (var effectOnHit in skillDefinition.EffectsOnHit)
             {
                 switch (effectOnHit.Type)
@@ -146,12 +155,6 @@ namespace Erumperem.Combat
                         break;
                     case EffectType.ApplyStun:
                         bits.Add("stun");
-                        break;
-                    case EffectType.HealCorruption:
-                        bits.Add($"-corrupção {effectOnHit.Potency}");
-                        break;
-                    case EffectType.IncreaseCorruption:
-                        bits.Add($"+corrupção {effectOnHit.Potency}");
                         break;
                 }
             }
