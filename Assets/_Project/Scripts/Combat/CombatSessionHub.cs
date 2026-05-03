@@ -42,6 +42,12 @@ namespace Erumperem.Combat
         /// <summary>Positive corruption delta for lightweight presentation hooks.</summary>
         public event Action<double> OnBattleCorruptionIncreasePulse;
 
+        /// <summary>Actor que está a executar a skill (apresentação), antes da resolução completa dos eventos.</summary>
+        public event Action<string, string> OnCombatSkillExecutionPresentationStarted;
+
+        /// <summary>Morte apresentável (após resolução da ação); <paramref name="combatantId"/> = combatente eliminado.</summary>
+        public event Action<string> OnCombatantPresentationDeath;
+
         internal void RaiseTurnStarted() => OnTurnStarted?.Invoke();
 
         internal void RaiseTurnEnded() => OnTurnEnded?.Invoke();
@@ -81,5 +87,11 @@ namespace Erumperem.Combat
 
         internal void RaiseBattleCorruptionIncreasePulse(double positiveDelta) =>
             OnBattleCorruptionIncreasePulse?.Invoke(positiveDelta);
+
+        internal void RaiseCombatSkillExecutionPresentationStarted(string actorCombatantId, string targetCombatantId) =>
+            OnCombatSkillExecutionPresentationStarted?.Invoke(actorCombatantId, targetCombatantId);
+
+        internal void RaiseCombatantPresentationDeath(string combatantId) =>
+            OnCombatantPresentationDeath?.Invoke(combatantId);
     }
 }
