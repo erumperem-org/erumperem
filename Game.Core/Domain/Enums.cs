@@ -47,10 +47,8 @@ public enum EffectType
     Push = 2,
     Pull = 3,
     HealHp = 4,
-    HealCorruption = 5,
-    ApplyStun = 6,
-    HealHpPercent = 7,
-    IncreaseCorruption = 8,
+    ApplyStun = 5,
+    HealHpPercent = 6,
 }
 
 public enum SkillTargetKind
@@ -77,4 +75,7 @@ public enum BattleEventType
     TokenApplied = 6,
     CombatantDied = 7,
     BattleEnded = 8,
+
+    /// <summary>World corruption changed (skill use, effects, heals).</summary>
+    CorruptionAdjusted = 9,
 }

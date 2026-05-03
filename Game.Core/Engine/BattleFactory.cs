@@ -63,7 +63,7 @@ public static class BattleFactory
             Enemies = enemies,
             SkillsById = skillsById,
             PassivesById = passiveCatalog,
-            CorruptionValue = Math.Clamp(corruptionValue, 0, 100),
+            CorruptionValue = Math.Max(CorruptionRules.MinCorruptionValue, corruptionValue),
             BalanceConfig = CombatBalanceConfig.CreateDefault(),
             TurnNumber = 0,
             BattleId = Guid.NewGuid(),

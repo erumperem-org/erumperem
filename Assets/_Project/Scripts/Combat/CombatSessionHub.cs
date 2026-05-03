@@ -33,6 +33,15 @@ namespace Erumperem.Combat
         public event Action<Transform, Transform> OnCinemachineFocusBegan;
         public event Action OnCinemachineFocusEnded;
 
+        /// <summary>delta, newValue, previousTier (nullable before first combat sync), newTier.</summary>
+        public event Action<double, double, int?, int> OnBattleCorruptionAdjusted;
+
+        /// <summary>Fires only when corruption tier crosses (exclusive).</summary>
+        public event Action<int, int> OnBattleCorruptionTierReached;
+
+        /// <summary>Positive corruption delta for lightweight presentation hooks.</summary>
+        public event Action<double> OnBattleCorruptionIncreasePulse;
+
         internal void RaiseTurnStarted() => OnTurnStarted?.Invoke();
 
         internal void RaiseTurnEnded() => OnTurnEnded?.Invoke();
@@ -63,5 +72,14 @@ namespace Erumperem.Combat
             OnCinemachineFocusBegan?.Invoke(actorRoot, targetRoot);
 
         internal void RaiseCinemachineFocusEnded() => OnCinemachineFocusEnded?.Invoke();
+
+        internal void RaiseBattleCorruptionAdjusted(double delta, double newCorruptionValue, int? previousTier, int newTier) =>
+            OnBattleCorruptionAdjusted?.Invoke(delta, newCorruptionValue, previousTier, newTier);
+
+        internal void RaiseBattleCorruptionTierReached(int previousTier, int newTier) =>
+            OnBattleCorruptionTierReached?.Invoke(previousTier, newTier);
+
+        internal void RaiseBattleCorruptionIncreasePulse(double positiveDelta) =>
+            OnBattleCorruptionIncreasePulse?.Invoke(positiveDelta);
     }
 }

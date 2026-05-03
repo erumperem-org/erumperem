@@ -4398,6 +4398,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a564c1efc7fe0444bb856528b84d37f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Panel
+--- !u!1 &1558402845
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1558402847}
+  - component: {fileID: 1558402846}
+  m_Layer: 0
+  m_Name: CorruptionManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1558402846
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1558402845}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71e9f7b34f0d86d46bc30a5250607b5c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CorruptionManager
+  mirrorCorruptionValue: 0
+--- !u!4 &1558402847
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1558402845}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 807.9437, y: 564.01416, z: 1193.4503}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1618626635 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8919640776773499278, guid: 01e4bf74b6f854641adb5533e88950b3, type: 3}
@@ -6397,3 +6442,4 @@ SceneRoots:
   - {fileID: 911452567}
   - {fileID: 205308058}
   - {fileID: 1692421385}
+  - {fileID: 1558402847}

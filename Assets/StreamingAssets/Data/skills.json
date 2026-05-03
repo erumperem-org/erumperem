@@ -2,6 +2,7 @@
   {
     "id": "wulfric_innate_cleave",
     "name": "Talho direto",
+    "corruptionCost": 1,
     "element": "Fire",
     "type": "Active",
     "targetKind": "Enemy",
@@ -9,7 +10,7 @@
     "allowedTargetRanks": [1, 2, 3],
     "baseDamage": { "min": 5, "max": 9 },
     "baseCritChance": 0.1,
-    "accuracy": 1,
+    "accuracy": 0.9,
     "cooldown": 0,
     "selfMove": { "type": "None", "steps": 0 },
     "effectsOnHit": [],
@@ -19,6 +20,7 @@
   {
     "id": "wulfric_innate_shove",
     "name": "Empurrão brutal",
+    "corruptionCost": 1,
     "element": "Metal",
     "type": "Active",
     "targetKind": "Enemy",
@@ -26,7 +28,7 @@
     "allowedTargetRanks": [1, 2],
     "baseDamage": { "min": 2, "max": 5 },
     "baseCritChance": 0.05,
-    "accuracy": 1,
+    "accuracy": 0.88,
     "cooldown": 0,
     "selfMove": { "type": "None", "steps": 0 },
     "effectsOnHit": [{ "type": "Push", "steps": 2, "chance": 1.0 }],
@@ -36,6 +38,7 @@
   {
     "id": "wulfric_innate_guard",
     "name": "Postura de lobo",
+    "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
     "targetKind": "Self",
@@ -56,6 +59,7 @@
   {
     "id": "f_t1_a1",
     "name": "Rasgar tendão",
+    "corruptionCost": 1,
     "element": "Fire",
     "type": "Active",
     "targetKind": "Enemy",
@@ -63,7 +67,7 @@
     "allowedTargetRanks": [1, 2],
     "baseDamage": { "min": 6, "max": 10 },
     "baseCritChance": 0.08,
-    "accuracy": 1,
+    "accuracy": 0.85,
     "cooldown": 1,
     "selfMove": { "type": "None", "steps": 0 },
     "effectsOnHit": [{ "type": "ApplyDot", "dot": "Bleed", "potency": 3, "duration": 3, "chance": 1.0 }],
@@ -73,6 +77,7 @@
   {
     "id": "f_t2_a1",
     "name": "Fio candente",
+    "corruptionCost": 6,
     "element": "Fire",
     "type": "Active",
     "targetKind": "Enemy",
@@ -80,12 +85,11 @@
     "allowedTargetRanks": [1, 2, 3],
     "baseDamage": { "min": 8, "max": 12 },
     "baseCritChance": 0.1,
-    "accuracy": 1,
+    "accuracy": 0.86,
     "cooldown": 2,
     "selfMove": { "type": "None", "steps": 0 },
     "effectsOnHit": [
-      { "type": "ApplyDot", "dot": "Bleed", "potency": 2, "duration": 2, "chance": 1.0 },
-      { "type": "IncreaseCorruption", "potency": 5, "chance": 1.0 }
+      { "type": "ApplyDot", "dot": "Bleed", "potency": 2, "duration": 2, "chance": 1.0 }
     ],
     "comboBonus": [],
     "weight": 2
@@ -100,7 +104,7 @@
     "allowedTargetRanks": [1, 2],
     "baseDamage": { "min": 10, "max": 16 },
     "baseCritChance": 0.12,
-    "accuracy": 1,
+    "accuracy": 0.88,
     "cooldown": 3,
     "selfMove": { "type": "None", "steps": 0 },
     "effectsOnHit": [],
@@ -110,6 +114,7 @@
   {
     "id": "m_t1_a1",
     "name": "Remendar couraça",
+    "corruptionCost": 1,
     "element": "Metal",
     "type": "Active",
     "targetKind": "Ally",
@@ -130,6 +135,7 @@
   {
     "id": "m_t2_a1",
     "name": "Muralha",
+    "corruptionCost": 1,
     "element": "Metal",
     "type": "Active",
     "targetKind": "Self",
@@ -151,6 +157,7 @@
   {
     "id": "m_t3_a1",
     "name": "Salvaguarda",
+    "corruptionCost": -6,
     "element": "Metal",
     "type": "Active",
     "targetKind": "Ally",
@@ -162,8 +169,7 @@
     "cooldown": 5,
     "selfMove": { "type": "None", "steps": 0 },
     "effectsOnHit": [
-      { "type": "ApplyToken", "token": "BlockPlus", "stacks": 2, "chance": 1.0 },
-      { "type": "HealCorruption", "potency": 5, "chance": 1.0 }
+      { "type": "ApplyToken", "token": "BlockPlus", "stacks": 2, "chance": 1.0 }
     ],
     "comboBonus": [],
     "weight": 1
@@ -171,6 +177,7 @@
   {
     "id": "a_t1_a1",
     "name": "Fio da anomalia",
+    "corruptionCost": 4,
     "element": "Anomaly",
     "type": "Active",
     "targetKind": "Enemy",
@@ -182,8 +189,7 @@
     "cooldown": 1,
     "selfMove": { "type": "None", "steps": 0 },
     "effectsOnHit": [
-      { "type": "ApplyDot", "dot": "Blight", "potency": 3, "duration": 3, "chance": 1.0 },
-      { "type": "IncreaseCorruption", "potency": 3, "chance": 1.0 }
+      { "type": "ApplyDot", "dot": "Blight", "potency": 3, "duration": 3, "chance": 1.0 }
     ],
     "comboBonus": [],
     "weight": 2
@@ -191,6 +197,7 @@
   {
     "id": "a_t2_a1",
     "name": "Puxar o véu",
+    "corruptionCost": 1,
     "element": "Anomaly",
     "type": "Active",
     "targetKind": "Enemy",
@@ -212,6 +219,7 @@
   {
     "id": "a_t3_a1",
     "name": "Abrir o vão",
+    "corruptionCost": 13,
     "element": "Anomaly",
     "type": "Active",
     "targetKind": "Enemy",
@@ -223,8 +231,7 @@
     "cooldown": 4,
     "selfMove": { "type": "None", "steps": 0 },
     "effectsOnHit": [
-      { "type": "ApplyDot", "dot": "Blight", "potency": 4, "duration": 3, "chance": 1.0 },
-      { "type": "IncreaseCorruption", "potency": 12, "chance": 1.0 }
+      { "type": "ApplyDot", "dot": "Blight", "potency": 4, "duration": 3, "chance": 1.0 }
     ],
     "comboBonus": [],
     "weight": 2
@@ -232,6 +239,7 @@
   {
     "id": "enemy_claw",
     "name": "Garra",
+    "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
     "targetKind": "Enemy",
@@ -249,6 +257,7 @@
   {
     "id": "spider_bite",
     "name": "Bite",
+    "corruptionCost": 0,
     "element": "Fire",
     "type": "Active",
     "targetKind": "Enemy",
@@ -266,6 +275,7 @@
   {
     "id": "spider_web",
     "name": "Web",
+    "corruptionCost": 0,
     "element": "Anomaly",
     "type": "Active",
     "targetKind": "Enemy",

@@ -9,16 +9,25 @@ using Game.Core.Passives;
 using Game.Core.Progression;
 using Game.Simulations;
 
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 namespace Game.Tests;
 
 public class UnitTest1
 {
     [Theory]
     [InlineData(0, 0)]
-    [InlineData(32.9, 0)]
+    [InlineData(32, 0)]
+    [InlineData(31.999, 0)]
     [InlineData(33, 1)]
+    [InlineData(65, 1)]
     [InlineData(66, 2)]
+    [InlineData(98, 2)]
     [InlineData(99, 3)]
+    [InlineData(198, 3)]
+    [InlineData(199, 4)]
+    [InlineData(400, 4)]
     public void CorruptionTierCalculator_MatchesThresholds(double corruption, int expectedTier)
     {
         var tier = CorruptionTierCalculator.GetTier(corruption);
@@ -287,7 +296,7 @@ public class UnitTest1
                     Assert.True(combatant.Tokens.Entries.All(tokenEntry => tokenEntry.Stacks >= 0));
                     Assert.All(combatant.Position.OccupiedRanks, rank => Assert.InRange(rank, 1, 4));
                 });
-            Assert.InRange(battle.CorruptionValue, 0, 100);
+            Assert.True(battle.CorruptionValue >= CorruptionRules.MinCorruptionValue);
         }
     }
 
@@ -410,6 +419,13 @@ public class UnitTest1
     }
 
     [Fact]
+    public void LoadSkills_WhenCorruptionCostOmitted_DefaultsToOne()
+    {
+        var f3 = SampleCombatData.CreateSkills().First(skill => skill.Id == "f_t3_a1");
+        Assert.Equal(1, f3.CorruptionCost);
+    }
+
+    [Fact]
     public void LoadPassivesJson_ParsesDefaultFile()
     {
         var list = SampleCombatData.CreatePassives();
@@ -499,6 +515,360 @@ public class UnitTest1
         var rows = CombatAnalyticsExporter.BuildPassiveAggregates(events, ["f_t1_p1", "f_t3_p1"]).ToDictionary(row => row.PassiveId);
         Assert.Equal(0, rows["f_t3_p1"].BattlesWithPassive);
         Assert.Equal(0, rows["f_t3_p1"].WinRate);
+    }
+
+    private static JsonSerializerOptions SkillTreesJsonSerializerOptions { get; } = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        Converters = { new JsonStringEnumConverter() },
+    };
+
+    [Fact]
+    public void PlayerSkill_UseNonBasic_IncreasesCorruptionByConfiguredGain()
+    {
+        var random = new SeededRandomSource(1);
+        var collector = new CombatEventCollector();
+        var simulator = new BattleSimulator(random, collector);
+        var nonBasicSkill = new SkillDefinition
+        {
+            Id = "non_basic_smack",
+            Name = "NB",
+            Element = ElementType.Fire,
+            Type = "Active",
+            TargetKind = SkillTargetKind.Enemy,
+            AllowedCasterRanks = [1, 2, 3, 4],
+            AllowedTargetRanks = [1, 2, 3, 4],
+            BaseDamage = new DamageRange { Min = 1, Max = 1 },
+            BaseCritChance = 0,
+            Accuracy = 1.0,
+            Cooldown = 0,
+            CorruptionCost = 2.5,
+            EffectsOnHit = [],
+        };
+        var battle = BattleFactory.CreateSampleBattle([nonBasicSkill], allyCount: 1, enemyCount: 1, corruptionValue: 0);
+        battle.Allies[0].SkillLoadout.Skills.Clear();
+        battle.Allies[0].SkillLoadout.Skills.Add(nonBasicSkill.Id);
+        battle.Allies[0].Stats = new StatsComponent { Speed = 100, Accuracy = 1.0, CritChance = 0 };
+
+        var chosenAction = new ChosenAction
+        {
+            Actor = battle.Allies[0],
+            Target = battle.Enemies[0],
+            Skill = nonBasicSkill,
+            ActionType = ActionType.Skill,
+        };
+
+        simulator.ResolveChosenAction(battle, chosenAction);
+
+        Assert.Equal(2.5, battle.CorruptionValue);
+        var corruptionEvents = collector.Events.Where(e => e.EventType == BattleEventType.CorruptionAdjusted).ToList();
+        Assert.Single(corruptionEvents);
+        Assert.Equal(2.5, corruptionEvents[0].CorruptionDelta);
+    }
+
+    [Fact]
+    public void PlayerSkill_ExplicitZeroCorruptionCost_DoesNotEmitCorruptionAdjusted()
+    {
+        var random = new SeededRandomSource(2);
+        var collector = new CombatEventCollector();
+        var simulator = new BattleSimulator(random, collector);
+        var zeroCostSkill = new SkillDefinition
+        {
+            Id = "zero_cost",
+            Name = "Zero cost",
+            Element = ElementType.Fire,
+            Type = "Active",
+            TargetKind = SkillTargetKind.Enemy,
+            AllowedCasterRanks = [1, 2, 3, 4],
+            AllowedTargetRanks = [1, 2, 3, 4],
+            BaseDamage = new DamageRange { Min = 1, Max = 1 },
+            BaseCritChance = 0,
+            Accuracy = 1.0,
+            Cooldown = 0,
+            CorruptionCost = 0,
+            EffectsOnHit = [],
+        };
+        var battle = BattleFactory.CreateSampleBattle([zeroCostSkill], allyCount: 1, enemyCount: 1, corruptionValue: 0);
+        battle.Allies[0].SkillLoadout.Skills.Clear();
+        battle.Allies[0].SkillLoadout.Skills.Add(zeroCostSkill.Id);
+        battle.Allies[0].Stats = new StatsComponent { Speed = 100, Accuracy = 1.0, CritChance = 0 };
+
+        simulator.ResolveChosenAction(
+            battle,
+            new ChosenAction
+            {
+                Actor = battle.Allies[0],
+                Target = battle.Enemies[0],
+                Skill = zeroCostSkill,
+                ActionType = ActionType.Skill,
+            });
+
+        Assert.Equal(0, battle.CorruptionValue);
+        Assert.DoesNotContain(collector.Events, e => e.EventType == BattleEventType.CorruptionAdjusted);
+    }
+
+    [Fact]
+    public void PlayerSkill_NegativeCorruptionCost_ReducesCorruption()
+    {
+        var random = new SeededRandomSource(22);
+        var collector = new CombatEventCollector();
+        var simulator = new BattleSimulator(random, collector);
+        var healingCostSkill = new SkillDefinition
+        {
+            Id = "purify_tap",
+            Name = "Purify tap",
+            Element = ElementType.Metal,
+            Type = "Active",
+            TargetKind = SkillTargetKind.Enemy,
+            AllowedCasterRanks = [1, 2, 3, 4],
+            AllowedTargetRanks = [1, 2, 3, 4],
+            BaseDamage = new DamageRange { Min = 1, Max = 1 },
+            BaseCritChance = 0,
+            Accuracy = 1.0,
+            Cooldown = 0,
+            CorruptionCost = -4,
+            EffectsOnHit = [],
+        };
+        var battle = BattleFactory.CreateSampleBattle([healingCostSkill], allyCount: 1, enemyCount: 1, corruptionValue: 20);
+        battle.Allies[0].SkillLoadout.Skills.Clear();
+        battle.Allies[0].SkillLoadout.Skills.Add(healingCostSkill.Id);
+        battle.Allies[0].Stats = new StatsComponent { Speed = 100, Accuracy = 1.0, CritChance = 0 };
+
+        simulator.ResolveChosenAction(
+            battle,
+            new ChosenAction
+            {
+                Actor = battle.Allies[0],
+                Target = battle.Enemies[0],
+                Skill = healingCostSkill,
+                ActionType = ActionType.Skill,
+            });
+
+        Assert.Equal(16, battle.CorruptionValue);
+        var corruptionEvent = Assert.Single(collector.Events.Where(e => e.EventType == BattleEventType.CorruptionAdjusted));
+        Assert.Equal(-4, corruptionEvent.CorruptionDelta);
+    }
+
+    [Fact]
+    public void CorruptionAdjusted_Event_CarriesTierCrossingMetadata()
+    {
+        var random = new SeededRandomSource(3);
+        var collector = new CombatEventCollector();
+        var simulator = new BattleSimulator(random, collector);
+        var nonBasicSkill = new SkillDefinition
+        {
+            Id = "tier_cross",
+            Name = "Tier cross",
+            Element = ElementType.Fire,
+            Type = "Active",
+            TargetKind = SkillTargetKind.Enemy,
+            AllowedCasterRanks = [1, 2, 3, 4],
+            AllowedTargetRanks = [1, 2, 3, 4],
+            BaseDamage = new DamageRange { Min = 1, Max = 1 },
+            BaseCritChance = 0,
+            Accuracy = 1.0,
+            Cooldown = 0,
+            CorruptionCost = 1,
+            EffectsOnHit = [],
+        };
+        var battle = BattleFactory.CreateSampleBattle([nonBasicSkill], allyCount: 1, enemyCount: 1, corruptionValue: 32);
+        battle.Allies[0].SkillLoadout.Skills.Clear();
+        battle.Allies[0].SkillLoadout.Skills.Add(nonBasicSkill.Id);
+        battle.Allies[0].Stats = new StatsComponent { Speed = 100, Accuracy = 1.0, CritChance = 0 };
+
+        simulator.ResolveChosenAction(
+            battle,
+            new ChosenAction
+            {
+                Actor = battle.Allies[0],
+                Target = battle.Enemies[0],
+                Skill = nonBasicSkill,
+                ActionType = ActionType.Skill,
+            });
+
+        Assert.Equal(33, battle.CorruptionValue);
+        var corruptionEvent = Assert.Single(collector.Events.Where(e => e.EventType == BattleEventType.CorruptionAdjusted));
+        Assert.Equal(0, corruptionEvent.PreviousCorruptionTier);
+        Assert.Equal(1, corruptionEvent.CorruptionTier);
+    }
+
+    [Fact]
+    public void CorruptionAdjusted_Event_SameTier_KeepsMatchingPreviousAndCurrentTier()
+    {
+        var random = new SeededRandomSource(4);
+        var collector = new CombatEventCollector();
+        var simulator = new BattleSimulator(random, collector);
+        var nonBasicSkill = new SkillDefinition
+        {
+            Id = "same_tier",
+            Name = "Same tier",
+            Element = ElementType.Fire,
+            Type = "Active",
+            TargetKind = SkillTargetKind.Enemy,
+            AllowedCasterRanks = [1, 2, 3, 4],
+            AllowedTargetRanks = [1, 2, 3, 4],
+            BaseDamage = new DamageRange { Min = 1, Max = 1 },
+            BaseCritChance = 0,
+            Accuracy = 1.0,
+            Cooldown = 0,
+            CorruptionCost = 1,
+            EffectsOnHit = [],
+        };
+        var battle = BattleFactory.CreateSampleBattle([nonBasicSkill], allyCount: 1, enemyCount: 1, corruptionValue: 10);
+        battle.Allies[0].SkillLoadout.Skills.Clear();
+        battle.Allies[0].SkillLoadout.Skills.Add(nonBasicSkill.Id);
+        battle.Allies[0].Stats = new StatsComponent { Speed = 100, Accuracy = 1.0, CritChance = 0 };
+
+        simulator.ResolveChosenAction(
+            battle,
+            new ChosenAction
+            {
+                Actor = battle.Allies[0],
+                Target = battle.Enemies[0],
+                Skill = nonBasicSkill,
+                ActionType = ActionType.Skill,
+            });
+
+        var corruptionEvent = Assert.Single(collector.Events.Where(e => e.EventType == BattleEventType.CorruptionAdjusted));
+        Assert.Equal(0, corruptionEvent.PreviousCorruptionTier);
+        Assert.Equal(0, corruptionEvent.CorruptionTier);
+    }
+
+    [Fact]
+    public void CorruptionValue_CanExceedOneHundred_AndReachTierFour()
+    {
+        var random = new SeededRandomSource(5);
+        var collector = new CombatEventCollector();
+        var simulator = new BattleSimulator(random, collector);
+        var bigGainSkill = new SkillDefinition
+        {
+            Id = "big_gain",
+            Name = "Big gain",
+            Element = ElementType.Fire,
+            Type = "Active",
+            TargetKind = SkillTargetKind.Enemy,
+            AllowedCasterRanks = [1, 2, 3, 4],
+            AllowedTargetRanks = [1, 2, 3, 4],
+            BaseDamage = new DamageRange { Min = 1, Max = 1 },
+            BaseCritChance = 0,
+            Accuracy = 1.0,
+            Cooldown = 0,
+            CorruptionCost = 15,
+            EffectsOnHit = [],
+        };
+        var battle = BattleFactory.CreateSampleBattle([bigGainSkill], allyCount: 1, enemyCount: 1, corruptionValue: 190);
+        battle.Allies[0].SkillLoadout.Skills.Clear();
+        battle.Allies[0].SkillLoadout.Skills.Add(bigGainSkill.Id);
+        battle.Allies[0].Stats = new StatsComponent { Speed = 100, Accuracy = 1.0, CritChance = 0 };
+
+        simulator.ResolveChosenAction(
+            battle,
+            new ChosenAction
+            {
+                Actor = battle.Allies[0],
+                Target = battle.Enemies[0],
+                Skill = bigGainSkill,
+                ActionType = ActionType.Skill,
+            });
+
+        Assert.Equal(205, battle.CorruptionValue);
+        Assert.Equal(4, battle.CorruptionTier);
+    }
+
+    [Fact]
+    public void SkillTreeNodeCost_ParsesNumberAndStringJson()
+    {
+        const string json = """
+            [
+              {
+                "characterId": "test_char",
+                "trees": [
+                  {
+                    "element": "Fire",
+                    "tiers": [
+                      {
+                        "tier": 1,
+                        "nodes": [
+                          { "id": "n_a", "type": "Passive", "cost": "2", "requires": [] },
+                          { "id": "n_b", "type": "Passive", "cost": 3, "requires": [] },
+                          { "id": "n_c", "type": "Passive", "cost": "1", "requires": [] },
+                          { "id": "n_d", "type": "Active", "cost": "1", "requires": [] }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+            """;
+
+        var roots = JsonSerializer.Deserialize<List<CharacterSkillTreesDefinition>>(json, SkillTreesJsonSerializerOptions)!;
+        var character = SimulationSkillTreeSetup.GetCharacter(roots, characterId: "test_char");
+        Assert.Equal(2, SimulationSkillTreeSetup.GetNodeCost(character, "n_a"));
+        Assert.Equal(3, SimulationSkillTreeSetup.GetNodeCost(character, "n_b"));
+    }
+
+    [Fact]
+    public void SkillTreeNodeCost_InvalidString_ThrowsJsonException()
+    {
+        const string json = """
+            [
+              {
+                "characterId": "bad_cost",
+                "trees": [
+                  {
+                    "element": "Fire",
+                    "tiers": [
+                      {
+                        "tier": 1,
+                        "nodes": [
+                          { "id": "n_a", "type": "Passive", "cost": "not_an_int", "requires": [] },
+                          { "id": "n_b", "type": "Passive", "cost": 1, "requires": [] },
+                          { "id": "n_c", "type": "Passive", "cost": 1, "requires": [] },
+                          { "id": "n_d", "type": "Active", "cost": 1, "requires": [] }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+            """;
+
+        Assert.Throws<JsonException>(() =>
+            JsonSerializer.Deserialize<List<CharacterSkillTreesDefinition>>(json, SkillTreesJsonSerializerOptions));
+    }
+
+    [Fact]
+    public void SkillTreeNodeCost_NegativeNumber_ThrowsJsonException()
+    {
+        const string json = """
+            [
+              {
+                "characterId": "neg_cost",
+                "trees": [
+                  {
+                    "element": "Fire",
+                    "tiers": [
+                      {
+                        "tier": 1,
+                        "nodes": [
+                          { "id": "n_a", "type": "Passive", "cost": -1, "requires": [] },
+                          { "id": "n_b", "type": "Passive", "cost": 1, "requires": [] },
+                          { "id": "n_c", "type": "Passive", "cost": 1, "requires": [] },
+                          { "id": "n_d", "type": "Active", "cost": 1, "requires": [] }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+            """;
+
+        Assert.Throws<JsonException>(() =>
+            JsonSerializer.Deserialize<List<CharacterSkillTreesDefinition>>(json, SkillTreesJsonSerializerOptions));
     }
 
     [Fact]

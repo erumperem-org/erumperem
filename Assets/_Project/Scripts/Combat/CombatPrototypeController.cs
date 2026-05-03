@@ -24,6 +24,7 @@ namespace Erumperem.Combat
     public sealed class CombatPrototypeController : MonoBehaviour
     {
         private const string ActionRockTweenId = "CombatActionRock";
+        private const string CorruptionPulseTweenId = "CombatCorruptionPulse";
 
         [Header("Sessão (eventos)")]
         [Tooltip("Opcional: emite apresentação e hooks de turno. Use CombatSceneViewBinder na cena para ligar UI.")]
@@ -55,6 +56,14 @@ namespace Erumperem.Combat
         [SerializeField] private int damagePunchVibrato = 8;
         [SerializeField] private float damagePunchElasticity = 0.55f;
         [SerializeField] private float damageShrinkDuration = 0.42f;
+
+        [Header("Feedback de corrupção (DOTween)")]
+        [Tooltip("Opcional: objeto UI ou marcador que recebe punch quando a corrupção aumenta.")]
+        [SerializeField] private Transform corruptionIncreaseFeedbackRoot;
+        [SerializeField] private Vector3 corruptionPulseScale = new(0.14f, 0.14f, 0.14f);
+        [SerializeField] private float corruptionPulseDuration = 0.32f;
+        [SerializeField] private int corruptionPulseVibrato = 10;
+        [SerializeField] private float corruptionPulseElasticity = 0.45f;
 
         [Header("Actor a agir (balanço frente–trás)")]
         [Tooltip("Força do DOPunchPosition em espaço local (ex.: Z = profundidade / frente do boneco).")]
@@ -283,6 +292,7 @@ namespace Erumperem.Combat
         {
             UnsubscribeFromInputEvents();
             StopActorActionRock();
+            DOTween.Kill(CorruptionPulseTweenId, false);
             foreach (var combatantIdAndTransform in _views)
             {
                 combatantIdAndTransform.Value?.DOKill(false);
@@ -706,6 +716,11 @@ namespace Erumperem.Combat
 
                     foreach (var combatEvent in slice)
                     {
+                        if (combatEvent.EventType == BattleEventType.CorruptionAdjusted)
+                        {
+                            PublishCorruptionPresentation(combatEvent);
+                        }
+
                         if (combatEvent.EventType == BattleEventType.DamageApplied && combatEvent.DamageAmount > 0)
                         {
                             PlayDamageVisualFeedback(combatEvent.TargetId);
@@ -807,6 +822,48 @@ namespace Erumperem.Combat
         {
             DOTween.Kill(ActionRockTweenId, false);
             RestoreActorActionRockLocal();
+        }
+
+        private void PublishCorruptionPresentation(CombatEvent combatEvent)
+        {
+            if (combatEvent.CorruptionDelta > 1e-9)
+            {
+                PlayCorruptionIncreaseFeedback();
+                _sessionHub?.RaiseBattleCorruptionIncreasePulse(combatEvent.CorruptionDelta);
+            }
+
+            _sessionHub?.RaiseBattleCorruptionAdjusted(
+                combatEvent.CorruptionDelta,
+                combatEvent.CorruptionValue,
+                combatEvent.PreviousCorruptionTier,
+                combatEvent.CorruptionTier);
+
+            if (combatEvent.PreviousCorruptionTier.HasValue &&
+                combatEvent.PreviousCorruptionTier.Value != combatEvent.CorruptionTier)
+            {
+                _sessionHub?.RaiseBattleCorruptionTierReached(
+                    combatEvent.PreviousCorruptionTier.Value,
+                    combatEvent.CorruptionTier);
+            }
+
+            CorruptionManager.Instance?.NotifyCombatCorruptionAdjusted(combatEvent);
+        }
+
+        private void PlayCorruptionIncreaseFeedback()
+        {
+            if (corruptionIncreaseFeedbackRoot == null)
+            {
+                return;
+            }
+
+            DOTween.Kill(CorruptionPulseTweenId, false);
+            corruptionIncreaseFeedbackRoot.DOPunchScale(
+                    corruptionPulseScale,
+                    corruptionPulseDuration,
+                    corruptionPulseVibrato,
+                    corruptionPulseElasticity)
+                .SetId(CorruptionPulseTweenId)
+                .SetLink(corruptionIncreaseFeedbackRoot.gameObject);
         }
 
         private void PlayDamageVisualFeedback(string targetId)
