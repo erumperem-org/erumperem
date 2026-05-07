@@ -10,15 +10,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: e9950e45d36ee8c4ab0d80afb39cb082, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.7
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: e9950e45d36ee8c4ab0d80afb39cb082, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.7
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: e9950e45d36ee8c4ab0d80afb39cb082, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.7
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: e9950e45d36ee8c4ab0d80afb39cb082, type: 3}
       propertyPath: m_LocalPosition.x
@@ -121,13 +121,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 11bfbad79a37e8a4d97379205187cf86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.EnemyAnimationController
-  combatSessionHub: {fileID: 0}
   unitAnimator: {fileID: 140942004187059195}
-  combatCapsuleTag: {fileID: 0}
   idleStateName: Idle
   attackStateName: Attack
   deathStateName: Death
   crossFadeSeconds: 0.08
+  attackClipLengthFallbackSeconds: 2
+  deathClipLengthFallbackSeconds: 2
+  deathDespawnPunchDurationSeconds: 0.12
+  deathDespawnPunchScale: {x: 0.12, y: 0.18, z: 0.12}
+  deathDespawnPunchVibrato: 6
+  deathDespawnPunchElasticity: 0.45
+  deathDespawnScaleDownDurationSeconds: 0.35
 --- !u!65 &5531313033600689712
 BoxCollider:
   m_ObjectHideFlags: 0
