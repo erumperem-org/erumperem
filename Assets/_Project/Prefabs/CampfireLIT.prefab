@@ -9682,6 +9682,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3162898163908634912}
+  - component: {fileID: 898020849550738381}
   m_Layer: 0
   m_Name: CampfireLIT
   m_TagString: Untagged
@@ -9700,13 +9701,34 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -3.96777, y: 0, z: 9.77075}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 5830703689146706592}
   - {fileID: 7479216289138802066}
   - {fileID: 3833475975337900445}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &898020849550738381
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8919074471471191853}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 5.47, y: 0.28, z: -9.84}
 --- !u!1001 &6296150345980267851
 PrefabInstance:
   m_ObjectHideFlags: 0

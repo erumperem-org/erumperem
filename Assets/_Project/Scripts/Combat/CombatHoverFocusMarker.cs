@@ -160,6 +160,11 @@ namespace Erumperem.Combat
             {
                 _lastJuiceCombatantId = combatantId;
                 PlayAppearJuice(markerTransform);
+
+                if (AudioManager.instance != null)
+                {
+                    AudioManager.instance.PlaySFX("CharacterHover");
+                }
             }
         }
 
