@@ -1,25 +1,31 @@
 using System.Collections;
 using UnityEngine;
 
-public class PoolSpawnAndReleaseTest : MonoBehaviour
+namespace Core.Exploration.Enemy
 {
-    [SerializeField] private ExplorationEnemyPooling pool;
-    [SerializeField] private ExplorationEnemyLevels level;
-
-    [SerializeField] private float releaseDelay = 5f;
-
-    public void SpawnAndReleaseTestFunction()
+    /// <summary>
+    /// Teste de spawn com devolução automática após um delay.
+    /// Spawna um inimigo e o libera de volta à pool após <see cref="ReleaseDelay"/> segundos.
+    /// Invoque <see cref="SpawnAndReleaseTestFunction"/> via UnityEvent ou pelo inspector.
+    /// </summary>
+    public class PoolSpawnAndReleaseTest : MonoBehaviour
     {
-        StartCoroutine(SpawnRoutine());
-    }
+        [SerializeField] private ExplorationEnemyPooling _pool;
+        [SerializeField] private ExplorationEnemyLevels  _level;
 
-    private IEnumerator SpawnRoutine()
-    {
-        ExplorationEnemyController enemy =
-            pool.GetEnemy(level);
+        [Tooltip("Segundos até o inimigo ser devolvido à pool após o spawn.")]
+        [SerializeField] private float _releaseDelay = 5f;
 
-        yield return new WaitForSeconds(releaseDelay);
+        public void SpawnAndReleaseTestFunction()
+        {
+            StartCoroutine(SpawnRoutine());
+        }
 
-        pool.ReleaseEnemy(enemy);
+        private IEnumerator SpawnRoutine()
+        {
+            ExplorationEnemyController enemy = _pool.GetEnemy(_level);
+            yield return new WaitForSeconds(_releaseDelay);
+            _pool.ReleaseEnemy(enemy);
+        }
     }
 }

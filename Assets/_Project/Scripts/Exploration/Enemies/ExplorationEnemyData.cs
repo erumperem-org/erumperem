@@ -2,27 +2,52 @@ using System;
 using UnityEngine;
 using UnityEngine.AI;
 
-// FIX: Changed from struct to class.
-// Storing interface references (IEnemyStartegy, IEnemyStartegyContext) inside a
-// struct causes boxing every time the struct is copied or passed by value, which
-// generates GC pressure. A class stores the reference directly on the heap with
-// no boxing overhead.
-[Serializable]
-public class ExplorationEnemyData
+namespace Core.Exploration.Enemy
 {
-    [Header("Exposed strategy on inspector")]
-    public string enemyStartegyExposed;
-    public IEnemyStartegy _enemyStartegy;
-    public IEnemyStartegyContext currentContext;
+    /// <summary>
+    /// Contém todos os dados de um inimigo de exploração.
+    /// Serializado como campo público no <see cref="ExplorationEnemyController"/>
+    /// para ser inspecionável no editor.
+    /// </summary>
+    [Serializable]
+    public class ExplorationEnemyData
+    {
+        // ── Diagnóstico ──────────────────────────────────────────────────────────
 
-    [Header("Navmesh")]
-    public NavMeshAgent agent;
+        [Header("Diagnóstico (somente leitura em runtime)")]
+        [Tooltip("Nome da estratégia ativa, atualizado automaticamente pelo controller.")]
+        public string EnemyStartegyExposed;
 
-    [Header("Identificator")]
-    public string enemyId;
+        // ── Referências de comportamento ─────────────────────────────────────────
 
-    [Header("Properties")]
-    public ExplorationEnemyLevels enemyLevel;
-    public float perceptionRadius;
-    public float patrolRadius;
+        /// <summary>Estratégia de comportamento atualmente ativa.</summary>
+        public IEnemyStartegy ActiveStrategy;
+
+        /// <summary>Contexto associado à estratégia ativa.</summary>
+        public IEnemyStartegyContext CurrentContext;
+
+        // ── Navegação ────────────────────────────────────────────────────────────
+
+        [Header("Navegação")]
+        [Tooltip("NavMeshAgent controlado pelas estratégias de movimento.")]
+        public NavMeshAgent Agent;
+
+        // ── Identificação ────────────────────────────────────────────────────────
+
+        [Header("Identificação")]
+        [Tooltip("ID único gerado pelo builder no momento da criação.")]
+        public string EnemyId;
+
+        // ── Configuração de comportamento ────────────────────────────────────────
+
+        [Header("Configuração de Comportamento")]
+        [Tooltip("Nível de força/dificuldade do inimigo.")]
+        public ExplorationEnemyLevels EnemyLevel;
+
+        [Tooltip("Raio de percepção: distância na qual o inimigo detecta o alvo.")]
+        public float PerceptionRadius;
+
+        [Tooltip("Raio de patrulha: alcance máximo dos pontos de destino aleatórios durante a patrulha.")]
+        public float PatrolRadius;
+    }
 }

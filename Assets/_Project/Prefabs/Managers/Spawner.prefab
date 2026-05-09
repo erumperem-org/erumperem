@@ -46,13 +46,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf46987c3d7e008438f1248908b6cb2a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExplorationEnemyPooling
-  builder:
-    enemyPrefab: {fileID: 6142139712128095235, guid: e7b2418e4216c3b44bc8dcb357ff2ca5, type: 3}
-  poolPosition: {x: 0, y: -100, z: 0}
-  pooledObjectsParent: {fileID: 6036229840822934570}
-  activeObjectsParent: {fileID: 1793671399251117528}
-  nextEnemyLevelToCreate: 0
-  player: {fileID: 0}
+  _builder:
+    EnemyPrefab: {fileID: 6142139712128095235, guid: e7b2418e4216c3b44bc8dcb357ff2ca5, type: 3}
+    DefaultPerceptionRadius: 10
+    DefaultPatrolRadius: 50
+    NavMeshSampleDistance: 10
+  PooledObjectsParent: {fileID: 6036229840822934570}
+  ActiveObjectsParent: {fileID: 1793671399251117528}
+  Player: {fileID: 0}
+  _poolDefaultCapacity: 10
+  _poolMaxSize: 20
+  _poolPosition: {x: 0, y: -100, z: 0}
+  _nextEnemyLevelToCreate: 0
+  _spawnCenter: {x: 0, y: 0, z: 0}
+  _spawnNavMeshRadius: 100
 --- !u!1 &4772946702739751103
 GameObject:
   m_ObjectHideFlags: 0

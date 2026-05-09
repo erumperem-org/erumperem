@@ -1,12 +1,20 @@
 using UnityEngine;
 
-public class PoolReleaseTest : MonoBehaviour
+namespace Core.Exploration.Enemy
 {
-    [SerializeField] private ExplorationEnemyPooling pool;
-    [SerializeField] private ExplorationEnemyController target;
-
-    public void ReleaseTest()
+    /// <summary>
+    /// Teste de devolução manual: libera um inimigo específico de volta para a pool.
+    /// Útil para validar o callback <see cref="ExplorationEnemyPooling.ReleaseEnemy"/>.
+    /// Invoque <see cref="ReleaseTest"/> via UnityEvent ou pelo inspector em runtime.
+    /// </summary>
+    public class PoolReleaseTest : MonoBehaviour
     {
-        pool.ReleaseEnemy(target);
+        [SerializeField] private ExplorationEnemyPooling   _pool;
+        [SerializeField] private ExplorationEnemyController _target;
+
+        public void ReleaseTest()
+        {
+            _pool.ReleaseEnemy(_target);
+        }
     }
 }

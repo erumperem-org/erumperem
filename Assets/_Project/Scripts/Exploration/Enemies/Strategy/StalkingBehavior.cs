@@ -5,137 +5,142 @@ using Services.DebugUtilities;
 using Services.DebugUtilities.Console;
 using UnityEngine;
 
-public class StalkingBehavior : IReverseableEnemyStartegy
+namespace Core.Exploration.Enemy
 {
-    private CancellationTokenSource _cts;
-
-    public async Task ExecuteBehavior(IEnemyStartegyContext context)
+    /// <summary>
+    /// Comportamento de stalking: o inimigo mantém uma distância fixa do alvo,
+    /// posicionando-se atrás/ao redor dele sem se aproximar demais.
+    /// Ideal para criar tensão sem engajar diretamente o jogador.
+    /// </summary>
+    public class StalkingBehavior : IReverseableEnemyStartegy
     {
-        if (context is StalkingBehaviorContext stalkingBehaviorContext)
+        private CancellationTokenSource _cts;
+
+        // ── IEnemyStartegy ────────────────────────────────────────────────────────
+
+        public async Task ExecuteBehavior(IEnemyStartegyContext context)
         {
-            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.AI,
-                $"Enemy [{stalkingBehaviorContext.enemy.data.enemyId}], is entering [StalkingBehavior]");
-
-            _cts = new CancellationTokenSource();
-            await Stalk(stalkingBehaviorContext, _cts);
-        }
-    }
-
-    private async Task Stalk(StalkingBehaviorContext context, CancellationTokenSource cts)
-    {
-        try
-        {
-            Vector3 lastTargetPosition = context.target.position;
-
-            while (!cts.IsCancellationRequested)
+            if (context is StalkingBehaviorContext stalkingContext)
             {
-                Vector3 targetPos = context.target.position;
+                LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.AI,
+                    $"Inimigo [{stalkingContext.Enemy.Data.EnemyId}] entrando em [StalkingBehavior]");
 
-                Vector3 toTarget =
-                    context.enemy.transform.position - targetPos;
-
-                float distanceSq = toTarget.sqrMagnitude;
-
-                float stalkSq =
-                    context.stalkingDistance * context.stalkingDistance;
-
-                // Too far from target -> move closer
-                if (distanceSq > stalkSq)
-                {
-                    // Update only if target moved enough
-                    if ((lastTargetPosition - targetPos).sqrMagnitude > 0.01f)
-                    {
-                        lastTargetPosition = targetPos;
-
-                        Vector3 direction = toTarget.normalized;
-
-                        Vector3 desiredPosition =
-                            targetPos + direction * context.stalkingDistance;
-
-                        LoggerService.PrintLogMessage(
-                            LogLevel.Debug,
-                            LogCategory.Data,
-                            $"New stalk position {desiredPosition} of {context.enemy.data.enemyId}");
-
-                        context.enemy.data.agent.SetDestination(desiredPosition);
-
-                        // Wait for path calculation
-                        while (context.enemy.data.agent.pathPending)
-                        {
-                            cts.Token.ThrowIfCancellationRequested();
-                            await Task.Yield();
-                        }
-
-                        // Continuously monitor movement while stalking
-                        while (!cts.IsCancellationRequested &&
-                               context.enemy.data.agent.remainingDistance >
-                               context.enemy.data.agent.stoppingDistance)
-                        {
-                            targetPos = context.target.position;
-
-                            toTarget =
-                                context.enemy.transform.position - targetPos;
-
-                            distanceSq = toTarget.sqrMagnitude;
-
-                            // Stop immediately if already inside stalking range
-                            if (distanceSq <= stalkSq)
-                            {
-                                context.enemy.data.agent.ResetPath();
-                                break;
-                            }
-
-                            // Recalculate stalking position if target moved
-                            if ((lastTargetPosition - targetPos).sqrMagnitude > 0.01f)
-                            {
-                                lastTargetPosition = targetPos;
-
-                                direction = toTarget.normalized;
-
-                                desiredPosition =
-                                    targetPos + direction * context.stalkingDistance;
-
-                                context.enemy.data.agent.SetDestination(desiredPosition);
-                            }
-
-                            await Task.Delay(50, cts.Token);
-                        }
-                    }
-                }
-                else
-                {
-                    // Already inside stalking distance
-                    context.enemy.data.agent.ResetPath();
-                }
-
-                await Task.Delay(100, cts.Token);
+                _cts = new CancellationTokenSource();
+                await Stalk(stalkingContext, _cts);
             }
         }
-        catch (OperationCanceledException)
+
+        // ── IReverseableEnemyStartegy ─────────────────────────────────────────────
+
+        public async Task UnexecuteBehavior(IEnemyStartegyContext context)
         {
-            // Expected cancellation
+            if (context is StalkingBehaviorContext stalkingContext)
+            {
+                LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.AI,
+                    $"Inimigo [{stalkingContext.Enemy.Data.EnemyId}] saindo de [StalkingBehavior]");
+
+                CancelAndDisposeCts();
+            }
+
+            await Task.CompletedTask;
         }
-    }
 
-    public async Task UnexecuteBehavior(IEnemyStartegyContext context)
-    {
-        if (context is StalkingBehaviorContext stalkingBehaviorContext)
+        public void CancelImmediate() => CancelAndDisposeCts();
+
+        // ── Lógica interna ────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Loop principal de stalking.
+        /// O inimigo calcula o ponto ideal (na direção oposta ao alvo, a <see cref="StalkingBehaviorContext.StalkingDistance"/>)
+        /// e navega até ele somente quando o alvo se move, evitando recálculos desnecessários.
+        /// </summary>
+        private async Task Stalk(StalkingBehaviorContext context, CancellationTokenSource cts)
         {
-            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.AI,
-                $"Enemy [{stalkingBehaviorContext.enemy.data.enemyId}], is exiting [StalkingBehavior]");
+            try
+            {
+                Vector3 lastKnownTargetPosition = context.Target.position;
 
+                while (!cts.IsCancellationRequested)
+                {
+                    Vector3 targetPos  = context.Target.position;
+                    Vector3 toTarget   = context.Enemy.transform.position - targetPos;
+                    float   distanceSq = toTarget.sqrMagnitude;
+                    float   stalkSq    = context.StalkingDistance * context.StalkingDistance;
+
+                    if (distanceSq > stalkSq)
+                    {
+                        // Inimigo está mais longe que a distância de stalking;
+                        // só recalcula o caminho se o alvo tiver se movido significativamente
+                        if ((lastKnownTargetPosition - targetPos).sqrMagnitude > 0.01f)
+                        {
+                            lastKnownTargetPosition = targetPos;
+
+                            // Posição desejada: atrás do alvo na direção do inimigo
+                            Vector3 direction       = toTarget.normalized;
+                            Vector3 desiredPosition = targetPos + direction * context.StalkingDistance;
+
+                            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Data,
+                                $"Nova posição de stalking {desiredPosition} para [{context.Enemy.Data.EnemyId}]");
+
+                            context.Enemy.Data.Agent.SetDestination(desiredPosition);
+
+                            // Aguarda o cálculo do caminho
+                            while (context.Enemy.Data.Agent.pathPending)
+                            {
+                                cts.Token.ThrowIfCancellationRequested();
+                                await Task.Yield();
+                            }
+
+                            // Navega até a posição de stalking, atualizando o destino se o alvo se mover
+                            while (!cts.IsCancellationRequested &&
+                                   context.Enemy.Data.Agent.remainingDistance >
+                                   context.Enemy.Data.Agent.stoppingDistance)
+                            {
+                                targetPos  = context.Target.position;
+                                toTarget   = context.Enemy.transform.position - targetPos;
+                                distanceSq = toTarget.sqrMagnitude;
+
+                                // Já está na distância correta; interrompe o movimento
+                                if (distanceSq <= stalkSq)
+                                {
+                                    context.Enemy.Data.Agent.ResetPath();
+                                    break;
+                                }
+
+                                // Atualiza o destino se o alvo tiver se movido
+                                if ((lastKnownTargetPosition - targetPos).sqrMagnitude > 0.01f)
+                                {
+                                    lastKnownTargetPosition = targetPos;
+                                    direction               = toTarget.normalized;
+                                    desiredPosition         = targetPos + direction * context.StalkingDistance;
+                                    context.Enemy.Data.Agent.SetDestination(desiredPosition);
+                                }
+
+                                await Task.Delay(50, cts.Token);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Já dentro da distância de stalking; para e aguarda o alvo se mover
+                        context.Enemy.Data.Agent.ResetPath();
+                    }
+
+                    // Intervalo de polling para não sobrecarregar o loop
+                    await Task.Delay(100, cts.Token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Cancelamento esperado ao trocar de estratégia ou destruir o objeto
+            }
+        }
+
+        private void CancelAndDisposeCts()
+        {
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
         }
-
-        await Task.CompletedTask;
-    }
-
-    public void CancelImmediate()
-    {
-        _cts?.Cancel();
-        _cts?.Dispose();
-        _cts = null;
     }
 }

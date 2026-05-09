@@ -6,146 +6,155 @@ using Services.DebugUtilities.Console;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class PursuingBehavior : IReverseableEnemyStartegy
+namespace Core.Exploration.Enemy
 {
-    private CancellationTokenSource _cts;
-
-    public async Task ExecuteBehavior(IEnemyStartegyContext context)
+    /// <summary>
+    /// Comportamento de perseguição: o inimigo segue ativamente o alvo enquanto ele
+    /// permanecer dentro de <see cref="PursuingBehaviorContext.PerceptionRadius"/>.
+    /// Ao alcançar o alvo (dentro do stoppingDistance do NavMeshAgent), carrega a cena de combate.
+    /// Se o alvo sair do raio de percepção, retorna para <see cref="PatrolBehavior"/>.
+    /// </summary>
+    public class PursuingBehavior : IReverseableEnemyStartegy
     {
-        if (context is PursuingBehaviorContext pursuingBehaviorContext)
-        {
-            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.AI,
-                $"Enemy [{pursuingBehaviorContext.enemy.data.enemyId}], is entering [PursuingBehavior]");
+        private CancellationTokenSource _cts;
 
-            _cts = new CancellationTokenSource();
-            await Pursue(pursuingBehaviorContext, _cts);
-        }
-    }
+        // ── IEnemyStartegy ────────────────────────────────────────────────────────
 
-    private async Task Pursue(PursuingBehaviorContext context, CancellationTokenSource cts)
-    {
-        try
+        public async Task ExecuteBehavior(IEnemyStartegyContext context)
         {
-            while (!cts.IsCancellationRequested)
+            if (context is PursuingBehaviorContext pursuingContext)
             {
-                float sqDist =
-                    (context.enemy.transform.position - context.target.position).sqrMagnitude;
+                LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.AI,
+                    $"Inimigo [{pursuingContext.Enemy.Data.EnemyId}] entrando em [PursuingBehavior]");
 
-                float sqPerception =
-                    context.perceptionRadius * context.perceptionRadius;
-
-                // Lost target -> return to patrol immediately
-                if (sqDist > sqPerception)
-                {
-                    context.enemy.data.agent.ResetPath();
-
-                    await ExplorationEnemyController.SetEnemyStartegy(
-                        context.enemy,
-                        new PatrolBehavior(),
-                        new PatrolBehaviorContext(
-                            context.enemy,
-                            context.target,
-                            context.perceptionRadius));
-
-                    return;
-                }
-
-                float stoppingDistance = context.enemy.data.agent.stoppingDistance;
-                float sqStopping = stoppingDistance * stoppingDistance;
-
-                // Continue pursuing target
-                if (sqDist > sqStopping)
-                {
-                    LoggerService.PrintLogMessage(
-                        LogLevel.Debug,
-                        LogCategory.Data,
-                        $"New target pos {context.target.position} of {context.enemy.data.enemyId}");
-
-                    context.enemy.data.agent.SetDestination(context.target.position);
-
-                    // Wait for path calculation
-                    while (context.enemy.data.agent.pathPending)
-                    {
-                        cts.Token.ThrowIfCancellationRequested();
-                        await Task.Yield();
-                    }
-
-                    // Continuously update pursuit while moving
-                    while (!cts.IsCancellationRequested &&
-                           context.enemy.data.agent.remainingDistance >
-                           context.enemy.data.agent.stoppingDistance)
-                    {
-                        sqDist =
-                            (context.enemy.transform.position - context.target.position).sqrMagnitude;
-
-                        sqPerception =
-                            context.perceptionRadius * context.perceptionRadius;
-
-                        // Target escaped perception radius
-                        if (sqDist > sqPerception)
-                        {
-                            context.enemy.data.agent.ResetPath();
-
-                            await ExplorationEnemyController.SetEnemyStartegy(
-                                context.enemy,
-                                new PatrolBehavior(),
-                                new PatrolBehaviorContext(
-                                    context.enemy,
-                                    context.target,
-                                    context.perceptionRadius));
-
-                            return;
-                        }
-
-                        // Continuously refresh target position
-                        context.enemy.data.agent.SetDestination(context.target.position);
-
-                        await Task.Delay(50, cts.Token);
-                    }
-
-                    await Task.Delay(25, cts.Token);
-                }
-                else
-                {
-                    // Enemy reached target
-                    context.enemy.data.agent.ResetPath();
-
-                    LoggerService.PrintLogMessage(
-                        LogLevel.Debug,
-                        LogCategory.AI,
-                        $"Enemy [{context.enemy.data.enemyId}] reached target. Loading combat scene.");
-
-                    SceneManager.LoadScene("CombatScene");
-
-                    return;
-                }
+                _cts = new CancellationTokenSource();
+                await Pursue(pursuingContext, _cts);
             }
         }
-        catch (OperationCanceledException)
+
+        // ── IReverseableEnemyStartegy ─────────────────────────────────────────────
+
+        public async Task UnexecuteBehavior(IEnemyStartegyContext context)
         {
-            // Expected cancellation
+            if (context is PursuingBehaviorContext pursuingContext)
+            {
+                LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.AI,
+                    $"Inimigo [{pursuingContext.Enemy.Data.EnemyId}] saindo de [PursuingBehavior]");
+
+                CancelAndDisposeCts();
+            }
+
+            await Task.CompletedTask;
         }
-    }
 
-    public async Task UnexecuteBehavior(IEnemyStartegyContext context)
-    {
-        if (context is PursuingBehaviorContext pursuingBehaviorContext)
+        public void CancelImmediate() => CancelAndDisposeCts();
+
+        // ── Lógica interna ────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Loop principal de perseguição.
+        /// A cada iteração: verifica se alvo ainda está no raio → navega em direção a ele.
+        /// Se o alvo for alcançado (stoppingDistance), carrega a cena de combate.
+        /// Se o alvo sair do raio, retorna para patrulha.
+        /// </summary>
+        private async Task Pursue(PursuingBehaviorContext context, CancellationTokenSource cts)
         {
-            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.AI,
-                $"Enemy [{pursuingBehaviorContext.enemy.data.enemyId}], is exiting [PursuingBehavior]");
+            try
+            {
+                while (!cts.IsCancellationRequested)
+                {
+                    float sqDist       = (context.Enemy.transform.position - context.Target.position).sqrMagnitude;
+                    float sqPerception = context.PerceptionRadius * context.PerceptionRadius;
 
+                    // Alvo saiu do raio de percepção → volta para patrulha
+                    if (sqDist > sqPerception)
+                    {
+                        context.Enemy.Data.Agent.ResetPath();
+                        await TransitionToPatrol(context);
+                        return;
+                    }
+
+                    float sqStopping = context.Enemy.Data.Agent.stoppingDistance *
+                                       context.Enemy.Data.Agent.stoppingDistance;
+
+                    if (sqDist > sqStopping)
+                    {
+                        // Alvo ainda fora do stoppingDistance → navega em direção a ele
+                        LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Data,
+                            $"Novo destino de perseguição {context.Target.position} para [{context.Enemy.Data.EnemyId}]");
+
+                        context.Enemy.Data.Agent.SetDestination(context.Target.position);
+
+                        // Aguarda o cálculo do caminho
+                        while (context.Enemy.Data.Agent.pathPending)
+                        {
+                            cts.Token.ThrowIfCancellationRequested();
+                            await Task.Yield();
+                        }
+
+                        // Segue o alvo; atualiza o destino periodicamente pois o alvo se move
+                        while (!cts.IsCancellationRequested &&
+                               context.Enemy.Data.Agent.remainingDistance >
+                               context.Enemy.Data.Agent.stoppingDistance)
+                        {
+                            sqDist       = (context.Enemy.transform.position - context.Target.position).sqrMagnitude;
+                            sqPerception = context.PerceptionRadius * context.PerceptionRadius;
+
+                            // Alvo saiu do raio durante a navegação
+                            if (sqDist > sqPerception)
+                            {
+                                context.Enemy.Data.Agent.ResetPath();
+                                await TransitionToPatrol(context);
+                                return;
+                            }
+
+                            // Atualiza destino para acompanhar o movimento do alvo
+                            context.Enemy.Data.Agent.SetDestination(context.Target.position);
+
+                            await Task.Delay(50, cts.Token);
+                        }
+
+                        await Task.Delay(25, cts.Token);
+                    }
+                    else
+                    {
+                        // Alvo alcançado → inicia o combate
+                        context.Enemy.Data.Agent.ResetPath();
+
+                        LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.AI,
+                            $"Inimigo [{context.Enemy.Data.EnemyId}] alcançou o alvo. Carregando cena de combate.");
+
+                        SceneManager.LoadScene("CombatScene");
+                        return;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Cancelamento esperado ao trocar de estratégia ou destruir o objeto
+            }
+        }
+
+        /// <summary>
+        /// Solicita a transição de volta para <see cref="PatrolBehavior"/>
+        /// quando o alvo sai do raio de percepção.
+        /// </summary>
+        private Task TransitionToPatrol(PursuingBehaviorContext context)
+        {
+            return ExplorationEnemyController.SetEnemyStartegy(
+                context.Enemy,
+                new PatrolBehavior(),
+                new PatrolBehaviorContext(
+                    context.Enemy,
+                    context.Target,
+                    context.PerceptionRadius));
+        }
+
+        private void CancelAndDisposeCts()
+        {
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
         }
-
-        await Task.CompletedTask;
-    }
-
-    public void CancelImmediate()
-    {
-        _cts?.Cancel();
-        _cts?.Dispose();
-        _cts = null;
     }
 }

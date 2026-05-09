@@ -2,39 +2,46 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PoolStressTest : MonoBehaviour
+namespace Core.Exploration.Enemy
 {
-    [SerializeField] private ExplorationEnemyPooling pool;
-    [SerializeField] private ExplorationEnemyLevels level;
-
-    [SerializeField] private int amount = 20;
-    [SerializeField] private float releaseDelay = 60f;
-
-    private readonly List<ExplorationEnemyController> spawned =
-        new();
-
-    public void StressTest()
+    /// <summary>
+    /// Teste de stress da pool: spawna <see cref="Amount"/> inimigos simultaneamente
+    /// e os libera todos após <see cref="ReleaseDelay"/> segundos.
+    /// Útil para identificar gargalos de performance e validar a estabilidade da pool sob carga.
+    /// Invoque <see cref="StressTest"/> via UnityEvent ou pelo inspector em runtime.
+    /// </summary>
+    public class PoolStressTest : MonoBehaviour
     {
-        StartCoroutine(TestRoutine());
-    }
+        [SerializeField] private ExplorationEnemyPooling _pool;
+        [SerializeField] private ExplorationEnemyLevels  _level;
 
-    private IEnumerator TestRoutine()
-    {
-        spawned.Clear();
+        [Tooltip("Quantidade de inimigos a spawnar durante o teste.")]
+        [SerializeField] private int _amount = 20;
 
-        for(int i = 0; i < amount; i++)
+        [Tooltip("Segundos até todos os inimigos serem liberados de volta à pool.")]
+        [SerializeField] private float _releaseDelay = 60f;
+
+        private readonly List<ExplorationEnemyController> _spawned = new();
+
+        public void StressTest()
         {
-            ExplorationEnemyController enemy =
-                pool.GetEnemy(level);
-
-            spawned.Add(enemy);
+            StartCoroutine(TestRoutine());
         }
 
-        yield return new WaitForSeconds(releaseDelay);
-
-        foreach(ExplorationEnemyController enemy in spawned)
+        private IEnumerator TestRoutine()
         {
-            pool.ReleaseEnemy(enemy);
+            _spawned.Clear();
+
+            for (int i = 0; i < _amount; i++)
+            {
+                ExplorationEnemyController enemy = _pool.GetEnemy(_level);
+                _spawned.Add(enemy);
+            }
+
+            yield return new WaitForSeconds(_releaseDelay);
+
+            foreach (ExplorationEnemyController enemy in _spawned)
+                _pool.ReleaseEnemy(enemy);
         }
     }
 }
