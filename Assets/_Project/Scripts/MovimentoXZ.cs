@@ -44,6 +44,7 @@ public class MovimentoXZ : MonoBehaviour
 
     void FixedUpdate()
 	{
+		Debug.Log(movimento);
 		rb.MovePosition(rb.position + movimento * velocidade * Time.fixedDeltaTime);
 		if (movimento != Vector3.zero)
 		{
