@@ -1142,6 +1142,7 @@ Transform:
   - {fileID: 1027848099}
   - {fileID: 1414650950}
   - {fileID: 1583719567}
+  - {fileID: 1816098998}
   - {fileID: 327095268}
   - {fileID: 108571615}
   - {fileID: 2060464241}
@@ -1278,6 +1279,70 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d6f3c4a3df515fd4da8ebd08740614d6, type: 3}
+--- !u!1 &1816098997
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1816098998}
+  - component: {fileID: 1816098999}
+  m_Layer: 0
+  m_Name: RandomEncounterGenerator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1816098998
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1816098997}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -21.404339, y: -0.00001, z: -67.06752}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1525401521}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1816098999
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1816098997}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8a2ed3ccce71d5498d68575bbe511a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RandomPrefabSpawner
+  prefabs:
+  - {fileID: 7489455750879145955, guid: b22d911f166133041a75bdb09e5f15ce, type: 3}
+  - {fileID: 62917487051863848, guid: 61223559353511e4ca3217c50c22ec44, type: 3}
+  - {fileID: 323744185226157465, guid: 8085cfc4ab8e006408fc952f12edcb52, type: 3}
+  - {fileID: 4999307691908797342, guid: 00c0c55e92c182b49b0b877b40d7bc3a, type: 3}
+  - {fileID: 3128294392997759215, guid: 4960718f4bff1ac4992d1db95507c6a3, type: 3}
+  - {fileID: 1046247959873634989, guid: ad53d6a7cecf9914590a97c9f222f696, type: 3}
+  - {fileID: 983274718527581879, guid: 4e4fb2cb2247e7d44b5b247304e446ea, type: 3}
+  - {fileID: 6887970969855392716, guid: 41424f98f56b0764f98fb7b66e8e923f, type: 3}
+  targetPoints:
+  - {fileID: 327095268}
+  - {fileID: 108571615}
+  - {fileID: 2060464241}
+  - {fileID: 2082915855}
+  - {fileID: 910457545}
+  - {fileID: 2001825957}
+  - {fileID: 1593512308}
+  - {fileID: 163078669}
+  - {fileID: 1389523143}
+  - {fileID: 1778934114}
 --- !u!1 &2001825956
 GameObject:
   m_ObjectHideFlags: 0
