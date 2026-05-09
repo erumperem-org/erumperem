@@ -95,6 +95,21 @@ public sealed class DotInstance
 public sealed class DotComponent
 {
     public List<DotInstance> ActiveDots { get; } = [];
+
+    /// <summary>Sum of remaining turns for all instances of this DOT type (display / UI).</summary>
+    public int SumRemainingTurns(DotType dotType)
+    {
+        var sum = 0;
+        foreach (var dot in ActiveDots)
+        {
+            if (dot.Type == dotType)
+            {
+                sum += dot.RemainingTurns;
+            }
+        }
+
+        return sum;
+    }
 }
 
 public sealed class SkillLoadoutComponent

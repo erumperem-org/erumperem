@@ -11,12 +11,6 @@ public sealed class DamageRange
     public required int Max { get; init; }
 }
 
-public sealed class MoveSpec
-{
-    public required string Type { get; init; }
-    public required int Steps { get; init; }
-}
-
 public sealed class EffectSpec
 {
     public required EffectType Type { get; init; }
@@ -42,7 +36,6 @@ public sealed class SkillDefinition
     public required double BaseCritChance { get; init; }
     public required double Accuracy { get; init; }
     public SkillTargetKind TargetKind { get; init; } = SkillTargetKind.Enemy;
-    public MoveSpec SelfMove { get; init; } = new MoveSpec { Type = "None", Steps = 0 };
     public IReadOnlyList<EffectSpec> EffectsOnHit { get; init; } = [];
     public IReadOnlyList<EffectSpec> ComboBonus { get; init; } = [];
     public int Weight { get; init; } = 1;

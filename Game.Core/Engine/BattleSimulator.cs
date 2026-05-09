@@ -591,11 +591,6 @@ public sealed class BattleSimulator
             }
         }
 
-        if (!string.Equals(skill.SelfMove.Type, "None", StringComparison.OrdinalIgnoreCase) && skill.SelfMove.Steps != 0)
-        {
-            MoveTarget(state, actor, skill.SelfMove.Steps);
-        }
-
         PassiveRuleApplier.ApplyPostSkillPassiveExtras(state, actor, target, skill);
         ApplyPassiveExtraDotsAfterSkill(state, actor, target, skill);
     }

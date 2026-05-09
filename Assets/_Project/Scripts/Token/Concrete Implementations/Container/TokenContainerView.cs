@@ -11,6 +11,11 @@ namespace Core.Tokens
     /// View layer for the token container.
     /// Responsible for reflecting the container's token state visually.
     ///
+    /// **Combat diegetic UI:** prefer <see cref="Erumperem.Combat.Tokens.DiegeticTokenStripPresenter"/> +
+    /// <see cref="Erumperem.Combat.Tokens.CombatDiegeticTokenStripsBinder"/> synced to Game.Core
+    /// <c>Combatant.Tokens</c>. This Addressables grid is for the legacy rich-token prototype
+    /// (<see cref="TokenContainerController"/>).
+    ///
     /// LAYOUT CONTRACT:
     /// - Tokens are arranged left-to-right in rows of <see cref="columns"/>.
     /// - The grid grows upward (+Y) when a new row is needed.
