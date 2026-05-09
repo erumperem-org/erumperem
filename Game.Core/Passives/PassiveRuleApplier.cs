@@ -166,10 +166,8 @@ public static class PassiveRuleApplier
         {
             switch (def.EffectKind)
             {
-                case PassiveEffectKind.ExtraTokenOnSelfSkillWhenRank:
+                case PassiveEffectKind.ExtraTokenOnSelfSkill:
                     if (skill.TargetKind != SkillTargetKind.Self || def.SkillId != skill.Id || def.TokenType is null) break;
-                    if (!actor.Position.OccupiedRanks.Any(occupiedRank =>
-                            occupiedRank >= def.MinCasterRank && (def.MaxCasterRank <= 0 || occupiedRank <= def.MaxCasterRank))) break;
                     actor.Tokens.Add(def.TokenType.Value, Math.Max(1, def.IntValue));
                     break;
                 case PassiveEffectKind.ExtraHealPercentOnSelfSkill:

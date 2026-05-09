@@ -100,7 +100,6 @@ public sealed class DotComponent
 public sealed class SkillLoadoutComponent
 {
     public List<string> Skills { get; } = [];
-    public Dictionary<string, int> Cooldowns { get; } = [];
 }
 
 public sealed class ProgressionComponent

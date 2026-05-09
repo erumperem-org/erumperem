@@ -7,8 +7,8 @@ using Game.Core.Models;
 namespace Erumperem.Combat
 {
     /// <summary>
-    /// Clicável = skill usável (CD/rank) e, se for alvo inimigo, existe pelo menos um inimigo para quem
-    /// <see cref="PlayerActionBuilder.TryCreate"/> conseguiria montar a ação (alvo no mapa depois).
+    /// Clicável quando <see cref="PlayerActionBuilder.TryCreate"/> consegue montar a ação
+    /// (ex.: inimigo selecionável no mapa para skills em inimigo).
     /// </summary>
     public static class CombatSkillSlotUiEligibility
     {

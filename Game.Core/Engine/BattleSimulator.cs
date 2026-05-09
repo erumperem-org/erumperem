@@ -232,27 +232,22 @@ public sealed class BattleSimulator
     }
 
     private Combatant? SelectAllyTarget(
-        Combatant actor,
+        Combatant _actor,
         IReadOnlyList<Combatant> allies,
-        SkillDefinition skill)
+        SkillDefinition _skill)
     {
         var visible = allies
             .Where(ally => ally.Tokens.GetStacks(TokenType.Stealth) == 0)
             .ToList();
         if (visible.Count == 0) return null;
 
-        var inRank = visible
-            .Where(ally => ally.Position.OccupiedRanks.Any(occupiedRank => skill.AllowedTargetRanks.Contains(occupiedRank)))
-            .ToList();
-        if (inRank.Count == 0) return null;
-
-        return inRank[_random.Next(0, inRank.Count)];
+        return visible[_random.Next(0, visible.Count)];
     }
 
     private Combatant? SelectTarget(
-        Combatant actor,
+        Combatant _actor,
         IReadOnlyList<Combatant> availableTargets,
-        SkillDefinition skill)
+        SkillDefinition _skill)
     {
         var tauntTargets = availableTargets.Where(enemy => enemy.Tokens.GetStacks(TokenType.Taunt) > 0).ToList();
         var candidateTargets = tauntTargets.Count > 0 ? tauntTargets : availableTargets.ToList();
@@ -265,29 +260,10 @@ public sealed class BattleSimulator
             return null;
         }
 
-        var inRankTargets = visibleTargets
-            .Where(enemy => enemy.Position.OccupiedRanks.Any(occupiedRank => skill.AllowedTargetRanks.Contains(occupiedRank)))
-            .ToList();
-        if (inRankTargets.Count == 0)
-        {
-            return null;
-        }
-
-        return inRankTargets[_random.Next(0, inRankTargets.Count)];
+        return visibleTargets[_random.Next(0, visibleTargets.Count)];
     }
 
-    public bool IsSkillUsable(Combatant actor, SkillDefinition skill)
-    {
-        var inRank = actor.Position.OccupiedRanks.Any(occupiedRank => skill.AllowedCasterRanks.Contains(occupiedRank));
-        if (!inRank) return false;
-
-        if (actor.SkillLoadout.Cooldowns.TryGetValue(skill.Id, out var turns) && turns > 0)
-        {
-            return false;
-        }
-
-        return true;
-    }
+    public bool IsSkillUsable(Combatant _actor, SkillDefinition _skill) => true;
 
     /// <summary>Resolve uma ação já escolhida (player ou AI).</summary>
     public void ResolveChosenAction(BattleState state, ChosenAction action)
@@ -392,12 +368,6 @@ public sealed class BattleSimulator
             ApplyBattleCorruptionDelta(state, skill.CorruptionCost, actor.Identity.Id, skill.Id);
         }
 
-        if (skill.Cooldown > 0)
-        {
-            actor.SkillLoadout.Cooldowns[skill.Id] = skill.Cooldown;
-        }
-
-        TickCooldowns(actor);
     }
 
     private ResolveActionResult ResolveHitAndDamage(
@@ -816,15 +786,6 @@ public sealed class BattleSimulator
         }
 
         return 1.0;
-    }
-
-    private void TickCooldowns(Combatant actor)
-    {
-        var skillIdsOnCooldown = actor.SkillLoadout.Cooldowns.Keys.ToList();
-        foreach (var skillId in skillIdsOnCooldown)
-        {
-            actor.SkillLoadout.Cooldowns[skillId] = Math.Max(0, actor.SkillLoadout.Cooldowns[skillId] - 1);
-        }
     }
 
     private void ApplyBattleCorruptionDelta(BattleState state, double delta, string actorId, string skillId)

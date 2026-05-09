@@ -235,7 +235,7 @@ namespace Erumperem.Combat
                 return;
             }
 
-            Debug.LogWarning($"Skill slot {zeroBasedSlot + 1} indisponível (CD, alvo, rank ou fora do loadout).");
+            Debug.LogWarning($"Skill slot {zeroBasedSlot + 1} indisponível (alvo ou fora do loadout).");
             PublishPlayerSkillHelpForAlly(_pendingPlayerActor, FindAllyIndex(_pendingPlayerActor));
         }
 
@@ -456,7 +456,7 @@ namespace Erumperem.Combat
 
                 if (HasSkillBarSelectionPendingUse())
                 {
-                    Debug.LogWarning("Skill (UI) inválida para este aliado / rank / cooldown.");
+                    Debug.LogWarning("Skill (UI) inválida para este aliado.");
                     PublishPlayerSkillHelpForAlly(_pendingPlayerActor, FindAllyIndex(_pendingPlayerActor));
                     return;
                 }
@@ -490,7 +490,7 @@ namespace Erumperem.Combat
 
             if (HasSkillBarSelectionPendingUse())
             {
-                Debug.LogWarning("Skill (UI) inválida para este inimigo / rank / cooldown.");
+                Debug.LogWarning("Skill (UI) inválida para este inimigo.");
                 PublishPlayerSkillHelpForAlly(_pendingPlayerActor, FindAllyIndex(_pendingPlayerActor));
                 return;
             }

@@ -38,12 +38,9 @@ public sealed class SkillDefinition
     public required string Name { get; init; }
     public required ElementType Element { get; init; }
     public required string Type { get; init; }
-    public IReadOnlyList<int> AllowedCasterRanks { get; init; } = [];
-    public IReadOnlyList<int> AllowedTargetRanks { get; init; } = [];
     public required DamageRange BaseDamage { get; init; }
     public required double BaseCritChance { get; init; }
     public required double Accuracy { get; init; }
-    public int Cooldown { get; init; }
     public SkillTargetKind TargetKind { get; init; } = SkillTargetKind.Enemy;
     public MoveSpec SelfMove { get; init; } = new MoveSpec { Type = "None", Steps = 0 };
     public IReadOnlyList<EffectSpec> EffectsOnHit { get; init; } = [];

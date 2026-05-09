@@ -32,7 +32,7 @@ public enum PassiveEffectKind
     IncomingDamageMultiplierWhenHpBelow = 3,
     OutgoingDamagePenaltyWhenToken = 4,
     OutgoingDamageAfterPrerequisiteSkill = 5,
-    ExtraTokenOnSelfSkillWhenRank = 6,
+    ExtraTokenOnSelfSkill = 6,
     ExtraHealPercentOnSelfSkill = 7,
     ApplyExtraDotAfterSkillIfTargetHasDot = 8,
     OutgoingDamageVsSkillIfTargetHasDot = 9,

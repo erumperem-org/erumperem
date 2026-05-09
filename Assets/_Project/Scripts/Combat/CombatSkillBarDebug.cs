@@ -48,8 +48,7 @@ namespace Erumperem.Combat
                         simulatorForAvailability,
                         ally,
                         hotkeyIndexZeroBased: i,
-                        selectedEnemyTarget,
-                        skill);
+                        selectedEnemyTarget);
                 }
 
                 hotbarText.AppendLine(line);
@@ -68,20 +67,14 @@ namespace Erumperem.Combat
             BattleSimulator simulator,
             Combatant actor,
             int hotkeyIndexZeroBased,
-            Combatant selectedEnemyTarget,
-            SkillDefinition skill)
+            Combatant selectedEnemyTarget)
         {
-            if (!simulator.IsSkillUsable(actor, skill))
-            {
-                return " — indisponível (cooldown ou bloqueio)";
-            }
-
             if (PlayerActionBuilder.TryCreate(state, simulator, actor, hotkeyIndexZeroBased, selectedEnemyTarget) != null)
             {
                 return string.Empty;
             }
 
-            return " — indisponível (alvo, rank ou outro)";
+            return " — indisponível (alvo ou outro)";
         }
 
         private static string SummarizeSkill(SkillDefinition skillDefinition)
@@ -101,11 +94,6 @@ namespace Erumperem.Combat
             if (!string.IsNullOrEmpty(effectsSummary))
             {
                 core += $", {effectsSummary}";
-            }
-
-            if (skillDefinition.Cooldown > 0)
-            {
-                core += $", CD{skillDefinition.Cooldown}";
             }
 
             return core;

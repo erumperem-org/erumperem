@@ -106,12 +106,9 @@ public class UnitTest1
             Name = "Stun Blow",
             Element = ElementType.Anomaly,
             Type = "Active",
-            AllowedCasterRanks = [1, 2, 3, 4],
-            AllowedTargetRanks = [1, 2, 3, 4],
             BaseDamage = new DamageRange { Min = 0, Max = 0 },
             BaseCritChance = 0,
             Accuracy = 1.0,
-            Cooldown = 0,
             EffectsOnHit = [new EffectSpec { Type = EffectType.ApplyStun, Chance = 1.0, Stacks = 1 }],
         };
         var battle = BattleFactory.CreateSampleBattle([stunSkill], allyCount: 1, enemyCount: 1, corruptionValue: 0);
@@ -177,12 +174,9 @@ public class UnitTest1
             Name = "Guaranteed Hit",
             Element = ElementType.Fire,
             Type = "Active",
-            AllowedCasterRanks = [1, 2, 3, 4],
-            AllowedTargetRanks = [1, 2, 3, 4],
             BaseDamage = new DamageRange { Min = 4, Max = 4 },
             BaseCritChance = 0,
             Accuracy = 1.0,
-            Cooldown = 0,
             EffectsOnHit = [],
         };
         var battle = BattleFactory.CreateSampleBattle([skill], allyCount: 1, enemyCount: 1, corruptionValue: 0);
@@ -193,36 +187,6 @@ public class UnitTest1
 
         simulator.Simulate(battle, maxTurns: 2);
         Assert.Contains(battle.Enemies, e => e.Identity.Faction == Faction.Corpse);
-    }
-
-    [Fact]
-    public void PushAndPull_RespectRankBoundaries()
-    {
-        var random = new SeededRandomSource(7);
-        var collector = new CombatEventCollector();
-        var simulator = new BattleSimulator(random, collector);
-        var shove = new SkillDefinition
-        {
-            Id = "shove",
-            Name = "Shove",
-            Element = ElementType.Metal,
-            Type = "Active",
-            AllowedCasterRanks = [1, 2, 3, 4],
-            AllowedTargetRanks = [1, 2, 3, 4],
-            BaseDamage = new DamageRange { Min = 0, Max = 0 },
-            BaseCritChance = 0,
-            Accuracy = 1.0,
-            Cooldown = 0,
-            EffectsOnHit = [new EffectSpec { Type = EffectType.Push, Steps = 10 }],
-        };
-
-        var battle = BattleFactory.CreateSampleBattle([shove], allyCount: 1, enemyCount: 1, corruptionValue: 0);
-        battle.Allies[0].SkillLoadout.Skills.Clear();
-        battle.Allies[0].SkillLoadout.Skills.Add(shove.Id);
-        battle.Allies[0].Stats = new StatsComponent { Speed = 100, Accuracy = 1.0, CritChance = 0.0 };
-
-        simulator.Simulate(battle, maxTurns: 1);
-        Assert.InRange(battle.Enemies[0].Position.FrontRank, 1, 4);
     }
 
     [Fact]
@@ -329,12 +293,9 @@ public class UnitTest1
             Name = "Test Smack",
             Element = ElementType.None,
             Type = "Active",
-            AllowedCasterRanks = [1, 2, 3, 4],
-            AllowedTargetRanks = [1, 2, 3, 4],
             BaseDamage = new DamageRange { Min = 100, Max = 100 },
             BaseCritChance = 0,
             Accuracy = 1.0,
-            Cooldown = 0,
             TargetKind = SkillTargetKind.Enemy,
         };
         var passive = new PassiveDefinition
@@ -537,12 +498,9 @@ public class UnitTest1
             Element = ElementType.Fire,
             Type = "Active",
             TargetKind = SkillTargetKind.Enemy,
-            AllowedCasterRanks = [1, 2, 3, 4],
-            AllowedTargetRanks = [1, 2, 3, 4],
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
-            Cooldown = 0,
             CorruptionCost = 2.5,
             EffectsOnHit = [],
         };
@@ -580,12 +538,9 @@ public class UnitTest1
             Element = ElementType.Fire,
             Type = "Active",
             TargetKind = SkillTargetKind.Enemy,
-            AllowedCasterRanks = [1, 2, 3, 4],
-            AllowedTargetRanks = [1, 2, 3, 4],
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
-            Cooldown = 0,
             CorruptionCost = 0,
             EffectsOnHit = [],
         };
@@ -621,12 +576,9 @@ public class UnitTest1
             Element = ElementType.Metal,
             Type = "Active",
             TargetKind = SkillTargetKind.Enemy,
-            AllowedCasterRanks = [1, 2, 3, 4],
-            AllowedTargetRanks = [1, 2, 3, 4],
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
-            Cooldown = 0,
             CorruptionCost = -4,
             EffectsOnHit = [],
         };
@@ -663,12 +615,9 @@ public class UnitTest1
             Element = ElementType.Fire,
             Type = "Active",
             TargetKind = SkillTargetKind.Enemy,
-            AllowedCasterRanks = [1, 2, 3, 4],
-            AllowedTargetRanks = [1, 2, 3, 4],
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
-            Cooldown = 0,
             CorruptionCost = 1,
             EffectsOnHit = [],
         };
@@ -706,12 +655,9 @@ public class UnitTest1
             Element = ElementType.Fire,
             Type = "Active",
             TargetKind = SkillTargetKind.Enemy,
-            AllowedCasterRanks = [1, 2, 3, 4],
-            AllowedTargetRanks = [1, 2, 3, 4],
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
-            Cooldown = 0,
             CorruptionCost = 1,
             EffectsOnHit = [],
         };
@@ -748,12 +694,9 @@ public class UnitTest1
             Element = ElementType.Fire,
             Type = "Active",
             TargetKind = SkillTargetKind.Enemy,
-            AllowedCasterRanks = [1, 2, 3, 4],
-            AllowedTargetRanks = [1, 2, 3, 4],
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
-            Cooldown = 0,
             CorruptionCost = 15,
             EffectsOnHit = [],
         };

@@ -52,11 +52,6 @@ public static class PlayerActionBuilder
                 return null;
             }
 
-            if (!pick.Position.OccupiedRanks.Any(occupiedRank => skill.AllowedTargetRanks.Contains(occupiedRank)))
-            {
-                return null;
-            }
-
             target = pick;
         }
         else
@@ -76,11 +71,6 @@ public static class PlayerActionBuilder
             }
 
             if (selectedTarget.Tokens.GetStacks(TokenType.Stealth) > 0)
-            {
-                return null;
-            }
-
-            if (!selectedTarget.Position.OccupiedRanks.Any(occupiedRank => skill.AllowedTargetRanks.Contains(occupiedRank)))
             {
                 return null;
             }

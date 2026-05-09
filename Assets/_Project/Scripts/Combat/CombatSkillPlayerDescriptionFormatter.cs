@@ -21,7 +21,7 @@ namespace Erumperem.Combat
             var damagePart = DescribeDamageForPlayer(skill);
             var critPart = DescribeCritForPlayer(skill);
 
-            return $"{skill.Name}: {targetPart} | {damagePart} | {critPart}{DescribeCooldownPart(skill)}.";
+            return $"{skill.Name}: {targetPart} | {damagePart} | {critPart}.";
         }
 
         private static string DescribeTargetForPlayer(SkillDefinition skill) =>
@@ -59,14 +59,5 @@ namespace Erumperem.Combat
             return $"{text}% de crít";
         }
 
-        private static string DescribeCooldownPart(SkillDefinition skill)
-        {
-            if (skill.Cooldown <= 0)
-            {
-                return string.Empty;
-            }
-
-            return $" | recarga {skill.Cooldown}";
-        }
     }
 }
