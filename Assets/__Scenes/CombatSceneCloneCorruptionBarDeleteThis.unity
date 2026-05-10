@@ -149,6 +149,10 @@ PrefabInstance:
       propertyPath: m_AnchorMin.x
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 918294471684145873, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: sharedStripParent
+      value: 
+      objectReference: {fileID: 1707019445}
     - target: {fileID: 1201926221946950269, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_LocalPosition.x
       value: 7.95501
@@ -189,6 +193,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2625193426130249026, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: _objectToToggleActivation
+      value: 
+      objectReference: {fileID: 1149606379}
     - target: {fileID: 6370334789199048287, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_Name
       value: CombatSceneCore
@@ -201,56 +209,11 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7103085520931988737, guid: ead337ffec35f314599de802b8674835, type: 3}
-      propertyPath: _progressionService
-      value: 
-      objectReference: {fileID: 1414979056}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 6656784344468029839, guid: ead337ffec35f314599de802b8674835, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1414979056}
-    - targetCorrespondingSourceObject: {fileID: 919406058762249914, guid: ead337ffec35f314599de802b8674835, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 107743203}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ead337ffec35f314599de802b8674835, type: 3}
---- !u!1 &107743201 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 919406058762249914, guid: ead337ffec35f314599de802b8674835, type: 3}
-  m_PrefabInstance: {fileID: 107743200}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &107743202 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 8100000000000000001, guid: ead337ffec35f314599de802b8674835, type: 3}
-  m_PrefabInstance: {fileID: 107743200}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1414979051}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a7f2c4e9b1d4a6f8e0c2b4a6d8f0e1a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &107743203
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 107743201}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8fde258acdb283e429493a41caca5bd0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.Tokens.CombatDiegeticTokenStripsBinder
-  sessionHub: {fileID: 107743202}
-  tokenVisualCatalog: {fileID: 11400000, guid: 201db78aa253cb449bbaa10a91c6bc41, type: 2}
-  diegeticStripRootPrefab: {fileID: 8170754556540282154, guid: 871b7abd86fc7d54592fdb9d62d64508, type: 3}
-  sharedStripParent: {fileID: 1707019445}
-  stripAnchorChildName: 
-  stripLocalOffset: {x: 0, y: 2.2, z: 0}
-  faceMainCameraEachFrame: 1
 --- !u!1001 &311178719
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2264,25 +2227,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 897cfb0d4082e834daeca57ad4678d31, type: 3}
---- !u!1 &1414979051 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6656784344468029839, guid: ead337ffec35f314599de802b8674835, type: 3}
+--- !u!114 &1414979056 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 267978060972295176, guid: ead337ffec35f314599de802b8674835, type: 3}
   m_PrefabInstance: {fileID: 107743200}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1414979056
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1414979051}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0f707a72f0d56034b8d93a933cb9a421, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Progression.PlayerProgressionService
-  _skillTreesResourceRelativePath: Data/skill_trees.json
-  _maxSkillPoints: 12
 --- !u!1001 &1690978809
 PrefabInstance:
   m_ObjectHideFlags: 0
