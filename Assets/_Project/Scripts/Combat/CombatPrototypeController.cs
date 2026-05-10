@@ -44,8 +44,10 @@ namespace Erumperem.Combat
 
         [SerializeField] private EnemyVisualSpawnCatalog enemyVisualSpawnCatalog;
 
-        [Tooltip("Se ativo, escala Y do root pela % de HP (como as cápsulas antigas). Desliga para prefabs com escala fixa.")]
-        [SerializeField] private bool syncHpAsVerticalScale = true;
+        [Tooltip("Legado: escala Y do root pela % de HP (cápsulas antigas). " +
+                 "Se estás a usar CombatHealthBarsBinder + HealthBarHudView (UI diegética), deixa DESLIGADO. " +
+                 "Por default vem desligado para não conflitar.")]
+        [SerializeField] private bool syncHpAsVerticalScale = false;
 
         [Header("Debug")]
         [SerializeField] private bool logEventsToConsole = true;
