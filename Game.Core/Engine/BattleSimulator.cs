@@ -236,16 +236,22 @@ public sealed class BattleSimulator
         }
 
         var skillPool = lethalSkills.Count > 0 ? lethalSkills : skills.ToList();
-        var totalWeight = skillPool.Sum(skill => Math.Max(1, skill.Weight));
-        var roll = _random.Next(1, totalWeight + 1);
-        var cumulative = 0;
+
+        // Roll per-skill chanceToUse so "especiais" (ex.: 0.20) entram no draw com baixa frequência.
+        // Se ninguém passar, o pool inteiro vira fallback para a IA nunca ficar sem opção.
+        var rolledCandidates = new List<SkillDefinition>(skillPool.Count);
         foreach (var skill in skillPool)
         {
-            cumulative += Math.Max(1, skill.Weight);
-            if (roll <= cumulative) return skill;
+            var chance = Math.Clamp(skill.ChanceToUse, 0.0, 1.0);
+            if (_random.NextDouble() < chance)
+            {
+                rolledCandidates.Add(skill);
+            }
         }
 
-        return skillPool[0];
+        var finalPool = rolledCandidates.Count > 0 ? rolledCandidates : skillPool;
+        var pickedIndex = _random.Next(0, finalPool.Count);
+        return finalPool[pickedIndex];
     }
 
     private Combatant? SelectAllyTarget(
@@ -280,7 +286,24 @@ public sealed class BattleSimulator
         return visibleTargets[_random.Next(0, visibleTargets.Count)];
     }
 
-    public bool IsSkillUsable(Combatant _actor, SkillDefinition _skill) => true;
+    public bool IsSkillUsable(Combatant actor, SkillDefinition skill)
+    {
+        if (skill.SelfHpPercentBelow < 1.0)
+        {
+            if (actor.Health.MaxHp <= 0)
+            {
+                return false;
+            }
+
+            var currentHpPercent = (double)actor.Health.CurrentHp / actor.Health.MaxHp;
+            if (currentHpPercent >= skill.SelfHpPercentBelow)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     /// <summary>Resolve uma ação já escolhida (player ou AI).</summary>
     public void ResolveChosenAction(BattleState state, ChosenAction action)

@@ -85,7 +85,13 @@ namespace Erumperem.Progression
 
         [SerializeField] private SkillTargetKind _targetKind = SkillTargetKind.Enemy;
 
-        [SerializeField] private int _weight = 1;
+        [Tooltip("Probabilidade absoluta (0..1) de a IA considerar esta skill quando ela é elegível. Default 1.0 (sempre).")]
+        [Range(0f, 1f)]
+        [SerializeField] private double _chanceToUse = 1.0;
+
+        [Tooltip("Trava de HP do próprio actor: skill só fica elegível quando CurrentHp/MaxHp < este valor. Default 1.0 (sem trava).")]
+        [Range(0f, 1f)]
+        [SerializeField] private double _selfHpPercentBelow = 1.0;
 
         [SerializeField] private double _corruptionCost = CorruptionRules.DefaultSkillCorruptionCost;
 
@@ -198,7 +204,8 @@ namespace Erumperem.Progression
                 ComboBonus = (_comboBonus ?? Enumerable.Empty<SerializableEffectSpec>())
                     .Select(spec => spec.ToRuntimeSpec())
                     .ToList(),
-                Weight = _weight,
+                ChanceToUse = _chanceToUse,
+                SelfHpPercentBelow = _selfHpPercentBelow,
                 CorruptionCost = _corruptionCost,
             };
         }

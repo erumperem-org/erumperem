@@ -117,7 +117,6 @@ namespace Erumperem.Editor.Progression
             nodeSo.FindProperty("_damageMax").intValue = 0;
             nodeSo.FindProperty("_baseCritChance").doubleValue = 0;
             nodeSo.FindProperty("_accuracy").doubleValue = 1;
-            nodeSo.FindProperty("_weight").intValue = 1;
         }
 
         private static void ClearPassiveFieldsForActive(SerializedObject nodeSo)
@@ -179,7 +178,8 @@ namespace Erumperem.Editor.Progression
             nodeSo.FindProperty("_baseCritChance").doubleValue = skillDefinition.BaseCritChance;
             nodeSo.FindProperty("_accuracy").doubleValue = skillDefinition.Accuracy;
             nodeSo.FindProperty("_targetKind").enumValueIndex = (int)skillDefinition.TargetKind;
-            nodeSo.FindProperty("_weight").intValue = skillDefinition.Weight;
+            nodeSo.FindProperty("_chanceToUse").doubleValue = skillDefinition.ChanceToUse;
+            nodeSo.FindProperty("_selfHpPercentBelow").doubleValue = skillDefinition.SelfHpPercentBelow;
             nodeSo.FindProperty("_corruptionCost").doubleValue = skillDefinition.CorruptionCost;
 
             WriteEffectList(nodeSo.FindProperty("_effectsOnHit"), skillDefinition.EffectsOnHit);

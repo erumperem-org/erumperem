@@ -419,6 +419,7 @@ namespace Erumperem.Combat
             InputManager.Instance.OnPointerPositionChanged += OnPointerPositionChanged;
             InputManager.Instance.OnLeftClickPressed += OnLeftClickPressed;
             InputManager.Instance.OnRightClickPressed += OnRightClickPressed;
+            InputManager.Instance.OnCombatCheatKillAllEnemiesPressed += OnCombatCheatKillAllEnemiesPressed;
         }
 
         private void UnsubscribeFromInputEvents()
@@ -431,6 +432,7 @@ namespace Erumperem.Combat
             InputManager.Instance.OnPointerPositionChanged -= OnPointerPositionChanged;
             InputManager.Instance.OnLeftClickPressed -= OnLeftClickPressed;
             InputManager.Instance.OnRightClickPressed -= OnRightClickPressed;
+            InputManager.Instance.OnCombatCheatKillAllEnemiesPressed -= OnCombatCheatKillAllEnemiesPressed;
         }
 
         private void OnPointerPositionChanged(Vector2 pointerScreenPosition)
@@ -441,6 +443,57 @@ namespace Erumperem.Combat
 
         private void OnLeftClickPressed() => _leftClickPressedThisFrame = true;
         private void OnRightClickPressed() => _rightClickPressedThisFrame = true;
+
+        private void OnCombatCheatKillAllEnemiesPressed() => DebugKillAllEnemiesInstantly();
+
+        /// <summary>
+        /// Cheat para QA / playtests: zera o HP de todos os inimigos vivos, dispara a animação de morte
+        /// e termina o combate (mostra <see cref="victoryPanel"/> via <see cref="EndBattle"/>).
+        /// </summary>
+        public void DebugKillAllEnemiesInstantly()
+        {
+            if (_state == null)
+            {
+                Debug.LogWarning("Cheat F6 ignorado: combate ainda não está pronto.");
+                return;
+            }
+
+            if (_battleEnded)
+            {
+                Debug.Log("Cheat F6 ignorado: combate já terminou.");
+                return;
+            }
+
+            var killedAtLeastOne = false;
+            foreach (var enemy in _state.Enemies)
+            {
+                if (enemy.Health.IsDead)
+                {
+                    continue;
+                }
+
+                enemy.Health.CurrentHp = 0;
+                enemy.Health.IsDead = true;
+                killedAtLeastOne = true;
+
+                if (TryGetEnemyAnimationController(enemy.Identity.Id, out var enemyAnimationController))
+                {
+                    enemyAnimationController.EnsureDeathVisualSequenceStarted(enemyDeathClipMarginSeconds);
+                }
+            }
+
+            if (!killedAtLeastOne)
+            {
+                Debug.Log("Cheat F6 ignorado: todos os inimigos já estavam mortos.");
+                return;
+            }
+
+            Debug.Log("Cheat F6 acionado: inimigos mortos instantaneamente para testar a tela de vitória.");
+            _needsPlayerInput = false;
+            _pendingPlayerActor = null;
+            ClearSkillBarSelection();
+            EndBattle();
+        }
 
         private void ConsumeFrameInputFlags()
         {
@@ -1096,6 +1149,8 @@ namespace Erumperem.Combat
                     {
                         enemyViewRoot = instantiatedEnemyRoot;
                     }
+
+                    OverrideEnemySkillLoadoutFromVisualDefinition(enemy, enemyVisualDefinition);
                 }
 
                 EnsureCombatCapsuleTagOnUnit(enemyViewRoot, enemy.Identity.Id);
@@ -1103,6 +1158,48 @@ namespace Erumperem.Combat
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Substitui o loadout do <paramref name="enemy"/> pelas skills declaradas em
+        /// <see cref="EnemyVisualDefinition.enemySkillIds"/>. Skills desconhecidas são ignoradas com warning.
+        /// Se a lista estiver vazia, mantém o loadout default do <c>BattleFactory</c>.
+        /// </summary>
+        private void OverrideEnemySkillLoadoutFromVisualDefinition(
+            Game.Core.Models.Combatant enemy,
+            EnemyVisualDefinition enemyVisualDefinition)
+        {
+            if (enemyVisualDefinition.enemySkillIds == null || enemyVisualDefinition.enemySkillIds.Length == 0)
+            {
+                return;
+            }
+
+            var validSkillIds = new List<string>();
+            foreach (var candidateSkillId in enemyVisualDefinition.enemySkillIds)
+            {
+                if (string.IsNullOrWhiteSpace(candidateSkillId))
+                {
+                    continue;
+                }
+
+                if (!_state.SkillsById.ContainsKey(candidateSkillId))
+                {
+                    Debug.LogWarning(
+                        $"EnemyVisualDefinition '{enemyVisualDefinition.name}': skill '{candidateSkillId}' não está em skills.json — ignorada.",
+                        enemyVisualDefinition);
+                    continue;
+                }
+
+                validSkillIds.Add(candidateSkillId);
+            }
+
+            if (validSkillIds.Count == 0)
+            {
+                return;
+            }
+
+            enemy.SkillLoadout.Skills.Clear();
+            enemy.SkillLoadout.Skills.AddRange(validSkillIds);
         }
 
         private bool TryGetEnemyAnimationController(string combatantId, out EnemyAnimationController enemyAnimationController)
