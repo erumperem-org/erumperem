@@ -65,14 +65,16 @@ public sealed class CombatPassiveEventBus
         return mult;
     }
 
-    public (DamageModifierAccumulator Acc, bool ConsumeImpeto) AccumulateOutgoingDamageModifiers(
+    public (DamageModifierAccumulator Acc, bool ConsumeImpeto, List<PassiveCombatNote> OutNotes) AccumulateOutgoingDamageModifiers(
         BattleState state,
         Combatant actor,
         Combatant target,
         SkillDefinition skill,
-        bool notifyObservers = true)
+        bool notifyObservers = true,
+        List<PassiveCombatNote>? noteSink = null)
     {
-        var result = PassiveRuleApplier.AccumulateOutgoingDamageModifiers(state, actor, target, skill);
+        var notes = noteSink ?? new List<PassiveCombatNote>();
+        var result = PassiveRuleApplier.AccumulateOutgoingDamageModifiers(state, actor, target, skill, notes);
         if (notifyObservers)
         {
             Dispatch(
@@ -81,12 +83,17 @@ public sealed class CombatPassiveEventBus
                 new CombatPassiveEventContext { Self = actor, Other = target, Skill = skill });
         }
 
-        return result;
+        return (result.Acc, result.ConsumeImpeto, notes);
     }
 
-    public double AccumulateIncomingDamageMultiplier(BattleState state, Combatant defender, bool notifyObservers = true)
+    public (double Mult, List<PassiveCombatNote> OutNotes) AccumulateIncomingDamageMultiplier(
+        BattleState state,
+        Combatant defender,
+        bool notifyObservers = true,
+        List<PassiveCombatNote>? noteSink = null)
     {
-        var mult = PassiveRuleApplier.AccumulateIncomingDamageMultiplier(state, defender);
+        var notes = noteSink ?? new List<PassiveCombatNote>();
+        var incoming = PassiveRuleApplier.AccumulateIncomingDamageMultiplier(state, defender, notes);
         if (notifyObservers)
         {
             Dispatch(
@@ -95,7 +102,7 @@ public sealed class CombatPassiveEventBus
                 new CombatPassiveEventContext { Self = defender });
         }
 
-        return mult;
+        return (incoming.Mult, notes);
     }
 
     public void RaiseOutgoingHitSuccess(
@@ -124,16 +131,23 @@ public sealed class CombatPassiveEventBus
         Combatant target,
         SkillDefinition skill,
         double elementalDamageMultiplier,
-        Func<Combatant, DotType, bool> dotApplicationPassesResistanceCheck) =>
+        Func<Combatant, DotType, bool> dotApplicationPassesResistanceCheck,
+        List<PassiveCombatNote>? narrativeNotes = null) =>
         PassiveRuleApplier.ApplyPassiveExtraDotsAfterEnemySkill(
             state,
             actor,
             target,
             skill,
             elementalDamageMultiplier,
-            dotApplicationPassesResistanceCheck);
+            dotApplicationPassesResistanceCheck,
+            narrativeNotes);
 
-    public void ApplyPostSkillPassiveExtras(BattleState state, Combatant actor, Combatant target, SkillDefinition skill)
+    public void ApplyPostSkillPassiveExtras(
+        BattleState state,
+        Combatant actor,
+        Combatant target,
+        SkillDefinition skill,
+        List<PassiveCombatNote>? narrativeNotes = null)
     {
         PassiveRuleApplier.ApplyPostSkillPassiveExtras(
             state,
@@ -141,7 +155,8 @@ public sealed class CombatPassiveEventBus
             target,
             skill,
             onExtraTokenGranted: (recipient, tokenType, delta) =>
-                RaiseTokenStacksChanged(state, actor, recipient, skill, tokenType, delta));
+                RaiseTokenStacksChanged(state, actor, recipient, skill, tokenType, delta),
+            narrativeNotes);
     }
 
     /// <summary>After on-hit effects + passive extra DOTs; central point for "skill fully applied".</summary>

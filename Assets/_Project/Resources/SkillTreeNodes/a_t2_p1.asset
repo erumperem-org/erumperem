@@ -13,15 +13,43 @@ MonoBehaviour:
   m_Name: a_t2_p1
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Progression.SkillTreeNodeAsset
   _nodeId: a_t2_p1
-  _treeElement: 3
-  _displayName: a_t2_p1
+  _skillTreeElementCategory: 3
   _isPassiveNode: 1
-  _descriptionForUi: 'Efeito: ExtraTokenOnSelfSkill
-
-    Skill: m_t2_a1
-
-    Token:
-    BlockPlus
-
-    Int: 1, 0'
-  _passiveDefinitionAsset: {fileID: 11400000, guid: 0210f11eed6941c4ebdae5914508b92d, type: 2}
+  _displayName: a_t2_p1
+  _descriptionForUi: "Ao usares \xABMuralha\xBB em ti, ganhas 1 ficha extra de Bloqueio
+    Refor\xE7ado."
+  _activeSkillTypeLabel: Active
+  _activeSkillDamageElement: 0
+  _baseDamageMinimum: 0
+  _baseDamageMaximum: 0
+  _baseCriticalHitChanceFraction: 0
+  _baseHitAccuracyFraction: 1
+  _targetSelectionKind: 0
+  _aiAbsoluteChanceToConsiderWhenEligible: 1
+  _aiOnlyEligibleWhenOwnHpFractionBelow: 1
+  _corruptionCostAddedWhenPlayerCasts: 1
+  _effectsAppliedAfterSuccessfulHit: []
+  _extraEffectsWhenTargetHasComboToken: []
+  _passiveEffectKind: 6
+  _passiveAppliesWhenSkillIdMatches: m_t2_a1
+  _passivePrerequisiteSkillIdThatMustBeUsedFirst: 
+  _passiveUsesDotTypeFilter: 0
+  _passiveDotTypeFilter: 0
+  _passiveUsesTokenTypeFilter: 1
+  _passiveTokenTypeFilter: 1
+  _passiveGrantsExtraTokenOfType: 0
+  _passiveTokenTypeToGrantWhenTriggered: 0
+  _passiveOnlyAppliesWhenActorHasTokenType: 0
+  _passiveRequiredTokenTypeOnActor: 0
+  _passiveOnlyAppliesWhenActorLacksTokenType: 0
+  _passiveBlockingTokenTypeOnActor: 0
+  _passiveDamageBonusOrIncomingMultiplierMagnitude: 0
+  _passiveDamageBonusFractionPerDotStackOnTarget: 0
+  _passiveDamageBonusFractionMaximumCap: 0
+  _passiveActivatesWhenHpFractionBelow: 0
+  _passiveStacksOrDotPotencyOrTurnsBonusInteger: 1
+  _passiveDotDurationOrMaxTurnCapInteger: 0
+  _unityEventFiresOnlyForThesePassiveTriggers: 
+  _unityEventInvokedWhenPassiveTriggerFires:
+    m_PersistentCalls:
+      m_Calls: []

@@ -1,5 +1,6 @@
 using System;
 using DG.Tweening;
+using Erumperem.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -188,7 +189,7 @@ namespace Erumperem.Combat
             string playerDescriptionLine,
             int hotkeyLabelOneToSeven)
         {
-            _playerDescriptionLine = playerDescriptionLine ?? string.Empty;
+            _playerDescriptionLine = PlayerFacingText.PresentForUi(playerDescriptionLine ?? string.Empty);
             _isInteractable = interactable;
             _isSelected = selected;
             TryCacheHotkeyDigitLabel();

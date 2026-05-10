@@ -13,13 +13,43 @@ MonoBehaviour:
   m_Name: m_t1_p1
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Progression.SkillTreeNodeAsset
   _nodeId: m_t1_p1
-  _treeElement: 2
-  _displayName: m_t1_p1
+  _skillTreeElementCategory: 2
   _isPassiveNode: 1
-  _descriptionForUi: 'Efeito: IncomingDamageMultiplierWhenHpBelow
-
-    Aditivo:
-    0,88
-
-    HP abaixo de: 50%'
-  _passiveDefinitionAsset: {fileID: 11400000, guid: d7646b33c5ca0864092b4810af7d5921, type: 2}
+  _displayName: m_t1_p1
+  _descriptionForUi: "Enquanto o teu HP est\xE1 abaixo de 50 %, recebes 12 % menos
+    dano (multiplicador \xD70,88)."
+  _activeSkillTypeLabel: Active
+  _activeSkillDamageElement: 0
+  _baseDamageMinimum: 0
+  _baseDamageMaximum: 0
+  _baseCriticalHitChanceFraction: 0
+  _baseHitAccuracyFraction: 1
+  _targetSelectionKind: 0
+  _aiAbsoluteChanceToConsiderWhenEligible: 1
+  _aiOnlyEligibleWhenOwnHpFractionBelow: 1
+  _corruptionCostAddedWhenPlayerCasts: 1
+  _effectsAppliedAfterSuccessfulHit: []
+  _extraEffectsWhenTargetHasComboToken: []
+  _passiveEffectKind: 3
+  _passiveAppliesWhenSkillIdMatches: 
+  _passivePrerequisiteSkillIdThatMustBeUsedFirst: 
+  _passiveUsesDotTypeFilter: 0
+  _passiveDotTypeFilter: 0
+  _passiveUsesTokenTypeFilter: 0
+  _passiveTokenTypeFilter: 0
+  _passiveGrantsExtraTokenOfType: 0
+  _passiveTokenTypeToGrantWhenTriggered: 0
+  _passiveOnlyAppliesWhenActorHasTokenType: 0
+  _passiveRequiredTokenTypeOnActor: 0
+  _passiveOnlyAppliesWhenActorLacksTokenType: 0
+  _passiveBlockingTokenTypeOnActor: 0
+  _passiveDamageBonusOrIncomingMultiplierMagnitude: 0.88
+  _passiveDamageBonusFractionPerDotStackOnTarget: 0
+  _passiveDamageBonusFractionMaximumCap: 0
+  _passiveActivatesWhenHpFractionBelow: 0.5
+  _passiveStacksOrDotPotencyOrTurnsBonusInteger: 0
+  _passiveDotDurationOrMaxTurnCapInteger: 0
+  _unityEventFiresOnlyForThesePassiveTriggers: 
+  _unityEventInvokedWhenPassiveTriggerFires:
+    m_PersistentCalls:
+      m_Calls: []

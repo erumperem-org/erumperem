@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Game.Core.Data;
 using Game.Core.Models;
 using UnityEditor;
 using UnityEngine;
 using Erumperem.Progression;
+using Erumperem.UI;
 
 namespace Erumperem.Editor.Progression
 {
@@ -65,16 +65,16 @@ namespace Erumperem.Editor.Progression
                                 var nodeSo = new SerializedObject(nodeAsset);
 
                                 nodeSo.FindProperty("_nodeId").stringValue = node.Id;
-                                nodeSo.FindProperty("_treeElement").enumValueIndex = (int)tree.Element;
+                                nodeSo.FindProperty("_skillTreeElementCategory").enumValueIndex = (int)tree.Element;
                                 nodeSo.FindProperty("_isPassiveNode").boolValue = isPassive;
 
                                 if (isPassive && passiveById.TryGetValue(node.Id, out var passiveDefinition))
                                 {
                                     PopulatePassiveFields(nodeSo, passiveDefinition);
                                     FillIfEmpty(nodeSo.FindProperty("_displayName"), passiveDefinition.Id);
-                                    FillIfEmpty(
+                                    OverwriteString(
                                         nodeSo.FindProperty("_descriptionForUi"),
-                                        BuildPassiveSummary(passiveDefinition));
+                                        PlayerFacingText.DescribePassiveDefinitionInDetail(passiveDefinition));
                                     ClearActiveFieldsForPassive(nodeSo);
                                 }
                                 else if (!isPassive && skillsById.TryGetValue(node.Id, out var skillDefinition))
@@ -111,79 +111,90 @@ namespace Erumperem.Editor.Progression
 
         private static void ClearActiveFieldsForPassive(SerializedObject nodeSo)
         {
-            nodeSo.FindProperty("_effectsOnHit").ClearArray();
-            nodeSo.FindProperty("_comboBonus").ClearArray();
-            nodeSo.FindProperty("_damageMin").intValue = 0;
-            nodeSo.FindProperty("_damageMax").intValue = 0;
-            nodeSo.FindProperty("_baseCritChance").doubleValue = 0;
-            nodeSo.FindProperty("_accuracy").doubleValue = 1;
+            nodeSo.FindProperty("_effectsAppliedAfterSuccessfulHit").ClearArray();
+            nodeSo.FindProperty("_extraEffectsWhenTargetHasComboToken").ClearArray();
+            nodeSo.FindProperty("_baseDamageMinimum").intValue = 0;
+            nodeSo.FindProperty("_baseDamageMaximum").intValue = 0;
+            nodeSo.FindProperty("_baseCriticalHitChanceFraction").doubleValue = 0;
+            nodeSo.FindProperty("_baseHitAccuracyFraction").doubleValue = 1;
         }
 
         private static void ClearPassiveFieldsForActive(SerializedObject nodeSo)
         {
-            nodeSo.FindProperty("_passiveAdditive").doubleValue = 0;
-            nodeSo.FindProperty("_passiveAdditivePerStack").doubleValue = 0;
-            nodeSo.FindProperty("_passiveCap").doubleValue = 0;
-            nodeSo.FindProperty("_passiveHpBelowPercent").doubleValue = 0;
-            nodeSo.FindProperty("_passiveIntValue").intValue = 0;
-            nodeSo.FindProperty("_passiveIntValue2").intValue = 0;
-            nodeSo.FindProperty("_passiveSkillId").stringValue = string.Empty;
-            nodeSo.FindProperty("_passivePrerequisiteSkillId").stringValue = string.Empty;
-            nodeSo.FindProperty("_passiveUseDotType").boolValue = false;
-            nodeSo.FindProperty("_passiveUseTokenType").boolValue = false;
-            nodeSo.FindProperty("_passiveUseGrantTokenType").boolValue = false;
-            nodeSo.FindProperty("_passiveUseIfHasTokenType").boolValue = false;
-            nodeSo.FindProperty("_passiveUseUnlessHasTokenType").boolValue = false;
+            nodeSo.FindProperty("_passiveDamageBonusOrIncomingMultiplierMagnitude").doubleValue = 0;
+            nodeSo.FindProperty("_passiveDamageBonusFractionPerDotStackOnTarget").doubleValue = 0;
+            nodeSo.FindProperty("_passiveDamageBonusFractionMaximumCap").doubleValue = 0;
+            nodeSo.FindProperty("_passiveActivatesWhenHpFractionBelow").doubleValue = 0;
+            nodeSo.FindProperty("_passiveStacksOrDotPotencyOrTurnsBonusInteger").intValue = 0;
+            nodeSo.FindProperty("_passiveDotDurationOrMaxTurnCapInteger").intValue = 0;
+            nodeSo.FindProperty("_passiveAppliesWhenSkillIdMatches").stringValue = string.Empty;
+            nodeSo.FindProperty("_passivePrerequisiteSkillIdThatMustBeUsedFirst").stringValue = string.Empty;
+            nodeSo.FindProperty("_passiveUsesDotTypeFilter").boolValue = false;
+            nodeSo.FindProperty("_passiveUsesTokenTypeFilter").boolValue = false;
+            nodeSo.FindProperty("_passiveGrantsExtraTokenOfType").boolValue = false;
+            nodeSo.FindProperty("_passiveOnlyAppliesWhenActorHasTokenType").boolValue = false;
+            nodeSo.FindProperty("_passiveOnlyAppliesWhenActorLacksTokenType").boolValue = false;
         }
 
         private static void PopulatePassiveFields(SerializedObject nodeSo, PassiveDefinition passiveDefinition)
         {
             nodeSo.FindProperty("_passiveEffectKind").enumValueIndex = (int)passiveDefinition.EffectKind;
-            nodeSo.FindProperty("_passiveSkillId").stringValue = passiveDefinition.SkillId ?? string.Empty;
-            nodeSo.FindProperty("_passivePrerequisiteSkillId").stringValue =
+            nodeSo.FindProperty("_passiveAppliesWhenSkillIdMatches").stringValue =
+                passiveDefinition.SkillId ?? string.Empty;
+            nodeSo.FindProperty("_passivePrerequisiteSkillIdThatMustBeUsedFirst").stringValue =
                 passiveDefinition.PrerequisiteSkillId ?? string.Empty;
 
-            SetOptionalEnum(nodeSo, "_passiveUseDotType", "_passiveDotType", (int?)passiveDefinition.DotType);
-            SetOptionalEnum(nodeSo, "_passiveUseTokenType", "_passiveTokenType", (int?)passiveDefinition.TokenType);
             SetOptionalEnum(
                 nodeSo,
-                "_passiveUseGrantTokenType",
-                "_passiveGrantTokenType",
+                "_passiveUsesDotTypeFilter",
+                "_passiveDotTypeFilter",
+                (int?)passiveDefinition.DotType);
+            SetOptionalEnum(
+                nodeSo,
+                "_passiveUsesTokenTypeFilter",
+                "_passiveTokenTypeFilter",
+                (int?)passiveDefinition.TokenType);
+            SetOptionalEnum(
+                nodeSo,
+                "_passiveGrantsExtraTokenOfType",
+                "_passiveTokenTypeToGrantWhenTriggered",
                 (int?)passiveDefinition.GrantTokenType);
             SetOptionalEnum(
                 nodeSo,
-                "_passiveUseIfHasTokenType",
-                "_passiveIfHasTokenType",
+                "_passiveOnlyAppliesWhenActorHasTokenType",
+                "_passiveRequiredTokenTypeOnActor",
                 (int?)passiveDefinition.IfHasTokenType);
             SetOptionalEnum(
                 nodeSo,
-                "_passiveUseUnlessHasTokenType",
-                "_passiveUnlessHasTokenType",
+                "_passiveOnlyAppliesWhenActorLacksTokenType",
+                "_passiveBlockingTokenTypeOnActor",
                 (int?)passiveDefinition.UnlessHasTokenType);
 
-            nodeSo.FindProperty("_passiveAdditive").doubleValue = passiveDefinition.Additive;
-            nodeSo.FindProperty("_passiveAdditivePerStack").doubleValue = passiveDefinition.AdditivePerStack;
-            nodeSo.FindProperty("_passiveCap").doubleValue = passiveDefinition.Cap;
-            nodeSo.FindProperty("_passiveHpBelowPercent").doubleValue = passiveDefinition.HpBelowPercent;
-            nodeSo.FindProperty("_passiveIntValue").intValue = passiveDefinition.IntValue;
-            nodeSo.FindProperty("_passiveIntValue2").intValue = passiveDefinition.IntValue2;
+            nodeSo.FindProperty("_passiveDamageBonusOrIncomingMultiplierMagnitude").doubleValue =
+                passiveDefinition.Additive;
+            nodeSo.FindProperty("_passiveDamageBonusFractionPerDotStackOnTarget").doubleValue =
+                passiveDefinition.AdditivePerStack;
+            nodeSo.FindProperty("_passiveDamageBonusFractionMaximumCap").doubleValue = passiveDefinition.Cap;
+            nodeSo.FindProperty("_passiveActivatesWhenHpFractionBelow").doubleValue = passiveDefinition.HpBelowPercent;
+            nodeSo.FindProperty("_passiveStacksOrDotPotencyOrTurnsBonusInteger").intValue = passiveDefinition.IntValue;
+            nodeSo.FindProperty("_passiveDotDurationOrMaxTurnCapInteger").intValue = passiveDefinition.IntValue2;
         }
 
         private static void PopulateActiveFields(SerializedObject nodeSo, SkillDefinition skillDefinition)
         {
-            nodeSo.FindProperty("_activeSkillType").stringValue = skillDefinition.Type ?? "Active";
-            nodeSo.FindProperty("_activeElement").enumValueIndex = (int)skillDefinition.Element;
-            nodeSo.FindProperty("_damageMin").intValue = skillDefinition.BaseDamage.Min;
-            nodeSo.FindProperty("_damageMax").intValue = skillDefinition.BaseDamage.Max;
-            nodeSo.FindProperty("_baseCritChance").doubleValue = skillDefinition.BaseCritChance;
-            nodeSo.FindProperty("_accuracy").doubleValue = skillDefinition.Accuracy;
-            nodeSo.FindProperty("_targetKind").enumValueIndex = (int)skillDefinition.TargetKind;
-            nodeSo.FindProperty("_chanceToUse").doubleValue = skillDefinition.ChanceToUse;
-            nodeSo.FindProperty("_selfHpPercentBelow").doubleValue = skillDefinition.SelfHpPercentBelow;
-            nodeSo.FindProperty("_corruptionCost").doubleValue = skillDefinition.CorruptionCost;
+            nodeSo.FindProperty("_activeSkillTypeLabel").stringValue = skillDefinition.Type ?? "Active";
+            nodeSo.FindProperty("_activeSkillDamageElement").enumValueIndex = (int)skillDefinition.Element;
+            nodeSo.FindProperty("_baseDamageMinimum").intValue = skillDefinition.BaseDamage.Min;
+            nodeSo.FindProperty("_baseDamageMaximum").intValue = skillDefinition.BaseDamage.Max;
+            nodeSo.FindProperty("_baseCriticalHitChanceFraction").doubleValue = skillDefinition.BaseCritChance;
+            nodeSo.FindProperty("_baseHitAccuracyFraction").doubleValue = skillDefinition.Accuracy;
+            nodeSo.FindProperty("_targetSelectionKind").enumValueIndex = (int)skillDefinition.TargetKind;
+            nodeSo.FindProperty("_aiAbsoluteChanceToConsiderWhenEligible").doubleValue = skillDefinition.ChanceToUse;
+            nodeSo.FindProperty("_aiOnlyEligibleWhenOwnHpFractionBelow").doubleValue = skillDefinition.SelfHpPercentBelow;
+            nodeSo.FindProperty("_corruptionCostAddedWhenPlayerCasts").doubleValue = skillDefinition.CorruptionCost;
 
-            WriteEffectList(nodeSo.FindProperty("_effectsOnHit"), skillDefinition.EffectsOnHit);
-            WriteEffectList(nodeSo.FindProperty("_comboBonus"), skillDefinition.ComboBonus);
+            WriteEffectList(nodeSo.FindProperty("_effectsAppliedAfterSuccessfulHit"), skillDefinition.EffectsOnHit);
+            WriteEffectList(nodeSo.FindProperty("_extraEffectsWhenTargetHasComboToken"), skillDefinition.ComboBonus);
         }
 
         private static void WriteEffectList(SerializedProperty listProperty, IReadOnlyList<EffectSpec> specs)
@@ -238,67 +249,9 @@ namespace Erumperem.Editor.Progression
             }
         }
 
-        private static string BuildPassiveSummary(PassiveDefinition passiveDefinition)
+        private static void OverwriteString(SerializedProperty stringProperty, string newValue)
         {
-            var stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine($"Efeito: {passiveDefinition.EffectKind}");
-
-            if (!string.IsNullOrEmpty(passiveDefinition.SkillId))
-            {
-                stringBuilder.AppendLine($"Skill: {passiveDefinition.SkillId}");
-            }
-
-            if (!string.IsNullOrEmpty(passiveDefinition.PrerequisiteSkillId))
-            {
-                stringBuilder.AppendLine($"Pré-requisito (skill): {passiveDefinition.PrerequisiteSkillId}");
-            }
-
-            if (passiveDefinition.DotType is { } dot)
-            {
-                stringBuilder.AppendLine($"DOT: {dot}");
-            }
-
-            if (passiveDefinition.TokenType is { } token)
-            {
-                stringBuilder.AppendLine($"Token: {token}");
-            }
-
-            if (passiveDefinition.GrantTokenType is { } grantToken)
-            {
-                stringBuilder.AppendLine($"Concede token: {grantToken}");
-            }
-
-            if (passiveDefinition.IfHasTokenType is { } ifHasToken)
-            {
-                stringBuilder.AppendLine($"Se tiver token: {ifHasToken}");
-            }
-
-            if (passiveDefinition.UnlessHasTokenType is { } unlessToken)
-            {
-                stringBuilder.AppendLine($"A menos que tenha token: {unlessToken}");
-            }
-
-            if (passiveDefinition.Additive != 0)
-            {
-                stringBuilder.AppendLine($"Aditivo: {passiveDefinition.Additive}");
-            }
-
-            if (passiveDefinition.AdditivePerStack != 0)
-            {
-                stringBuilder.AppendLine($"Por stack: {passiveDefinition.AdditivePerStack} (cap {passiveDefinition.Cap})");
-            }
-
-            if (passiveDefinition.HpBelowPercent > 0)
-            {
-                stringBuilder.AppendLine($"HP abaixo de: {passiveDefinition.HpBelowPercent:P0}");
-            }
-
-            if (passiveDefinition.IntValue != 0 || passiveDefinition.IntValue2 != 0)
-            {
-                stringBuilder.AppendLine($"Int: {passiveDefinition.IntValue}, {passiveDefinition.IntValue2}");
-            }
-
-            return stringBuilder.ToString().TrimEnd();
+            stringProperty.stringValue = newValue ?? string.Empty;
         }
     }
 }

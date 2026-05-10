@@ -13,15 +13,43 @@ MonoBehaviour:
   m_Name: f_t2_p2
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Progression.SkillTreeNodeAsset
   _nodeId: f_t2_p2
-  _treeElement: 1
-  _displayName: f_t2_p2
+  _skillTreeElementCategory: 1
   _isPassiveNode: 1
-  _descriptionForUi: 'Efeito: DotTickDamageBonusWhenTargetHpBelow
-
-    DOT: Bleed
-
-    Aditivo:
-    0,2
-
-    HP abaixo de: 40%'
-  _passiveDefinitionAsset: {fileID: 11400000, guid: bcdde910b96f55f438117a6c49eaa83a, type: 2}
+  _displayName: f_t2_p2
+  _descriptionForUi: Os teus efeitos de Sangramento causam +20 % de dano por turno
+    enquanto o alvo estiver abaixo de 40 % de HP.
+  _activeSkillTypeLabel: Active
+  _activeSkillDamageElement: 0
+  _baseDamageMinimum: 0
+  _baseDamageMaximum: 0
+  _baseCriticalHitChanceFraction: 0
+  _baseHitAccuracyFraction: 1
+  _targetSelectionKind: 0
+  _aiAbsoluteChanceToConsiderWhenEligible: 1
+  _aiOnlyEligibleWhenOwnHpFractionBelow: 1
+  _corruptionCostAddedWhenPlayerCasts: 1
+  _effectsAppliedAfterSuccessfulHit: []
+  _extraEffectsWhenTargetHasComboToken: []
+  _passiveEffectKind: 10
+  _passiveAppliesWhenSkillIdMatches: 
+  _passivePrerequisiteSkillIdThatMustBeUsedFirst: 
+  _passiveUsesDotTypeFilter: 1
+  _passiveDotTypeFilter: 2
+  _passiveUsesTokenTypeFilter: 0
+  _passiveTokenTypeFilter: 0
+  _passiveGrantsExtraTokenOfType: 0
+  _passiveTokenTypeToGrantWhenTriggered: 0
+  _passiveOnlyAppliesWhenActorHasTokenType: 0
+  _passiveRequiredTokenTypeOnActor: 0
+  _passiveOnlyAppliesWhenActorLacksTokenType: 0
+  _passiveBlockingTokenTypeOnActor: 0
+  _passiveDamageBonusOrIncomingMultiplierMagnitude: 0.2
+  _passiveDamageBonusFractionPerDotStackOnTarget: 0
+  _passiveDamageBonusFractionMaximumCap: 0
+  _passiveActivatesWhenHpFractionBelow: 0.4
+  _passiveStacksOrDotPotencyOrTurnsBonusInteger: 0
+  _passiveDotDurationOrMaxTurnCapInteger: 0
+  _unityEventFiresOnlyForThesePassiveTriggers: 
+  _unityEventInvokedWhenPassiveTriggerFires:
+    m_PersistentCalls:
+      m_Calls: []

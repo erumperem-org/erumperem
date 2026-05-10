@@ -1,5 +1,6 @@
 using System.Collections;
 using DG.Tweening;
+using Erumperem.UI;
 using TMPro;
 using UnityEngine;
 
@@ -81,7 +82,7 @@ namespace Erumperem.Combat
         {
             if (helpBodyText != null)
             {
-                helpBodyText.text = text;
+                helpBodyText.text = PlayerFacingText.PresentForUi(text);
             }
 
             if (_presentationHidingActive)

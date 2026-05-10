@@ -48,11 +48,13 @@ public static class PassiveRuleApplier
         }
     }
 
-    public static (DamageModifierAccumulator Acc, bool ConsumeImpeto) AccumulateOutgoingDamageModifiers(
-        BattleState state,
-        Combatant actor,
-        Combatant target,
-        SkillDefinition skill)
+    public static (DamageModifierAccumulator Acc, bool ConsumeImpeto, List<PassiveCombatNote> Notes)
+        AccumulateOutgoingDamageModifiers(
+            BattleState state,
+            Combatant actor,
+            Combatant target,
+            SkillDefinition skill,
+            List<PassiveCombatNote>? noteSink = null)
     {
         var acc = new DamageModifierAccumulator();
         var consumeImpeto = false;
@@ -64,6 +66,17 @@ public static class PassiveRuleApplier
                     if (skill.Id == def.SkillId)
                     {
                         acc.OutgoingDamageAdditiveSum += def.Additive;
+                        noteSink?.Add(
+                            new PassiveCombatNote(
+                                def.Id,
+                                def.EffectKind,
+                                def.Additive,
+                                def.SkillId,
+                                null,
+                                null,
+                                0,
+                                0,
+                                0));
                     }
 
                     break;
@@ -74,11 +87,33 @@ public static class PassiveRuleApplier
                     var bonus = def.AdditivePerStack > 0 ? stacks * def.AdditivePerStack : def.Additive;
                     if (def.Cap > 0) bonus = Math.Min(bonus, def.Cap);
                     acc.OutgoingDamageAdditiveSum += bonus;
+                    noteSink?.Add(
+                        new PassiveCombatNote(
+                            def.Id,
+                            def.EffectKind,
+                            bonus,
+                            def.SkillId,
+                            def.DotType.Value.ToString(),
+                            null,
+                            0,
+                            0,
+                            0));
                     break;
                 case PassiveEffectKind.OutgoingDamagePenaltyWhenToken:
                     if (def.TokenType is not null && actor.Tokens.GetStacks(def.TokenType.Value) > 0)
                     {
                         acc.OutgoingDamageAdditiveSum += def.Additive;
+                        noteSink?.Add(
+                            new PassiveCombatNote(
+                                def.Id,
+                                def.EffectKind,
+                                def.Additive,
+                                def.SkillId,
+                                null,
+                                def.TokenType.Value.ToString(),
+                                0,
+                                0,
+                                0));
                     }
 
                     break;
@@ -87,6 +122,17 @@ public static class PassiveRuleApplier
                     {
                         acc.OutgoingDamageAdditiveSum += def.Additive;
                         consumeImpeto = true;
+                        noteSink?.Add(
+                            new PassiveCombatNote(
+                                def.Id,
+                                def.EffectKind,
+                                def.Additive,
+                                def.SkillId,
+                                null,
+                                null,
+                                0,
+                                0,
+                                0));
                     }
 
                     break;
@@ -95,16 +141,30 @@ public static class PassiveRuleApplier
                     if (CountDotStacks(target, def.DotType.Value) > 0)
                     {
                         acc.OutgoingDamageAdditiveSum += def.Additive;
+                        noteSink?.Add(
+                            new PassiveCombatNote(
+                                def.Id,
+                                def.EffectKind,
+                                def.Additive,
+                                def.SkillId,
+                                def.DotType.Value.ToString(),
+                                null,
+                                0,
+                                0,
+                                0));
                     }
 
                     break;
             }
         }
 
-        return (acc, consumeImpeto);
+        return (acc, consumeImpeto, noteSink ?? new List<PassiveCombatNote>());
     }
 
-    public static double AccumulateIncomingDamageMultiplier(BattleState state, Combatant defender)
+    public static (double Mult, List<PassiveCombatNote> Notes) AccumulateIncomingDamageMultiplier(
+        BattleState state,
+        Combatant defender,
+        List<PassiveCombatNote>? noteSink = null)
     {
         var mult = 1.0;
         foreach (var def in EnumerateActivePassives(defender, state))
@@ -115,10 +175,21 @@ public static class PassiveRuleApplier
             if (hpPct < def.HpBelowPercent)
             {
                 mult *= def.Additive;
+                noteSink?.Add(
+                    new PassiveCombatNote(
+                        def.Id,
+                        def.EffectKind,
+                        def.Additive,
+                        def.SkillId,
+                        null,
+                        null,
+                        0,
+                        0,
+                        0));
             }
         }
 
-        return mult;
+        return (mult, noteSink ?? new List<PassiveCombatNote>());
     }
 
     public static int AdjustDotDuration(BattleState state, Combatant actor, DotType dotType, int baseDuration)
@@ -165,7 +236,8 @@ public static class PassiveRuleApplier
         Combatant actor,
         Combatant target,
         SkillDefinition skill,
-        Action<Combatant, TokenType, int>? onExtraTokenGranted = null)
+        Action<Combatant, TokenType, int>? onExtraTokenGranted = null,
+        List<PassiveCombatNote>? narrativeNotes = null)
     {
         foreach (var def in EnumerateActivePassives(actor, state))
         {
@@ -176,12 +248,36 @@ public static class PassiveRuleApplier
                     var tokenDelta = Math.Max(1, def.IntValue);
                     actor.Tokens.Add(def.TokenType.Value, tokenDelta);
                     onExtraTokenGranted?.Invoke(actor, def.TokenType.Value, tokenDelta);
+                    narrativeNotes?.Add(
+                        new PassiveCombatNote(
+                            def.Id,
+                            def.EffectKind,
+                            def.IntValue,
+                            def.SkillId,
+                            null,
+                            def.TokenType.Value.ToString(),
+                            tokenDelta,
+                            0,
+                            0));
                     break;
                 case PassiveEffectKind.ExtraHealPercentOnSelfSkill:
                     if (skill.TargetKind != SkillTargetKind.Self || def.SkillId != skill.Id) break;
                     if (def.Additive <= 0) break;
                     var heal = (int)Math.Round(actor.Health.MaxHp * def.Additive / 100.0);
+                    var beforeHeal = actor.Health.CurrentHp;
                     actor.Health.CurrentHp = Math.Min(actor.Health.MaxHp, actor.Health.CurrentHp + heal);
+                    var appliedHeal = actor.Health.CurrentHp - beforeHeal;
+                    narrativeNotes?.Add(
+                        new PassiveCombatNote(
+                            def.Id,
+                            def.EffectKind,
+                            def.Additive,
+                            def.SkillId,
+                            null,
+                            null,
+                            0,
+                            appliedHeal,
+                            0));
                     break;
             }
         }
@@ -196,7 +292,8 @@ public static class PassiveRuleApplier
         Combatant target,
         SkillDefinition skill,
         double elementalDamageMultiplier,
-        Func<Combatant, DotType, bool> dotApplicationPassesResistanceCheck)
+        Func<Combatant, DotType, bool> dotApplicationPassesResistanceCheck,
+        List<PassiveCombatNote>? narrativeNotes = null)
     {
         if (skill.TargetKind != SkillTargetKind.Enemy) return;
         foreach (var def in EnumerateActivePassives(actor, state))
@@ -216,6 +313,17 @@ public static class PassiveRuleApplier
                 RemainingTurns = duration,
                 AppliedById = actor.Identity.Id,
             });
+            narrativeNotes?.Add(
+                new PassiveCombatNote(
+                    def.Id,
+                    def.EffectKind,
+                    potency,
+                    def.SkillId,
+                    def.DotType.Value.ToString(),
+                    null,
+                    0,
+                    0,
+                    duration));
         }
     }
 

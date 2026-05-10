@@ -54,7 +54,7 @@ namespace Erumperem.Combat.Passives
                 var nodeId = nodeAsset.NodeId;
                 Action<PassiveTrigger, BattleState, CombatPassiveEventContext> listener = (trigger, state, context) =>
                 {
-                    if (!nodeAsset.ShouldFirePassiveTrigger(trigger))
+                    if (!nodeAsset.ShouldDispatchUnityEventForPassiveTrigger(trigger))
                     {
                         return;
                     }
@@ -64,7 +64,7 @@ namespace Erumperem.Combat.Passives
                         return;
                     }
 
-                    nodeAsset.InvokePassiveDispatch();
+                    nodeAsset.InvokeUnityEventForPassiveDispatch();
                 };
 
                 _subscribedListeners.Add(listener);

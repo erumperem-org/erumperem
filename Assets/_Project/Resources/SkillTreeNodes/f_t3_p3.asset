@@ -13,15 +13,43 @@ MonoBehaviour:
   m_Name: f_t3_p3
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Progression.SkillTreeNodeAsset
   _nodeId: f_t3_p3
-  _treeElement: 1
-  _displayName: f_t3_p3
+  _skillTreeElementCategory: 1
   _isPassiveNode: 1
-  _descriptionForUi: 'Efeito: OutgoingDamageVsSkillIfTargetHasDot
-
-    Skill: f_t3_a1
-
-    DOT:
-    Bleed
-
-    Aditivo: 0,15'
-  _passiveDefinitionAsset: {fileID: 11400000, guid: 5632349c01ea8334894990800aa625ff, type: 2}
+  _displayName: f_t3_p3
+  _descriptionForUi: "Ao usares \xABExecu\xE7\xE3o de leil\xE3o\xBB contra um alvo
+    com Sangramento, causas +15 % de dano."
+  _activeSkillTypeLabel: Active
+  _activeSkillDamageElement: 0
+  _baseDamageMinimum: 0
+  _baseDamageMaximum: 0
+  _baseCriticalHitChanceFraction: 0
+  _baseHitAccuracyFraction: 1
+  _targetSelectionKind: 0
+  _aiAbsoluteChanceToConsiderWhenEligible: 1
+  _aiOnlyEligibleWhenOwnHpFractionBelow: 1
+  _corruptionCostAddedWhenPlayerCasts: 1
+  _effectsAppliedAfterSuccessfulHit: []
+  _extraEffectsWhenTargetHasComboToken: []
+  _passiveEffectKind: 9
+  _passiveAppliesWhenSkillIdMatches: f_t3_a1
+  _passivePrerequisiteSkillIdThatMustBeUsedFirst: 
+  _passiveUsesDotTypeFilter: 1
+  _passiveDotTypeFilter: 2
+  _passiveUsesTokenTypeFilter: 0
+  _passiveTokenTypeFilter: 0
+  _passiveGrantsExtraTokenOfType: 0
+  _passiveTokenTypeToGrantWhenTriggered: 0
+  _passiveOnlyAppliesWhenActorHasTokenType: 0
+  _passiveRequiredTokenTypeOnActor: 0
+  _passiveOnlyAppliesWhenActorLacksTokenType: 0
+  _passiveBlockingTokenTypeOnActor: 0
+  _passiveDamageBonusOrIncomingMultiplierMagnitude: 0.15
+  _passiveDamageBonusFractionPerDotStackOnTarget: 0
+  _passiveDamageBonusFractionMaximumCap: 0
+  _passiveActivatesWhenHpFractionBelow: 0
+  _passiveStacksOrDotPotencyOrTurnsBonusInteger: 0
+  _passiveDotDurationOrMaxTurnCapInteger: 0
+  _unityEventFiresOnlyForThesePassiveTriggers: 
+  _unityEventInvokedWhenPassiveTriggerFires:
+    m_PersistentCalls:
+      m_Calls: []

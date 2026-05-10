@@ -13,12 +13,43 @@ MonoBehaviour:
   m_Name: f_t2_p1
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Progression.SkillTreeNodeAsset
   _nodeId: f_t2_p1
-  _treeElement: 1
-  _displayName: f_t2_p1
+  _skillTreeElementCategory: 1
   _isPassiveNode: 1
-  _descriptionForUi: 'Efeito: DotDurationBonus
-
-    DOT: Bleed
-
-    Int: 1, 6'
-  _passiveDefinitionAsset: {fileID: 11400000, guid: 7f33feff482dd95459cd2bae45f59cf6, type: 2}
+  _displayName: f_t2_p1
+  _descriptionForUi: "Os teus efeitos de Sangramento duram +1 turno (at\xE9 ao m\xE1ximo
+    de 6 turnos)."
+  _activeSkillTypeLabel: Active
+  _activeSkillDamageElement: 0
+  _baseDamageMinimum: 0
+  _baseDamageMaximum: 0
+  _baseCriticalHitChanceFraction: 0
+  _baseHitAccuracyFraction: 1
+  _targetSelectionKind: 0
+  _aiAbsoluteChanceToConsiderWhenEligible: 1
+  _aiOnlyEligibleWhenOwnHpFractionBelow: 1
+  _corruptionCostAddedWhenPlayerCasts: 1
+  _effectsAppliedAfterSuccessfulHit: []
+  _extraEffectsWhenTargetHasComboToken: []
+  _passiveEffectKind: 2
+  _passiveAppliesWhenSkillIdMatches: 
+  _passivePrerequisiteSkillIdThatMustBeUsedFirst: 
+  _passiveUsesDotTypeFilter: 1
+  _passiveDotTypeFilter: 2
+  _passiveUsesTokenTypeFilter: 0
+  _passiveTokenTypeFilter: 0
+  _passiveGrantsExtraTokenOfType: 0
+  _passiveTokenTypeToGrantWhenTriggered: 0
+  _passiveOnlyAppliesWhenActorHasTokenType: 0
+  _passiveRequiredTokenTypeOnActor: 0
+  _passiveOnlyAppliesWhenActorLacksTokenType: 0
+  _passiveBlockingTokenTypeOnActor: 0
+  _passiveDamageBonusOrIncomingMultiplierMagnitude: 0
+  _passiveDamageBonusFractionPerDotStackOnTarget: 0
+  _passiveDamageBonusFractionMaximumCap: 0
+  _passiveActivatesWhenHpFractionBelow: 0
+  _passiveStacksOrDotPotencyOrTurnsBonusInteger: 1
+  _passiveDotDurationOrMaxTurnCapInteger: 6
+  _unityEventFiresOnlyForThesePassiveTriggers: 
+  _unityEventInvokedWhenPassiveTriggerFires:
+    m_PersistentCalls:
+      m_Calls: []

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Game.Core.Models;
 using Game.Core.Progression;
+using Erumperem.UI;
 using TMPro;
 using UnityEngine;
 
@@ -28,7 +29,7 @@ namespace Erumperem.Progression
 
                 if (Body != null)
                 {
-                    Body.text = nodeAsset.DescriptionForUi;
+                    Body.text = PlayerFacingText.FormatSkillTreeNodeDescription(nodeAsset);
                 }
             }
         }

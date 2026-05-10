@@ -13,8 +13,53 @@ MonoBehaviour:
   m_Name: f_t2_a1
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Progression.SkillTreeNodeAsset
   _nodeId: f_t2_a1
-  _treeElement: 1
-  _displayName: Fio candente
+  _skillTreeElementCategory: 1
   _isPassiveNode: 0
+  _displayName: Fio candente
   _descriptionForUi: "Active (Fire) \u2014 dano 8-12."
-  _passiveDefinitionAsset: {fileID: 0}
+  _activeSkillTypeLabel: Active
+  _activeSkillDamageElement: 1
+  _baseDamageMinimum: 8
+  _baseDamageMaximum: 12
+  _baseCriticalHitChanceFraction: 0.1
+  _baseHitAccuracyFraction: 1
+  _targetSelectionKind: 0
+  _aiAbsoluteChanceToConsiderWhenEligible: 1
+  _aiOnlyEligibleWhenOwnHpFractionBelow: 1
+  _corruptionCostAddedWhenPlayerCasts: 6
+  _effectsAppliedAfterSuccessfulHit:
+  - Type: 1
+    Chance: 1
+    Stacks: 0
+    Potency: 2
+    Duration: 2
+    Steps: 0
+    EffectScope: Default
+    UseToken: 0
+    Token: 0
+    UseDot: 1
+    Dot: 2
+  _extraEffectsWhenTargetHasComboToken: []
+  _passiveEffectKind: 0
+  _passiveAppliesWhenSkillIdMatches: 
+  _passivePrerequisiteSkillIdThatMustBeUsedFirst: 
+  _passiveUsesDotTypeFilter: 0
+  _passiveDotTypeFilter: 0
+  _passiveUsesTokenTypeFilter: 0
+  _passiveTokenTypeFilter: 0
+  _passiveGrantsExtraTokenOfType: 0
+  _passiveTokenTypeToGrantWhenTriggered: 0
+  _passiveOnlyAppliesWhenActorHasTokenType: 0
+  _passiveRequiredTokenTypeOnActor: 0
+  _passiveOnlyAppliesWhenActorLacksTokenType: 0
+  _passiveBlockingTokenTypeOnActor: 0
+  _passiveDamageBonusOrIncomingMultiplierMagnitude: 0
+  _passiveDamageBonusFractionPerDotStackOnTarget: 0
+  _passiveDamageBonusFractionMaximumCap: 0
+  _passiveActivatesWhenHpFractionBelow: 0
+  _passiveStacksOrDotPotencyOrTurnsBonusInteger: 0
+  _passiveDotDurationOrMaxTurnCapInteger: 0
+  _unityEventFiresOnlyForThesePassiveTriggers: 
+  _unityEventInvokedWhenPassiveTriggerFires:
+    m_PersistentCalls:
+      m_Calls: []

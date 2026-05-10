@@ -13,15 +13,43 @@ MonoBehaviour:
   m_Name: a_t3_p3
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Progression.SkillTreeNodeAsset
   _nodeId: a_t3_p3
-  _treeElement: 3
-  _displayName: a_t3_p3
+  _skillTreeElementCategory: 3
   _isPassiveNode: 1
-  _descriptionForUi: 'Efeito: ApplyExtraDotAfterSkillIfTargetHasDot
-
-    Skill:
-    a_t2_a1
-
-    DOT: Blight
-
-    Int: 2, 2'
-  _passiveDefinitionAsset: {fileID: 11400000, guid: 96817314c49f29e409e3cbe92e2a0b95, type: 2}
+  _displayName: a_t3_p3
+  _descriptionForUi: "Ap\xF3s usares \xABPuxar o v\xE9u\xBB num alvo que j\xE1 sofre
+    Praga, aplicas Praga extra (2 de dano por turno, durante 2 turnos)."
+  _activeSkillTypeLabel: Active
+  _activeSkillDamageElement: 0
+  _baseDamageMinimum: 0
+  _baseDamageMaximum: 0
+  _baseCriticalHitChanceFraction: 0
+  _baseHitAccuracyFraction: 1
+  _targetSelectionKind: 0
+  _aiAbsoluteChanceToConsiderWhenEligible: 1
+  _aiOnlyEligibleWhenOwnHpFractionBelow: 1
+  _corruptionCostAddedWhenPlayerCasts: 1
+  _effectsAppliedAfterSuccessfulHit: []
+  _extraEffectsWhenTargetHasComboToken: []
+  _passiveEffectKind: 8
+  _passiveAppliesWhenSkillIdMatches: a_t2_a1
+  _passivePrerequisiteSkillIdThatMustBeUsedFirst: 
+  _passiveUsesDotTypeFilter: 1
+  _passiveDotTypeFilter: 1
+  _passiveUsesTokenTypeFilter: 0
+  _passiveTokenTypeFilter: 0
+  _passiveGrantsExtraTokenOfType: 0
+  _passiveTokenTypeToGrantWhenTriggered: 0
+  _passiveOnlyAppliesWhenActorHasTokenType: 0
+  _passiveRequiredTokenTypeOnActor: 0
+  _passiveOnlyAppliesWhenActorLacksTokenType: 0
+  _passiveBlockingTokenTypeOnActor: 0
+  _passiveDamageBonusOrIncomingMultiplierMagnitude: 0
+  _passiveDamageBonusFractionPerDotStackOnTarget: 0
+  _passiveDamageBonusFractionMaximumCap: 0
+  _passiveActivatesWhenHpFractionBelow: 0
+  _passiveStacksOrDotPotencyOrTurnsBonusInteger: 2
+  _passiveDotDurationOrMaxTurnCapInteger: 2
+  _unityEventFiresOnlyForThesePassiveTriggers: 
+  _unityEventInvokedWhenPassiveTriggerFires:
+    m_PersistentCalls:
+      m_Calls: []
