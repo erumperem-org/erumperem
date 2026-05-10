@@ -285,6 +285,29 @@ public class UnitTest1
     }
 
     [Fact]
+    public void SkillTreeLookup_BuildPlayerSkillLoadout_AddsInnatesAndUnlockedActivesOnly()
+    {
+        var trees = CombatDataLoader.LoadSkillTrees(CombatDataLoader.ResolveDefaultSkillTreesPath());
+        var wulfric = SkillTreeLookup.FindCharacterTrees(trees, "wulfric");
+        Assert.NotNull(wulfric);
+
+        var unlocked = new Dictionary<string, bool>(StringComparer.Ordinal)
+        {
+            ["f_t1_p1"] = true,
+            ["f_t1_a1"] = true,
+        };
+
+        var loadout = SkillTreeLookup.BuildPlayerSkillLoadout(
+            wulfric,
+            unlocked,
+            BattleFactory.WulfricInnateSkillIds);
+
+        Assert.Contains("wulfric_innate_cleave", loadout);
+        Assert.Contains("f_t1_a1", loadout);
+        Assert.DoesNotContain("f_t2_a1", loadout);
+    }
+
+    [Fact]
     public void Passive_OutgoingDamageVsSkillId_IncreasesDamageDealt()
     {
         var smack = new SkillDefinition
@@ -332,6 +355,52 @@ public class UnitTest1
             .ToList();
         Assert.NotEmpty(damageAmounts);
         Assert.All(damageAmounts, damageAmount => Assert.Equal(115, damageAmount));
+    }
+
+    [Fact]
+    public void CombatPassiveEventBus_MonitoredHpBarrier_EmitsWhenCrossedDown()
+    {
+        var skills = SampleCombatData.CreateSkills();
+        var battle = BattleFactory.CreateSampleBattle(skills, allyCount: 1, enemyCount: 1, corruptionValue: 0);
+        var bus = battle.PassiveBus;
+        bus.MonitoredHpPercentBarriers.Add(0.5);
+        var crossedBarriers = new List<double?>();
+        bus.Subscribe(
+            (trigger, _, context) =>
+            {
+                if (trigger == PassiveTrigger.HpPercentThresholdCrossed)
+                {
+                    crossedBarriers.Add(context.CrossedHpPercentBarrier);
+                }
+            });
+        var ally = battle.Allies[0];
+        bus.RaiseDamageTaken(battle, attacker: null, ally, skill: null, damage: 20, wasCrit: false, 0.6, 0.4);
+
+        var crossedBarrier = Assert.Single(crossedBarriers);
+        Assert.Equal(0.5, crossedBarrier);
+    }
+
+    [Fact]
+    public void CombatPassiveEventBus_TokenAppliedToSelfVersusOther_DistinctTriggers()
+    {
+        var skills = SampleCombatData.CreateSkills();
+        var battle = BattleFactory.CreateSampleBattle(skills, allyCount: 1, enemyCount: 1, corruptionValue: 0);
+        var bus = battle.PassiveBus;
+        var tokenAppliedToSelfCount = 0;
+        var tokenAppliedToOtherCount = 0;
+        bus.Subscribe(
+            (trigger, _, _) =>
+            {
+                if (trigger == PassiveTrigger.TokenAppliedToSelf) tokenAppliedToSelfCount++;
+                if (trigger == PassiveTrigger.TokenAppliedToOther) tokenAppliedToOtherCount++;
+            });
+        var actor = battle.Allies[0];
+        var target = battle.Enemies[0];
+        bus.RaiseTokenStacksChanged(battle, actor, actor, skill: null, TokenType.Combo, delta: 2);
+        bus.RaiseTokenStacksChanged(battle, actor, target, skill: null, TokenType.Stun, delta: 1);
+
+        Assert.Equal(1, tokenAppliedToSelfCount);
+        Assert.Equal(1, tokenAppliedToOtherCount);
     }
 
     [Fact]

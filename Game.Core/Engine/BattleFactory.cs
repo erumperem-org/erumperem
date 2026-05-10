@@ -8,6 +8,14 @@ public static class BattleFactory
 {
     public static readonly string[] DefaultAllySkillIds = ["wulfric_innate_cleave"];
 
+    /// <summary>Skills always on Wulfric regardless of tree (innates).</summary>
+    public static readonly string[] WulfricInnateSkillIds =
+    [
+        "wulfric_innate_cleave",
+        "wulfric_innate_shove",
+        "wulfric_innate_guard",
+    ];
+
     public static readonly string[] WulfricFullSkillLoadout =
     [
         "wulfric_innate_cleave", "wulfric_innate_shove", "wulfric_innate_guard",

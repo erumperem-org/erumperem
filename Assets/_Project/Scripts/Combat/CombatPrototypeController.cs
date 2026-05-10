@@ -10,6 +10,8 @@ using Game.Core.Data;
 using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
+using Game.Core.Progression;
+using Erumperem.Progression;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -47,6 +49,20 @@ namespace Erumperem.Combat
 
         [Header("Debug")]
         [SerializeField] private bool logEventsToConsole = true;
+
+        [Header("Progression")]
+        [Tooltip("Opcional na cena; se vazio usa PlayerProgressionService.Instance (DontDestroyOnLoad).")]
+        [SerializeField] private PlayerProgressionService _progressionService;
+
+        [SerializeField] private string _progressionCharacterId = "wulfric";
+
+        [Tooltip("Desbloqueia todas as passivas do JSON para aliados (teste). Skills activas vêm do save via árvore.")]
+        [SerializeField] private bool _devUnlockAllPassives;
+
+        [Header("Combat authoring (overrides JSON by node id)")]
+        [Tooltip("Para cada entrada: se passiva → entra em PassivesById; se activa → substitui/define SkillDefinition em SkillsById. JSON continua base para o que não listares aqui.")]
+        [SerializeField] private SkillTreeNodeAsset[] _skillTreeAuthoringAssets =
+            System.Array.Empty<SkillTreeNodeAsset>();
 
         [Header("Painéis de resultado")]
         [SerializeField] private GameObject victoryPanel;
@@ -257,19 +273,83 @@ namespace Erumperem.Combat
         {
             var dataDir = Path.Combine(Application.streamingAssetsPath, "Data");
             var skillsPath = Path.Combine(dataDir, "skills.json");
+            var skillTreesPath = Path.Combine(dataDir, "skill_trees.json");
             var passivesPath = Path.Combine(dataDir, "passives.json");
-            if (!File.Exists(skillsPath) || !File.Exists(passivesPath))
+
+            var hasAnyPassiveAuthoring = _skillTreeAuthoringAssets != null &&
+                                         _skillTreeAuthoringAssets.Any(asset =>
+                                             asset != null && asset.IsPassiveNode &&
+                                             !string.IsNullOrWhiteSpace(asset.NodeId));
+            var passiveJsonExists = File.Exists(passivesPath);
+            if (!File.Exists(skillsPath) || !File.Exists(skillTreesPath))
             {
                 Debug.LogError(
-                    $"Faltam JSON em StreamingAssets. Esperado: {skillsPath} e {passivesPath}. " +
+                    $"Faltam JSON em StreamingAssets. Esperado: {skillsPath} e {skillTreesPath}. " +
                     "Copie a partir de Game.Simulations/Data/ ou rode tools/PublishGameCoreForUnity.ps1.");
                 enabled = false;
                 return;
             }
 
-            var skills = CombatDataLoader.LoadSkills(skillsPath);
-            var passives = CombatDataLoader.LoadPassives(passivesPath)
-                .ToDictionary(passiveDefinition => passiveDefinition.Id, passiveDefinition => passiveDefinition);
+            if (!passiveJsonExists && !hasAnyPassiveAuthoring)
+            {
+                Debug.LogError(
+                    $"Passivas: falta {passivesPath} ou pelo menos um {nameof(SkillTreeNodeAsset)} passivo em _skillTreeAuthoringAssets.");
+                enabled = false;
+                return;
+            }
+
+            var skillsById = CombatDataLoader.LoadSkills(skillsPath)
+                .ToDictionary(skillDefinition => skillDefinition.Id, skillDefinition => skillDefinition);
+            MergeActiveSkillsFromAuthoringAssets(skillsById);
+            var skills = skillsById.Values.ToList();
+
+            Dictionary<string, PassiveDefinition> passives;
+            if (passiveJsonExists)
+            {
+                passives = CombatDataLoader.LoadPassives(passivesPath)
+                    .ToDictionary(passiveDefinition => passiveDefinition.Id, passiveDefinition => passiveDefinition);
+            }
+            else
+            {
+                passives = new Dictionary<string, PassiveDefinition>(StringComparer.Ordinal);
+            }
+
+            MergePassiveDefinitionsFromAuthoringAssets(passives);
+
+            var skillTreesList = CombatDataLoader.LoadSkillTrees(skillTreesPath);
+            var characterTrees = SkillTreeLookup.FindCharacterTrees(skillTreesList, _progressionCharacterId);
+            if (characterTrees == null)
+            {
+                Debug.LogError(
+                    $"CombatPrototypeController: não há árvore para characterId '{_progressionCharacterId}' em skill_trees.json.");
+                enabled = false;
+                return;
+            }
+
+            var progression = _progressionService != null
+                ? _progressionService
+                : FindFirstObjectByType<PlayerProgressionService>();
+            if (progression == null && !_devUnlockAllPassives)
+            {
+                var autoRoot = new GameObject(nameof(PlayerProgressionService));
+                progression = autoRoot.AddComponent<PlayerProgressionService>();
+            }
+
+            IReadOnlyDictionary<string, bool> unlockedForBattle;
+            List<string> allySkillIds;
+            if (progression != null)
+            {
+                unlockedForBattle = progression.GetUnlockedNodesForCharacter(_progressionCharacterId);
+                allySkillIds = SkillTreeLookup.BuildPlayerSkillLoadout(
+                    characterTrees,
+                    unlockedForBattle,
+                    BattleFactory.WulfricInnateSkillIds);
+            }
+            else
+            {
+                unlockedForBattle = new Dictionary<string, bool>(StringComparer.Ordinal);
+                allySkillIds = BattleFactory.WulfricFullSkillLoadout.ToList();
+            }
 
             _random = new SeededRandomSource(UnityEngine.Random.Range(int.MinValue / 2, int.MaxValue / 2));
             _collector = new CombatEventCollector();
@@ -280,9 +360,28 @@ namespace Erumperem.Combat
                 allyCount: 2,
                 enemyCount: 4,
                 corruptionValue: 0,
-                allySkillIds: BattleFactory.WulfricFullSkillLoadout,
+                allySkillIds: allySkillIds,
                 passivesById: passives,
-                unlockAllPassiveNodesForAllies: true);
+                unlockAllPassiveNodesForAllies: false);
+
+            if (progression != null)
+            {
+                var pointsSpent = SkillTreeLookup.SumUnlockedNodeCosts(characterTrees, unlockedForBattle);
+                foreach (var ally in _state.Allies)
+                {
+                    foreach (var nodeIdAndUnlocked in unlockedForBattle)
+                    {
+                        ally.Progression.UnlockedNodes[nodeIdAndUnlocked.Key] = nodeIdAndUnlocked.Value;
+                    }
+
+                    ally.Progression.SpentPoints = pointsSpent;
+                }
+            }
+
+            if (_devUnlockAllPassives)
+            {
+                BattleFactory.UnlockAllPassivesFromCatalog(_state, passives);
+            }
 
             if (!TryBindSceneViewsToBattle())
             {
@@ -1113,6 +1212,60 @@ namespace Erumperem.Combat
             }
 
             return null;
+        }
+
+        private void MergeActiveSkillsFromAuthoringAssets(Dictionary<string, SkillDefinition> skillsById)
+        {
+            if (_skillTreeAuthoringAssets == null)
+            {
+                return;
+            }
+
+            foreach (var asset in _skillTreeAuthoringAssets)
+            {
+                if (asset == null || asset.IsPassiveNode || string.IsNullOrWhiteSpace(asset.NodeId))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    skillsById[asset.NodeId] = asset.ToRuntimeSkillDefinition();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning(
+                        $"CombatPrototypeController: activo SO '{asset.name}' ignorado — {ex.Message}",
+                        asset);
+                }
+            }
+        }
+
+        private void MergePassiveDefinitionsFromAuthoringAssets(Dictionary<string, PassiveDefinition> passivesById)
+        {
+            if (_skillTreeAuthoringAssets == null)
+            {
+                return;
+            }
+
+            foreach (var asset in _skillTreeAuthoringAssets)
+            {
+                if (asset == null || !asset.IsPassiveNode || string.IsNullOrWhiteSpace(asset.NodeId))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    passivesById[asset.NodeId] = asset.ToRuntimePassiveDefinition();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning(
+                        $"CombatPrototypeController: passiva SO '{asset.name}' ignorada — {ex.Message}",
+                        asset);
+                }
+            }
         }
     }
 }

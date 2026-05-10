@@ -160,7 +160,12 @@ public static class PassiveRuleApplier
         return mult;
     }
 
-    public static void ApplyPostSkillPassiveExtras(BattleState state, Combatant actor, Combatant target, SkillDefinition skill)
+    public static void ApplyPostSkillPassiveExtras(
+        BattleState state,
+        Combatant actor,
+        Combatant target,
+        SkillDefinition skill,
+        Action<Combatant, TokenType, int>? onExtraTokenGranted = null)
     {
         foreach (var def in EnumerateActivePassives(actor, state))
         {
@@ -168,7 +173,9 @@ public static class PassiveRuleApplier
             {
                 case PassiveEffectKind.ExtraTokenOnSelfSkill:
                     if (skill.TargetKind != SkillTargetKind.Self || def.SkillId != skill.Id || def.TokenType is null) break;
-                    actor.Tokens.Add(def.TokenType.Value, Math.Max(1, def.IntValue));
+                    var tokenDelta = Math.Max(1, def.IntValue);
+                    actor.Tokens.Add(def.TokenType.Value, tokenDelta);
+                    onExtraTokenGranted?.Invoke(actor, def.TokenType.Value, tokenDelta);
                     break;
                 case PassiveEffectKind.ExtraHealPercentOnSelfSkill:
                     if (skill.TargetKind != SkillTargetKind.Self || def.SkillId != skill.Id) break;
@@ -177,6 +184,38 @@ public static class PassiveRuleApplier
                     actor.Health.CurrentHp = Math.Min(actor.Health.MaxHp, actor.Health.CurrentHp + heal);
                     break;
             }
+        }
+    }
+
+    /// <summary>
+    /// Extra DOT from passives after an enemy-targeted skill when the target already carries a DOT type (simulator supplies elemental mult + resistance gate).
+    /// </summary>
+    public static void ApplyPassiveExtraDotsAfterEnemySkill(
+        BattleState state,
+        Combatant actor,
+        Combatant target,
+        SkillDefinition skill,
+        double elementalDamageMultiplier,
+        Func<Combatant, DotType, bool> dotApplicationPassesResistanceCheck)
+    {
+        if (skill.TargetKind != SkillTargetKind.Enemy) return;
+        foreach (var def in EnumerateActivePassives(actor, state))
+        {
+            if (def.EffectKind != PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot) continue;
+            if (def.SkillId != skill.Id || def.DotType is null) continue;
+            if (CountDotStacks(target, def.DotType.Value) <= 0) continue;
+            if (!dotApplicationPassesResistanceCheck(target, def.DotType.Value)) continue;
+            var rawPotency = def.IntValue > 0 ? def.IntValue : 2;
+            var baseDuration = def.IntValue2 > 0 ? def.IntValue2 : 2;
+            var potency = (int)Math.Round(Math.Max(1, rawPotency) * elementalDamageMultiplier);
+            var duration = AdjustDotDuration(state, actor, def.DotType.Value, baseDuration);
+            target.Dots.ActiveDots.Add(new DotInstance
+            {
+                Type = def.DotType.Value,
+                Potency = potency,
+                RemainingTurns = duration,
+                AppliedById = actor.Identity.Id,
+            });
         }
     }
 
