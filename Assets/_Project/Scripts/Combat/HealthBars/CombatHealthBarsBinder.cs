@@ -31,7 +31,9 @@ namespace Erumperem.Combat.HealthBars
         [Tooltip("Offset relativo ao alvo (root da unidade ou ancla). 'Abaixo' significa Y negativo se o alvo aponta para cima.")]
         [SerializeField] private Vector3 healthBarLocalOffset = new(0f, -0.4f, 0f);
 
-        [Tooltip("Roda a barra para olhar para a Main Camera todo o frame (billboard simples).")]
+        [Tooltip("Roda a barra para olhar para a Main Camera todo o frame (billboard simples). " +
+                 "Desligue se o 'Shared Health Bar Parent' for um Canvas em Screen Space (Overlay/Camera) — " +
+                 "nesse caso o canvas já está sempre virado ao ecrã.")]
         [SerializeField] private bool faceMainCameraEachFrame = true;
 
         private CombatPrototypeController _combatSession;
@@ -66,6 +68,17 @@ namespace Erumperem.Combat.HealthBars
             if (!faceMainCameraEachFrame || _spawnedHealthBarRoots.Count == 0)
             {
                 return;
+            }
+
+            // Em Screen Space (Overlay/Camera) o canvas já está sempre virado para o ecrã,
+            // logo o billboard manual é redundante e até distorce. Saímos cedo.
+            if (sharedHealthBarParent != null)
+            {
+                var sharedParentCanvas = sharedHealthBarParent.GetComponentInParent<Canvas>();
+                if (sharedParentCanvas != null && sharedParentCanvas.renderMode != RenderMode.WorldSpace)
+                {
+                    return;
+                }
             }
 
             if (_mainCamera == null)

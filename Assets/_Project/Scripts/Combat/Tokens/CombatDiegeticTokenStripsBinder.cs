@@ -33,6 +33,9 @@ namespace Erumperem.Combat.Tokens
             "same offset used when following from a shared canvas.")]
         [SerializeField] private Vector3 stripLocalOffset = new(0f, 2.2f, 0f);
 
+        [Tooltip("Roda a tira de tokens para olhar para a Main Camera todo o frame (billboard simples). " +
+                 "Desligue se o 'Shared Strip Parent' for um Canvas em Screen Space (Overlay/Camera) — " +
+                 "nesse caso o canvas já está sempre virado ao ecrã.")]
         [SerializeField] private bool faceMainCameraEachFrame;
 
         private CombatPrototypeController _combatSession;
@@ -81,6 +84,17 @@ namespace Erumperem.Combat.Tokens
             if (!faceMainCameraEachFrame)
             {
                 return;
+            }
+
+            // Em Screen Space (Overlay/Camera) o canvas já está sempre virado para o ecrã,
+            // logo o billboard manual é redundante e até distorce. Saímos cedo.
+            if (sharedStripParent != null)
+            {
+                var sharedParentCanvas = sharedStripParent.GetComponentInParent<Canvas>();
+                if (sharedParentCanvas != null && sharedParentCanvas.renderMode != RenderMode.WorldSpace)
+                {
+                    return;
+                }
             }
 
             if (_mainCamera == null)

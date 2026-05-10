@@ -118,7 +118,29 @@ namespace Erumperem.Combat.Tokens
 
         private void ApplyBillboard()
         {
-            if (!_faceMainCamera || Camera.main == null)
+            if (!_faceMainCamera)
+            {
+                return;
+            }
+
+            // Em Screen Space (Overlay/Camera) o canvas já está sempre virado para o ecrã;
+            // forçar transform.rotation = câmara.rotation distorce o filho dentro do canvas.
+            // Aplicamos rotação local identidade para limpar heranças e saímos.
+            if (_rootCanvas != null && _rootCanvas.renderMode != RenderMode.WorldSpace)
+            {
+                if (_rectTransform != null)
+                {
+                    _rectTransform.localRotation = Quaternion.identity;
+                }
+                else
+                {
+                    transform.localRotation = Quaternion.identity;
+                }
+
+                return;
+            }
+
+            if (Camera.main == null)
             {
                 return;
             }
