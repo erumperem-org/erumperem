@@ -20,7 +20,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: AnomalyDynamicMat
+  m_Name: AnomalyWall
   m_Shader: {fileID: -6465566751694194690, guid: 68a4da00c89d6014cad25724feba7219, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -60,14 +60,14 @@ Material:
     m_Ints: []
     m_Floats:
     - _DisappearenceSrength: 0.4
-    - _DisappearenceStrentgh: 0.4
+    - _DisappearenceStrentgh: 0.45
     - _DistortionSpeed: 0
     - _FresnelPower: 3
-    - _NoiseScale: 100
+    - _NoiseScale: 3500
     - _QueueControl: 0
     - _QueueOffset: 19
-    - _SurfaceMovementSpeed: 0.1
-    - _SurfaceNoiseScale: 0
+    - _SurfaceMovementSpeed: 0.15
+    - _SurfaceNoiseScale: -7
     m_Colors:
     - _AnomalyColor: {r: 6.055746, g: 0, b: 6.498019, a: 1}
     - _DisappearanceColor: {r: 1, g: 1, b: 1, a: 1}
@@ -75,6 +75,6 @@ Material:
     - _FresnelSpeed: {r: 1, g: -0.2, b: 0, a: 0}
     - _MagicAnomalyColor: {r: 41.78448, g: 0, b: 221.45778, a: 1}
     - _MagicOffset: {r: 0, g: 0, b: 0, a: 0}
-    - _TextureSpped: {r: 0.2, g: 0.2, b: 0, a: 0}
+    - _TextureSpped: {r: 0, g: 0.02, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
