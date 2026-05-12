@@ -166,7 +166,8 @@ namespace Erumperem.Combat.Tokens
                     definition.iconColor,
                     definition.backgroundTint,
                     stacks,
-                    showBackgroundTint: true);
+                    showBackgroundTint: true,
+                    authoredHoverDescription: TokenAndDotDescriptionLibrary.GetTokenAuthoredDescription(definition.TokenType));
             }
 
             foreach (var definition in catalog.DotEntries)
@@ -190,7 +191,8 @@ namespace Erumperem.Combat.Tokens
                     definition.iconColor,
                     definition.backgroundTint,
                     dotTurnsSum,
-                    showBackgroundTint: true);
+                    showBackgroundTint: true,
+                    authoredHoverDescription: TokenAndDotDescriptionLibrary.GetDotAuthoredDescription(definition.DotType));
             }
 
             if (!anyVisible)
