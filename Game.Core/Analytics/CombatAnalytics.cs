@@ -32,6 +32,24 @@ public sealed class CombatEvent
     public int? PreviousCorruptionTier { get; init; }
     /// <summary>Ids de passivas ativas no grupo (aliados), separados por vírgula; preenchido em <see cref="BattleEventType.BattleStarted"/>.</summary>
     public string PassiveLoadoutCsv { get; init; } = string.Empty;
+
+    /// <summary>Passiva que gerou <see cref="BattleEventType.PassiveCombatNarrative"/> ou DOT de passiva em <see cref="BattleEventType.DotInflicted"/>.</summary>
+    public string PassiveId { get; init; } = string.Empty;
+
+    /// <summary>Nome do valor em <see cref="Game.Core.Passives.PassiveEffectKind"/> (telemetria / formatador).</summary>
+    public string PassiveEffectKindName { get; init; } = string.Empty;
+
+    public double PassiveMagnitude { get; init; }
+
+    /// <summary>Skill referida pela passiva (ex.: bónus ao usar Cleave), não necessariamente a skill usada no turno.</summary>
+    public string PassiveRelatedSkillId { get; init; } = string.Empty;
+
+    /// <summary>Para <see cref="BattleEventType.DotInflicted"/>: turnos de duração aplicados.</summary>
+    public int DotDurationTurns { get; init; }
+
+    /// <summary>Valor auxiliar para narrativa (ex.: PV curados por passiva).</summary>
+    public int PassiveAuxInt { get; init; }
+
     public string BattleResult { get; init; } = string.Empty;
 }
 
@@ -75,7 +93,7 @@ public static class CombatAnalyticsExporter
     public static string BuildEventsCsv(IEnumerable<CombatEvent> events)
     {
         var csvBuilder = new StringBuilder();
-        csvBuilder.AppendLine("event_id,battle_id,turn,timestamp_utc,event_type,actor_id,target_id,skill_id,element,is_hit,is_crit,damage_amount,dot_type,dot_amount,token_type,token_delta,corruption_value,corruption_tier,corruption_delta,previous_corruption_tier,passive_loadout,battle_result");
+        csvBuilder.AppendLine("event_id,battle_id,turn,timestamp_utc,event_type,actor_id,target_id,skill_id,element,is_hit,is_crit,damage_amount,dot_type,dot_amount,token_type,token_delta,corruption_value,corruption_tier,corruption_delta,previous_corruption_tier,passive_loadout,battle_result,passive_id,passive_effect_kind,passive_magnitude,passive_related_skill_id,dot_duration_turns,passive_aux_int");
         foreach (var combatEvent in events)
         {
             csvBuilder.AppendLine(string.Join(",",
@@ -102,7 +120,13 @@ public static class CombatAnalyticsExporter
                     ? combatEvent.PreviousCorruptionTier.Value.ToString(CultureInfo.InvariantCulture)
                     : string.Empty,
                 Esc(combatEvent.PassiveLoadoutCsv),
-                Esc(combatEvent.BattleResult)));
+                Esc(combatEvent.BattleResult),
+                Esc(combatEvent.PassiveId),
+                Esc(combatEvent.PassiveEffectKindName),
+                combatEvent.PassiveMagnitude.ToString(CultureInfo.InvariantCulture),
+                Esc(combatEvent.PassiveRelatedSkillId),
+                combatEvent.DotDurationTurns.ToString(CultureInfo.InvariantCulture),
+                combatEvent.PassiveAuxInt.ToString(CultureInfo.InvariantCulture)));
         }
 
         return csvBuilder.ToString();

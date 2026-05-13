@@ -26,6 +26,4 @@ public sealed class PassiveDefinition
     public double HpBelowPercent { get; init; }
     public int IntValue { get; init; }
     public int IntValue2 { get; init; }
-    public int MinCasterRank { get; init; }
-    public int MaxCasterRank { get; init; }
 }

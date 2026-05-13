@@ -78,4 +78,10 @@ public enum BattleEventType
 
     /// <summary>World corruption changed (skill use, effects, heals).</summary>
     CorruptionAdjusted = 9,
+
+    /// <summary>DoT aplicado pela resolução de uma skill (ou passiva) — ver <see cref="CombatEvent.DotType"/> / duração.</summary>
+    DotInflicted = 10,
+
+    /// <summary>Feed de passiva para narrativa/UI (dano modificado, cura extra, etc.).</summary>
+    PassiveCombatNarrative = 11,
 }

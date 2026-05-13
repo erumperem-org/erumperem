@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Game.Core.Analytics;
 using Game.Core.Domain;
 using Game.Core.Models;
+using Erumperem.UI;
 
 namespace Erumperem.Combat
 {
@@ -39,21 +40,38 @@ namespace Erumperem.Combat
 
             if (hitEvent == null)
             {
-                yield return $"{actorName} usou {skillName} em {targetName}.";
+                yield return PlayerFacingText.PresentForUi($"{actorName} usou {skillName} em {targetName}.");
             }
             else if (!hitEvent.IsHit)
             {
-                yield return $"{actorName} usou {skillName} em {targetName}, mas falhou o golpe.";
+                yield return PlayerFacingText.PresentForUi(
+                    $"{actorName} usou {skillName} em {targetName}, mas falhou o golpe.");
             }
             else if (damageEvent != null && damageEvent.DamageAmount > 0)
             {
                 var dmg = damageEvent.DamageAmount;
                 var crit = damageEvent.IsCrit ? " (crítico!)" : string.Empty;
-                yield return $"{actorName} usou {skillName} em {targetName}, causando {dmg} de dano{crit}.";
+                yield return PlayerFacingText.PresentForUi(
+                    $"{actorName} usou {skillName} em {targetName}, causando {dmg} de dano{crit}.");
             }
             else
             {
-                yield return $"{actorName} usou {skillName} em {targetName}.";
+                yield return PlayerFacingText.PresentForUi($"{actorName} usou {skillName} em {targetName}.");
+            }
+
+            foreach (var combatEvent in slice)
+            {
+                if (combatEvent.EventType != BattleEventType.DotInflicted &&
+                    combatEvent.EventType != BattleEventType.PassiveCombatNarrative)
+                {
+                    continue;
+                }
+
+                var narrativeLine = PlayerFacingText.FormatCombatLogLine(state, combatEvent);
+                if (!string.IsNullOrEmpty(narrativeLine))
+                {
+                    yield return narrativeLine;
+                }
             }
 
             foreach (var combatEvent in slice)
@@ -77,7 +95,7 @@ namespace Erumperem.Combat
                 }
 
                 var who = DisplayName(state, combatEvent.TargetId);
-                yield return $"{who} foi derrotado.";
+                yield return PlayerFacingText.PresentForUi($"{who} foi derrotado.");
             }
         }
 
@@ -87,42 +105,42 @@ namespace Erumperem.Combat
             var token = combatEvent.TokenType ?? string.Empty;
             if (string.Equals(token, nameof(TokenType.Stun), StringComparison.OrdinalIgnoreCase))
             {
-                yield return $"{targetName} ficou atordoado.";
+                yield return PlayerFacingText.PresentForUi($"{targetName} ficou atordoado.");
                 yield break;
             }
 
             if (string.Equals(token, nameof(TokenType.Blind), StringComparison.OrdinalIgnoreCase))
             {
-                yield return $"{targetName} ficou cego.";
+                yield return PlayerFacingText.PresentForUi($"{targetName} ficou cego.");
                 yield break;
             }
 
             if (string.Equals(token, nameof(TokenType.Dodge), StringComparison.OrdinalIgnoreCase))
             {
-                yield return $"{targetName} ganhou esquiva.";
+                yield return PlayerFacingText.PresentForUi($"{targetName} ganhou esquiva.");
                 yield break;
             }
 
             if (string.Equals(token, nameof(TokenType.Taunt), StringComparison.OrdinalIgnoreCase))
             {
-                yield return $"{targetName} provocou os inimigos.";
+                yield return PlayerFacingText.PresentForUi($"{targetName} provocou os inimigos.");
                 yield break;
             }
 
             if (string.Equals(token, nameof(TokenType.Combo), StringComparison.OrdinalIgnoreCase))
             {
-                yield return $"{targetName} acumulou combo (+{combatEvent.TokenDelta}).";
+                yield return PlayerFacingText.PresentForUi($"{targetName} acumulou combo (+{combatEvent.TokenDelta}).");
                 yield break;
             }
 
             if (string.Equals(token, nameof(TokenType.Block), StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(token, nameof(TokenType.BlockPlus), StringComparison.OrdinalIgnoreCase))
             {
-                yield return $"{targetName} recebeu bloqueio (+{combatEvent.TokenDelta}).";
+                yield return PlayerFacingText.PresentForUi($"{targetName} recebeu bloqueio (+{combatEvent.TokenDelta}).");
                 yield break;
             }
 
-            yield return $"{targetName} recebeu efeito {token} (+{combatEvent.TokenDelta}).";
+            yield return PlayerFacingText.PresentForUi($"{targetName} recebeu efeito {token} (+{combatEvent.TokenDelta}).");
         }
 
         private static string DisplayName(BattleState state, string combatantId)

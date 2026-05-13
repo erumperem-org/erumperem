@@ -11,12 +11,6 @@ public sealed class DamageRange
     public required int Max { get; init; }
 }
 
-public sealed class MoveSpec
-{
-    public required string Type { get; init; }
-    public required int Steps { get; init; }
-}
-
 public sealed class EffectSpec
 {
     public required EffectType Type { get; init; }
@@ -38,17 +32,25 @@ public sealed class SkillDefinition
     public required string Name { get; init; }
     public required ElementType Element { get; init; }
     public required string Type { get; init; }
-    public IReadOnlyList<int> AllowedCasterRanks { get; init; } = [];
-    public IReadOnlyList<int> AllowedTargetRanks { get; init; } = [];
     public required DamageRange BaseDamage { get; init; }
     public required double BaseCritChance { get; init; }
     public required double Accuracy { get; init; }
-    public int Cooldown { get; init; }
     public SkillTargetKind TargetKind { get; init; } = SkillTargetKind.Enemy;
-    public MoveSpec SelfMove { get; init; } = new MoveSpec { Type = "None", Steps = 0 };
     public IReadOnlyList<EffectSpec> EffectsOnHit { get; init; } = [];
     public IReadOnlyList<EffectSpec> ComboBonus { get; init; } = [];
-    public int Weight { get; init; } = 1;
+
+    /// <summary>
+    /// Probabilidade absoluta (0..1) de a IA considerar esta skill quando ela é elegível. Default 1.0 (sempre considerada).
+    /// Skills "especiais" devem usar valores baixos (ex.: 0.20 para um golpe raro).
+    /// Se nenhuma skill passar no roll, o pool elegível inteiro é usado como fallback (a IA nunca fica sem opção).
+    /// </summary>
+    public double ChanceToUse { get; init; } = 1.0;
+
+    /// <summary>
+    /// Trava de HP do próprio actor: a skill só fica elegível quando <c>CurrentHp / MaxHp &lt; SelfHpPercentBelow</c>.
+    /// Default 1.0 (sem trava). Use 0.15 para um especial liberado abaixo de 15% de HP.
+    /// </summary>
+    public double SelfHpPercentBelow { get; init; } = 1.0;
 
     /// <summary>
     /// When a <see cref="Faction.Player"/> uses this skill, applied to world corruption: positive increases, <c>0</c> no change, negative reduces.

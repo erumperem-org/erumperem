@@ -1,5 +1,6 @@
 using Game.Core.Config;
 using Game.Core.Domain;
+using Game.Core.Passives;
 
 namespace Game.Core.Models;
 
@@ -12,6 +13,9 @@ public sealed class BattleState
     /// <summary>Catálogo de passivas (efeitos); chave = id do nó passivo.</summary>
     public IReadOnlyDictionary<string, PassiveDefinition> PassivesById { get; init; } =
         new Dictionary<string, PassiveDefinition>();
+
+    /// <summary>Observer hub for passive hooks; raise events from <see cref="Game.Core.Engine.BattleSimulator"/>.</summary>
+    public CombatPassiveEventBus PassiveBus { get; init; } = new();
 
     public required CombatBalanceConfig BalanceConfig { get; init; }
     public required double CorruptionValue { get; set; }

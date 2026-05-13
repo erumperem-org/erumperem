@@ -17,6 +17,9 @@ public sealed class InputManager : MonoBehaviour
     public event Action<int> OnSkillSlotPressed;
     public event Action<int> OnSceneCheatPressed;
 
+    /// <summary>F6: cheat de combate para matar instantaneamente todos os inimigos (testes de UI de vitória).</summary>
+    public event Action OnCombatCheatKillAllEnemiesPressed;
+
     private DefaultInputActions _defaultInputActions;
     private Vector2 _lastPointerScreenPosition;
     private bool _hasPointerScreenPosition;
@@ -110,6 +113,7 @@ public sealed class InputManager : MonoBehaviour
         gameplay.SceneCheat3.performed += OnSceneCheat3Performed;
         gameplay.SceneCheat4.performed += OnSceneCheat4Performed;
         gameplay.SceneCheat5.performed += OnSceneCheat5Performed;
+        gameplay.CombatCheatKillAllEnemies.performed += OnCombatCheatKillAllEnemiesPerformed;
     }
 
     private void UnsubscribeGameplayInputEvents()
@@ -133,6 +137,7 @@ public sealed class InputManager : MonoBehaviour
         gameplay.SceneCheat3.performed -= OnSceneCheat3Performed;
         gameplay.SceneCheat4.performed -= OnSceneCheat4Performed;
         gameplay.SceneCheat5.performed -= OnSceneCheat5Performed;
+        gameplay.CombatCheatKillAllEnemies.performed -= OnCombatCheatKillAllEnemiesPerformed;
     }
 
     private void OnMovePerformedOrCanceled(InputAction.CallbackContext callbackContext)
@@ -163,4 +168,7 @@ public sealed class InputManager : MonoBehaviour
     private void OnSceneCheat3Performed(InputAction.CallbackContext callbackContext) => OnSceneCheatPressed?.Invoke(2);
     private void OnSceneCheat4Performed(InputAction.CallbackContext callbackContext) => OnSceneCheatPressed?.Invoke(3);
     private void OnSceneCheat5Performed(InputAction.CallbackContext callbackContext) => OnSceneCheatPressed?.Invoke(4);
+
+    private void OnCombatCheatKillAllEnemiesPerformed(InputAction.CallbackContext callbackContext) =>
+        OnCombatCheatKillAllEnemiesPressed?.Invoke();
 }

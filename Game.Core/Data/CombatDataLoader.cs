@@ -2,7 +2,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Game.Core.Domain;
 using Game.Core.Models;
-
 namespace Game.Core.Data;
 
 public static class CombatDataLoader
@@ -66,7 +65,11 @@ public static class CombatDataLoader
     {
         PropertyNameCaseInsensitive = true,
         ReadCommentHandling = JsonCommentHandling.Skip,
-        Converters = { new JsonStringEnumConverter() },
+        Converters =
+        {
+            new PassiveEffectKindJsonConverter(),
+            new JsonStringEnumConverter(),
+        },
     };
 
     public static IReadOnlyList<SkillDefinition> LoadSkills(string path)

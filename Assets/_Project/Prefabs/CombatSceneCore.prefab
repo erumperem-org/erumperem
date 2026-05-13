@@ -343,6 +343,8 @@ GameObject:
   - component: {fileID: 2275919338010125768}
   - component: {fileID: 1123152280519613884}
   - component: {fileID: 5213722406700642896}
+  - component: {fileID: 918294471684145873}
+  - component: {fileID: 2625193426130249026}
   m_Layer: 0
   m_Name: CombatUI
   m_TagString: Untagged
@@ -451,6 +453,41 @@ MonoBehaviour:
   skillButtonPanelPrefab: {fileID: 278947936993341358, guid: d714ccc150807ed45a291c56e49c2019, type: 3}
   worldRaycastDistance: 200
   skillBarSelectionController: {fileID: 1123152280519613884}
+--- !u!114 &918294471684145873
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 919406058762249914}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8fde258acdb283e429493a41caca5bd0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.Tokens.CombatDiegeticTokenStripsBinder
+  sessionHub: {fileID: 8100000000000000001}
+  tokenVisualCatalog: {fileID: 11400000, guid: 201db78aa253cb449bbaa10a91c6bc41, type: 2}
+  diegeticStripRootPrefab: {fileID: 8170754556540282154, guid: 871b7abd86fc7d54592fdb9d62d64508, type: 3}
+  sharedStripParent: {fileID: 0}
+  stripAnchorChildName: 
+  stripLocalOffset: {x: 0, y: 2.2, z: 0}
+  faceMainCameraEachFrame: 1
+--- !u!114 &2625193426130249026
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 919406058762249914}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71e84519b3c79ee4fa61efd3e63e4c99, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Input.ActivateObjectByInput
+  _activationKey: 34
+  _objectToToggleActivation: {fileID: 0}
+  _toggleOnEachPress: 1
+  _setActiveTo: 1
 --- !u!1 &1926228013263610959
 GameObject:
   m_ObjectHideFlags: 0
@@ -2232,6 +2269,7 @@ GameObject:
   - component: {fileID: 1677878620781844739}
   - component: {fileID: 8100000000000000001}
   - component: {fileID: 8100000000000000002}
+  - component: {fileID: 267978060972295176}
   m_Layer: 0
   m_Name: CombatLogic
   m_TagString: Untagged
@@ -2279,6 +2317,10 @@ MonoBehaviour:
   enemyVisualSpawnCatalog: {fileID: 11400000, guid: 9d1aa7118ab4b2f449f1ff49ea6461cb, type: 2}
   syncHpAsVerticalScale: 1
   logEventsToConsole: 1
+  _progressionService: {fileID: 267978060972295176}
+  _progressionCharacterId: wulfric
+  _devUnlockAllPassives: 0
+  _skillTreeAuthoringAssets: []
   victoryPanel: {fileID: 4746330013530430094}
   defeatPanel: {fileID: 3971627305473834851}
   defaultPlaySeconds: 2.5
@@ -2358,6 +2400,20 @@ MonoBehaviour:
   currentTurnMarkerLocalOffset: {x: 0, y: -0.9, z: 0}
   currentTurnMarkerBaseEuler: {x: 90, y: 0, z: 0}
   currentTurnMarkerZSpinDegreesPerSecond: 90
+--- !u!114 &267978060972295176
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6656784344468029839}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f707a72f0d56034b8d93a933cb9a421, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Progression.PlayerProgressionService
+  _skillTreesResourceRelativePath: Data/skill_trees.json
+  _maxSkillPoints: 12
 --- !u!1 &7086729978741487290
 GameObject:
   m_ObjectHideFlags: 0

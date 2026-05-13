@@ -10,6 +10,8 @@ using Game.Core.Data;
 using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
+using Game.Core.Progression;
+using Erumperem.Progression;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -42,11 +44,27 @@ namespace Erumperem.Combat
 
         [SerializeField] private EnemyVisualSpawnCatalog enemyVisualSpawnCatalog;
 
-        [Tooltip("Se ativo, escala Y do root pela % de HP (como as cápsulas antigas). Desliga para prefabs com escala fixa.")]
-        [SerializeField] private bool syncHpAsVerticalScale = true;
+        [Tooltip("Legado: escala Y do root pela % de HP (cápsulas antigas). " +
+                 "Se estás a usar CombatHealthBarsBinder + HealthBarHudView (UI diegética), deixa DESLIGADO. " +
+                 "Por default vem desligado para não conflitar.")]
+        [SerializeField] private bool syncHpAsVerticalScale = false;
 
         [Header("Debug")]
         [SerializeField] private bool logEventsToConsole = true;
+
+        [Header("Progression")]
+        [Tooltip("Opcional na cena; se vazio usa PlayerProgressionService.Instance (DontDestroyOnLoad).")]
+        [SerializeField] private PlayerProgressionService _progressionService;
+
+        [SerializeField] private string _progressionCharacterId = "wulfric";
+
+        [Tooltip("Desbloqueia todas as passivas do JSON para aliados (teste). Skills activas vêm do save via árvore.")]
+        [SerializeField] private bool _devUnlockAllPassives;
+
+        [Header("Combat authoring (overrides JSON by node id)")]
+        [Tooltip("Para cada entrada: se passiva → entra em PassivesById; se activa → substitui/define SkillDefinition em SkillsById. JSON continua base para o que não listares aqui.")]
+        [SerializeField] private SkillTreeNodeAsset[] _skillTreeAuthoringAssets =
+            System.Array.Empty<SkillTreeNodeAsset>();
 
         [Header("Painéis de resultado")]
         [SerializeField] private GameObject victoryPanel;
@@ -235,7 +253,7 @@ namespace Erumperem.Combat
                 return;
             }
 
-            Debug.LogWarning($"Skill slot {zeroBasedSlot + 1} indisponível (CD, alvo, rank ou fora do loadout).");
+            Debug.LogWarning($"Skill slot {zeroBasedSlot + 1} indisponível (alvo ou fora do loadout).");
             PublishPlayerSkillHelpForAlly(_pendingPlayerActor, FindAllyIndex(_pendingPlayerActor));
         }
 
@@ -257,19 +275,83 @@ namespace Erumperem.Combat
         {
             var dataDir = Path.Combine(Application.streamingAssetsPath, "Data");
             var skillsPath = Path.Combine(dataDir, "skills.json");
+            var skillTreesPath = Path.Combine(dataDir, "skill_trees.json");
             var passivesPath = Path.Combine(dataDir, "passives.json");
-            if (!File.Exists(skillsPath) || !File.Exists(passivesPath))
+
+            var hasAnyPassiveAuthoring = _skillTreeAuthoringAssets != null &&
+                                         _skillTreeAuthoringAssets.Any(asset =>
+                                             asset != null && asset.IsPassiveNode &&
+                                             !string.IsNullOrWhiteSpace(asset.NodeId));
+            var passiveJsonExists = File.Exists(passivesPath);
+            if (!File.Exists(skillsPath) || !File.Exists(skillTreesPath))
             {
                 Debug.LogError(
-                    $"Faltam JSON em StreamingAssets. Esperado: {skillsPath} e {passivesPath}. " +
+                    $"Faltam JSON em StreamingAssets. Esperado: {skillsPath} e {skillTreesPath}. " +
                     "Copie a partir de Game.Simulations/Data/ ou rode tools/PublishGameCoreForUnity.ps1.");
                 enabled = false;
                 return;
             }
 
-            var skills = CombatDataLoader.LoadSkills(skillsPath);
-            var passives = CombatDataLoader.LoadPassives(passivesPath)
-                .ToDictionary(passiveDefinition => passiveDefinition.Id, passiveDefinition => passiveDefinition);
+            if (!passiveJsonExists && !hasAnyPassiveAuthoring)
+            {
+                Debug.LogError(
+                    $"Passivas: falta {passivesPath} ou pelo menos um {nameof(SkillTreeNodeAsset)} passivo em _skillTreeAuthoringAssets.");
+                enabled = false;
+                return;
+            }
+
+            var skillsById = CombatDataLoader.LoadSkills(skillsPath)
+                .ToDictionary(skillDefinition => skillDefinition.Id, skillDefinition => skillDefinition);
+            MergeActiveSkillsFromAuthoringAssets(skillsById);
+            var skills = skillsById.Values.ToList();
+
+            Dictionary<string, PassiveDefinition> passives;
+            if (passiveJsonExists)
+            {
+                passives = CombatDataLoader.LoadPassives(passivesPath)
+                    .ToDictionary(passiveDefinition => passiveDefinition.Id, passiveDefinition => passiveDefinition);
+            }
+            else
+            {
+                passives = new Dictionary<string, PassiveDefinition>(StringComparer.Ordinal);
+            }
+
+            MergePassiveDefinitionsFromAuthoringAssets(passives);
+
+            var skillTreesList = CombatDataLoader.LoadSkillTrees(skillTreesPath);
+            var characterTrees = SkillTreeLookup.FindCharacterTrees(skillTreesList, _progressionCharacterId);
+            if (characterTrees == null)
+            {
+                Debug.LogError(
+                    $"CombatPrototypeController: não há árvore para characterId '{_progressionCharacterId}' em skill_trees.json.");
+                enabled = false;
+                return;
+            }
+
+            var progression = _progressionService != null
+                ? _progressionService
+                : FindFirstObjectByType<PlayerProgressionService>();
+            if (progression == null && !_devUnlockAllPassives)
+            {
+                var autoRoot = new GameObject(nameof(PlayerProgressionService));
+                progression = autoRoot.AddComponent<PlayerProgressionService>();
+            }
+
+            IReadOnlyDictionary<string, bool> unlockedForBattle;
+            List<string> allySkillIds;
+            if (progression != null)
+            {
+                unlockedForBattle = progression.GetUnlockedNodesForCharacter(_progressionCharacterId);
+                allySkillIds = SkillTreeLookup.BuildPlayerSkillLoadout(
+                    characterTrees,
+                    unlockedForBattle,
+                    BattleFactory.WulfricInnateSkillIds);
+            }
+            else
+            {
+                unlockedForBattle = new Dictionary<string, bool>(StringComparer.Ordinal);
+                allySkillIds = BattleFactory.WulfricFullSkillLoadout.ToList();
+            }
 
             _random = new SeededRandomSource(UnityEngine.Random.Range(int.MinValue / 2, int.MaxValue / 2));
             _collector = new CombatEventCollector();
@@ -280,9 +362,28 @@ namespace Erumperem.Combat
                 allyCount: 2,
                 enemyCount: 4,
                 corruptionValue: 0,
-                allySkillIds: BattleFactory.WulfricFullSkillLoadout,
+                allySkillIds: allySkillIds,
                 passivesById: passives,
-                unlockAllPassiveNodesForAllies: true);
+                unlockAllPassiveNodesForAllies: false);
+
+            if (progression != null)
+            {
+                var pointsSpent = SkillTreeLookup.SumUnlockedNodeCosts(characterTrees, unlockedForBattle);
+                foreach (var ally in _state.Allies)
+                {
+                    foreach (var nodeIdAndUnlocked in unlockedForBattle)
+                    {
+                        ally.Progression.UnlockedNodes[nodeIdAndUnlocked.Key] = nodeIdAndUnlocked.Value;
+                    }
+
+                    ally.Progression.SpentPoints = pointsSpent;
+                }
+            }
+
+            if (_devUnlockAllPassives)
+            {
+                BattleFactory.UnlockAllPassivesFromCatalog(_state, passives);
+            }
 
             if (!TryBindSceneViewsToBattle())
             {
@@ -320,6 +421,7 @@ namespace Erumperem.Combat
             InputManager.Instance.OnPointerPositionChanged += OnPointerPositionChanged;
             InputManager.Instance.OnLeftClickPressed += OnLeftClickPressed;
             InputManager.Instance.OnRightClickPressed += OnRightClickPressed;
+            InputManager.Instance.OnCombatCheatKillAllEnemiesPressed += OnCombatCheatKillAllEnemiesPressed;
         }
 
         private void UnsubscribeFromInputEvents()
@@ -332,6 +434,7 @@ namespace Erumperem.Combat
             InputManager.Instance.OnPointerPositionChanged -= OnPointerPositionChanged;
             InputManager.Instance.OnLeftClickPressed -= OnLeftClickPressed;
             InputManager.Instance.OnRightClickPressed -= OnRightClickPressed;
+            InputManager.Instance.OnCombatCheatKillAllEnemiesPressed -= OnCombatCheatKillAllEnemiesPressed;
         }
 
         private void OnPointerPositionChanged(Vector2 pointerScreenPosition)
@@ -342,6 +445,57 @@ namespace Erumperem.Combat
 
         private void OnLeftClickPressed() => _leftClickPressedThisFrame = true;
         private void OnRightClickPressed() => _rightClickPressedThisFrame = true;
+
+        private void OnCombatCheatKillAllEnemiesPressed() => DebugKillAllEnemiesInstantly();
+
+        /// <summary>
+        /// Cheat para QA / playtests: zera o HP de todos os inimigos vivos, dispara a animação de morte
+        /// e termina o combate (mostra <see cref="victoryPanel"/> via <see cref="EndBattle"/>).
+        /// </summary>
+        public void DebugKillAllEnemiesInstantly()
+        {
+            if (_state == null)
+            {
+                Debug.LogWarning("Cheat F6 ignorado: combate ainda não está pronto.");
+                return;
+            }
+
+            if (_battleEnded)
+            {
+                Debug.Log("Cheat F6 ignorado: combate já terminou.");
+                return;
+            }
+
+            var killedAtLeastOne = false;
+            foreach (var enemy in _state.Enemies)
+            {
+                if (enemy.Health.IsDead)
+                {
+                    continue;
+                }
+
+                enemy.Health.CurrentHp = 0;
+                enemy.Health.IsDead = true;
+                killedAtLeastOne = true;
+
+                if (TryGetEnemyAnimationController(enemy.Identity.Id, out var enemyAnimationController))
+                {
+                    enemyAnimationController.EnsureDeathVisualSequenceStarted(enemyDeathClipMarginSeconds);
+                }
+            }
+
+            if (!killedAtLeastOne)
+            {
+                Debug.Log("Cheat F6 ignorado: todos os inimigos já estavam mortos.");
+                return;
+            }
+
+            Debug.Log("Cheat F6 acionado: inimigos mortos instantaneamente para testar a tela de vitória.");
+            _needsPlayerInput = false;
+            _pendingPlayerActor = null;
+            ClearSkillBarSelection();
+            EndBattle();
+        }
 
         private void ConsumeFrameInputFlags()
         {
@@ -456,7 +610,7 @@ namespace Erumperem.Combat
 
                 if (HasSkillBarSelectionPendingUse())
                 {
-                    Debug.LogWarning("Skill (UI) inválida para este aliado / rank / cooldown.");
+                    Debug.LogWarning("Skill (UI) inválida para este aliado.");
                     PublishPlayerSkillHelpForAlly(_pendingPlayerActor, FindAllyIndex(_pendingPlayerActor));
                     return;
                 }
@@ -490,7 +644,7 @@ namespace Erumperem.Combat
 
             if (HasSkillBarSelectionPendingUse())
             {
-                Debug.LogWarning("Skill (UI) inválida para este inimigo / rank / cooldown.");
+                Debug.LogWarning("Skill (UI) inválida para este inimigo.");
                 PublishPlayerSkillHelpForAlly(_pendingPlayerActor, FindAllyIndex(_pendingPlayerActor));
                 return;
             }
@@ -997,6 +1151,8 @@ namespace Erumperem.Combat
                     {
                         enemyViewRoot = instantiatedEnemyRoot;
                     }
+
+                    OverrideEnemySkillLoadoutFromVisualDefinition(enemy, enemyVisualDefinition);
                 }
 
                 EnsureCombatCapsuleTagOnUnit(enemyViewRoot, enemy.Identity.Id);
@@ -1004,6 +1160,48 @@ namespace Erumperem.Combat
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Substitui o loadout do <paramref name="enemy"/> pelas skills declaradas em
+        /// <see cref="EnemyVisualDefinition.enemySkillIds"/>. Skills desconhecidas são ignoradas com warning.
+        /// Se a lista estiver vazia, mantém o loadout default do <c>BattleFactory</c>.
+        /// </summary>
+        private void OverrideEnemySkillLoadoutFromVisualDefinition(
+            Game.Core.Models.Combatant enemy,
+            EnemyVisualDefinition enemyVisualDefinition)
+        {
+            if (enemyVisualDefinition.enemySkillIds == null || enemyVisualDefinition.enemySkillIds.Length == 0)
+            {
+                return;
+            }
+
+            var validSkillIds = new List<string>();
+            foreach (var candidateSkillId in enemyVisualDefinition.enemySkillIds)
+            {
+                if (string.IsNullOrWhiteSpace(candidateSkillId))
+                {
+                    continue;
+                }
+
+                if (!_state.SkillsById.ContainsKey(candidateSkillId))
+                {
+                    Debug.LogWarning(
+                        $"EnemyVisualDefinition '{enemyVisualDefinition.name}': skill '{candidateSkillId}' não está em skills.json — ignorada.",
+                        enemyVisualDefinition);
+                    continue;
+                }
+
+                validSkillIds.Add(candidateSkillId);
+            }
+
+            if (validSkillIds.Count == 0)
+            {
+                return;
+            }
+
+            enemy.SkillLoadout.Skills.Clear();
+            enemy.SkillLoadout.Skills.AddRange(validSkillIds);
         }
 
         private bool TryGetEnemyAnimationController(string combatantId, out EnemyAnimationController enemyAnimationController)
@@ -1113,6 +1311,60 @@ namespace Erumperem.Combat
             }
 
             return null;
+        }
+
+        private void MergeActiveSkillsFromAuthoringAssets(Dictionary<string, SkillDefinition> skillsById)
+        {
+            if (_skillTreeAuthoringAssets == null)
+            {
+                return;
+            }
+
+            foreach (var asset in _skillTreeAuthoringAssets)
+            {
+                if (asset == null || asset.IsPassiveNode || string.IsNullOrWhiteSpace(asset.NodeId))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    skillsById[asset.NodeId] = asset.ToRuntimeSkillDefinition();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning(
+                        $"CombatPrototypeController: activo SO '{asset.name}' ignorado — {ex.Message}",
+                        asset);
+                }
+            }
+        }
+
+        private void MergePassiveDefinitionsFromAuthoringAssets(Dictionary<string, PassiveDefinition> passivesById)
+        {
+            if (_skillTreeAuthoringAssets == null)
+            {
+                return;
+            }
+
+            foreach (var asset in _skillTreeAuthoringAssets)
+            {
+                if (asset == null || !asset.IsPassiveNode || string.IsNullOrWhiteSpace(asset.NodeId))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    passivesById[asset.NodeId] = asset.ToRuntimePassiveDefinition();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning(
+                        $"CombatPrototypeController: passiva SO '{asset.name}' ignorada — {ex.Message}",
+                        asset);
+                }
+            }
         }
     }
 }

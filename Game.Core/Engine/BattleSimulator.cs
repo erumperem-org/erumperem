@@ -72,7 +72,7 @@ public sealed class BattleSimulator
         }
 
         Emit(state, BattleEventType.TurnStarted, actorId: actor.Identity.Id, battleResult: string.Empty);
-        PassiveRuleApplier.ApplyTurnStartPassives(
+        state.PassiveBus.RaiseTurnStarted(
             state,
             actor,
             (tokenType, stackDelta) => Emit(
@@ -91,6 +91,7 @@ public sealed class BattleSimulator
 
         if (actor.Tokens.ConsumeOne(TokenType.Stun))
         {
+            state.PassiveBus.RaiseTokenStacksChanged(state, actor, actor, skill: null, TokenType.Stun, delta: -1);
             return false;
         }
 
@@ -114,11 +115,18 @@ public sealed class BattleSimulator
         actor.Dots.ActiveDots.Clear();
         foreach (var dot in active)
         {
-            var tickMult = PassiveRuleApplier.GetDotTickDamageMultiplier(state, actor, dot);
+            var tickMult = state.PassiveBus.GetDotTickDamageMultiplier(state, actor, dot);
             var damage = Math.Max(0, (int)Math.Round(dot.Potency * tickMult));
+            var dotSourceCombatant = string.IsNullOrEmpty(dot.AppliedById)
+                ? null
+                : state.GetAllCombatants().FirstOrDefault(combatant => combatant.Identity.Id == dot.AppliedById);
             if (damage > 0)
             {
+                var hpPercentBeforeDot =
+                    actor.Health.MaxHp <= 0 ? 0 : (double)actor.Health.CurrentHp / actor.Health.MaxHp;
                 actor.Health.CurrentHp = Math.Max(0, actor.Health.CurrentHp - damage);
+                var hpPercentAfterDot =
+                    actor.Health.MaxHp <= 0 ? 0 : (double)actor.Health.CurrentHp / actor.Health.MaxHp;
                 Emit(
                     state,
                     BattleEventType.DotTick,
@@ -127,6 +135,15 @@ public sealed class BattleSimulator
                     dotType: dot.Type.ToString(),
                     dotAmount: damage,
                     damageAmount: damage);
+                state.PassiveBus.RaiseDamageTaken(
+                    state,
+                    dotSourceCombatant,
+                    actor,
+                    skill: null,
+                    damage,
+                    wasCrit: false,
+                    hpPercentBeforeDot,
+                    hpPercentAfterDot);
             }
 
             dot.RemainingTurns--;
@@ -139,6 +156,7 @@ public sealed class BattleSimulator
             {
                 actor.Health.IsDead = true;
                 Emit(state, BattleEventType.CombatantDied, targetId: actor.Identity.Id);
+                state.PassiveBus.RaiseCombatantSlain(state, dotSourceCombatant, actor);
                 HandleCompaction(state, actor.Position.Side);
                 break;
             }
@@ -219,40 +237,41 @@ public sealed class BattleSimulator
         }
 
         var skillPool = lethalSkills.Count > 0 ? lethalSkills : skills.ToList();
-        var totalWeight = skillPool.Sum(skill => Math.Max(1, skill.Weight));
-        var roll = _random.Next(1, totalWeight + 1);
-        var cumulative = 0;
+
+        // Roll per-skill chanceToUse so "especiais" (ex.: 0.20) entram no draw com baixa frequência.
+        // Se ninguém passar, o pool inteiro vira fallback para a IA nunca ficar sem opção.
+        var rolledCandidates = new List<SkillDefinition>(skillPool.Count);
         foreach (var skill in skillPool)
         {
-            cumulative += Math.Max(1, skill.Weight);
-            if (roll <= cumulative) return skill;
+            var chance = Math.Clamp(skill.ChanceToUse, 0.0, 1.0);
+            if (_random.NextDouble() < chance)
+            {
+                rolledCandidates.Add(skill);
+            }
         }
 
-        return skillPool[0];
+        var finalPool = rolledCandidates.Count > 0 ? rolledCandidates : skillPool;
+        var pickedIndex = _random.Next(0, finalPool.Count);
+        return finalPool[pickedIndex];
     }
 
     private Combatant? SelectAllyTarget(
-        Combatant actor,
+        Combatant _actor,
         IReadOnlyList<Combatant> allies,
-        SkillDefinition skill)
+        SkillDefinition _skill)
     {
         var visible = allies
             .Where(ally => ally.Tokens.GetStacks(TokenType.Stealth) == 0)
             .ToList();
         if (visible.Count == 0) return null;
 
-        var inRank = visible
-            .Where(ally => ally.Position.OccupiedRanks.Any(occupiedRank => skill.AllowedTargetRanks.Contains(occupiedRank)))
-            .ToList();
-        if (inRank.Count == 0) return null;
-
-        return inRank[_random.Next(0, inRank.Count)];
+        return visible[_random.Next(0, visible.Count)];
     }
 
     private Combatant? SelectTarget(
-        Combatant actor,
+        Combatant _actor,
         IReadOnlyList<Combatant> availableTargets,
-        SkillDefinition skill)
+        SkillDefinition _skill)
     {
         var tauntTargets = availableTargets.Where(enemy => enemy.Tokens.GetStacks(TokenType.Taunt) > 0).ToList();
         var candidateTargets = tauntTargets.Count > 0 ? tauntTargets : availableTargets.ToList();
@@ -265,25 +284,23 @@ public sealed class BattleSimulator
             return null;
         }
 
-        var inRankTargets = visibleTargets
-            .Where(enemy => enemy.Position.OccupiedRanks.Any(occupiedRank => skill.AllowedTargetRanks.Contains(occupiedRank)))
-            .ToList();
-        if (inRankTargets.Count == 0)
-        {
-            return null;
-        }
-
-        return inRankTargets[_random.Next(0, inRankTargets.Count)];
+        return visibleTargets[_random.Next(0, visibleTargets.Count)];
     }
 
     public bool IsSkillUsable(Combatant actor, SkillDefinition skill)
     {
-        var inRank = actor.Position.OccupiedRanks.Any(occupiedRank => skill.AllowedCasterRanks.Contains(occupiedRank));
-        if (!inRank) return false;
-
-        if (actor.SkillLoadout.Cooldowns.TryGetValue(skill.Id, out var turns) && turns > 0)
+        if (skill.SelfHpPercentBelow < 1.0)
         {
-            return false;
+            if (actor.Health.MaxHp <= 0)
+            {
+                return false;
+            }
+
+            var currentHpPercent = (double)actor.Health.CurrentHp / actor.Health.MaxHp;
+            if (currentHpPercent >= skill.SelfHpPercentBelow)
+            {
+                return false;
+            }
         }
 
         return true;
@@ -392,12 +409,7 @@ public sealed class BattleSimulator
             ApplyBattleCorruptionDelta(state, skill.CorruptionCost, actor.Identity.Id, skill.Id);
         }
 
-        if (skill.Cooldown > 0)
-        {
-            actor.SkillLoadout.Cooldowns[skill.Id] = skill.Cooldown;
-        }
-
-        TickCooldowns(actor);
+        state.PassiveBus.RaiseTurnEnded(state, actor);
     }
 
     private ResolveActionResult ResolveHitAndDamage(
@@ -449,9 +461,11 @@ public sealed class BattleSimulator
         }
 
         damage = (int)Math.Round(damage * CorruptionDamageMultiplier(state, actor, target));
+        var outgoingPassiveNotes = new List<PassiveCombatNote>();
         if (damage > 0 && target.Identity.Id != actor.Identity.Id)
         {
-            var (outAcc, consumeImpeto) = PassiveRuleApplier.AccumulateOutgoingDamageModifiers(state, actor, target, skill);
+            var (outAcc, consumeImpeto, _) =
+                state.PassiveBus.AccumulateOutgoingDamageModifiers(state, actor, target, skill, noteSink: outgoingPassiveNotes);
             damage = (int)Math.Round(damage * (1.0 + outAcc.OutgoingDamageAdditiveSum) * outAcc.OutgoingDamageMultiplicativeProduct);
             damage = Math.Max(0, damage);
             if (consumeImpeto)
@@ -460,14 +474,17 @@ public sealed class BattleSimulator
             }
         }
 
+        var incomingPassiveNotes = new List<PassiveCombatNote>();
         if (damage > 0)
         {
-            var incomingMult = PassiveRuleApplier.AccumulateIncomingDamageMultiplier(state, target);
+            var (incomingMult, _) =
+                state.PassiveBus.AccumulateIncomingDamageMultiplier(state, target, noteSink: incomingPassiveNotes);
             damage = (int)Math.Round(damage * incomingMult);
             damage = Math.Max(0, damage);
         }
 
         damage = ApplyMitigation(state, target, damage);
+        var targetHpBeforeHit = target.Health.CurrentHp;
         target.Health.CurrentHp = Math.Max(0, target.Health.CurrentHp - damage);
 
         Emit(
@@ -481,10 +498,38 @@ public sealed class BattleSimulator
             isCrit: isCrit,
             damageAmount: damage);
 
+        foreach (var note in outgoingPassiveNotes)
+        {
+            EmitPassiveCombatNarrativeEvent(state, note, actor.Identity.Id, target.Identity.Id, skill.Id);
+        }
+
+        foreach (var note in incomingPassiveNotes)
+        {
+            EmitPassiveCombatNarrativeEvent(state, note, target.Identity.Id, target.Identity.Id, skill.Id);
+        }
+
+        if (damage > 0)
+        {
+            var hpPercentBeforeDamage =
+                target.Health.MaxHp <= 0 ? 0 : (double)targetHpBeforeHit / target.Health.MaxHp;
+            var hpPercentAfterDamage =
+                target.Health.MaxHp <= 0 ? 0 : (double)target.Health.CurrentHp / target.Health.MaxHp;
+            state.PassiveBus.RaiseDamageTaken(
+                state,
+                actor,
+                target,
+                skill,
+                damage,
+                isCrit,
+                hpPercentBeforeDamage,
+                hpPercentAfterDamage);
+        }
+
         if (target.Health.CurrentHp <= 0 && !target.Health.IsDead)
         {
             target.Health.IsDead = true;
             Emit(state, BattleEventType.CombatantDied, targetId: target.Identity.Id);
+            state.PassiveBus.RaiseCombatantSlain(state, actor, target);
 
             if (!isCrit)
             {
@@ -494,7 +539,7 @@ public sealed class BattleSimulator
             HandleCompaction(state, target.Position.Side);
         }
 
-        PassiveRuleApplier.OnOutgoingHitSuccess(state, actor, skill, true);
+        state.PassiveBus.RaiseOutgoingHitSuccess(state, actor, target, skill, hit: true);
 
         return new ResolveActionResult
         {
@@ -512,9 +557,16 @@ public sealed class BattleSimulator
         ResolveActionResult result)
     {
         var effects = skill.EffectsOnHit.ToList();
+        var comboBonusWasIncluded =
+            target.Tokens.GetStacks(TokenType.Combo) > 0 && skill.ComboBonus.Count > 0;
         if (target.Tokens.GetStacks(TokenType.Combo) > 0)
         {
             effects.AddRange(skill.ComboBonus);
+        }
+
+        if (comboBonusWasIncluded)
+        {
+            state.PassiveBus.RaiseComboBonusEffectsIncluded(state, actor, target, skill);
         }
 
         foreach (var effect in effects)
@@ -531,6 +583,13 @@ public sealed class BattleSimulator
                             foreach (var ally in LivingSameSide(state, actor))
                             {
                                 ally.Tokens.Add(effect.Token.Value, stacks);
+                                state.PassiveBus.RaiseTokenStacksChanged(
+                                    state,
+                                    actor,
+                                    ally,
+                                    skill,
+                                    effect.Token.Value,
+                                    stacks);
                                 Emit(
                                     state,
                                     BattleEventType.TokenApplied,
@@ -544,6 +603,13 @@ public sealed class BattleSimulator
                         else if (string.Equals(effect.EffectScope, "Self", StringComparison.OrdinalIgnoreCase))
                         {
                             actor.Tokens.Add(effect.Token.Value, stacks);
+                            state.PassiveBus.RaiseTokenStacksChanged(
+                                state,
+                                actor,
+                                actor,
+                                skill,
+                                effect.Token.Value,
+                                stacks);
                             Emit(
                                 state,
                                 BattleEventType.TokenApplied,
@@ -556,6 +622,13 @@ public sealed class BattleSimulator
                         else
                         {
                             target.Tokens.Add(effect.Token.Value, stacks);
+                            state.PassiveBus.RaiseTokenStacksChanged(
+                                state,
+                                actor,
+                                target,
+                                skill,
+                                effect.Token.Value,
+                                stacks);
                             Emit(
                                 state,
                                 BattleEventType.TokenApplied,
@@ -574,7 +647,7 @@ public sealed class BattleSimulator
                         var elementalMultiplier = GetElementalMultiplier(state, actor, target, skill);
                         var potency = (int)Math.Round(Math.Max(1, effect.Potency) * elementalMultiplier);
                         var baseDuration = Math.Max(1, effect.Duration);
-                        var duration = PassiveRuleApplier.AdjustDotDuration(state, actor, effect.Dot.Value, baseDuration);
+                        var duration = state.PassiveBus.AdjustDotDuration(state, actor, effect.Dot.Value, baseDuration);
                         target.Dots.ActiveDots.Add(new DotInstance
                         {
                             Type = effect.Dot.Value,
@@ -582,6 +655,15 @@ public sealed class BattleSimulator
                             RemainingTurns = duration,
                             AppliedById = actor.Identity.Id,
                         });
+                        Emit(
+                            state,
+                            BattleEventType.DotInflicted,
+                            actorId: actor.Identity.Id,
+                            targetId: target.Identity.Id,
+                            skillId: skill.Id,
+                            dotType: effect.Dot.Value.ToString(),
+                            dotAmount: potency,
+                            dotDurationTurns: duration);
                     }
 
                     break;
@@ -607,7 +689,15 @@ public sealed class BattleSimulator
                 case EffectType.ApplyStun:
                     if (_random.NextDouble() >= target.Resistances.StunRes)
                     {
-                        target.Tokens.Add(TokenType.Stun, Math.Max(1, effect.Stacks));
+                        var stunStacks = Math.Max(1, effect.Stacks);
+                        target.Tokens.Add(TokenType.Stun, stunStacks);
+                        state.PassiveBus.RaiseTokenStacksChanged(
+                            state,
+                            actor,
+                            target,
+                            skill,
+                            TokenType.Stun,
+                            stunStacks);
                         Emit(
                             state,
                             BattleEventType.TokenApplied,
@@ -615,43 +705,64 @@ public sealed class BattleSimulator
                             targetId: target.Identity.Id,
                             skillId: skill.Id,
                             tokenType: TokenType.Stun.ToString(),
-                            tokenDelta: Math.Max(1, effect.Stacks));
+                            tokenDelta: stunStacks);
                     }
                     break;
             }
         }
 
-        if (!string.Equals(skill.SelfMove.Type, "None", StringComparison.OrdinalIgnoreCase) && skill.SelfMove.Steps != 0)
+        if (comboBonusWasIncluded && target.Tokens.ConsumeOne(TokenType.Combo))
         {
-            MoveTarget(state, actor, skill.SelfMove.Steps);
+            state.PassiveBus.RaiseComboConsumed(state, actor, target, skill);
         }
 
-        PassiveRuleApplier.ApplyPostSkillPassiveExtras(state, actor, target, skill);
-        ApplyPassiveExtraDotsAfterSkill(state, actor, target, skill);
-    }
-
-    private void ApplyPassiveExtraDotsAfterSkill(BattleState state, Combatant actor, Combatant target, SkillDefinition skill)
-    {
-        if (skill.TargetKind != SkillTargetKind.Enemy) return;
-        foreach (var def in PassiveRuleApplier.EnumerateActivePassives(actor, state))
+        var postSkillPassiveNotes = new List<PassiveCombatNote>();
+        state.PassiveBus.ApplyPostSkillPassiveExtras(state, actor, target, skill, postSkillPassiveNotes);
+        foreach (var note in postSkillPassiveNotes)
         {
-            if (def.EffectKind != PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot) continue;
-            if (def.SkillId != skill.Id || def.DotType is null) continue;
-            if (PassiveRuleApplier.CountDotStacks(target, def.DotType.Value) <= 0) continue;
-            if (!EffectPassesResistance(target, def.DotType.Value, state)) continue;
-            var rawPotency = def.IntValue > 0 ? def.IntValue : 2;
-            var baseDur = def.IntValue2 > 0 ? def.IntValue2 : 2;
-            var elementalMultiplier = GetElementalMultiplier(state, actor, target, skill);
-            var potency = (int)Math.Round(Math.Max(1, rawPotency) * elementalMultiplier);
-            var duration = PassiveRuleApplier.AdjustDotDuration(state, actor, def.DotType.Value, baseDur);
-            target.Dots.ActiveDots.Add(new DotInstance
+            if (note.EffectKind == PassiveEffectKind.ExtraTokenOnSelfSkill &&
+                !string.IsNullOrEmpty(note.TokenTypeName))
             {
-                Type = def.DotType.Value,
-                Potency = potency,
-                RemainingTurns = duration,
-                AppliedById = actor.Identity.Id,
-            });
+                Emit(
+                    state,
+                    BattleEventType.TokenApplied,
+                    actorId: actor.Identity.Id,
+                    targetId: actor.Identity.Id,
+                    skillId: skill.Id,
+                    tokenType: note.TokenTypeName,
+                    tokenDelta: note.TokenDelta);
+            }
+            else if (note.EffectKind == PassiveEffectKind.ExtraHealPercentOnSelfSkill)
+            {
+                EmitPassiveCombatNarrativeEvent(state, note, actor.Identity.Id, actor.Identity.Id, skill.Id);
+            }
         }
+
+        var passiveExtraDotNotes = new List<PassiveCombatNote>();
+        state.PassiveBus.ApplyPassiveExtraDotsAfterEnemySkill(
+            state,
+            actor,
+            target,
+            skill,
+            GetElementalMultiplier(state, actor, target, skill),
+            (defender, dotType) => EffectPassesResistance(defender, dotType, state),
+            passiveExtraDotNotes);
+        foreach (var note in passiveExtraDotNotes)
+        {
+            Emit(
+                state,
+                BattleEventType.DotInflicted,
+                actorId: actor.Identity.Id,
+                targetId: target.Identity.Id,
+                skillId: skill.Id,
+                dotType: note.DotTypeName ?? string.Empty,
+                dotAmount: (int)Math.Round(note.Magnitude),
+                passiveId: note.PassiveId,
+                passiveEffectKindName: note.EffectKind.ToString(),
+                passiveRelatedSkillId: note.RelatedSkillId ?? string.Empty,
+                dotDurationTurns: note.DotDurationTurns);
+        }
+        state.PassiveBus.RaiseAfterSkillResolved(state, actor, target, skill);
     }
 
     private static IEnumerable<Combatant> LivingSameSide(BattleState state, Combatant actor)
@@ -757,11 +868,16 @@ public sealed class BattleSimulator
         var damage = average * elementalMultiplier * CorruptionDamageMultiplier(state, actor, target);
         if (target.Identity.Id != actor.Identity.Id)
         {
-            var (outAcc, _) = PassiveRuleApplier.AccumulateOutgoingDamageModifiers(state, actor, target, skill);
+            var (outAcc, _, _) = state.PassiveBus.AccumulateOutgoingDamageModifiers(
+                state,
+                actor,
+                target,
+                skill,
+                notifyObservers: false);
             damage *= (1.0 + outAcc.OutgoingDamageAdditiveSum) * outAcc.OutgoingDamageMultiplicativeProduct;
         }
 
-        damage *= PassiveRuleApplier.AccumulateIncomingDamageMultiplier(state, target);
+        damage *= state.PassiveBus.AccumulateIncomingDamageMultiplier(state, target, notifyObservers: false).Mult;
         return Math.Max(0, (int)Math.Round(damage));
     }
 
@@ -818,15 +934,6 @@ public sealed class BattleSimulator
         return 1.0;
     }
 
-    private void TickCooldowns(Combatant actor)
-    {
-        var skillIdsOnCooldown = actor.SkillLoadout.Cooldowns.Keys.ToList();
-        foreach (var skillId in skillIdsOnCooldown)
-        {
-            actor.SkillLoadout.Cooldowns[skillId] = Math.Max(0, actor.SkillLoadout.Cooldowns[skillId] - 1);
-        }
-    }
-
     private void ApplyBattleCorruptionDelta(BattleState state, double delta, string actorId, string skillId)
     {
         if (double.IsNaN(delta) || double.IsInfinity(delta) || Math.Abs(delta) < 1e-12)
@@ -846,6 +953,30 @@ public sealed class BattleSimulator
             previousCorruptionTier: tierBeforeAdjustment);
     }
 
+    private void EmitPassiveCombatNarrativeEvent(
+        BattleState state,
+        PassiveCombatNote note,
+        string narrativeActorId,
+        string narrativeTargetId,
+        string contextSkillId)
+    {
+        Emit(
+            state,
+            BattleEventType.PassiveCombatNarrative,
+            actorId: narrativeActorId,
+            targetId: narrativeTargetId,
+            skillId: contextSkillId,
+            dotType: note.DotTypeName ?? string.Empty,
+            tokenType: note.TokenTypeName ?? string.Empty,
+            tokenDelta: note.TokenDelta,
+            passiveId: note.PassiveId,
+            passiveEffectKindName: note.EffectKind.ToString(),
+            passiveMagnitude: note.Magnitude,
+            passiveRelatedSkillId: note.RelatedSkillId ?? string.Empty,
+            dotDurationTurns: note.DotDurationTurns,
+            passiveAuxInt: note.HealAmount);
+    }
+
     private void Emit(
         BattleState state,
         BattleEventType eventType,
@@ -863,7 +994,13 @@ public sealed class BattleSimulator
         string battleResult = "",
         string passiveLoadoutCsv = "",
         double corruptionDelta = 0,
-        int? previousCorruptionTier = null)
+        int? previousCorruptionTier = null,
+        string passiveId = "",
+        string passiveEffectKindName = "",
+        double passiveMagnitude = 0,
+        string passiveRelatedSkillId = "",
+        int dotDurationTurns = 0,
+        int passiveAuxInt = 0)
     {
         _eventCollector.Add(new CombatEvent
         {
@@ -889,6 +1026,12 @@ public sealed class BattleSimulator
             PreviousCorruptionTier = previousCorruptionTier,
             PassiveLoadoutCsv = passiveLoadoutCsv,
             BattleResult = battleResult,
+            PassiveId = passiveId,
+            PassiveEffectKindName = passiveEffectKindName,
+            PassiveMagnitude = passiveMagnitude,
+            PassiveRelatedSkillId = passiveRelatedSkillId,
+            DotDurationTurns = dotDurationTurns,
+            PassiveAuxInt = passiveAuxInt,
         });
     }
 }

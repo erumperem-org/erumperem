@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
+using Erumperem.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -59,18 +60,19 @@ namespace Erumperem.Combat
             var textGo = instance.transform.Find(NotificationTextObjectName);
             if (textGo != null && textGo.TryGetComponent<TextMeshProUGUI>(out var tmp))
             {
-                tmp.text = message;
+                var displayLine = PlayerFacingText.PresentForUi(message);
+                tmp.text = displayLine;
             }
             else if (instance.TryGetComponent<TextMeshProUGUI>(out var rootTmp))
             {
-                rootTmp.text = message;
+                rootTmp.text = PlayerFacingText.PresentForUi(message);
             }
             else
             {
                 var anyTmp = instance.GetComponentInChildren<TextMeshProUGUI>(true);
                 if (anyTmp != null)
                 {
-                    anyTmp.text = message;
+                    anyTmp.text = PlayerFacingText.PresentForUi(message);
                 }
             }
 
