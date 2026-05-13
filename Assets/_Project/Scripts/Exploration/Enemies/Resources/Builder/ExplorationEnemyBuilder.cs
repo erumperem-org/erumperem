@@ -1,8 +1,9 @@
 using System;
+using Services.Navigation;
 using UnityEngine;
 using UnityEngine.AI;
 
-namespace Core.Exploration.Enemy
+namespace Core.Exploration.Character.NPC.Enemy
 {
     /// <summary>
     /// Fábrica responsável por instanciar e destruir GameObjects de inimigos.
@@ -42,22 +43,25 @@ namespace Core.Exploration.Enemy
             ExplorationEnemyLevels enemyLevel)
         {
             Vector3 validPosition = GetValidNavMeshPosition(spawnPosition);
-            GameObject newObject  = GameObject.Instantiate(EnemyPrefab, validPosition, Quaternion.identity, parent);
+            GameObject newObject = GameObject.Instantiate(EnemyPrefab, validPosition, Quaternion.identity, parent);
 
             // Garante o controller; adiciona se o prefab não tiver
             ExplorationEnemyController controller = newObject.GetComponent<ExplorationEnemyController>();
             if (!controller)
                 controller = newObject.AddComponent<ExplorationEnemyController>();
+            NavMeshService meshService = newObject.GetComponent<NavMeshService>();
+            if (!meshService)
+                meshService = newObject.AddComponent<NavMeshService>();
 
             // Garante o NavMeshAgent; adiciona se o prefab não tiver
             if (!newObject.GetComponent<NavMeshAgent>())
                 newObject.AddComponent<NavMeshAgent>();
 
             // Configura os dados do inimigo
-            controller.Data.Agent           = newObject.GetComponent<NavMeshAgent>();
-            controller.Data.EnemyId         = $"Enemy {EnemyNumber:000}";
-            controller.Data.PatrolRadius    = DefaultPatrolRadius;
-            controller.Data.PerceptionRadius = DefaultPerceptionRadius;
+            controller.data.movementData.Agent = newObject.GetComponent<NavMeshAgent>();
+            controller.data.name = $"Enemy {EnemyNumber:000}";
+            controller.data.patrolRadius = DefaultPatrolRadius;
+            controller.data.perceptionRadius = DefaultPerceptionRadius;
 
             _ = ExplorationEnemyController.SetEnemyLevel(controller, enemyLevel);
 
