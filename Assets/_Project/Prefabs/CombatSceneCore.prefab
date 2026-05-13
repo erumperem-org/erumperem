@@ -345,6 +345,7 @@ GameObject:
   - component: {fileID: 5213722406700642896}
   - component: {fileID: 918294471684145873}
   - component: {fileID: 2625193426130249026}
+  - component: {fileID: 74024345826197987}
   m_Layer: 0
   m_Name: CombatUI
   m_TagString: Untagged
@@ -413,7 +414,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatLogStackView
   notificationsContainer: {fileID: 8233872340251891144}
   notificationPanelPrefab: {fileID: 1574735677070693295, guid: aa3168e6f6b065244a0153e7d03a51cd, type: 3}
-  lifetimeSeconds: 20
+  lifetimeSeconds: 10
   spawnSlideOffset: {x: 180, y: 0}
   spawnStartScale: 0.88
   spawnEntryDuration: 0.32
@@ -488,6 +489,24 @@ MonoBehaviour:
   _objectToToggleActivation: {fileID: 0}
   _toggleOnEachPress: 1
   _setActiveTo: 1
+--- !u!114 &74024345826197987
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 919406058762249914}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70e8cdd64b902e142a2baf1815f3e3a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.HealthBars.CombatHealthBarsBinder
+  sessionHub: {fileID: 8100000000000000001}
+  healthBarRootPrefab: {fileID: 1289966686150170293, guid: fde812eaab218aa4583a39a7c103e028, type: 3}
+  sharedHealthBarParent: {fileID: 0}
+  healthBarAnchorChildName: 
+  healthBarLocalOffset: {x: 0, y: 0, z: 0}
+  faceMainCameraEachFrame: 1
 --- !u!1 &1926228013263610959
 GameObject:
   m_ObjectHideFlags: 0
@@ -2315,12 +2334,13 @@ MonoBehaviour:
   - {fileID: 2892356657232757551}
   spawnEnemyModelsFromCatalog: 1
   enemyVisualSpawnCatalog: {fileID: 11400000, guid: 9d1aa7118ab4b2f449f1ff49ea6461cb, type: 2}
-  syncHpAsVerticalScale: 1
+  syncHpAsVerticalScale: 0
   logEventsToConsole: 1
   _progressionService: {fileID: 267978060972295176}
   _progressionCharacterId: wulfric
   _devUnlockAllPassives: 0
-  _skillTreeAuthoringAssets: []
+  _skillTreeAuthoringAssets:
+  - {fileID: 11400000, guid: bcf74d0508471f74890676505eeeb9c3, type: 2}
   victoryPanel: {fileID: 4746330013530430094}
   defeatPanel: {fileID: 3971627305473834851}
   defaultPlaySeconds: 2.5
@@ -2399,7 +2419,7 @@ MonoBehaviour:
   currentTurnMarkerPrefab: {fileID: 7541897798933782113, guid: 364b8b66bc5f22c42b47a0580ca31664, type: 3}
   currentTurnMarkerLocalOffset: {x: 0, y: -0.9, z: 0}
   currentTurnMarkerBaseEuler: {x: 90, y: 0, z: 0}
-  currentTurnMarkerZSpinDegreesPerSecond: 90
+  currentTurnMarkerZSpinDegreesPerSecond: 0
 --- !u!114 &267978060972295176
 MonoBehaviour:
   m_ObjectHideFlags: 0
