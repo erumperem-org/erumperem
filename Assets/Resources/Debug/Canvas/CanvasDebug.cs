@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using Services.DebugUtilities.Console;
+
 namespace Services.DebugUtilities.Canvas
 {
     public static class CanvasLoggerService

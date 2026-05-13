@@ -1,10 +1,12 @@
 using System.Collections;
 using System.Threading.Tasks;
+using Core.Exploration.Character.Movement;
+using Services.Navigation;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Pool;
 
-namespace Core.Exploration.Enemy
+namespace Core.Exploration.Character.NPC.Enemy
 {
     /// <summary>
     /// Gerencia a pool de inimigos usando <see cref="ObjectPool{T}"/> do Unity.
@@ -137,15 +139,11 @@ namespace Core.Exploration.Enemy
             controller.gameObject.SetActive(true);
 
             // Atualiza o nível caso o inimigo vá com um nível diferente do que tinha
-            if (controller.Data.EnemyLevel != _nextEnemyLevelToCreate)
+            if (controller.enemyData.enemyLevel != _nextEnemyLevelToCreate)
                 _ = ExplorationEnemyController.SetEnemyLevel(controller, _nextEnemyLevelToCreate);
 
             // Inicia o comportamento de patrulha com o jogador como alvo
-            _ = ExplorationEnemyController.SetEnemyStartegy(
-                controller,
-                new PatrolBehavior(),
-                new PatrolBehaviorContext(controller, Player, controller.Data.PerceptionRadius)
-            );
+            _ = ExplorationNpcMovementController.SetNpcMovementStartegy(controller, new PatrolBehavior(), new PatrolBehaviorContext(controller, controller.data, controller.data.perceptionRadius, controller.data.patrolRadius, Player, controller.data.movementData.Agent.transform, controller.GetComponent<NavMeshService>(), controller.data.movementData.Agent));
         }
 
         /// <summary>
@@ -163,11 +161,7 @@ namespace Core.Exploration.Enemy
         /// </summary>
         private async Task SetPoolState(ExplorationEnemyController controller)
         {
-            await ExplorationEnemyController.SetEnemyStartegy(
-                controller,
-                new OnPoolBehavior(),
-                new OnPoolBehaviorContext(controller, _poolPosition, PooledObjectsParent)
-            );
+            await ExplorationNpcMovementController.SetNpcMovementStartegy(controller, new OnPoolBehavior(),new OnPoolBehaviorContext(controller.data, _poolPosition, PooledObjectsParent, controller.transform));
 
             controller.gameObject.SetActive(false);
         }
