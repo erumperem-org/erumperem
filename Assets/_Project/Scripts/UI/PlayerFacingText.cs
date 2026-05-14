@@ -13,16 +13,13 @@ namespace Erumperem.UI
 {
     /// <summary>
     /// Camada única para transformar identificadores técnicos (enums, ids de skill) em texto legível para o jogador.
-    /// O resultado final inclui expansão de marcas de autor (colchetes) para rich text TMP — ver
-    /// <see cref="PlayerGameRichText"/>.
-    /// Usar sempre que atribuir cópia a TMP/Textos de UI vindos de dados ou telemetria.
+    /// O resultado final inclui expansão de marcas de autor (colchetes) para rich text TMP.
     /// </summary>
     public static class PlayerFacingText
     {
-        private static readonly CultureInfo PortugueseDisplayCulture = CultureInfo.GetCultureInfo("pt-PT");
+        private static readonly CultureInfo BrazilianCulture = CultureInfo.GetCultureInfo("pt-BR");
         private static Dictionary<string, string> _nodeIdToDisplayName;
 
-        /// <summary>Todas as strings curtas vindas de dados ou logs devem passar aqui antes de ir para UI.</summary>
         public static string PresentForUi(string rawTechnicalText, BattleState battleContext = null)
         {
             if (string.IsNullOrEmpty(rawTechnicalText))
@@ -42,12 +39,6 @@ namespace Erumperem.UI
             return PlayerGameRichText.ExpandAuthoringMarkupToTextMeshPro(joined);
         }
 
-        /// <summary>
-        /// Procura nomes PT de DoT / elemento / token já presentes no texto e envolve‑os com a tag de
-        /// autor correspondente (<c>[dot bleed]</c>, <c>[elem fire]</c>, <c>[token combo]</c>) para que
-        /// <see cref="PlayerGameRichText"/> possa colorir / iconizar.
-        /// Não toca em ocorrências dentro de tags TMP nem em palavras já envolvidas em colchetes.
-        /// </summary>
         private static string AutoWrapKnownDomainTermsWithMarkup(string text)
         {
             if (string.IsNullOrEmpty(text))
@@ -84,7 +75,6 @@ namespace Erumperem.UI
             return Regex.Replace(text, pattern, replacementMarkup);
         }
 
-        /// <summary>Texto já localizado; aplica só marcas de autor → TMP (ver <see cref="PlayerGameRichText"/>).</summary>
         public static string ApplyRichMarkupForTextMeshPro(string alreadyLocalizedText) =>
             PlayerGameRichText.ExpandAuthoringMarkupToTextMeshPro(alreadyLocalizedText ?? string.Empty);
 
@@ -136,11 +126,6 @@ namespace Erumperem.UI
         private static string BuildPassiveDescriptionFromAsset(SkillTreeNodeAsset asset) =>
             DescribePassiveDefinitionInDetail(asset.ToRuntimePassiveDefinition());
 
-        /// <summary>
-        /// Builds the player-facing description for a passive using ALL of its data fields,
-        /// matching the exact behaviour applied by <c>PassiveRuleApplier</c>. Used both at
-        /// runtime (skill tree details) and from the editor generator.
-        /// </summary>
         public static string DescribePassiveDefinitionInDetail(PassiveDefinition def)
         {
             var skillRef = FormatSkillReference(def.SkillId);
@@ -157,21 +142,21 @@ namespace Erumperem.UI
             return def.EffectKind switch
             {
                 PassiveEffectKind.OutgoingDamageVsSkillId =>
-                    $"Ao usares {skillRef}, causas +{additivePercent} de dano.",
+                    $"Ao usar {skillRef}, causa +{additivePercent} de dano.",
 
                 PassiveEffectKind.OutgoingDamageVsDotOnTarget when def.AdditivePerStack > 0 && def.Cap > 0 =>
-                    $"Causas +{perStackPercent} de dano contra alvos com {dotName}, por cada acumulação de {dotName} " +
+                    $"Causa +{perStackPercent} de dano contra alvos com {dotName} para cada acúmulo de {dotName} " +
                     $"(até +{capPercent}).",
 
                 PassiveEffectKind.OutgoingDamageVsDotOnTarget =>
-                    $"Causas +{additivePercent} de dano contra alvos com {dotName}.",
+                    $"Causa +{additivePercent} de dano contra alvos com {dotName}.",
 
                 PassiveEffectKind.DotDurationBonus when def.IntValue2 > 0 =>
-                    $"Os teus efeitos de {dotName} duram +{FormatTurnCountWithUnit(def.IntValue)} " +
-                    $"(até ao máximo de {FormatTurnCountWithUnit(def.IntValue2)}).",
+                    $"Seus efeitos de {dotName} duram +{FormatTurnCountWithUnit(def.IntValue)} " +
+                    $"(até o máximo de {FormatTurnCountWithUnit(def.IntValue2)}).",
 
                 PassiveEffectKind.DotDurationBonus =>
-                    $"Os teus efeitos de {dotName} duram +{FormatTurnCountWithUnit(def.IntValue)}.",
+                    $"Seus efeitos de {dotName} duram +{FormatTurnCountWithUnit(def.IntValue)}.",
 
                 PassiveEffectKind.IncomingDamageMultiplierWhenHpBelow =>
                     FormatIncomingDamageMultiplierBelowHp(def.Additive, hpThresholdPercent),
@@ -180,25 +165,25 @@ namespace Erumperem.UI
                     FormatOutgoingDamageWhileTokenIsActive(def.Additive, def.TokenType),
 
                 PassiveEffectKind.OutgoingDamageAfterPrerequisiteSkill =>
-                    $"Após usares {prerequisiteSkillRef}, o próximo {skillRef} causa +{additivePercent} de dano.",
+                    $"Após usar {prerequisiteSkillRef}, o próximo {skillRef} causa +{additivePercent} de dano.",
 
                 PassiveEffectKind.ExtraTokenOnSelfSkill =>
-                    $"Ao usares {skillRef} em ti, ganhas " +
-                    $"{FormatTokenStackCountWithUnit(Math.Max(1, def.IntValue))} extra de " +
+                    $"Ao usar {skillRef} em si mesmo, ganha " +
+                    $"{FormatTokenStackCountWithUnit(Math.Max(1, def.IntValue))} adicional de " +
                     $"{(def.TokenType.HasValue ? FormatTokenTypeDisplayName(def.TokenType.Value) : "ficha")}.",
 
                 PassiveEffectKind.ExtraHealPercentOnSelfSkill =>
-                    $"Ao usares {skillRef} em ti, recuperas {FormatPlainPercent(def.Additive)} do HP máximo.",
+                    $"Ao usar {skillRef} em si mesmo, recupera {FormatPlainPercent(def.Additive)} do HP máximo.",
 
                 PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot =>
                     FormatApplyExtraDot(def, skillRef, dotName),
 
                 PassiveEffectKind.OutgoingDamageVsSkillIfTargetHasDot =>
-                    $"Ao usares {skillRef} contra um alvo com {dotName}, causas +{additivePercent} de dano.",
+                    $"Ao usar {skillRef} contra um alvo com {dotName}, causa +{additivePercent} de dano.",
 
                 PassiveEffectKind.DotTickDamageBonusWhenTargetHpBelow =>
-                    $"Os teus efeitos de {dotName} causam +{additivePercent} de dano por turno enquanto " +
-                    $"o alvo estiver abaixo de {hpThresholdPercent} de HP.",
+                    $"Seus efeitos de {dotName} causam +{additivePercent} de dano por turno enquanto " +
+                    $"o HP do alvo estiver abaixo de {hpThresholdPercent}.",
 
                 PassiveEffectKind.GrantTokenAtTurnStartIfCondition =>
                     FormatGrantTokenAtTurnStart(def, grantedTokenName),
@@ -221,18 +206,18 @@ namespace Erumperem.UI
         {
             if (multiplier <= 0)
             {
-                return $"Enquanto o teu HP está abaixo de {hpThresholdPercent}, o dano recebido é alterado.";
+                return $"Enquanto seu HP estiver abaixo de {hpThresholdPercent}, o dano recebido é alterado.";
             }
 
             if (multiplier < 1)
             {
                 var damageReductionPercent = FormatPercentFromFraction(1 - multiplier);
-                return $"Enquanto o teu HP está abaixo de {hpThresholdPercent}, recebes {damageReductionPercent} " +
+                return $"Enquanto seu HP estiver abaixo de {hpThresholdPercent}, você recebe {damageReductionPercent} " +
                        $"menos dano (multiplicador ×{FormatMultiplier(multiplier)}).";
             }
 
             var extraDamagePercent = FormatPercentFromFraction(multiplier - 1);
-            return $"Enquanto o teu HP está abaixo de {hpThresholdPercent}, recebes {extraDamagePercent} " +
+            return $"Enquanto seu HP estiver abaixo de {hpThresholdPercent}, você recebe {extraDamagePercent} " +
                    $"mais dano (multiplicador ×{FormatMultiplier(multiplier)}).";
         }
 
@@ -242,18 +227,18 @@ namespace Erumperem.UI
             if (additive < 0)
             {
                 var penaltyPercent = FormatPercentFromFraction(-additive);
-                return $"Causas {penaltyPercent} menos dano enquanto tiveres {tokenName}.";
+                return $"Causa {penaltyPercent} menos dano enquanto tiver {tokenName}.";
             }
 
             var bonusPercent = FormatPercentFromFraction(additive);
-            return $"Causas +{bonusPercent} de dano enquanto tiveres {tokenName}.";
+            return $"Causa +{bonusPercent} de dano enquanto tiver {tokenName}.";
         }
 
         private static string FormatApplyExtraDot(PassiveDefinition def, string skillRef, string dotName)
         {
             var potency = def.IntValue > 0 ? def.IntValue : 2;
             var duration = def.IntValue2 > 0 ? def.IntValue2 : 2;
-            return $"Após usares {skillRef} num alvo que já sofre {dotName}, aplicas {dotName} extra " +
+            return $"Após usar {skillRef} em um alvo que já sofre {dotName}, aplica {dotName} extra " +
                    $"({potency} de dano por turno, durante {FormatTurnCountWithUnit(duration)}).";
         }
 
@@ -261,7 +246,7 @@ namespace Erumperem.UI
         {
             if (def.GrantTokenType is null)
             {
-                return "No início do teu turno, ganhas uma ficha conforme as condições configuradas.";
+                return "No início do seu turno, ganha uma ficha conforme as condições configuradas.";
             }
 
             var stacks = Math.Max(1, def.IntValue);
@@ -274,20 +259,20 @@ namespace Erumperem.UI
                 ? FormatTokenTypeDisplayName(def.UnlessHasTokenType!.Value)
                 : string.Empty;
 
-            var lead = $"No início do teu turno, ganhas {FormatTokenStackCountWithUnit(stacks)} de {grantedTokenName}";
+            var lead = $"No início do seu turno, ganha {FormatTokenStackCountWithUnit(stacks)} de {grantedTokenName}";
             if (hasRequirement && hasBlocker)
             {
-                return $"{lead} se tiveres {requirementName} e não tiveres {blockerName}.";
+                return $"{lead} se você tiver {requirementName} e não tiver {blockerName}.";
             }
 
             if (hasRequirement)
             {
-                return $"{lead} se tiveres {requirementName}.";
+                return $"{lead} se você tiver {requirementName}.";
             }
 
             if (hasBlocker)
             {
-                return $"{lead} a menos que tenhas {blockerName}.";
+                return $"{lead}, a menos que você tenha {blockerName}.";
             }
 
             return $"{lead}.";
@@ -309,10 +294,7 @@ namespace Erumperem.UI
 
         public static string FormatTokenTypeDisplayName(string tokenTypeName)
         {
-            if (string.IsNullOrEmpty(tokenTypeName))
-            {
-                return string.Empty;
-            }
+            if (string.IsNullOrEmpty(tokenTypeName)) return string.Empty;
 
             if (Enum.TryParse<TokenType>(tokenTypeName, ignoreCase: true, out var parsed))
             {
@@ -323,7 +305,7 @@ namespace Erumperem.UI
         }
 
         private static string FormatPlainPercent(double percentValue) =>
-            percentValue.ToString("0.##", PortugueseDisplayCulture) + " %";
+            percentValue.ToString("0.##", BrazilianCulture) + " %";
 
         private static string FormatTokenStackCountWithUnit(int stackCount) =>
             stackCount == 1 ? "1 ficha" : $"{stackCount} fichas";
@@ -335,38 +317,34 @@ namespace Erumperem.UI
             kind switch
             {
                 PassiveEffectKind.OutgoingDamageVsSkillId =>
-                    "Aumenta o dano infligido quando usas uma habilidade específica (a vigente em combate).",
+                    "Aumenta o dano causado ao usar uma habilidade específica.",
                 PassiveEffectKind.OutgoingDamageVsDotOnTarget =>
                     "Aumenta o dano contra alvos que sofrem um tipo de dano contínuo (DoT) indicado.",
                 PassiveEffectKind.OutgoingDamageVsSkillIfTargetHasDot =>
-                    "Aumenta o dano de uma habilidade se o alvo já tiver um DoT do tipo indicado.",
-                PassiveEffectKind.DotDurationBonus => "Prolonga a duração de um DoT aplicado por ti.",
+                    "Aumenta o dano de uma habilidade se o alvo já tiver um DoT específico.",
+                PassiveEffectKind.DotDurationBonus => "Aumenta a duração de um DoT aplicado por você.",
                 PassiveEffectKind.IncomingDamageMultiplierWhenHpBelow =>
-                    "Altera o dano recebido quando o teu HP está abaixo de um limiar.",
+                    "Altera o dano recebido quando seu HP está abaixo de um limite.",
                 PassiveEffectKind.OutgoingDamagePenaltyWhenToken =>
-                    "Modifica o teu dano enquanto tiveres certos tokens (ex.: penalização).",
+                    "Modifica o seu dano enquanto você possuir certos tokens.",
                 PassiveEffectKind.OutgoingDamageAfterPrerequisiteSkill =>
-                    "Após usares uma habilidade de preparação, o próximo uso de outra habilidade pode ganhar bónus de dano.",
+                    "Após usar uma habilidade de preparação, o próximo uso de outra habilidade ganha bônus de dano.",
                 PassiveEffectKind.ExtraTokenOnSelfSkill =>
-                    "Ganhas tokens extra ao usares certas habilidades em ti mesmo.",
+                    "Ganha tokens extras ao usar certas habilidades em si mesmo.",
                 PassiveEffectKind.ExtraHealPercentOnSelfSkill =>
-                    "Curas uma percentagem do teu HP máximo ao usares certas habilidades em ti mesmo.",
+                    "Cura uma porcentagem do seu HP máximo ao usar certas habilidades em si mesmo.",
                 PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot =>
-                    "Aplica dano contínuo extra quando o alvo já sofre de um DoT e usas uma habilidade indicada.",
+                    "Aplica dano contínuo extra quando o alvo já sofre de um DoT.",
                 PassiveEffectKind.DotTickDamageBonusWhenTargetHpBelow =>
-                    "Aumenta o dano por tick do teu DoT quando o HP do alvo está abaixo de um limiar.",
+                    "Aumenta o dano por turno do seu DoT quando o HP do alvo está baixo.",
                 PassiveEffectKind.GrantTokenAtTurnStartIfCondition =>
-                    "No início do turno, podes receber tokens se cumprires condições (tokens presentes/ausentes).",
+                    "No início do turno, você pode receber tokens se cumprir certas condições.",
                 _ => kind.ToString(),
             };
 
-        /// <summary>Nome amigável para DoT em combate / dados.</summary>
         public static string FormatDotTypeDisplayName(string dotTypeName)
         {
-            if (string.IsNullOrEmpty(dotTypeName))
-            {
-                return string.Empty;
-            }
+            if (string.IsNullOrEmpty(dotTypeName)) return string.Empty;
 
             if (Enum.TryParse<DotType>(dotTypeName, ignoreCase: true, out var parsed))
             {
@@ -396,7 +374,7 @@ namespace Erumperem.UI
 
             if (!Enum.TryParse<PassiveEffectKind>(combatEvent.PassiveEffectKindName, out var kind))
             {
-                return $"Passiva «{passiveLabel}» activa.";
+                return $"Passiva «{passiveLabel}» ativada.";
             }
 
             var relatedSkill = NodeOrSkillDisplayName(combatEvent.PassiveRelatedSkillId);
@@ -410,7 +388,7 @@ namespace Erumperem.UI
                     PassiveEffectKind.OutgoingDamageAfterPrerequisiteSkill or
                     PassiveEffectKind.OutgoingDamageVsSkillIfTargetHasDot =>
                     $"Passiva «{passiveLabel}»: +{bonusPct} de dano neste golpe " +
-                    $"{(string.IsNullOrEmpty(relatedSkill) ? string.Empty : $"(habilidade «{relatedSkill}») ")}.",
+                    $"{(string.IsNullOrEmpty(relatedSkill) ? string.Empty : $"(habilidade «{relatedSkill}»)")}.",
                 PassiveEffectKind.IncomingDamageMultiplierWhenHpBelow =>
                     $"Passiva «{passiveLabel}»: dano recebido ×{FormatMultiplier(combatEvent.PassiveMagnitude)} (HP baixo).",
                 PassiveEffectKind.ExtraHealPercentOnSelfSkill when combatEvent.PassiveAuxInt > 0 =>
@@ -452,49 +430,32 @@ namespace Erumperem.UI
 
         private static void EnsureNodeNameCache()
         {
-            if (_nodeIdToDisplayName != null)
-            {
-                return;
-            }
+            if (_nodeIdToDisplayName != null) return;
 
             _nodeIdToDisplayName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var asset in Resources.LoadAll<SkillTreeNodeAsset>("SkillTreeNodes"))
             {
-                if (string.IsNullOrEmpty(asset.NodeId))
-                {
-                    continue;
-                }
-
+                if (string.IsNullOrEmpty(asset.NodeId)) continue;
                 _nodeIdToDisplayName[asset.NodeId] = asset.DisplayName;
             }
         }
 
         private static string NodeOrSkillDisplayName(string nodeOrSkillId)
         {
-            if (string.IsNullOrEmpty(nodeOrSkillId))
-            {
-                return string.Empty;
-            }
-
+            if (string.IsNullOrEmpty(nodeOrSkillId)) return string.Empty;
             EnsureNodeNameCache();
             return _nodeIdToDisplayName.TryGetValue(nodeOrSkillId, out var name) ? name : nodeOrSkillId;
         }
 
         private static string PresentLine(string line, BattleState battleContext)
         {
-            if (string.IsNullOrEmpty(line))
-            {
-                return line;
-            }
+            if (string.IsNullOrEmpty(line)) return line;
 
             var trimmed = line.Trim();
             foreach (PassiveEffectKind kind in Enum.GetValues(typeof(PassiveEffectKind)))
             {
                 var technical = kind.ToString();
-                if (!trimmed.Contains(technical, StringComparison.Ordinal))
-                {
-                    continue;
-                }
+                if (!trimmed.Contains(technical, StringComparison.Ordinal)) continue;
 
                 var friendlyShort = DescribePassiveEffectKind(kind);
                 trimmed = Regex.Replace(
@@ -523,9 +484,9 @@ namespace Erumperem.UI
         }
 
         private static string FormatPercentFromFraction(double fraction) =>
-            (fraction * 100.0).ToString("0.##", PortugueseDisplayCulture) + " %";
+            (fraction * 100.0).ToString("0.##", BrazilianCulture) + " %";
 
         private static string FormatMultiplier(double factor) =>
-            factor.ToString("0.##", PortugueseDisplayCulture);
+            factor.ToString("0.##", BrazilianCulture);
     }
 }
