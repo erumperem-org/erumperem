@@ -17,12 +17,14 @@ namespace Erumperem.Combat
         [Header("Animator state names (Base Layer)")]
         [SerializeField] private string idleStateName = "Idle";
         [SerializeField] private string attackStateName = "Attack";
+        [SerializeField] private string hitTakenStateName = "HitTaken";
         [SerializeField] private string deathStateName = "Death";
 
         [SerializeField] private float crossFadeSeconds = 0.08f;
 
         [Header("Duração quando o clip não é encontrado pelo nome")]
         [SerializeField] private float attackClipLengthFallbackSeconds = 2f;
+        [SerializeField] private float hitTakenClipLengthFallbackSeconds = 0.5f;
         [SerializeField] private float deathClipLengthFallbackSeconds = 2f;
 
         [Header("Mortes: encolher após o clip")]
@@ -34,6 +36,7 @@ namespace Erumperem.Combat
 
         private Coroutine _attackReturnToIdleRoutine;
         private Coroutine _deathVisualRoutine;
+        private Coroutine _hitTakenReturnToIdleRoutine;
         private bool _deathVisualSequenceStarted;
         private bool _deathVisualSequenceFinished;
 
@@ -60,6 +63,14 @@ namespace Erumperem.Combat
             return Mathf.Max(0.05f, TryResolveClipLengthSeconds(attackStateName, attackClipLengthFallbackSeconds) + marginSeconds);
         }
 
+        /// <summary>Duração do clip de HitTaken (nome do estado ou do clip) + margem.</summary>
+        public float ComputeHitTakenPresentationDurationSeconds(float marginSeconds)
+        {
+            return Mathf.Max(0.05f,
+                TryResolveClipLengthSeconds(hitTakenStateName, hitTakenClipLengthFallbackSeconds) +
+                marginSeconds);
+        }
+
         /// <summary>Duração do clip de Death + margem após o clip (ex.: 1 s).</summary>
         public float ComputeDeathPresentationWaitSeconds(float marginAfterClipSeconds)
         {
@@ -77,6 +88,22 @@ namespace Erumperem.Combat
             StopAttackReturnRoutine();
             unitAnimator.CrossFade(attackStateName, crossFadeSeconds, 0, 0f);
             _attackReturnToIdleRoutine = StartCoroutine(AttackHoldThenIdleRoutine(holdAttackStateSeconds));
+        }
+
+        /// <summary>Chamado uma vez por ação do ator: reproduz HitTaken durante <paramref name="hitTakenStateSeconds"/> e volta a Idle.</summary>
+        public void NotifyHitTakenPresentationBegin(float holdHitTakenStateSeconds)
+        {
+            if (_deathVisualSequenceStarted || unitAnimator == null)
+            {
+                return;
+            }
+
+            StopHitTakenReturnRoutine();
+
+            unitAnimator.CrossFade(hitTakenStateName, crossFadeSeconds, 0, 0f);
+
+            _hitTakenReturnToIdleRoutine =
+                StartCoroutine(HitTakenHoldThenIdleRoutine(holdHitTakenStateSeconds));
         }
 
         /// <summary>Inicia sequência de morte (idempotente). Chamado a partir da resolução da ação ou do sync se a morte veio fora da apresentação.</summary>
@@ -113,6 +140,15 @@ namespace Erumperem.Combat
             }
         }
 
+        private void StopHitTakenReturnRoutine()
+        {
+            if (_hitTakenReturnToIdleRoutine != null)
+            {
+                StopCoroutine(_hitTakenReturnToIdleRoutine);
+                _hitTakenReturnToIdleRoutine = null;
+            }
+        }
+
         private IEnumerator AttackHoldThenIdleRoutine(float holdAttackStateSeconds)
         {
             yield return new WaitForSeconds(holdAttackStateSeconds);
@@ -122,6 +158,19 @@ namespace Erumperem.Combat
                 unitAnimator.CrossFade(idleStateName, crossFadeSeconds, 0, 0f);
             }
         }
+
+        private IEnumerator HitTakenHoldThenIdleRoutine(float holdHitTakenStateSeconds)
+        {
+            yield return new WaitForSeconds(holdHitTakenStateSeconds);
+
+            _hitTakenReturnToIdleRoutine = null;
+
+            if (!_deathVisualSequenceStarted && unitAnimator != null)
+            {
+                unitAnimator.CrossFade(idleStateName, crossFadeSeconds, 0, 0f);
+            }
+        }
+
 
         private IEnumerator DeathWaitThenDespawnRoutine(float waitBeforeShrinkSeconds)
         {

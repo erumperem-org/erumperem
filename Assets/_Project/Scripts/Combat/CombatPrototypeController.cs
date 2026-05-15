@@ -910,9 +910,15 @@ namespace Erumperem.Combat
                         }
 
                         if (combatEvent.EventType == BattleEventType.DamageApplied && combatEvent.DamageAmount > 0)
-                        {
-                            PlayDamageVisualFeedback(combatEvent.TargetId);
-                        }
+			{
+    				PlayDamageVisualFeedback(combatEvent.TargetId);
+
+    				if (TryGetEnemyAnimationController(combatEvent.TargetId, out var hitEnemyAnimationController))
+    				{
+        				hitEnemyAnimationController.NotifyHitTakenPresentationBegin(
+            				hitEnemyAnimationController.ComputeHitTakenPresentationDurationSeconds(0f));
+    				}
+			}
                     }
 
                     LogLastEvents();
