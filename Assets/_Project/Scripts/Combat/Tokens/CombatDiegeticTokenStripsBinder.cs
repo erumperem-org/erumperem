@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Erumperem.Combat;
 using Game.Core.Models;
 using UnityEngine;
 
@@ -29,9 +30,8 @@ namespace Erumperem.Combat.Tokens
         [SerializeField] private string stripAnchorChildName = "";
 
         [Tooltip(
-            "Offset from follow target (unit root or anchor). World-space offset when parent is unit; " +
-            "same offset used when following from a shared canvas.")]
-        [SerializeField] private Vector3 stripLocalOffset = new(0f, 2.2f, 0f);
+            "Offset extra em espaço local do alvo, somado ao topo Y do collider da unidade.")]
+        [SerializeField] private Vector3 stripLocalOffset = new(0f, 0.35f, 0f);
 
         [Tooltip("Roda a tira de tokens para olhar para a Main Camera todo o frame (billboard simples). " +
                  "Desligue se o 'Shared Strip Parent' for um Canvas em Screen Space (Overlay/Camera) — " +
@@ -142,6 +142,9 @@ namespace Erumperem.Combat.Tokens
                 }
 
                 var followTarget = ResolveStripParent(unitRoot);
+                var stripOffsetFromColliderTop = CombatUnitColliderVerticalExtents.ComposeLocalOffsetAnchoredToColliderTop(
+                    followTarget,
+                    stripLocalOffset);
                 Transform hierarchyParent;
                 if (sharedStripParent != null)
                 {
@@ -163,11 +166,11 @@ namespace Erumperem.Combat.Tokens
                         follower = stripInstance.AddComponent<DiegeticTokenStripWorldFollower>();
                     }
 
-                    follower.Initialize(followTarget, stripLocalOffset, faceMainCameraEachFrame);
+                    follower.Initialize(followTarget, stripOffsetFromColliderTop, faceMainCameraEachFrame);
                 }
                 else
                 {
-                    stripInstance.transform.localPosition = stripLocalOffset;
+                    stripInstance.transform.localPosition = stripOffsetFromColliderTop;
                 }
 
                 stripInstance.name = $"DiegeticTokens_{combatant.Identity.Id}";

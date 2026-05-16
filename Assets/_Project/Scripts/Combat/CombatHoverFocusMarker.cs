@@ -1,5 +1,6 @@
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Erumperem.Combat
 {
@@ -24,8 +25,9 @@ namespace Erumperem.Combat
         [SerializeField] private LayerMask raycastLayerMask = ~0;
 
         [Header("Posição")]
-        [Tooltip("Distância para baixo a partir da base do renderer (bounds.min.y).")]
-        [SerializeField] private float verticalOffsetBelowUnit = 0.35f;
+        [Tooltip("Offset extra em Y mundo a partir do topo do collider (bounds.max.y). Valores negativos descem.")]
+        [FormerlySerializedAs("verticalOffsetBelowUnit")]
+        [SerializeField] private float verticalOffsetFromColliderTop = 0.35f;
 
         [Header("DOTween — aparecer")]
         [SerializeField] private float punchDuration = 0.35f;
@@ -101,13 +103,12 @@ namespace Erumperem.Combat
                 return;
             }
 
-            var unitRenderer = unitRoot.GetComponentInChildren<Renderer>();
-            var bottomWorldY = unitRenderer != null
-                ? unitRenderer.bounds.min.y
+            var topWorldY = CombatUnitColliderVerticalExtents.TryGetTopWorldY(unitRoot, out var colliderTopWorldY)
+                ? colliderTopWorldY
                 : unitRoot.position.y;
 
             var markerPosition = unitRoot.position;
-            markerPosition.y = bottomWorldY - verticalOffsetBelowUnit;
+            markerPosition.y = topWorldY + verticalOffsetFromColliderTop;
 
             PresentAt(markerPosition, capsuleTag.combatantId);
         }
