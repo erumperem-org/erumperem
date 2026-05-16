@@ -28,8 +28,8 @@ namespace Erumperem.Combat.HealthBars
                  "(ex.: HealthBarAnchor). Não use o nome de um Canvas aqui — use 'Shared Health Bar Parent'.")]
         [SerializeField] private string healthBarAnchorChildName = "";
 
-        [Tooltip("Offset relativo ao alvo (root da unidade ou ancla). 'Abaixo' significa Y negativo se o alvo aponta para cima.")]
-        [SerializeField] private Vector3 healthBarLocalOffset = new(0f, -0.4f, 0f);
+        [Tooltip("Offset extra em espaço local do alvo, somado à base Y do collider da unidade.")]
+        [SerializeField] private Vector3 healthBarLocalOffset = new(0f, 0.15f, 0f);
 
         [Tooltip("Roda a barra para olhar para a Main Camera todo o frame (billboard simples). " +
                  "Desligue se o 'Shared Health Bar Parent' for um Canvas em Screen Space (Overlay/Camera) — " +
@@ -132,6 +132,9 @@ namespace Erumperem.Combat.HealthBars
 
                 var followTarget = ResolveFollowTargetUnderUnit(unitVisualRoot);
                 var hierarchyParent = sharedHealthBarParent != null ? sharedHealthBarParent : followTarget;
+                var healthBarOffsetFromColliderBottom = CombatUnitColliderVerticalExtents.ComposeLocalOffsetAnchoredToColliderBottom(
+                    followTarget,
+                    healthBarLocalOffset);
 
                 var healthBarInstance = Instantiate(healthBarRootPrefab, hierarchyParent);
                 healthBarInstance.transform.localRotation = Quaternion.identity;
@@ -145,11 +148,11 @@ namespace Erumperem.Combat.HealthBars
                         follower = healthBarInstance.AddComponent<DiegeticTokenStripWorldFollower>();
                     }
 
-                    follower.Initialize(followTarget, healthBarLocalOffset, faceMainCameraEachFrame);
+                    follower.Initialize(followTarget, healthBarOffsetFromColliderBottom, faceMainCameraEachFrame);
                 }
                 else
                 {
-                    healthBarInstance.transform.localPosition = healthBarLocalOffset;
+                    healthBarInstance.transform.localPosition = healthBarOffsetFromColliderBottom;
                 }
 
                 healthBarInstance.name = $"HealthBar_{combatant.Identity.Id}";
