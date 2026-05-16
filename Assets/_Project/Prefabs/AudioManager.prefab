@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &261903077880342372
+--- !u!1 &4880684184882666260
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,11 +8,11 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 4231406354178013730}
-  - component: {fileID: 1231071150027749745}
-  - component: {fileID: 4839815702284453264}
-  - component: {fileID: 2128466652571606741}
-  - component: {fileID: 2784602408804846882}
+  - component: {fileID: 296698577642924046}
+  - component: {fileID: 5981630444755087549}
+  - component: {fileID: 8722633042384705278}
+  - component: {fileID: 6236776249860269184}
+  - component: {fileID: 413156704740130490}
   m_Layer: 0
   m_Name: AudioManager
   m_TagString: Untagged
@@ -20,13 +20,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &4231406354178013730
+--- !u!4 &296698577642924046
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 261903077880342372}
+  m_GameObject: {fileID: 4880684184882666260}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -35,13 +35,13 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1231071150027749745
+--- !u!114 &5981630444755087549
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 261903077880342372}
+  m_GameObject: {fileID: 4880684184882666260}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ffc3e6220fe0f5649b37988f634e2a4a, type: 3}
@@ -50,29 +50,82 @@ MonoBehaviour:
   bgmPlaylists:
   - name: MainMenu
     clips:
-    - {fileID: 8300000, guid: e755db3574295d7468a7da6152f185e9, type: 3}
+    - {fileID: 8300000, guid: a27f00f592260c04fb5ccaf87e9db4c1, type: 3}
+    volume: 0.65
+    pitch: 1
+  - name: ExplorationMusic
+    clips:
+    - {fileID: 8300000, guid: 3b02bb255ee0cf84d8efab8a3353502c, type: 3}
+    - {fileID: 8300000, guid: e5477304f2d6d6f499662385ea52a027, type: 3}
+    - {fileID: 8300000, guid: a044b0ee88735084f8e20a2d593af20f, type: 3}
     volume: 0.45
+    pitch: 1
+  - name: CombatTracks
+    clips:
+    - {fileID: 8300000, guid: 0a69c1d19a4ae4143a00bf5e40dda4e3, type: 3}
+    - {fileID: 8300000, guid: 9c764c91eb09a8d43bae09e368641f78, type: 3}
+    - {fileID: 8300000, guid: a11b87aa056521f45b2934a0cc5aa9f8, type: 3}
+    - {fileID: 8300000, guid: b634e5116e251d549ac5b66e5ef1d6ca, type: 3}
+    volume: 0.25
     pitch: 1
   sfxClips:
   - name: Hover
-    clip: {fileID: 8300000, guid: afa4daf96fb284942be0ff780fa5e55d, type: 3}
+    clips:
+    - {fileID: 8300000, guid: afa4daf96fb284942be0ff780fa5e55d, type: 3}
     volume: 0.55
     pitch: 0.6
+    lastPlayedIndex: -1
   - name: Press
-    clip: {fileID: 8300000, guid: 1b3b3047936f4cf40bb17ffa4fa4a0c5, type: 3}
+    clips:
+    - {fileID: 8300000, guid: 1b3b3047936f4cf40bb17ffa4fa4a0c5, type: 3}
     volume: 0.65
     pitch: 1.45
-  ambientLoops: []
-  bgmSource: {fileID: 4839815702284453264}
-  sfxSource: {fileID: 2128466652571606741}
-  ambientSource: {fileID: 2784602408804846882}
---- !u!82 &4839815702284453264
+    lastPlayedIndex: -1
+  - name: Damage
+    clips:
+    - {fileID: 8300000, guid: 39bc95284c7273a40b17afd3fb11f7b4, type: 3}
+    volume: 0.25
+    pitch: 1
+    lastPlayedIndex: -1
+  - name: CharacterHover
+    clips:
+    - {fileID: 8300000, guid: f7e8d02983048584cb3983830bfc28a8, type: 3}
+    volume: 0.25
+    pitch: 1
+    lastPlayedIndex: -1
+  - name: FootstepWulfric
+    clips:
+    - {fileID: 8300000, guid: f18719c349fb3ab429dc0e5645d7c340, type: 3}
+    - {fileID: 8300000, guid: 058089b173a0890458ad6d15dafdccf4, type: 3}
+    - {fileID: 8300000, guid: 75cbd6b833f8f0243b092bcdf57047a7, type: 3}
+    - {fileID: 8300000, guid: 48932b84506adbc45a2a7ac4867bd839, type: 3}
+    volume: 0.05
+    pitch: 1
+    lastPlayedIndex: -1
+  - name: ShieldBashingIdle
+    clips:
+    - {fileID: 8300000, guid: 860e3821e36ec0345b2ede0dc38d9c49, type: 3}
+    - {fileID: 8300000, guid: 9b6498c35d2a8b847bb88813b54926ad, type: 3}
+    volume: 0.25
+    pitch: 0.8
+    lastPlayedIndex: -1
+  ambientLoops:
+  - name: ExplorationAmbience
+    clips:
+    - {fileID: 8300000, guid: a37ee44e0dacfdd4d8a771ab6aca2afd, type: 3}
+    volume: 0.55
+    pitch: 1
+    lastPlayedIndex: 0
+  bgmSource: {fileID: 8722633042384705278}
+  sfxSource: {fileID: 6236776249860269184}
+  ambientSource: {fileID: 413156704740130490}
+--- !u!82 &8722633042384705278
 AudioSource:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 261903077880342372}
+  m_GameObject: {fileID: 4880684184882666260}
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
@@ -163,13 +216,13 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
---- !u!82 &2128466652571606741
+--- !u!82 &6236776249860269184
 AudioSource:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 261903077880342372}
+  m_GameObject: {fileID: 4880684184882666260}
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
@@ -260,13 +313,13 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
---- !u!82 &2784602408804846882
+--- !u!82 &413156704740130490
 AudioSource:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 261903077880342372}
+  m_GameObject: {fileID: 4880684184882666260}
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
