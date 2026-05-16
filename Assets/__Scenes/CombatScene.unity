@@ -4350,12 +4350,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 544039761126309975, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
-      value: 3
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 544039761126309975, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1716978234}
     - target: {fileID: 544039761126309975, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
       value: LoadScene
@@ -4367,6 +4367,10 @@ PrefabInstance:
     - target: {fileID: 544039761126309975, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_IntArgument
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 544039761126309975, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_StringArgument
+      value: Overworld
       objectReference: {fileID: 0}
     - target: {fileID: 544039761126309975, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
@@ -4464,9 +4468,13 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4321873025585391193, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: uiButtonModel.sceneName
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 4746330013530430094, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4786553132515670833, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_LocalPosition.x
@@ -4547,6 +4555,30 @@ PrefabInstance:
     - target: {fileID: 7843656344183179625, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_Name
       value: ContinueButton
+      objectReference: {fileID: 0}
+    - target: {fileID: 7902962153199032563, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7902962153199032563, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1716978234}
+    - target: {fileID: 7902962153199032563, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: LoadScene
+      objectReference: {fileID: 0}
+    - target: {fileID: 7902962153199032563, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: SceneTransitionHandler, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 7902962153199032563, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_StringArgument
+      value: _MainMenu
+      objectReference: {fileID: 0}
+    - target: {fileID: 7902962153199032563, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -5103,6 +5135,67 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 8624822272237082430, guid: 88b19323e180ed141988af6348a9d11a, type: 3}
   m_PrefabInstance: {fileID: 1393329068}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1716978233
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1716978236}
+  - component: {fileID: 1716978235}
+  - component: {fileID: 1716978234}
+  m_Layer: 0
+  m_Name: ScenesManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1716978234
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1716978233}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f26b8faadc1f6d45b465ef021493484, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SceneTransitionManager
+  fadeCanvasGroup: {fileID: 0}
+  fadeDuration: 1
+  fadeColor: {r: 0, g: 0, b: 0, a: 1}
+  autoFadeOutOnDestroy: 1
+--- !u!114 &1716978235
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1716978233}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afa78c07d1ccf6f47bf9681223a8c4aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScenesManager
+--- !u!4 &1716978236
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1716978233}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 119.04361, y: 217.9616, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1838199355
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5589,3 +5682,4 @@ SceneRoots:
   - {fileID: 2112428692}
   - {fileID: 560644802}
   - {fileID: 943759217}
+  - {fileID: 1716978236}
