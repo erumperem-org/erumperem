@@ -2,9 +2,8 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using UnityEngine;
-using Services.DebugUtilities.Canvas;
+
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 using Unity.VisualScripting.Antlr3.Runtime;
 
 public class ApplyingTokenTest : MonoBehaviour
@@ -26,34 +25,31 @@ public class ApplyingTokenTest : MonoBehaviour
     public void AllocComboToken()     => _ = TokenContainerController.AddTokenToContainer(new TokenAllocationContext("Player", Current, new ComboToken()));
     public void AllocStunToken()      => _ = TokenContainerController.AddTokenToContainer(new TokenAllocationContext("Player", Current, new StunToken(Current, setActingBlocked)));
 
-    private static readonly HashSet<LogCategory> CombatCategory = new() { LogCategory.Combat };
-
     private void applyDamage(float value) =>
-        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, CombatCategory, value > 0,
-            $"Damage applied — {value:F1} hp removed from {Current.name}");
+        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, value > 0, $"Damage applied — {value:F1} hp removed from {Current.name}", LogCategory.Combat);
 
     private void applyEvasion(float value) =>
-        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, CombatCategory, value > 0,
+        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat, value > 0,
             $"Evasion set — {value * 100f:F1}% dodge chance on {Current.name}");
 
     private void applyHealDrain(float value) =>
-        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, CombatCategory, value > 0,
+        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat, value > 0,
             $"Heal drain applied — {value:F1} healing blocked from {Current.name}");
 
     private void applyMissChance(float value) =>
-        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, CombatCategory, value > 0,
+        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat, value > 0,
             $"Miss chance set — {value * 100f:F0}% on {Current.name}");
 
     private void setActingBlocked(bool blocked) =>
-        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, CombatCategory, blocked,
+        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat, blocked,
             $"{Current.name} acting blocked: {blocked}");
 
     private void setUntargetable(bool untargetable) =>
-        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, CombatCategory, untargetable,
+        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat, untargetable,
             $"{Current.name} untargetable: {untargetable}");
 
     private void onTauntApplied() =>
-        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, CombatCategory, true,
+        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat, true,
             $"Taunt applied — all enemies must target {Current.name}");
 
     public void SetCurrentAsA() => Current = CurrentA;

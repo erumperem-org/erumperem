@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -27,8 +26,7 @@ namespace Core.Tokens
 
         public PassiveSynergyContext BuildPassiveContext(TokenAllocationContext context) =>
             new PassiveSynergyContext(context.TokenContainerController, this,
-                matchCount => LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
-                    $"Regeneration Aura healing {matchCount * healPerRegenStack} per tick"));
+                matchCount => LoggerService.PrintLogMessage(LogLevel.Debug, $"Regeneration Aura healing {matchCount * healPerRegenStack} per tick", LogCategory.Combat));
 
         public override void ExecuteTokenEffect() => base.ExecuteTokenEffect();
     }
