@@ -1,21 +1,24 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using Services.DebugUtilities;
+using UnityEngine;
 
 public class PlayableCharactersManager : MonoBehaviour
 {
     [SerializeField] private List<PlayableCharacter> playables;
-    [SerializeField] private PlayableCharacterStateBuilder stateBuilder = new();
+    [SerializeField] private PlayableCharacterStatesBuilder stateBuilder = new();
 
-    public PlayableCharacter MainCharacter { get; private set; }
-    public PlayableCharacter CompanionCharacter { get; private set; }
+    public PlayableCharacter MainCharacter;
+    public PlayableCharacter CompanionCharacter;
+    public event Action<PlayableCharacter> MainCharacterChange;
+    public event Action<PlayableCharacter> CompanionCharacterChange;
 
     private void Start()
     {
         SetState(PlayableCharacterState.Main, playables[0]);
+        SetState(PlayableCharacterState.Resting, playables[1]);
+        SetState(PlayableCharacterState.Resting, playables[2]);
     }
-
     public void SetState(PlayableCharacterState newState, PlayableCharacter character)
     {
         if (newState == character.CurrentState) return;
@@ -33,14 +36,13 @@ public class PlayableCharactersManager : MonoBehaviour
                     break;
 
                 case PlayableCharacterState.Resting:
-                    stateBuilder.BuildResting(character);
+                    stateBuilder.BuildRestingCharacter(character);
+                    character.CurrentState = PlayableCharacterState.Resting;
                     break;
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
             }
-
-            character.CurrentState = newState;
 
             LoggerService.PrintLogMessage(LogLevel.Debug,
                 $"[{character.characterName.ToUpper()}] Estado alterado para {newState}.",
@@ -57,19 +59,22 @@ public class PlayableCharactersManager : MonoBehaviour
 
     // ── Helpers privados ──────────────────────────────────────────────────
 
+    // PlayableCharactersManager — PromoteToMain (Caso 2: swap)
     private void PromoteToMain(PlayableCharacter character)
     {
         if (character == CompanionCharacter)
         {
-            // Swap: companion vira main, main atual vai para companion
             if (MainCharacter != null)
             {
-                stateBuilder.BuildCompanion(MainCharacter);
+                stateBuilder.BuildCompanionCharacter(MainCharacter, character.transform);
+                MainCharacter.CurrentState = PlayableCharacterState.Companion;
                 CompanionCharacter = MainCharacter;
+                CompanionCharacterChange?.Invoke(CompanionCharacter);
             }
             else
             {
                 CompanionCharacter = null;
+                CompanionCharacterChange?.Invoke(null);
             }
         }
         else if (MainCharacter != null && MainCharacter != character)
@@ -77,19 +82,36 @@ public class PlayableCharactersManager : MonoBehaviour
             SetState(PlayableCharacterState.Resting, MainCharacter);
         }
 
-        stateBuilder.BuildMain(character);
+        stateBuilder.BuildMainCharacter(character);
+        character.CurrentState = PlayableCharacterState.Main;
+        character.detectionSystem.availableInteractables.Clear();
         MainCharacter = character;
+        MainCharacterChange?.Invoke(MainCharacter);
+
+        // Reatualiza o companion com o transform do novo main
+        // (cobre o caso: resting → main quando companion já existe)
+        if (CompanionCharacter != null && character != CompanionCharacter)
+            stateBuilder.BuildCompanionCharacter(CompanionCharacter, MainCharacter.transform);
     }
 
+    // PlayableCharactersManager — PromoteToCompanion (Bug 3: invoke único no fim)
     private void PromoteToCompanion(PlayableCharacter character)
     {
         if (character == MainCharacter)
+        {
             MainCharacter = null;
+            MainCharacterChange?.Invoke(null);
+        }
 
         if (CompanionCharacter != null && CompanionCharacter != character)
+        {
             SetState(PlayableCharacterState.Resting, CompanionCharacter);
+        }
 
-        stateBuilder.BuildCompanion(character);
+        // mainTransform já foi atualizado por BuildMainCharacter — usa direto
+        stateBuilder.BuildCompanionCharacter(character, stateBuilder.mainTransform);
+        character.CurrentState = PlayableCharacterState.Companion;
         CompanionCharacter = character;
+        CompanionCharacterChange?.Invoke(CompanionCharacter); // único invoke, no fim
     }
 }

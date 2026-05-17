@@ -27,6 +27,11 @@ public sealed class ChestInteractable : Interactable
     public IReadOnlyDictionary<IStorageable, int> Items => _items;
     public override bool CanInteract => !opened;
 
+    private void Awake()
+    {
+        inventory = FindFirstObjectByType<PlayerInventorySystem>();
+        base.Init();
+    }
     public void InjectLootService(ILootService service) =>
         _lootService = service ?? throw new System.ArgumentNullException(nameof(service));
 

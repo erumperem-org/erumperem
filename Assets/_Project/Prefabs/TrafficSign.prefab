@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3711955362642230142}
   - component: {fileID: 3970909453908972797}
   - component: {fileID: 4915615447707897009}
+  - component: {fileID: 5933418872753700760}
   m_Layer: 0
   m_Name: TrafficSign
   m_TagString: Untagged
@@ -112,3 +113,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.1429882, y: 2.8125753, z: 1.640043}
   m_Center: {x: 0.043495238, y: 1.4110079, z: -0.718827}
+--- !u!208 &5933418872753700760
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3051528055360573397}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 0.57100004, y: 1.406, z: 0.82000005}
+  m_MoveThreshold: 0.1
+  m_Carve: 0
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0.043, y: 1.411, z: -0.71900004}
+  m_TimeToStationary: 0.5

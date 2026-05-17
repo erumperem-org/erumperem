@@ -9,8 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3831081273794044302}
-  - component: {fileID: 7957888885845871255}
-  - component: {fileID: 753721401259309071}
+  - component: {fileID: 9217122735523692997}
+  - component: {fileID: 5382311863156691183}
   m_Layer: 0
   m_Name: ExplorationEnemySpawnPoint
   m_TagString: Untagged
@@ -33,7 +33,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7957888885845871255
+--- !u!114 &9217122735523692997
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -42,11 +42,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 2923714443034803707}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 616cdcd2e098308439549bb9246d650b, type: 3}
+  m_Script: {fileID: 11500000, guid: aa7f99bccca2c81409493be7266116e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DetectionSystem.View.CircleShapeView
   shapeName: Pursuit Area
-  shapeColor: {r: 1, g: 0, b: 0.036886215, a: 1}
+  shapeColor: {r: 0.9716981, g: 0.03208439, b: 0.041683257, a: 1}
   drawSolid: 1
   solidAlpha: 0.15
   showLabel: 1
@@ -54,7 +54,7 @@ MonoBehaviour:
   center: {x: 0, y: 0, z: 0}
   radius: 40
   isFixed: 0
---- !u!114 &753721401259309071
+--- !u!114 &5382311863156691183
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -63,11 +63,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 2923714443034803707}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 616cdcd2e098308439549bb9246d650b, type: 3}
+  m_Script: {fileID: 11500000, guid: aa7f99bccca2c81409493be7266116e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DetectionSystem.View.CircleShapeView
   shapeName: Wander Area
-  shapeColor: {r: 0, g: 1, b: 0, a: 1}
+  shapeColor: {r: 1, g: 0.9800461, b: 0, a: 1}
   drawSolid: 1
   solidAlpha: 0.15
   showLabel: 1

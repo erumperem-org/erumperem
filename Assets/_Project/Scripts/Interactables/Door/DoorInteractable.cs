@@ -22,6 +22,10 @@ public sealed class DoorInteractable : Interactable
     /// que triggers se acumulem e o estado fique inconsistente.
     /// </summary>
     public override bool CanInteract => !_isAnimating;
+    void Awake()
+    {
+        base.Init();
+    }
 
     // ── Interação ──────────────────────────────────────────────────────────
 
@@ -35,7 +39,7 @@ public sealed class DoorInteractable : Interactable
 
         ApplyAnimatorState();
 
-        controller._inputReader.IsPlayerInteracting = true; 
+        controller._inputReader.IsPlayerInteracting = true;
         StartCoroutine(ReenableAfterAnimation(controller));
     }
 
@@ -74,7 +78,7 @@ public sealed class DoorInteractable : Interactable
                 LogCategory.Environment, LogCategory.Interaction);
         }
         else
-        {  
+        {
             _animator.SetTrigger(ResetTrigger);
             LoggerService.PrintLogMessage(LogLevel.Debug, "Door closed",
                 LogCategory.Environment, LogCategory.Interaction);
