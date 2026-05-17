@@ -1,267 +1,230 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AI;
 
 namespace Services.Navigation
 {
     /// <summary>
-    /// Implementação de <see cref="INavMeshService"/> baseada em MonoBehaviour.
-    /// Usa Coroutines para loops de polling e Task/CancellationToken para operações assíncronas.
+    /// Implementação stateless de <see cref="INavMeshService"/>.
     ///
-    /// Adicione este componente ao mesmo GameObject que possui o NavMeshAgent,
-    /// ou injete-o via construtor passando um MonoBehaviour host para Coroutines.
+    /// Uma única instância deste serviço opera sobre N agentes via
+    /// <see cref="NavMeshAgentAdapter"/>. O estado por-agente que precisa
+    /// persistir entre frames (pausa, coroutines de follow) é mantido em
+    /// <see cref="AgentState"/>, indexado pelo adapter — sem vazar para o
+    /// caller nem para outros agentes.
+    ///
+    /// Cada operação assíncrona retorna um <see cref="NavMeshOperation"/>:
+    /// o caller possui o handle e decide quando cancelar. Dois callers podem
+    /// acionar o mesmo agente em paralelo sem que um destrua silenciosamente
+    /// a operação do outro.
+    ///
+    /// Coroutines são hospedadas no MonoBehaviour <see cref="NavMeshCoroutineHost"/>,
+    /// criado automaticamente e mantido vivo via DontDestroyOnLoad.
     /// </summary>
-    public sealed class NavMeshService : MonoBehaviour, INavMeshService
+    public sealed class NavMeshService : INavMeshService
     {
         // ─────────────────────────────────────────────────────────────
-        // Estado interno
+        // Estado por agente (isolado, nunca exposto ao caller)
         // ─────────────────────────────────────────────────────────────
 
-        private NavMeshAgent _agent;
-
-        // Snapshot das configurações originais para ResetAgent()
-        private float _defaultSpeed;
-        private float _defaultAngularSpeed;
-        private float _defaultAcceleration;
-        private float _defaultStoppingDistance;
-        private bool  _defaultAutoBraking;
-
-        // Controle de Coroutines ativas
-        private Coroutine _followCoroutine;
-
-        // CancellationTokenSource interno para operações async (MoveToAsync, FollowTargetAsync…)
-        private CancellationTokenSource _movementCts;
-
-        // Flag de pausa para PauseNavigation / ResumeNavigation
-        private bool _isPaused;
-        private Vector3 _pausedDestination;
-
-        // ─────────────────────────────────────────────────────────────
-        // Inicialização
-        // ─────────────────────────────────────────────────────────────
-
-        private void Awake()
+        private sealed class AgentState
         {
-            _agent = GetComponent<NavMeshAgent>();
-
-            if (_agent == null)
-            {
-                Debug.LogError($"[NavMeshService] Nenhum NavMeshAgent encontrado em '{gameObject.name}'.");
-                return;
-            }
-
-            TakeDefaultSnapshot();
+            public bool IsPaused;
+            public Vector3 PausedDestination;
+            public Coroutine FollowCoroutine;
         }
 
-        private void TakeDefaultSnapshot()
+        private readonly Dictionary<NavMeshAgentAdapter, AgentState> _states
+            = new Dictionary<NavMeshAgentAdapter, AgentState>();
+
+        // ─────────────────────────────────────────────────────────────
+        // Host de Coroutines
+        // ─────────────────────────────────────────────────────────────
+
+        private readonly NavMeshCoroutineHost _host;
+
+        // ─────────────────────────────────────────────────────────────
+        // Construção
+        // ─────────────────────────────────────────────────────────────
+
+        public NavMeshService()
         {
-            _defaultSpeed           = _agent.speed;
-            _defaultAngularSpeed    = _agent.angularSpeed;
-            _defaultAcceleration    = _agent.acceleration;
-            _defaultStoppingDistance = _agent.stoppingDistance;
-            _defaultAutoBraking     = _agent.autoBraking;
+            _host = NavMeshCoroutineHost.GetOrCreate();
         }
 
         // ─────────────────────────────────────────────────────────────
         // Movimentação básica
         // ─────────────────────────────────────────────────────────────
 
-        public bool MoveTo(Vector3 destination)
+        public bool MoveTo(NavMeshAgentAdapter adapter, Vector3 destination)
         {
-            if (!IsAgentReady()) return false;
+            if (!IsReady(adapter)) return false;
 
-            CancelMovement();
-            _agent.isStopped = false;
-            return _agent.SetDestination(destination);
+            StopFollowCoroutine(adapter);
+            adapter.Agent.isStopped = false;
+            return adapter.Agent.SetDestination(destination);
         }
 
-        public async Task<bool> MoveToAsync(
-            Vector3 destination,
-            float timeout = 30f,
-            CancellationToken cancellationToken = default)
+        public NavMeshOperation MoveToAsync(NavMeshAgentAdapter adapter, Vector3 destination,
+            float timeout = 30f, CancellationToken cancellationToken = default)
         {
-            if (!IsAgentReady()) return false;
+            var op = new NavMeshOperation(cancellationToken);
 
-            CancelMovement();
-            _movementCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
-            if (!MoveTo(destination)) return false;
-
-            return await WaitUntilReachedAsync(timeout, _movementCts.Token);
-        }
-
-        public void FollowTarget(Transform target, float updateInterval = 0.15f)
-        {
-            if (!IsAgentReady() || target == null) return;
-
-            StopFollowCoroutine();
-            CancelMovement();
-            _followCoroutine = StartCoroutine(FollowTargetCoroutine(target, updateInterval));
-        }
-
-        public async Task FollowTargetAsync(
-            Transform target,
-            float stopDistance = 1.5f,
-            float updateInterval = 0.15f,
-            CancellationToken cancellationToken = default)
-        {
-            if (!IsAgentReady() || target == null) return;
-
-            CancelMovement();
-            _movementCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
-            var tcs = new TaskCompletionSource<bool>();
-
-            _followCoroutine = StartCoroutine(
-                FollowTargetUntilStopCoroutine(target, stopDistance, updateInterval, _movementCts.Token, tcs));
-
-            await tcs.Task;
-        }
-
-        public void Stop()
-        {
-            if (!IsAgentReady()) return;
-
-            StopFollowCoroutine();
-            CancelMovement();
-
-            _agent.isStopped = true;
-            _isPaused = false;
-        }
-
-        public void Resume()
-        {
-            if (!IsAgentReady()) return;
-
-            _agent.isStopped = false;
-            _isPaused = false;
-        }
-
-        public void PauseNavigation()
-        {
-            if (!IsAgentReady() || _isPaused) return;
-
-            _pausedDestination = _agent.destination;
-            _agent.isStopped   = true;
-            _isPaused          = true;
-        }
-
-        public void ResumeNavigation()
-        {
-            if (!IsAgentReady() || !_isPaused) return;
-
-            _agent.isStopped = false;
-            _agent.SetDestination(_pausedDestination);
-            _isPaused = false;
-        }
-
-        public void CancelMovement()
-        {
-            StopFollowCoroutine();
-
-            if (_movementCts != null)
+            if (!IsReady(adapter) || !MoveTo(adapter, destination))
             {
-                _movementCts.Cancel();
-                _movementCts.Dispose();
-                _movementCts = null;
+                op.Complete(false);
+                return op;
             }
+
+            _host.Run(WaitUntilReachedCoroutine(adapter, timeout, op));
+            return op;
+        }
+
+        public NavMeshOperation FollowTargetAsync(NavMeshAgentAdapter adapter, Transform target,
+            float stopDistance = 1.5f, float updateInterval = 0.15f,
+            CancellationToken cancellationToken = default)
+        {
+            var op = new NavMeshOperation(cancellationToken);
+
+            if (!IsReady(adapter) || target == null)
+            {
+                op.Complete(false);
+                return op;
+            }
+
+            StopFollowCoroutine(adapter);
+            var state = GetOrCreateState(adapter);
+            state.FollowCoroutine = _host.Run(
+                FollowTargetUntilStopCoroutine(adapter, target, stopDistance, updateInterval, op));
+
+            return op;
+        }
+
+        public void Stop(NavMeshAgentAdapter adapter)
+        {
+            if (!IsReady(adapter)) return;
+
+            StopFollowCoroutine(adapter);
+            adapter.Agent.isStopped = true;
+            GetOrCreateState(adapter).IsPaused = false;
+        }
+
+        public void Resume(NavMeshAgentAdapter adapter)
+        {
+            if (!IsReady(adapter)) return;
+
+            adapter.Agent.isStopped = false;
+            GetOrCreateState(adapter).IsPaused = false;
+        }
+
+        public void PauseNavigation(NavMeshAgentAdapter adapter)
+        {
+            if (!IsReady(adapter)) return;
+
+            var state = GetOrCreateState(adapter);
+            if (state.IsPaused) return;
+
+            state.PausedDestination = adapter.Agent.destination;
+            adapter.Agent.isStopped = true;
+            state.IsPaused = true;
+        }
+
+        public void ResumeNavigation(NavMeshAgentAdapter adapter)
+        {
+            if (!IsReady(adapter)) return;
+
+            var state = GetOrCreateState(adapter);
+            if (!state.IsPaused) return;
+
+            adapter.Agent.isStopped = false;
+            adapter.Agent.SetDestination(state.PausedDestination);
+            state.IsPaused = false;
         }
 
         // ─────────────────────────────────────────────────────────────
         // Teleporte e posicionamento
         // ─────────────────────────────────────────────────────────────
 
-        public bool Warp(Vector3 position)
+        public bool Warp(NavMeshAgentAdapter adapter, Vector3 position)
         {
-            if (!IsAgentReady()) return false;
+            if (!IsReady(adapter)) return false;
 
-            CancelMovement();
-            return _agent.Warp(position);
+            StopFollowCoroutine(adapter);
+            return adapter.Agent.Warp(position);
         }
 
-        public bool TeleportToNearestNavMeshPoint(Vector3 position, float maxDistance = 5f)
+        public bool TeleportToNearestNavMeshPoint(NavMeshAgentAdapter adapter, Vector3 position,
+            float maxDistance = 5f)
         {
             if (!SamplePosition(position, out var nearest, maxDistance)) return false;
 
-            return Warp(nearest);
+            return Warp(adapter, nearest);
         }
 
         // ─────────────────────────────────────────────────────────────
         // Controle de destino e velocidade
         // ─────────────────────────────────────────────────────────────
 
-        public bool SetDestination(Vector3 destination)
+        public bool SetDestination(NavMeshAgentAdapter adapter, Vector3 destination)
         {
-            if (!IsAgentReady()) return false;
+            if (!IsReady(adapter)) return false;
 
-            _agent.isStopped = false;
-            return _agent.SetDestination(destination);
+            adapter.Agent.isStopped = false;
+            return adapter.Agent.SetDestination(destination);
         }
 
-        public void SetVelocity(Vector3 velocity)
+        public void SetVelocity(NavMeshAgentAdapter adapter, Vector3 velocity)
         {
-            if (!IsAgentReady()) return;
-
-            _agent.velocity = velocity;
+            if (IsReady(adapter)) adapter.Agent.velocity = velocity;
         }
 
-        public void SetSpeed(float speed)
+        public void SetSpeed(NavMeshAgentAdapter adapter, float speed)
         {
-            if (!IsAgentReady()) return;
-
-            _agent.speed = Mathf.Max(0f, speed);
+            if (IsReady(adapter)) adapter.Agent.speed = Mathf.Max(0f, speed);
         }
 
-        public void SetAngularSpeed(float angularSpeed)
+        public void SetAngularSpeed(NavMeshAgentAdapter adapter, float angularSpeed)
         {
-            if (!IsAgentReady()) return;
-
-            _agent.angularSpeed = Mathf.Max(0f, angularSpeed);
+            if (IsReady(adapter)) adapter.Agent.angularSpeed = Mathf.Max(0f, angularSpeed);
         }
 
-        public void SetAcceleration(float acceleration)
+        public void SetAcceleration(NavMeshAgentAdapter adapter, float acceleration)
         {
-            if (!IsAgentReady()) return;
-
-            _agent.acceleration = Mathf.Max(0f, acceleration);
+            if (IsReady(adapter)) adapter.Agent.acceleration = Mathf.Max(0f, acceleration);
         }
 
-        public void SetStoppingDistance(float distance)
+        public void SetStoppingDistance(NavMeshAgentAdapter adapter, float distance)
         {
-            if (!IsAgentReady()) return;
-
-            _agent.stoppingDistance = Mathf.Max(0f, distance);
+            if (IsReady(adapter)) adapter.Agent.stoppingDistance = Mathf.Max(0f, distance);
         }
 
         // ─────────────────────────────────────────────────────────────
         // Caminhos
         // ─────────────────────────────────────────────────────────────
 
-        public void ClearPath()
+        public void ClearPath(NavMeshAgentAdapter adapter)
         {
-            if (!IsAgentReady()) return;
-
-            _agent.ResetPath();
+            if (IsReady(adapter)) adapter.Agent.ResetPath();
         }
 
-        public bool RecalculatePath()
+        public bool RecalculatePath(NavMeshAgentAdapter adapter)
         {
-            if (!IsAgentReady() || !_agent.hasPath) return false;
+            if (!IsReady(adapter) || !adapter.Agent.hasPath) return false;
 
-            var destination = _agent.destination;
-            _agent.ResetPath();
-            return _agent.SetDestination(destination);
+            var destination = adapter.Agent.destination;
+            adapter.Agent.ResetPath();
+            return adapter.Agent.SetDestination(destination);
         }
 
-        public NavMeshPath CalculatePath(Vector3 destination)
+        public NavMeshPath CalculatePath(NavMeshAgentAdapter adapter, Vector3 destination)
         {
-            if (!IsAgentReady()) return null;
+            if (!IsReady(adapter)) return null;
 
             var path = new NavMeshPath();
-            _agent.CalculatePath(destination, path);
+            adapter.Agent.CalculatePath(destination, path);
 
             return path.status == NavMeshPathStatus.PathInvalid ? null : path;
         }
@@ -279,81 +242,82 @@ namespace Services.Navigation
             return total;
         }
 
-        public Vector3[] GetPathCorners()
+        public Vector3[] GetPathCorners(NavMeshAgentAdapter adapter)
         {
-            if (!IsAgentReady() || !_agent.hasPath) return Array.Empty<Vector3>();
+            if (!IsReady(adapter) || !adapter.Agent.hasPath) return Array.Empty<Vector3>();
 
-            return _agent.path.corners;
+            return adapter.Agent.path.corners;
         }
 
         // ─────────────────────────────────────────────────────────────
         // Verificações de estado do caminho
         // ─────────────────────────────────────────────────────────────
 
-        public bool HasPath()
-            => IsAgentReady() && _agent.hasPath;
+        public bool HasPath(NavMeshAgentAdapter adapter)
+            => IsReady(adapter) && adapter.Agent.hasPath;
 
-        public bool IsPathComplete()
-            => IsAgentReady() && _agent.hasPath
-            && _agent.path.status == NavMeshPathStatus.PathComplete;
+        public bool IsPathComplete(NavMeshAgentAdapter adapter)
+            => IsReady(adapter) && adapter.Agent.hasPath
+            && adapter.Agent.path.status == NavMeshPathStatus.PathComplete;
 
-        public bool IsPathPartial()
-            => IsAgentReady() && _agent.hasPath
-            && _agent.path.status == NavMeshPathStatus.PathPartial;
+        public bool IsPathPartial(NavMeshAgentAdapter adapter)
+            => IsReady(adapter) && adapter.Agent.hasPath
+            && adapter.Agent.path.status == NavMeshPathStatus.PathPartial;
 
-        public bool IsPathInvalid()
-            => IsAgentReady() && _agent.hasPath
-            && _agent.path.status == NavMeshPathStatus.PathInvalid;
+        public bool IsPathInvalid(NavMeshAgentAdapter adapter)
+            => IsReady(adapter) && adapter.Agent.hasPath
+            && adapter.Agent.path.status == NavMeshPathStatus.PathInvalid;
 
         // ─────────────────────────────────────────────────────────────
         // Verificações de estado do agente
         // ─────────────────────────────────────────────────────────────
 
-        public bool IsMoving()
-            => IsAgentReady() && !_agent.isStopped
-            && _agent.velocity.sqrMagnitude > 0.01f;
+        public bool IsMoving(NavMeshAgentAdapter adapter)
+            => IsReady(adapter) && !adapter.Agent.isStopped
+            && adapter.Agent.velocity.sqrMagnitude > 0.01f;
 
-        public bool IsStopped()
-            => !IsAgentReady() || _agent.isStopped
-            || _agent.velocity.sqrMagnitude <= 0.01f;
+        public bool IsStopped(NavMeshAgentAdapter adapter)
+            => !IsReady(adapter) || adapter.Agent.isStopped
+            || adapter.Agent.velocity.sqrMagnitude <= 0.01f;
 
-        public bool IsPending()
-            => IsAgentReady() && _agent.pathPending;
+        public bool IsPending(NavMeshAgentAdapter adapter)
+            => IsReady(adapter) && adapter.Agent.pathPending;
 
-        public bool HasReachedDestination()
+        public bool HasReachedDestination(NavMeshAgentAdapter adapter)
         {
-            if (!IsAgentReady()) return false;
-            if (_agent.pathPending)  return false;
-            if (_agent.remainingDistance > _agent.stoppingDistance) return false;
+            if (!IsReady(adapter)) return false;
+            if (adapter.Agent.pathPending) return false;
+            if (adapter.Agent.remainingDistance > adapter.Agent.stoppingDistance) return false;
 
-            return !_agent.hasPath || _agent.velocity.sqrMagnitude <= 0.01f;
+            return !adapter.Agent.hasPath || adapter.Agent.velocity.sqrMagnitude <= 0.01f;
         }
 
-        public bool IsOnNavMesh()
-            => IsAgentReady() && _agent.isOnNavMesh;
+        public bool IsOnNavMesh(NavMeshAgentAdapter adapter)
+            => IsReady(adapter) && adapter.Agent.isOnNavMesh;
 
-        public float GetRemainingDistance()
-            => IsAgentReady() ? _agent.remainingDistance : 0f;
+        public float GetRemainingDistance(NavMeshAgentAdapter adapter)
+            => IsReady(adapter) ? adapter.Agent.remainingDistance : 0f;
 
-        public Vector3 GetCurrentDestination()
-            => IsAgentReady() ? _agent.destination : Vector3.zero;
+        public Vector3 GetCurrentDestination(NavMeshAgentAdapter adapter)
+            => IsReady(adapter) ? adapter.Agent.destination : Vector3.zero;
 
-        public Vector3 GetCurrentVelocity()
-            => IsAgentReady() ? _agent.velocity : Vector3.zero;
+        public Vector3 GetCurrentVelocity(NavMeshAgentAdapter adapter)
+            => IsReady(adapter) ? adapter.Agent.velocity : Vector3.zero;
 
-        public Vector3 GetNormalizedDirection()
+        public Vector3 GetNormalizedDirection(NavMeshAgentAdapter adapter)
         {
-            if (!IsAgentReady()) return Vector3.zero;
+            if (!IsReady(adapter)) return Vector3.zero;
 
-            var vel = _agent.velocity;
+            var vel = adapter.Agent.velocity;
             return vel.sqrMagnitude > 0.001f ? vel.normalized : Vector3.zero;
         }
 
         // ─────────────────────────────────────────────────────────────
-        // NavMesh queries
+        // NavMesh queries (sem agente específico)
         // ─────────────────────────────────────────────────────────────
 
-        public bool SamplePosition(Vector3 sourcePosition, out Vector3 result, float maxDistance, int areaMask = NavMesh.AllAreas)
+        public bool SamplePosition(Vector3 sourcePosition, out Vector3 result,
+            float maxDistance, int areaMask = NavMesh.AllAreas)
         {
             result = sourcePosition;
 
@@ -366,8 +330,8 @@ namespace Services.Navigation
 
         public bool Raycast(Vector3 sourcePosition, Vector3 targetPosition, out NavMeshHit hit)
         {
-            // NavMesh.Raycast retorna true quando há obstrução; aqui invertemos para
-            // "true = caminho limpo" para melhor legibilidade no consumidor.
+            // NavMesh.Raycast retorna true quando há obstrução — invertido aqui para
+            // "true = caminho limpo", mais legível no consumidor.
             bool blocked = NavMesh.Raycast(sourcePosition, targetPosition, out hit, NavMesh.AllAreas);
             return !blocked;
         }
@@ -375,9 +339,9 @@ namespace Services.Navigation
         public bool ValidateDestination(Vector3 destination, float sampleRadius = 1f)
             => SamplePosition(destination, out _, sampleRadius);
 
-        public bool CanReach(Vector3 destination)
+        public bool CanReach(NavMeshAgentAdapter adapter, Vector3 destination)
         {
-            var path = CalculatePath(destination);
+            var path = CalculatePath(adapter, destination);
             return path != null && path.status == NavMeshPathStatus.PathComplete;
         }
 
@@ -385,204 +349,180 @@ namespace Services.Navigation
         // Espera assíncrona
         // ─────────────────────────────────────────────────────────────
 
-        public async Task<bool> WaitUntilReachedAsync(
-            float timeout = 30f,
-            CancellationToken cancellationToken = default)
+        public NavMeshOperation WaitUntilReachedAsync(NavMeshAgentAdapter adapter,
+            float timeout = 30f, CancellationToken cancellationToken = default)
         {
-            var tcs = new TaskCompletionSource<bool>();
-
-            StartCoroutine(WaitUntilReachedCoroutine(timeout, cancellationToken, tcs));
-
-            return await tcs.Task;
+            var op = new NavMeshOperation(cancellationToken);
+            _host.Run(WaitUntilReachedCoroutine(adapter, timeout, op));
+            return op;
         }
 
-        public async Task<bool> WaitUntilStoppedAsync(
-            float timeout = 10f,
-            CancellationToken cancellationToken = default)
+        public NavMeshOperation WaitUntilStoppedAsync(NavMeshAgentAdapter adapter,
+            float timeout = 10f, CancellationToken cancellationToken = default)
         {
-            var tcs = new TaskCompletionSource<bool>();
-
-            StartCoroutine(WaitUntilStoppedCoroutine(timeout, cancellationToken, tcs));
-
-            return await tcs.Task;
+            var op = new NavMeshOperation(cancellationToken);
+            _host.Run(WaitUntilStoppedCoroutine(adapter, timeout, op));
+            return op;
         }
 
         // ─────────────────────────────────────────────────────────────
         // Rotação
         // ─────────────────────────────────────────────────────────────
 
-        public async Task FaceTargetAsync(
-            Transform target,
-            float rotationSpeed = 360f,
-            CancellationToken cancellationToken = default)
+        public NavMeshOperation FaceTargetAsync(NavMeshAgentAdapter adapter, Transform target,
+            float rotationSpeed = 360f, CancellationToken cancellationToken = default)
         {
-            if (target == null) return;
+            if (target == null)
+            {
+                var noop = new NavMeshOperation(cancellationToken);
+                noop.Complete(false);
+                return noop;
+            }
 
-            var direction = (target.position - transform.position);
+            var direction = target.position - adapter.transform.position;
             direction.y = 0f;
 
-            await FaceDirectionAsync(direction, rotationSpeed, cancellationToken);
+            return FaceDirectionAsync(adapter, direction, rotationSpeed, cancellationToken);
         }
 
-        public async Task FaceDirectionAsync(
-            Vector3 direction,
-            float rotationSpeed = 360f,
-            CancellationToken cancellationToken = default)
+        public NavMeshOperation FaceDirectionAsync(NavMeshAgentAdapter adapter, Vector3 direction,
+            float rotationSpeed = 360f, CancellationToken cancellationToken = default)
         {
-            if (direction.sqrMagnitude < 0.001f) return;
+            var op = new NavMeshOperation(cancellationToken);
 
-            var tcs = new TaskCompletionSource<bool>();
+            if (direction.sqrMagnitude < 0.001f)
+            {
+                op.Complete(false);
+                return op;
+            }
 
-            StartCoroutine(FaceDirectionCoroutine(direction.normalized, rotationSpeed, cancellationToken, tcs));
-
-            await tcs.Task;
+            _host.Run(FaceDirectionCoroutine(adapter, direction.normalized, rotationSpeed, op));
+            return op;
         }
 
         // ─────────────────────────────────────────────────────────────
         // Configurações de comportamento
         // ─────────────────────────────────────────────────────────────
 
-        public void EnableAutoBraking(bool enabled)
+        public void EnableAutoBraking(NavMeshAgentAdapter adapter, bool enabled)
         {
-            if (IsAgentReady()) _agent.autoBraking = enabled;
+            if (IsReady(adapter)) adapter.Agent.autoBraking = enabled;
         }
 
-        public void EnableRotation(bool enabled)
+        public void EnableRotation(NavMeshAgentAdapter adapter, bool enabled)
         {
-            if (IsAgentReady()) _agent.updateRotation = enabled;
+            if (IsReady(adapter)) adapter.Agent.updateRotation = enabled;
         }
 
-        public void EnablePositionUpdate(bool enabled)
+        public void EnablePositionUpdate(NavMeshAgentAdapter adapter, bool enabled)
         {
-            if (IsAgentReady()) _agent.updatePosition = enabled;
+            if (IsReady(adapter)) adapter.Agent.updatePosition = enabled;
         }
 
-        public void EnableObstacleAvoidance(bool enabled)
+        public void EnableObstacleAvoidance(NavMeshAgentAdapter adapter, bool enabled)
         {
-            if (!IsAgentReady()) return;
+            if (!IsReady(adapter)) return;
 
-            _agent.obstacleAvoidanceType = enabled
+            adapter.Agent.obstacleAvoidanceType = enabled
                 ? ObstacleAvoidanceType.LowQualityObstacleAvoidance
                 : ObstacleAvoidanceType.NoObstacleAvoidance;
         }
 
-        public void SetAreaMask(int areaMask)
+        public void SetAreaMask(NavMeshAgentAdapter adapter, int areaMask)
         {
-            if (IsAgentReady()) _agent.areaMask = areaMask;
+            if (IsReady(adapter)) adapter.Agent.areaMask = areaMask;
         }
 
-        public void SetAvoidancePriority(int priority)
+        public void SetAvoidancePriority(NavMeshAgentAdapter adapter, int priority)
         {
-            if (IsAgentReady()) _agent.avoidancePriority = Mathf.Clamp(priority, 0, 99);
+            if (IsReady(adapter)) adapter.Agent.avoidancePriority = Mathf.Clamp(priority, 0, 99);
         }
 
         // ─────────────────────────────────────────────────────────────
         // Ciclo de vida do agente
         // ─────────────────────────────────────────────────────────────
 
-        public void EnableAgent()
+        public void EnableAgent(NavMeshAgentAdapter adapter)
         {
-            if (_agent != null) _agent.enabled = true;
+            if (adapter?.Agent != null) adapter.Agent.enabled = true;
         }
 
-        public void DisableAgent()
+        public void DisableAgent(NavMeshAgentAdapter adapter)
         {
-            if (_agent == null) return;
+            if (adapter?.Agent == null) return;
 
-            CancelMovement();
-            _agent.enabled = false;
+            StopFollowCoroutine(adapter);
+            adapter.Agent.enabled = false;
         }
 
-        public void ResetAgent()
+        public void ResetAgent(NavMeshAgentAdapter adapter)
         {
-            if (!IsAgentReady()) return;
+            if (!IsReady(adapter)) return;
 
-            CancelMovement();
-            _agent.ResetPath();
-            _agent.isStopped       = false;
-            _agent.velocity        = Vector3.zero;
-            _isPaused              = false;
+            StopFollowCoroutine(adapter);
 
-            _agent.speed           = _defaultSpeed;
-            _agent.angularSpeed    = _defaultAngularSpeed;
-            _agent.acceleration    = _defaultAcceleration;
-            _agent.stoppingDistance = _defaultStoppingDistance;
-            _agent.autoBraking     = _defaultAutoBraking;
+            var agent = adapter.Agent;
+            agent.ResetPath();
+            agent.isStopped = false;
+            agent.velocity = Vector3.zero;
+            agent.speed = adapter.DefaultSpeed;
+            agent.angularSpeed = adapter.DefaultAngularSpeed;
+            agent.acceleration = adapter.DefaultAcceleration;
+            agent.stoppingDistance = adapter.DefaultStoppingDistance;
+            agent.autoBraking = adapter.DefaultAutoBraking;
+
+            if (_states.TryGetValue(adapter, out var state))
+                state.IsPaused = false;
         }
 
         // ─────────────────────────────────────────────────────────────
         // Coroutines internas
         // ─────────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Coroutine de follow simples: atualiza o destino do agente periodicamente
-        /// enquanto o alvo estiver vivo. Interrompida por StopFollowCoroutine().
-        /// </summary>
-        private IEnumerator FollowTargetCoroutine(Transform target, float updateInterval)
-        {
-            var wait = new WaitForSeconds(updateInterval);
-
-            while (target != null)
-            {
-                if (IsAgentReady())
-                    _agent.SetDestination(target.position);
-
-                yield return wait;
-            }
-        }
-
-        /// <summary>
-        /// Coroutine de follow assíncrono: atualiza o destino e resolve a TaskCompletionSource
-        /// quando o agente chegar dentro de <paramref name="stopDistance"/> ou o token for cancelado.
-        /// </summary>
         private IEnumerator FollowTargetUntilStopCoroutine(
+            NavMeshAgentAdapter adapter,
             Transform target,
             float stopDistance,
             float updateInterval,
-            CancellationToken cancellationToken,
-            TaskCompletionSource<bool> tcs)
+            NavMeshOperation op)
         {
             var wait = new WaitForSeconds(updateInterval);
 
-            while (target != null && !cancellationToken.IsCancellationRequested)
+            while (target != null && !op.Token.IsCancellationRequested)
             {
-                if (IsAgentReady())
+                if (IsReady(adapter))
                 {
-                    float dist = Vector3.Distance(transform.position, target.position);
+                    float dist = Vector3.Distance(adapter.transform.position, target.position);
 
                     if (dist <= stopDistance)
                     {
-                        Stop();
-                        tcs.TrySetResult(true);
+                        adapter.Agent.isStopped = true;
+                        op.Complete(true);
                         yield break;
                     }
 
-                    _agent.SetDestination(target.position);
+                    adapter.Agent.SetDestination(target.position);
                 }
 
                 yield return wait;
             }
 
-            // Target destruído ou cancelado
-            if (IsAgentReady()) _agent.isStopped = true;
-            tcs.TrySetResult(false);
+            if (IsReady(adapter)) adapter.Agent.isStopped = true;
+            op.Complete(false);
         }
 
-        /// <summary>
-        /// Coroutine que aguarda o agente alcançar o destino com suporte a timeout e cancellation.
-        /// </summary>
         private IEnumerator WaitUntilReachedCoroutine(
+            NavMeshAgentAdapter adapter,
             float timeout,
-            CancellationToken cancellationToken,
-            TaskCompletionSource<bool> tcs)
+            NavMeshOperation op)
         {
             float elapsed = 0f;
 
-            while (elapsed < timeout && !cancellationToken.IsCancellationRequested)
+            while (elapsed < timeout && !op.Token.IsCancellationRequested)
             {
-                if (HasReachedDestination())
+                if (HasReachedDestination(adapter))
                 {
-                    tcs.TrySetResult(true);
+                    op.Complete(true);
                     yield break;
                 }
 
@@ -590,24 +530,21 @@ namespace Services.Navigation
                 yield return null;
             }
 
-            tcs.TrySetResult(false);
+            op.Complete(false);
         }
 
-        /// <summary>
-        /// Coroutine que aguarda o agente parar completamente.
-        /// </summary>
         private IEnumerator WaitUntilStoppedCoroutine(
+            NavMeshAgentAdapter adapter,
             float timeout,
-            CancellationToken cancellationToken,
-            TaskCompletionSource<bool> tcs)
+            NavMeshOperation op)
         {
             float elapsed = 0f;
 
-            while (elapsed < timeout && !cancellationToken.IsCancellationRequested)
+            while (elapsed < timeout && !op.Token.IsCancellationRequested)
             {
-                if (IsStopped())
+                if (IsStopped(adapter))
                 {
-                    tcs.TrySetResult(true);
+                    op.Complete(true);
                     yield break;
                 }
 
@@ -615,69 +552,153 @@ namespace Services.Navigation
                 yield return null;
             }
 
-            tcs.TrySetResult(false);
+            op.Complete(false);
         }
 
-        /// <summary>
-        /// Coroutine de rotação suave em direção a um vetor normalizado no plano XZ.
-        /// </summary>
         private IEnumerator FaceDirectionCoroutine(
+            NavMeshAgentAdapter adapter,
             Vector3 targetDirection,
             float rotationSpeed,
-            CancellationToken cancellationToken,
-            TaskCompletionSource<bool> tcs)
+            NavMeshOperation op)
         {
-            if (targetDirection.sqrMagnitude < 0.001f)
-            {
-                tcs.TrySetResult(false);
-                yield break;
-            }
-
             var targetRotation = Quaternion.LookRotation(targetDirection);
-            bool wasRotationEnabled = _agent.updateRotation;
+            bool wasRotationEnabled = IsReady(adapter) && adapter.Agent.updateRotation;
 
-            // Desabilita a rotação do agente para assumir o controle
-            if (IsAgentReady()) _agent.updateRotation = false;
+            if (IsReady(adapter)) adapter.Agent.updateRotation = false;
 
-            while (!cancellationToken.IsCancellationRequested)
+            while (!op.Token.IsCancellationRequested)
             {
                 float step = rotationSpeed * Time.deltaTime;
-                transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, step);
+                adapter.transform.rotation = Quaternion.RotateTowards(
+                    adapter.transform.rotation, targetRotation, step);
 
-                float angle = Quaternion.Angle(transform.rotation, targetRotation);
-
-                if (angle < 0.5f)
+                if (Quaternion.Angle(adapter.transform.rotation, targetRotation) < 0.5f)
                 {
-                    transform.rotation = targetRotation;
+                    adapter.transform.rotation = targetRotation;
                     break;
                 }
 
                 yield return null;
             }
 
-            if (IsAgentReady()) _agent.updateRotation = wasRotationEnabled;
+            if (IsReady(adapter)) adapter.Agent.updateRotation = wasRotationEnabled;
 
-            tcs.TrySetResult(!cancellationToken.IsCancellationRequested);
+            op.Complete(!op.Token.IsCancellationRequested);
         }
 
         // ─────────────────────────────────────────────────────────────
         // Helpers privados
         // ─────────────────────────────────────────────────────────────
 
-        private bool IsAgentReady()
-            => _agent != null && _agent.enabled && _agent.isOnNavMesh;
+        private static bool IsReady(NavMeshAgentAdapter adapter)
+            => adapter != null && adapter.IsReady();
 
-        private void StopFollowCoroutine()
+        private AgentState GetOrCreateState(NavMeshAgentAdapter adapter)
         {
-            if (_followCoroutine == null) return;
+            if (!_states.TryGetValue(adapter, out var state))
+            {
+                state = new AgentState();
+                _states[adapter] = state;
+            }
 
-            StopCoroutine(_followCoroutine);
-            _followCoroutine = null;
+            return state;
         }
 
-        private void OnDestroy()
+        private void StopFollowCoroutine(NavMeshAgentAdapter adapter)
         {
-            CancelMovement();
+            if (!_states.TryGetValue(adapter, out var state)) return;
+            if (state.FollowCoroutine == null) return;
+
+            _host.Stop(state.FollowCoroutine);
+            state.FollowCoroutine = null;
+        }
+
+        // ── NavMesh Links ──────────────────────────────────────────────────────────
+
+        public bool IsOnNavMeshLink(NavMeshAgentAdapter adapter)
+            => IsReady(adapter) && adapter.Agent.isOnOffMeshLink;
+
+        public NavMeshOperation TraverseNavMeshLinkAsync(
+            NavMeshAgentAdapter adapter,
+            float speed,
+            float rotationSpeed,
+            CancellationToken cancellationToken = default)
+        {
+            var op = new NavMeshOperation(cancellationToken);
+
+            if (!IsReady(adapter) || !adapter.Agent.isOnOffMeshLink)
+            {
+                op.Complete(false);
+                return op;
+            }
+
+            _host.Run(TraverseLinkCoroutine(adapter, speed, rotationSpeed, op));
+            return op;
+        }
+
+        private IEnumerator TraverseLinkCoroutine(
+            NavMeshAgentAdapter adapter,
+            float speed,
+            float rotationSpeed,
+            NavMeshOperation op)
+        {
+            var agent = adapter.Agent;
+
+            // Congela o agente: a posição será controlada manualmente via transform
+            agent.isStopped = true;
+            agent.updatePosition = false;
+            agent.updateRotation = false;
+
+            var link = agent.currentOffMeshLinkData;
+            var start = adapter.transform.position;
+            var end = link.endPos;
+
+            // Garante que end esteja sobre a NavMesh
+            if (NavMesh.SamplePosition(end, out var hit, 1f, NavMesh.AllAreas))
+                end = hit.position;
+
+            float distance = Vector3.Distance(start, end);
+            float duration = distance / Mathf.Max(speed, 0.01f);
+            float elapsed = 0f;
+
+            var direction = (end - start).normalized;
+            var targetRotation = direction.sqrMagnitude > 0.001f
+                                       ? Quaternion.LookRotation(direction, Vector3.up)
+                                       : adapter.transform.rotation;
+
+            while (elapsed < duration && !op.Token.IsCancellationRequested)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+
+                // Posição: lerp linear entre start e end
+                adapter.transform.position = Vector3.Lerp(start, end, t);
+
+                // Rotação: slerp suave em direção ao destino do link
+                adapter.transform.rotation = Quaternion.Slerp(
+                    adapter.transform.rotation,
+                    targetRotation,
+                    rotationSpeed * Time.deltaTime);
+
+                yield return null;
+            }
+
+            // Snap final para garantir posição exata
+            adapter.transform.position = end;
+            adapter.transform.rotation = targetRotation;
+
+            // Sinaliza ao NavMeshAgent que o link foi concluído
+            agent.CompleteOffMeshLink();
+
+            // Restaura controle normal
+            agent.updatePosition = true;
+            agent.updateRotation = false; // mantém false — PlayerMovementController controla rotação
+            agent.isStopped = false;
+
+            // Sincroniza o agent com a posição final do transform
+            agent.nextPosition = end;
+
+            op.Complete(!op.Token.IsCancellationRequested);
         }
     }
 }

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -35,8 +34,8 @@ namespace Core.Tokens
 
         public override void ExecuteTokenEffect()
         {
-            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
-                "Combo marker added — combo bonus eligible for skill activation");
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                "Combo marker added — combo bonus eligible for skill activation", LogCategory.Combat);
             base.ExecuteTokenEffect();
         }
     }

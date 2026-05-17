@@ -1,5 +1,4 @@
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.StateMachine.FiniteStateMachine
 {
@@ -11,7 +10,7 @@ namespace Core.StateMachine.FiniteStateMachine
 
         public void TransitionTo(TState nextState)
         {
-            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.StateMachine, $"Moore Finite State Machine transitioning from [{CurrentState}] to [{nextState.StateName}]");
+            LoggerService.PrintLogMessage(LogLevel.Debug, $"Moore Finite State Machine transitioning from [{CurrentState}] to [{nextState.StateName}]", LogCategory.StateMachine);
             _currentState?.OnExit();
             _currentState = nextState;
             _currentState.OnEnter();
