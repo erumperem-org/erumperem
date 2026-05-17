@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -66,8 +65,8 @@ namespace Core.Tokens
 
         public override void ExecuteTokenEffect()
         {
-            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
-                $"Block active — mitigating {EffectiveFraction * 100f:F0}% of incoming damage");
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"Block active — mitigating {EffectiveFraction * 100f:F0}% of incoming damage", LogCategory.Combat);
             base.ExecuteTokenEffect();
         }
     }

@@ -2030,7 +2030,6 @@ public interface IState
 
 <file path="Assets/_Project/Scripts/State Machine/MooreFiniteStateMachine.cs">
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.StateMachine.FiniteStateMachine
 {
@@ -2182,8 +2181,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
-using Services.DebugUtilities.Console;
-using Services.DebugUtilities.Canvas;
+using Services.DebugUtilities;
+
 using Core.Tokens;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -2613,7 +2612,6 @@ using Core.Tokens;
 using UnityEngine;
 using System.Collections.Generic;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 using System.Text.RegularExpressions;
 
 namespace Core.Tokens
@@ -2691,7 +2689,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -2741,7 +2738,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -2805,7 +2801,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -2856,7 +2851,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -2902,7 +2896,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -2979,7 +2972,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -3055,7 +3047,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -3101,7 +3092,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -3451,7 +3441,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -3490,7 +3479,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -3561,7 +3549,6 @@ namespace Core.Tokens
 using System;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -3952,7 +3939,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -4029,7 +4015,6 @@ namespace Core.Tokens
 using System;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -4105,7 +4090,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -4241,7 +4225,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -4296,7 +4279,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -4347,7 +4329,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -4398,7 +4379,7 @@ namespace Core.Tokens
 
 <file path="Assets/_Project/Scripts/Token/Contracts/Allocation/IOnConditionMetTokenAllocation.cs">
 using System;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 
 // ALLOCATION
 // Defines when the token is initially applied.
@@ -4419,7 +4400,7 @@ namespace Core.Tokens
 
 <file path="Assets/_Project/Scripts/Token/Contracts/Allocation/IOnEventTokenAllocation.cs">
 using System;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 
 // ALLOCATION
 // Defines when the token is initially applied.
@@ -4442,7 +4423,7 @@ namespace Core.Tokens
 
 <file path="Assets/_Project/Scripts/Token/Contracts/Allocation/IOnHitTokenAllocation.cs">
 using System;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 
 // ALLOCATION
 // Defines when the token is initially applied.
@@ -4456,7 +4437,7 @@ namespace Core.Tokens
 
 <file path="Assets/_Project/Scripts/Token/Contracts/Allocation/ITokenAllocationStyle.cs">
 using System;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 
 // ALLOCATION
 // Defines when the token is initially applied.
@@ -4469,7 +4450,7 @@ namespace Core.Tokens
 
 <file path="Assets/_Project/Scripts/Token/Contracts/Allocation/TokenAllocationContext.cs">
 using System;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 
 // ALLOCATION
 // Defines when the token is initially applied.
@@ -4674,7 +4655,7 @@ using System;
 using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 using System.Threading.Tasks;
 
 // POST-ALLOCATION — removes target tokens and converts them into a benefit.
@@ -4818,7 +4799,7 @@ using System;
 using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 using System.Threading.Tasks;
 
 // POST-ALLOCATION REACTION — after being added, this token removes target
@@ -4982,7 +4963,7 @@ using System;
 using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 using System.Threading.Tasks;
 
 // CONSUMER — upgrades this token into a stronger form once a threshold of matching tokens is reached.
@@ -5040,7 +5021,7 @@ using System;
 using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 using System.Threading.Tasks;
 
 // PRE-ALLOCATION GUARD — blocks the incoming token from being added if a
@@ -5127,7 +5108,7 @@ using System;
 using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 using System.Threading.Tasks;
 
 // POST-ALLOCATION — removes target tokens but keeps itself active.
@@ -5274,7 +5255,7 @@ using System;
 using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 using System.Threading.Tasks;
 
 // BASE SYNERGY CONTRACT
@@ -5290,7 +5271,7 @@ using System;
 using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 using System.Threading.Tasks;
 
 // PROPAGATION — copies this token to other containers that do not yet hold it.
@@ -5340,7 +5321,7 @@ using System;
 using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 using System.Threading.Tasks;
 
 // BASE SYNERGY CONTRACT
@@ -5357,7 +5338,7 @@ using System;
 using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 using System.Threading.Tasks;
 
 // CONSUMER — immediately consumes this token and one matching token, replacing both with a result.
@@ -5402,9 +5383,8 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using UnityEngine;
-using Services.DebugUtilities.Canvas;
+
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 using Unity.VisualScripting.Antlr3.Runtime;
 
 public class ApplyingTokenTest : MonoBehaviour
@@ -5426,34 +5406,34 @@ public class ApplyingTokenTest : MonoBehaviour
     public void AllocComboToken()     => _ = TokenContainerController.AddTokenToContainer(new TokenAllocationContext("Player", Current, new ComboToken()));
     public void AllocStunToken()      => _ = TokenContainerController.AddTokenToContainer(new TokenAllocationContext("Player", Current, new StunToken(Current, setActingBlocked)));
 
-    private static readonly HashSet<LogCategory> CombatCategory = new() { LogCategory.Combat };
+    private static readonly HashSet<LogCategory> LogCategory.Combat = new() { LogCategory.Combat };
 
     private void applyDamage(float value) =>
-        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, CombatCategory, value > 0,
+        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat, value > 0,
             $"Damage applied — {value:F1} hp removed from {Current.name}");
 
     private void applyEvasion(float value) =>
-        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, CombatCategory, value > 0,
+        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat, value > 0,
             $"Evasion set — {value * 100f:F1}% dodge chance on {Current.name}");
 
     private void applyHealDrain(float value) =>
-        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, CombatCategory, value > 0,
+        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat, value > 0,
             $"Heal drain applied — {value:F1} healing blocked from {Current.name}");
 
     private void applyMissChance(float value) =>
-        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, CombatCategory, value > 0,
+        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat, value > 0,
             $"Miss chance set — {value * 100f:F0}% on {Current.name}");
 
     private void setActingBlocked(bool blocked) =>
-        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, CombatCategory, blocked,
+        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat, blocked,
             $"{Current.name} acting blocked: {blocked}");
 
     private void setUntargetable(bool untargetable) =>
-        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, CombatCategory, untargetable,
+        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat, untargetable,
             $"{Current.name} untargetable: {untargetable}");
 
     private void onTauntApplied() =>
-        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, CombatCategory, true,
+        CanvasLoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat, true,
             $"Taunt applied — all enemies must target {Current.name}");
 
     public void SetCurrentAsA() => Current = CurrentA;
@@ -5642,7 +5622,7 @@ public class UiButtonView
 <file path="Assets/_Project/Scripts/UI/Components/Button/Change Panel Button/ChangePanelButtonController.cs">
 using UnityEngine;
 using UnityEngine.EventSystems;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 public class ChangePanelButtonController : UiButtonController<ChangePanelButtonModel>, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
 {
     //Events
@@ -5689,7 +5669,7 @@ public struct ChangePanelButtonModel : UiButtonModel
 <file path="Assets/_Project/Scripts/UI/Components/Button/Change Scene Button/ChangeSceneButtonController.cs">
 using UnityEngine;
 using UnityEngine.EventSystems;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 public class ChangeSceneButtonController : UiButtonController<ChangeSceneButtonModel>, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
 {
     //Events
@@ -5734,7 +5714,7 @@ public struct ChangeSceneButtonModel : UiButtonModel
 <file path="Assets/_Project/Scripts/UI/Components/Button/Close Application Button/CloseApplicationButtonModel.cs">
 using UnityEngine;
 using UnityEngine.EventSystems;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 
 public class CloseApplicationButtonModel : UiButtonModel{}
 </file>
@@ -5742,7 +5722,7 @@ public class CloseApplicationButtonModel : UiButtonModel{}
 <file path="Assets/_Project/Scripts/UI/Components/Button/Close Application Button/CloseApplicationController.cs">
 using UnityEngine;
 using UnityEngine.EventSystems;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 public class CloseApplicationButtonController : UiButtonController<CloseApplicationButtonModel>, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
 {
     void IPointerEnterHandler.OnPointerEnter(PointerEventData eventData)
@@ -8558,7 +8538,7 @@ namespace DG.Tweening
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 namespace Services.DebugUtilities.Canvas
 {
     public static class CanvasLoggerService
@@ -17959,7 +17939,6 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 using System;
 using UnityEngine.SceneManagement;
 
@@ -18080,7 +18059,6 @@ namespace Core.Exploration.Enemies
 <file path="Assets/_Project/Scripts/Exploration Enemies/Enemies/Behavior Startegies/ExplorationEnemyOnCreate.cs">
 using System;
 using UnityEngine;
-using Services.DebugUtilities.Console;
 using Services.DebugUtilities;
 
 namespace Core.Exploration.Enemies
@@ -18107,7 +18085,6 @@ namespace Core.Exploration.Enemies
 <file path="Assets/_Project/Scripts/Exploration Enemies/Enemies/Behavior Startegies/ExplorationEnemyOnDestroy.cs">
 using System;
 using UnityEngine;
-using Services.DebugUtilities.Console;
 using Services.DebugUtilities;
 
 namespace Core.Exploration.Enemies
@@ -18134,7 +18111,6 @@ namespace Core.Exploration.Enemies
 <file path="Assets/_Project/Scripts/Exploration Enemies/Enemies/Behavior Startegies/ExplorationEnemyOnPool.cs">
 using System;
 using UnityEngine;
-using Services.DebugUtilities.Console;
 using Services.DebugUtilities;
 
 namespace Core.Exploration.Enemies
@@ -18164,7 +18140,6 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 using System;
 
 namespace Core.Exploration.Enemies
@@ -18453,8 +18428,8 @@ namespace Core.Exploration.Enemies
 
 <file path="Assets/_Project/Scripts/Exploration Enemies/Enemies/ExplorationEnemyController.cs">
 using System;
-using Services.DebugUtilities.Canvas;
-using Services.DebugUtilities.Console;
+
+using Services.DebugUtilities;
 using UnityEngine;
 using UnityEngine.AI;
 namespace Core.Exploration.Enemies

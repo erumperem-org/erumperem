@@ -1,7 +1,6 @@
 using System;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -27,8 +26,8 @@ namespace Core.Tokens
         public ConditionalSynergyContext BuildConditionalContext(TokenAllocationContext context) =>
             new ConditionalSynergyContext(context.TokenContainerController, this,
                 lowHealthCheck,
-                () => LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
-                    $"Execution triggered on {context.TokenContainerController.name}"),
+                () => LoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"Execution triggered on {context.TokenContainerController.name}", LogCategory.Combat),
                 conditionDescription: "Target HP below 20%");
 
         public override void ExecuteTokenEffect() => base.ExecuteTokenEffect();

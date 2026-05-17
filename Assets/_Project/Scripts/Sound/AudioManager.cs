@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Audio;
 
 public class AudioManager : MonoBehaviour
 {
@@ -118,5 +119,35 @@ public class AudioManager : MonoBehaviour
     public void StopAmbientLoop()
     {
         ambientSource.Stop();
+    }
+    [Header("Audio Mixer")]
+    public AudioMixer mainMixer;
+
+    public void SetMasterVolume(float sliderValue)
+    {
+        float dbVolume = sliderValue <= 0.001f ? -80f : Mathf.Log10(sliderValue) * 20f;
+        mainMixer.SetFloat("MasterVolume", dbVolume);
+        PlayerPrefs.SetFloat("PrefMasterVolume", sliderValue);
+    }
+
+    public void SetBGMVolume(float sliderValue)
+    {
+        float dbVolume = sliderValue <= 0.001f ? -80f : Mathf.Log10(sliderValue) * 20f;
+        mainMixer.SetFloat("BGMVolume", dbVolume);
+        PlayerPrefs.SetFloat("PrefBGMVolume", sliderValue);
+    }
+
+    public void SetSFXVolume(float sliderValue)
+    {
+        float dbVolume = sliderValue <= 0.001f ? -80f : Mathf.Log10(sliderValue) * 20f;
+        mainMixer.SetFloat("SFXVolume", dbVolume);
+        PlayerPrefs.SetFloat("PrefSFXVolume", sliderValue);
+    }
+
+    public void SetAmbientVolume(float sliderValue)
+    {
+        float dbVolume = sliderValue <= 0.001f ? -80f : Mathf.Log10(sliderValue) * 20f;
+        mainMixer.SetFloat("AmbientVolume", dbVolume);
+        PlayerPrefs.SetFloat("PrefAmbientVolume", sliderValue);
     }
 }
