@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -40,8 +39,8 @@ namespace Core.Tokens
         public override void ExecuteTokenEffect()
         {
             applyMissChance?.Invoke(missChance);
-            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
-                $"Blind — unit has {missChance * 100f:F0}% miss chance this turn");
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"Blind — unit has {missChance * 100f:F0}% miss chance this turn", LogCategory.Combat);
             base.ExecuteTokenEffect();
         }
     }

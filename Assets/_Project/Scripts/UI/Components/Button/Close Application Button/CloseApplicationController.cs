@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 public class CloseApplicationButtonController : UiButtonController<CloseApplicationButtonModel>, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
 {
     void IPointerEnterHandler.OnPointerEnter(PointerEventData eventData)
@@ -17,7 +17,7 @@ public class CloseApplicationButtonController : UiButtonController<CloseApplicat
         {
             _fsm.TransitionTo(new ButtonPressed(this, uiButtonView._pressedEnterEffects, uiButtonView._pressedExitEffects));
             Application.Quit();
-            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Lifecycle, "Closing Application");
+            LoggerService.PrintLogMessage(LogLevel.Debug, "Closing Application", LogCategory.Lifecycle);
         }
     }
 
