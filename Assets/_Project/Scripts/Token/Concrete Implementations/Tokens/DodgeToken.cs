@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
+using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -63,8 +64,8 @@ namespace Core.Tokens
         public override void ExecuteTokenEffect()
         {
             applyEvasion?.Invoke(EffectiveDodge);
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"Dodge — effective chance {EffectiveDodge * 100f:F1}%", LogCategory.Combat);
+            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
+                $"Dodge — effective chance {EffectiveDodge * 100f:F1}%");
             base.ExecuteTokenEffect();
         }
     }

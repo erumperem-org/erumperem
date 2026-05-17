@@ -3,8 +3,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
-using Services.DebugUtilities;
-
+using Services.DebugUtilities.Console;
+using Services.DebugUtilities.Canvas;
 using Core.Tokens;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -51,8 +51,8 @@ namespace Core.Tokens
                     if (conditionStyle.AllocationCondition != null && !conditionStyle.AllocationCondition.Invoke())
                     {
                         CanvasLoggerService.PrintLogMessage(LogLevel.Debug,
-                            $"Allocation blocked [{context.token.data.tokenDisplayName}] — condition not met.",
-                            LogCategory.Combat);
+                            new HashSet<LogCategory> { LogCategory.Combat },
+                            $"Allocation blocked [{context.token.data.tokenDisplayName}] — condition not met.");
                         return false;
                     }
                     return true;
@@ -128,9 +128,10 @@ namespace Core.Tokens
             }
 
             CanvasLoggerService.PrintLogMessage(LogLevel.Debug,
+                new HashSet<LogCategory> { LogCategory.Combat },
                 $"Allocating Token [{context.token.data.tokenDisplayName}] | " +
                 $"Owner: [{context.ownerName}] | " +
-                $"Target Container: [{context.TokenContainerController.name}]", LogCategory.Combat);
+                $"Target Container: [{context.TokenContainerController.name}]");
 
             container.model.tokens.Add(token);
             await container.view.AddTokenToView(token);
@@ -147,8 +148,9 @@ namespace Core.Tokens
 
             UnApplySynergies(controller, container);
             CanvasLoggerService.PrintLogMessage(LogLevel.Debug,
+            new HashSet<LogCategory> { LogCategory.Combat },
             $"Removing Token [{controller.data.tokenDisplayName}] | " +
-            $"Target Container: [{container.name}]",LogCategory.Combat );
+            $"Target Container: [{container.name}]");
             container.model.tokens.Remove(controller);
             container.view.RemoveToken(controller);    // FIX: view removal now happens AFTER model removal,
                                                        // ensuring view always reflects actual model state.
@@ -167,8 +169,9 @@ namespace Core.Tokens
             if (blocked)
             {
                 CanvasLoggerService.PrintLogMessage(LogLevel.Debug,
+                    new HashSet<LogCategory> { LogCategory.Combat },
                     $"Immunity Synergy blocked [{context.token.data.tokenDisplayName}] " +
-                    $"on Container [{context.TokenContainerController.name}]",LogCategory.Combat);
+                    $"on Container [{context.TokenContainerController.name}]");
             }
 
             return blocked;
@@ -198,7 +201,8 @@ namespace Core.Tokens
                 apply(typed, buildContext(typed));
 
                 CanvasLoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"{typeof(TInterface).Name} applied",LogCategory.Combat);
+                    new HashSet<LogCategory> { LogCategory.Combat },
+                    $"{typeof(TInterface).Name} applied");
             }
 
             Dispatch<ICancellationSynergy, CancellationSynergyContext>((s, ctx) => s.ApplyCancellationSynergy(ctx), s => s.BuildCancellationContext(context));

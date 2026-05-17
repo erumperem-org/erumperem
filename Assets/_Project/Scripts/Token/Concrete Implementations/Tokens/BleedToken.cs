@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
+using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -38,8 +39,8 @@ namespace Core.Tokens
         {
             float total = baseDamage + bonusDamage;
             applyDamage?.Invoke(total);
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"Bleed tick — {total:F1} damage (base {baseDamage} + {bonusDamage} armor-break bonus)", LogCategory.Combat);
+            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
+                $"Bleed tick — {total:F1} damage (base {baseDamage} + {bonusDamage} armor-break bonus)");
             base.ExecuteTokenEffect();
         }
     }

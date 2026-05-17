@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
+using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -26,8 +27,8 @@ namespace Core.Tokens
 
         public PassiveSynergyContext BuildPassiveContext(TokenAllocationContext context) =>
             new PassiveSynergyContext(context.TokenContainerController, this,
-                matchCount => LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"Thorn dealing {matchCount * damagePerBleedStack} reflect damage", LogCategory.Combat));
+                matchCount => LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
+                    $"Thorn dealing {matchCount * damagePerBleedStack} reflect damage"));
 
         public override void ExecuteTokenEffect() => base.ExecuteTokenEffect();
     }

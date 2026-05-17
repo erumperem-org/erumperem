@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
+using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -38,8 +39,8 @@ namespace Core.Tokens
         public override void ExecuteTokenEffect()
         {
             onTauntApplied?.Invoke();
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"Taunt — all enemies must target {data.tokenDisplayName} owner", LogCategory.Combat);
+            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
+                $"Taunt — all enemies must target {data.tokenDisplayName} owner");
             base.ExecuteTokenEffect();
         }
     }

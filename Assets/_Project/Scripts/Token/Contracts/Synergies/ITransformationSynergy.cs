@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
-using Services.DebugUtilities;
+using Services.DebugUtilities.Console;
 using System.Threading.Tasks;
 
 // CONSUMER — immediately consumes this token and one matching token, replacing both with a result.

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
+using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -27,8 +28,8 @@ namespace Core.Tokens
 
         public OverrideSynergyContext BuildOverrideContext(TokenAllocationContext context) =>
             new OverrideSynergyContext(context.TokenContainerController, this, () =>
-                LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"Divine Shield purged all DoT tokens from {context.TokenContainerController.name}", LogCategory.Combat));
+                LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
+                    $"Divine Shield purged all DoT tokens from {context.TokenContainerController.name}"));
 
         public override void ExecuteTokenEffect() => base.ExecuteTokenEffect();
     }

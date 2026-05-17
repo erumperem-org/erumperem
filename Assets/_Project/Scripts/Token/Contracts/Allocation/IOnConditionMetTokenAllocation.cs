@@ -1,5 +1,5 @@
 using System;
-using Services.DebugUtilities;
+using Services.DebugUtilities.Console;
 
 // ALLOCATION
 // Defines when the token is initially applied.

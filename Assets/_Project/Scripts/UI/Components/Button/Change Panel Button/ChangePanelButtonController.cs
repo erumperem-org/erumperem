@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
-using Services.DebugUtilities;
+using Services.DebugUtilities.Console;
 public class ChangePanelButtonController : UiButtonController<ChangePanelButtonModel>, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
 {
     //Events

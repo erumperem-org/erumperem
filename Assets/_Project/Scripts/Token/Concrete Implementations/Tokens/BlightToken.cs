@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
+using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -45,14 +46,14 @@ namespace Core.Tokens
             if (inverted)
             {
                 applyHealDrain?.Invoke(value);
-                LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"Blight (inverted) — drains {value:F1} healing", LogCategory.Combat);
+                LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
+                    $"Blight (inverted) — drains {value:F1} healing");
             }
             else
             {
                 applyDamage?.Invoke(value);
-                LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"Blight tick — {value:F1} damage (stack factor {factor:F2})", LogCategory.Combat);
+                LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
+                    $"Blight tick — {value:F1} damage (stack factor {factor:F2})");
             }
             base.ExecuteTokenEffect();
         }

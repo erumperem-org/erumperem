@@ -3,6 +3,7 @@ using Core.Tokens;
 using UnityEngine;
 using System.Collections.Generic;
 using Services.DebugUtilities;
+using Services.DebugUtilities.Console;
 using System.Text.RegularExpressions;
 
 namespace Core.Tokens
@@ -23,7 +24,7 @@ namespace Core.Tokens
         }
 
         private void ExecuteTokenEffectMessage() =>
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"Applying Token Effect [{Regex.Replace(data.tokenDisplayName, @"(?<!^)(?=[A-Z][a-z])", " ").ToUpper()}]", LogCategory.Combat);
+            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
+                $"Applying Token Effect [{Regex.Replace(data.tokenDisplayName, @"(?<!^)(?=[A-Z][a-z])", " ").ToUpper()}]");
     }
 }

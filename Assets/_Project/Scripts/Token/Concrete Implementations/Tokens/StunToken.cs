@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
+using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -39,8 +40,8 @@ namespace Core.Tokens
         public override void ExecuteTokenEffect()
         {
             setActingBlocked?.Invoke(true);
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                "Stun — unit cannot act this turn", LogCategory.Combat);
+            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
+                "Stun — unit cannot act this turn");
             base.ExecuteTokenEffect();
         }
     }

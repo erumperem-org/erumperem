@@ -1,6 +1,7 @@
 using System;
 using Core.Tokens;
 using Services.DebugUtilities;
+using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -26,8 +27,8 @@ namespace Core.Tokens
         public ConditionalSynergyContext BuildConditionalContext(TokenAllocationContext context) =>
             new ConditionalSynergyContext(context.TokenContainerController, this,
                 tookDamageThisTurn,
-                () => LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"Revenge counter-attack triggered from {context.TokenContainerController.name}", LogCategory.Combat),
+                () => LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
+                    $"Revenge counter-attack triggered from {context.TokenContainerController.name}"),
                 conditionDescription: "Holder took damage this turn");
 
         public override void ExecuteTokenEffect() => base.ExecuteTokenEffect();
