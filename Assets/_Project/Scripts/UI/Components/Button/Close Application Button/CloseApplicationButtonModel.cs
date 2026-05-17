@@ -1,5 +1,5 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 
 public class CloseApplicationButtonModel : UiButtonModel{}

@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
-using Services.DebugUtilities.Console;
+using Services.DebugUtilities;
 public class ChangeSceneButtonController : UiButtonController<ChangeSceneButtonModel>, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
 {
     //Events

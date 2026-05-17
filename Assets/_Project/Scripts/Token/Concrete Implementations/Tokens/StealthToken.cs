@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -44,8 +43,8 @@ namespace Core.Tokens
         public override void ExecuteTokenEffect()
         {
             setUntargetable?.Invoke(true);
-            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
-                $"Stealth active — unit is untargetable (bonus {stealthBonus:F2}x)");
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"Stealth active — unit is untargetable (bonus {stealthBonus:F2}x)", LogCategory.Combat);
             base.ExecuteTokenEffect();
         }
     }

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Core.Tokens;
 using Services.DebugUtilities;
-using Services.DebugUtilities.Console;
 
 namespace Core.Tokens
 {
@@ -46,8 +45,8 @@ namespace Core.Tokens
             var stacks = ((LinearStackData)data.tokenStackingdata).stacks;
             var damage  = stacks * currentDamageMultiplier;
             applyDamage?.Invoke(damage);
-            LoggerService.PrintLogMessage(LogLevel.Debug, LogCategory.Combat,
-                $"Burn tick — {damage:F1} damage ({stacks} stacks × {currentDamageMultiplier:F2})");
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"Burn tick — {damage:F1} damage ({stacks} stacks × {currentDamageMultiplier:F2})", LogCategory.Combat);
             base.ExecuteTokenEffect();
         }
     }
