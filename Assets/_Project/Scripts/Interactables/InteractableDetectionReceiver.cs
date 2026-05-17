@@ -8,13 +8,16 @@ public class InteractableDetectionReceiver : DetectionReceiver
     [SerializeField] private Material onEnterMaterial;
     [SerializeField] private Renderer objectRenderer;
     [SerializeField] private float transitionDuration = 0.3f;
-
+    [SerializeField] public Interactable interactable;
     private Coroutine _transitionCoroutine;
 
     protected override void OnDetectionEnter(Detector detector, string shapeLabel, int shapeIndex)
     {
-        base.OnDetectionEnter(detector, shapeLabel, shapeIndex);
-        StartTransition(onEnterMaterial);
+        if (interactable.CanInteract)
+        {
+            base.OnDetectionEnter(detector, shapeLabel, shapeIndex);
+            StartTransition(onEnterMaterial);
+        }
     }
 
     protected override void OnDetectionExit(Detector detector, string shapeLabel, int shapeIndex)

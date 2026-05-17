@@ -8,6 +8,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 85350168259835853, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
+      propertyPath: torchObject
+      value: 
+      objectReference: {fileID: 8595386093039433418}
+    - target: {fileID: 338079073150372359, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
+      propertyPath: objectRenderer
+      value: 
+      objectReference: {fileID: 3093744427024505311}
+    - target: {fileID: 338079073150372359, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
+      propertyPath: onExitMaterial
+      value: 
+      objectReference: {fileID: 8549484484805451082, guid: 839594803a0f16f478beae155fda1349, type: 3}
+    - target: {fileID: 338079073150372359, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
+      propertyPath: onEnterMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: f1a03a1c9b269344eb843055bf32d7b0, type: 2}
     - target: {fileID: 2045152887560073104, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
       propertyPath: m_TagString
       value: Npc
@@ -19,6 +35,10 @@ PrefabInstance:
     - target: {fileID: 2946303706336440846, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
       propertyPath: characterName
       value: Buck
+      objectReference: {fileID: 0}
+    - target: {fileID: 3629339903906941095, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3745382412989456661, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -36,9 +56,21 @@ PrefabInstance:
       propertyPath: m_TagString
       value: Untagged
       objectReference: {fileID: 0}
+    - target: {fileID: 7660477565840652046, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
+      propertyPath: icon
+      value: 
+      objectReference: {fileID: 294471993, guid: b13d7933d86e69942937319734068cda, type: 3}
+    - target: {fileID: 7660477565840652046, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
+      propertyPath: characterName
+      value: Buck
+      objectReference: {fileID: 0}
+    - target: {fileID: 7952661241832017408, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8338916238106846543, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 2
+      value: -6.7023344
       objectReference: {fileID: 0}
     - target: {fileID: 8338916238106846543, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
       propertyPath: m_LocalPosition.y
@@ -46,23 +78,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8338916238106846543, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -0.28428853
       objectReference: {fileID: 0}
     - target: {fileID: 8338916238106846543, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: 0.56805444
       objectReference: {fileID: 0}
     - target: {fileID: 8338916238106846543, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 8338916238106846543, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: 0.822991
       objectReference: {fileID: 0}
     - target: {fileID: 8338916238106846543, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 8338916238106846543, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -70,7 +102,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8338916238106846543, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
+      value: 110.771
       objectReference: {fileID: 0}
     - target: {fileID: 8338916238106846543, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -92,3 +124,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a933926050d26084ba7bfd68afe7cbd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayableAnimationController
+--- !u!137 &3093744427024505311 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3745382412989456661, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
+  m_PrefabInstance: {fileID: 1807479879774025930}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &8595386093039433418 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7952661241832017408, guid: efba3362b9610f64684fb5552802f7f7, type: 3}
+  m_PrefabInstance: {fileID: 1807479879774025930}
+  m_PrefabAsset: {fileID: 0}
