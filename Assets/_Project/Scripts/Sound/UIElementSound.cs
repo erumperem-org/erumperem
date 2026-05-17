@@ -34,7 +34,7 @@ public class UIElementSound : MonoBehaviour, IPointerEnterHandler, IPointerDownH
         }
     }
 
-public void OnDrag(PointerEventData eventData)
+    public void OnDrag(PointerEventData eventData)
     {
         if (_uiElement != null && _uiElement.interactable && (_uiElement is Slider || _uiElement is Scrollbar) && AudioManager.instance != null)
         {
