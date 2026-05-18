@@ -14,6 +14,7 @@ namespace Player
         [SerializeField] private float _speed = 4f;
         [SerializeField] private float _projectionDistance = 3f;
         [SerializeField] private float _stoppingDistance = 0.1f;
+         [SerializeField] private float _acceleration = 5f;
         [SerializeField] private PlayableAnimationController animationController;
 
         [Header("Rotação")]
@@ -68,7 +69,8 @@ namespace Player
                 enabled = false;
                 return;
             }
-
+            _navMesh.SetAcceleration(_adapter, _acceleration);  
+            _navMesh.EnableAutoBraking(_adapter, true); 
             _navMesh.SetSpeed(_adapter, _speed);
             _navMesh.SetStoppingDistance(_adapter, _stoppingDistance);
             _adapter.SetUpdateRotation(false);
@@ -162,6 +164,7 @@ namespace Player
             {
                 _navMesh.Stop(_adapter);
                 animationController?.SetIsMoving(false);
+                _navMesh.ClearPath(_adapter);
                 return;
             }
 
