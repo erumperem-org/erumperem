@@ -10,22 +10,49 @@ public class PlayableDetectionReceiver : DetectionReceiver
     [SerializeField] private float transitionDuration = 0.3f;
 
     private Coroutine _transitionCoroutine;
+    private bool _isEntered;
+
+    // ── DetectionReceiver overrides ───────────────────────────────────────
 
     protected override void OnDetectionEnter(Detector detector, string shapeLabel, int shapeIndex)
     {
         if (!detector.gameObject.CompareTag("Player")) return;
+        if (shapeLabel != "CharactersDetectionArea") return;
+
         base.OnDetectionEnter(detector, shapeLabel, shapeIndex);
+        _isEntered = true;
         StartTransition(onEnterMaterial);
     }
 
     protected override void OnDetectionExit(Detector detector, string shapeLabel, int shapeIndex)
     {
         if (!detector.gameObject.CompareTag("Player")) return;
+        if (shapeLabel != "CharactersDetectionArea") return;
+
         base.OnDetectionExit(detector, shapeLabel, shapeIndex);
-        StartTransition(onExitMaterial);
+        ApplyExit();
     }
 
-    // ── Transição de material ─────────────────────────────────────────────
+    // ── API pública ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Chamado pelo PlayableCharacterStatesBuilder sempre que o Main muda.
+    /// Reseta o receiver para o estado de saída caso o detector que estava
+    /// dentro ainda não tenha saído fisicamente da shape.
+    /// </summary>
+    public void ForceExit()
+    {
+        if (!_isEntered) return;
+        ApplyExit();
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    private void ApplyExit()
+    {
+        _isEntered = false;
+        StartTransition(onExitMaterial);
+    }
 
     private void StartTransition(Material target)
     {
@@ -41,8 +68,8 @@ public class PlayableDetectionReceiver : DetectionReceiver
     {
         Material current = objectRenderer.material;
         Color startColor = current.color;
-        Color endColor = target.color;
-        float elapsed = 0f;
+        Color endColor   = target.color;
+        float elapsed    = 0f;
 
         while (elapsed < transitionDuration)
         {
@@ -51,7 +78,8 @@ public class PlayableDetectionReceiver : DetectionReceiver
             yield return null;
         }
 
-        current.color = endColor;
+        current.color        = endColor;
         objectRenderer.material = target;
+        _transitionCoroutine = null;
     }
 }

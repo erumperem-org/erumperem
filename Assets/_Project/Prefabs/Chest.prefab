@@ -64,6 +64,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Chest
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
+      propertyPath: m_TagString
+      value: Interactable Object
+      objectReference: {fileID: 0}
     - target: {fileID: 3438196526767402093, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -78,7 +82,21 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2392564486350835221}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1737629136810504889}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2739721456065641114}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6676677907479605919}
   m_SourcePrefab: {fileID: 100100000, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
+--- !u!137 &6719668242030803035 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3438196526767402093, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
+  m_PrefabInstance: {fileID: 8284339833716593718}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &9094609322646104423 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
@@ -94,7 +112,7 @@ Animator:
   m_GameObject: {fileID: 9094609322646104423}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 07595cb5177f426478130c64e288ba61, type: 2}
+  m_Controller: {fileID: 9100000, guid: 88cfaad7ce29a3947b0a51c86cb99f00, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -127,3 +145,52 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.8416824, y: 1.4885255, z: 1.2496262}
   m_Center: {x: 0, y: 0.7416157, z: -0.030060977}
+--- !u!208 &1737629136810504889
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9094609322646104423}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 0.5, y: 0.5, z: 0.5}
+  m_MoveThreshold: 0.1
+  m_Carve: 0
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 0, z: 0}
+  m_TimeToStationary: 0.5
+--- !u!114 &2739721456065641114
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9094609322646104423}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d8f0845b2c6cc394e99bdd6c78c8b8b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InteractableDetectionReceiver
+  onExitMaterial: {fileID: 2100000, guid: a63e6f37d2becfc4eb847047c93cd3f1, type: 2}
+  onEnterMaterial: {fileID: 2100000, guid: 58603ccba27cd154dbf7226643705463, type: 2}
+  objectRenderer: {fileID: 6719668242030803035}
+  transitionDuration: 0.5
+--- !u!114 &6676677907479605919
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9094609322646104423}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 307ebca3baf0f5b4fbe81b7758c22eee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChestInteractable
+  reenableDelay: 9
+  lootTable: {fileID: 11400000, guid: a6ceafd8fe67f064ba5f6727f9a33b95, type: 2}
+  opened: 0
+  animator: {fileID: 4337141751552200429}
+  inventory: {fileID: 0}

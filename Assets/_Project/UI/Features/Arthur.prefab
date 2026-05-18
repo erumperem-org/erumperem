@@ -1,0 +1,248 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5944987517329962015
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5072870206431742983}
+  - component: {fileID: 173130782487194712}
+  - component: {fileID: 8098196285395574370}
+  m_Layer: 5
+  m_Name: Text (TMP)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &5072870206431742983
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5944987517329962015}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1346534057078428646}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 742.491, y: 973.0677}
+  m_Pivot: {x: 0, y: 0.5}
+--- !u!222 &173130782487194712
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5944987517329962015}
+  m_CullTransparentMesh: 1
+--- !u!114 &8098196285395574370
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5944987517329962015}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: "ARTHUR ROQUE\nSistema de detec\xE7\xE3o\n\nMotor de detec\xE7\xE3o stateless
+    com suporte a m\xFAltiplas formas geom\xE9tricas por detector: esfera, cone,
+    caixa, cilindro, plano e tri\xE2ngulo\nDetec\xE7\xE3o por overlap de f\xEDsica
+    \u2014 qualquer collider que entre numa shape \xE9 detectado automaticamente,
+    sem necessidade de componente de opt-in\nDetectionReceiver opcional para objetos
+    que precisam reagir a eventos de entrada e sa\xEDda\nCache de trigonometria no
+    ConeShape evita rec\xE1lculo de cos e raiz quadrada a cada frame\nEditor customizado
+    com visualiza\xE7\xE3o de shapes em cena e labels configur\xE1veis pelo Inspector\n\nSistema
+    de navega\xE7\xE3o (NavMesh)\n\nServi\xE7o stateless que opera sobre N agentes
+    via NavMeshAgentAdapter, eliminando um MonoBehaviour de servi\xE7o por agente\nNavMeshOperation
+    como handle exclusivo por chamada \u2014 cancelar uma opera\xE7\xE3o n\xE3o interfere
+    em outras sobre o mesmo agente\nTravessia suave de NavMesh Links via Lerp controlado,
+    com restaura\xE7\xE3o autom\xE1tica de updatePosition e updateRotation\nNavMeshSpawnPositionService
+    delega queries ao servi\xE7o existente, sem acesso direto \xE0 API de NavMesh\n\nInimigos\n\nPool
+    de NPCs com pr\xE9-aquecimento no Awake e evento OnNpcReturned para o spawner
+    agendar respawns\nCiclo de estados: Wander \u2192 Chase \u2192 ReturnToPool,
+    com WanderLifetime configur\xE1vel para evitar NPCs vagando indefinidamente\nSpawner
+    com respawn por evento (reage ao retorno \xE0 pool) e fallback peri\xF3dico para
+    preencher slots vazios\nPontos de spawn filtrados por raio de vis\xE3o do jogador,
+    com rota\xE7\xE3o c\xEDclica entre posi\xE7\xF5es dispon\xEDveis\n\nPersonagens
+    jog\xE1veis\n\nTroca de Main, Companion e Resting com fluxos de swap completos
+    e eventos de HUD disparados uma \xFAnica vez por transi\xE7\xE3o\nCompanion recebe
+    o transform do novo main explicitamente em todos os fluxos, incluindo quando
+    um personagem em descanso assume o controle\nMovimento de descanso usa MoveTo
+    com fallback de SamplePosition e toler\xE2ncia configur\xE1vel pelo Inspector\nHUD
+    reage a mudan\xE7as de personagem sem perder listeners ao desativar o objeto\n\nInvent\xE1rio
+    e loot\n\nLootTable como ScriptableObject reutiliz\xE1vel com sorteio por peso
+    relativo, ranges de quantidade e capacidade m\xE1xima por ba\xFA\nPlayerInventorySystem
+    com suporte a quatro modos de armazenamento: stackable, unlimited, single slot
+    e unique\nArtefatos an\xF4malos em tr\xEAs raridades (Rare, Epic, Legendary)
+    como moeda empilh\xE1vel do mundo\n\nInteract\xE1veis\n\nBa\xFA com anima\xE7\xE3o
+    de abertura, integra\xE7\xE3o direta com invent\xE1rio e estado de reset para
+    reuso\nPorta e NPC como interact\xE1veis com controllers de anima\xE7\xE3o dedicados\nCharacterSelectionNpc
+    como ponto de troca de personagens jog\xE1veis no mundo\n\nUtilit\xE1rios\n\nLoggerService
+    com categorias coloridas por sistema (AI, Player, Detection, Inventory, etc.)
+    e indicadores visuais de sucesso/falha\nPlayerTorchHandler com toggle de tocha
+    via Input System e sincroniza\xE7\xE3o com Animator\nActivateObjectByInput para
+    ativar objetos de cena por input configur\xE1vel no Inspector"
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: -1183493901
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 48
+  m_fontSizeBase: 48
+  m_fontWeight: 400
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 1
+  m_HorizontalAlignment: 8
+  m_VerticalAlignment: 512
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 1
+  m_wordWrappingRatios: 0
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656b
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 5
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: -3.6922464, z: -1.8781128, w: -6367.467}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &8202534785024924884
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1346534057078428646}
+  - component: {fileID: 7863820303824229162}
+  - component: {fileID: 503713226269393048}
+  m_Layer: 5
+  m_Name: Arthur
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1346534057078428646
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8202534785024924884}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 0.42916998}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 5072870206431742983}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 750.88, y: 1394.3961}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &7863820303824229162
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8202534785024924884}
+  m_CullTransparentMesh: 1
+--- !u!114 &503713226269393048
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8202534785024924884}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.VerticalLayoutGroup
+  m_Padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 10
+  m_ChildAlignment: 1
+  m_Spacing: 0
+  m_ChildForceExpandWidth: 1
+  m_ChildForceExpandHeight: 1
+  m_ChildControlWidth: 0
+  m_ChildControlHeight: 0
+  m_ChildScaleWidth: 0
+  m_ChildScaleHeight: 0
+  m_ReverseArrangement: 0
