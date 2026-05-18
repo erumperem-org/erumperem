@@ -13,12 +13,7 @@ public class PlayableCharactersManager : MonoBehaviour
     public event Action<PlayableCharacter> MainCharacterChange;
     public event Action<PlayableCharacter> CompanionCharacterChange;
 
-    private void Start()
-    {
-        SetState(PlayableCharacterState.Main, playables[0]);
-        SetState(PlayableCharacterState.Resting, playables[1]);
-        SetState(PlayableCharacterState.Resting, playables[2]);
-    }
+
     public void SetState(PlayableCharacterState newState, PlayableCharacter character)
     {
         if (newState == character.CurrentState) return;
