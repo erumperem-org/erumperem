@@ -29,15 +29,22 @@ public sealed class BattleState
 
     public int CorruptionTier => CorruptionTierCalculator.GetTier(CorruptionValue);
 
-    public bool IsFinished =>
-        Allies.All(combatant => combatant.Health.IsDead) || Enemies.All(combatant => combatant.Health.IsDead);
+    /// <summary>Combatente ainda em combate (vivo; exclui cadáver legado se existir no roster).</summary>
+    public static bool IsActiveBattler(Combatant combatant) =>
+        !combatant.Health.IsDead && combatant.Identity.Faction != Faction.Corpse;
+
+    public bool HasActiveAllies => Allies.Any(IsActiveBattler);
+
+    public bool HasActiveEnemies => Enemies.Any(IsActiveBattler);
+
+    public bool IsFinished => !HasActiveAllies || !HasActiveEnemies;
 
     public Side? Winner
     {
         get
         {
-            if (Allies.All(combatant => combatant.Health.IsDead)) return Side.Enemies;
-            if (Enemies.All(combatant => combatant.Health.IsDead)) return Side.Allies;
+            if (!HasActiveAllies) return Side.Enemies;
+            if (!HasActiveEnemies) return Side.Allies;
             return null;
         }
     }

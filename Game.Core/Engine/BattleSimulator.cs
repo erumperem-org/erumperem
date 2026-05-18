@@ -102,7 +102,7 @@ public sealed class BattleSimulator
     public List<Combatant> BuildInitiativeOrder(BattleState state)
     {
         return state.GetAllCombatants()
-            .Where(combatant => !combatant.Health.IsDead)
+            .Where(BattleState.IsActiveBattler)
             .OrderByDescending(combatant => combatant.Stats.Speed)
             .ThenBy(_ => _random.Next(0, int.MaxValue))
             .ToList();
@@ -530,12 +530,6 @@ public sealed class BattleSimulator
             target.Health.IsDead = true;
             Emit(state, BattleEventType.CombatantDied, targetId: target.Identity.Id);
             state.PassiveBus.RaiseCombatantSlain(state, actor, target);
-
-            if (!isCrit)
-            {
-                MaybeCreateCorpse(state, target, wasDotKill: false);
-            }
-
             HandleCompaction(state, target.Position.Side);
         }
 
@@ -817,48 +811,6 @@ public sealed class BattleSimulator
             unit.Position.FrontRank = nextRank;
             nextRank += unit.Position.Size;
         }
-    }
-
-    private void MaybeCreateCorpse(BattleState state, Combatant defeatedTarget, bool wasDotKill)
-    {
-        if (wasDotKill) return;
-        if (defeatedTarget.Identity.Faction != Faction.Enemy) return;
-
-        var roster = state.Enemies;
-        var corpse = new Combatant
-        {
-            Identity = new IdentityComponent
-            {
-                Id = $"{defeatedTarget.Identity.Id}_corpse_{Guid.NewGuid():N}",
-                DisplayName = $"{defeatedTarget.Identity.DisplayName} Corpse",
-                Faction = Faction.Corpse,
-                Tags = ["Corpse"],
-            },
-            Health = new HealthComponent { CurrentHp = 1, MaxHp = 1, IsDead = false, IsDeathblowPending = false },
-            Position = new PositionComponent
-            {
-                Side = Side.Enemies,
-                FrontRank = defeatedTarget.Position.FrontRank,
-                Size = defeatedTarget.Position.Size,
-            },
-            Stats = new StatsComponent { Speed = 0, Accuracy = 0, CritChance = 0 },
-            Resistances = new ResistanceComponent
-            {
-                BurnRes = 0,
-                BlightRes = 0,
-                MoveRes = 0,
-                StunRes = 1,
-                DeathblowRes = 0,
-            },
-            Tokens = new TokenComponent(),
-            Dots = new DotComponent(),
-            SkillLoadout = new SkillLoadoutComponent(),
-            Progression = new ProgressionComponent { Level = 0, SpentPoints = 0 },
-            PassiveRuntime = new PassiveRuntimeState(),
-            AI = null,
-            ElementAffinity = new ElementAffinityComponent { Element = ElementType.None },
-        };
-        roster.Add(corpse);
     }
 
     private int EstimateDamage(BattleState state, Combatant actor, Combatant target, SkillDefinition skill)

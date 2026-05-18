@@ -520,6 +520,13 @@ namespace Erumperem.Combat
                 return;
             }
 
+            if (_state.IsFinished)
+            {
+                EndBattle();
+                ConsumeFrameInputFlags();
+                return;
+            }
+
             while (!_battleEnded && !_needsPlayerInput && !_presentationBusy)
             {
                 if (!AdvanceCombatStep())

@@ -163,7 +163,7 @@ public class UnitTest1
     }
 
     [Fact]
-    public void CorpseIsCreatedOnlyForNonCritDirectKill()
+    public void CorpseIsNeverSpawnedOnEnemyKill()
     {
         var random = new SeededRandomSource(123);
         var collector = new CombatEventCollector();
@@ -186,7 +186,26 @@ public class UnitTest1
         battle.Enemies[0].Health.CurrentHp = 3;
 
         simulator.Simulate(battle, maxTurns: 2);
-        Assert.Contains(battle.Enemies, e => e.Identity.Faction == Faction.Corpse);
+
+        Assert.DoesNotContain(battle.Enemies, enemy => enemy.Identity.Faction == Faction.Corpse);
+        Assert.Equal(1, battle.Enemies.Count);
+    }
+
+    [Fact]
+    public void BattleFinishesWhenAllFourEnemiesAreDead()
+    {
+        var battle = BattleFactory.CreateSampleBattle([], allyCount: 1, enemyCount: 4);
+
+        foreach (var enemy in battle.Enemies)
+        {
+            enemy.Health.CurrentHp = 0;
+            enemy.Health.IsDead = true;
+        }
+
+        Assert.False(battle.HasActiveEnemies);
+        Assert.True(battle.IsFinished);
+        Assert.Equal(Side.Allies, battle.Winner);
+        Assert.Equal(4, battle.Enemies.Count);
     }
 
     [Fact]
