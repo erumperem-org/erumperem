@@ -7,8 +7,9 @@ namespace Player
     {
         [Header("Referências")]
         [SerializeField] private GameObject torchObject;
+        [SerializeField] private GameObject naturalLightObject;
         [SerializeField] private Animator animator;
-
+        [SerializeField] private PlayableCharacter character;
         [Header("Input")]
         [SerializeField] private InputActionAsset _inputActions;
         [SerializeField] private string _actionMapName = "Player";
@@ -24,7 +25,6 @@ namespace Player
         {
             _actionMap = _inputActions.FindActionMap(_actionMapName, throwIfNotFound: true);
             _torchAction = _actionMap.FindAction(_torchActionName, throwIfNotFound: true);
-
             _torchAction.performed += OnTorchPerformed;
         }
 
@@ -36,9 +36,13 @@ namespace Player
 
         private void OnTorchPerformed(InputAction.CallbackContext _)
         {
-            _isOn = !_isOn;
-            torchObject.SetActive(_isOn);
-            animator.SetBool(IsTorchOn, _isOn);
+            if (this.character.CurrentState == PlayableCharacterState.Main || this.character.CurrentState == PlayableCharacterState.Companion)
+            {
+                _isOn = !_isOn;
+                naturalLightObject.SetActive(!_isOn);
+                torchObject.SetActive(_isOn);
+                animator.SetBool(IsTorchOn, _isOn);
+            }
         }
     }
 }
