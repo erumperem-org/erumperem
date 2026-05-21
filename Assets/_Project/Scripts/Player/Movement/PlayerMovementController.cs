@@ -14,7 +14,9 @@ namespace Player
         [SerializeField] private float _speed = 4f;
         [SerializeField] private float _projectionDistance = 3f;
         [SerializeField] private float _stoppingDistance = 0.1f;
+        [SerializeField] private float _acceleration = 5f;
         [SerializeField] private PlayableAnimationController animationController;
+        private Vector3 _lastMoveDirection = Vector3.zero;
 
         [Header("Rotação")]
         [SerializeField] private float _rotationSpeed = 10f;
@@ -24,6 +26,7 @@ namespace Player
         [SerializeField] private float _followMinDistance = 2f;
         [Tooltip("Distância em que o Companion para de se aproximar.")]
         [SerializeField] private float _followStopDistance = 1.5f;
+        [SerializeField] private float _directionChangeDotThreshold = 0.7f;
 
         [Header("Resting")]
         [Tooltip("Margem extra além de stoppingDistance para considerar que chegou ao ponto.")]
@@ -68,7 +71,8 @@ namespace Player
                 enabled = false;
                 return;
             }
-
+            _navMesh.SetAcceleration(_adapter, _acceleration);
+            _navMesh.EnableAutoBraking(_adapter, true);
             _navMesh.SetSpeed(_adapter, _speed);
             _navMesh.SetStoppingDistance(_adapter, _stoppingDistance);
             _adapter.SetUpdateRotation(false);
@@ -160,12 +164,24 @@ namespace Player
 
             if (input.sqrMagnitude < 0.01f)
             {
+                _lastMoveDirection = Vector3.zero;
                 _navMesh.Stop(_adapter);
+                _navMesh.ClearPath(_adapter);
                 animationController?.SetIsMoving(false);
                 return;
             }
 
             var direction = new Vector3(input.x, 0f, input.y).normalized;
+
+            // Zera velocidade se a direção mudou bruscamente (produto escalar < threshold)
+            if (_lastMoveDirection.sqrMagnitude > 0.001f &&
+                Vector3.Dot(direction, _lastMoveDirection) < _directionChangeDotThreshold)
+            {
+                _navMesh.SetVelocity(_adapter, Vector3.zero);
+            }
+
+            _lastMoveDirection = direction;
+
             _navMesh.SetDestination(_adapter, transform.position + direction * _projectionDistance);
             animationController?.SetIsMoving(true);
 
@@ -174,7 +190,6 @@ namespace Player
                 Quaternion.LookRotation(direction, Vector3.up),
                 _rotationSpeed * Time.deltaTime);
         }
-
         // ── Tick: Follow (Companion) ───────────────────────────────────────
 
         private void TickFollow()

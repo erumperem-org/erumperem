@@ -109,6 +109,7 @@ namespace Services.Navigation
 
             StopFollowCoroutine(adapter);
             adapter.Agent.isStopped = true;
+            adapter.Agent.velocity = Vector3.zero;
             GetOrCreateState(adapter).IsPaused = false;
         }
 
