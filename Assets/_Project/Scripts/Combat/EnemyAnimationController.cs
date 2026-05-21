@@ -34,6 +34,12 @@ namespace Erumperem.Combat
         [SerializeField] private float deathDespawnPunchElasticity = 0.45f;
         [SerializeField] private float deathDespawnScaleDownDurationSeconds = 0.35f;
 
+        [Header("Hit Taken VFX")]
+        [SerializeField] private GameObject hitTakenVfxPrefab;
+        [SerializeField] private Vector3 hitTakenVfxOffset = Vector3.zero;
+        [SerializeField] private bool destroySpawnedHitVfx = true;
+        [SerializeField] private float destroyHitVfxAfterSeconds = 5f;
+
         private Coroutine _attackReturnToIdleRoutine;
         private Coroutine _deathVisualRoutine;
         private Coroutine _hitTakenReturnToIdleRoutine;
@@ -100,10 +106,30 @@ namespace Erumperem.Combat
 
             StopHitTakenReturnRoutine();
 
+            SpawnHitTakenVfx();
+
             unitAnimator.CrossFade(hitTakenStateName, crossFadeSeconds, 0, 0f);
 
             _hitTakenReturnToIdleRoutine =
                 StartCoroutine(HitTakenHoldThenIdleRoutine(holdHitTakenStateSeconds));
+        }
+
+        private void SpawnHitTakenVfx()
+        {
+            if (hitTakenVfxPrefab == null)
+            {
+                return;
+            }
+
+            var spawnedVfx = Instantiate(
+                hitTakenVfxPrefab,
+                transform.position + hitTakenVfxOffset,
+                Quaternion.identity);
+
+            if (destroySpawnedHitVfx)
+            {
+                Destroy(spawnedVfx, destroyHitVfxAfterSeconds);
+            }
         }
 
         /// <summary>Inicia sequência de morte (idempotente). Chamado a partir da resolução da ação ou do sync se a morte veio fora da apresentação.</summary>
