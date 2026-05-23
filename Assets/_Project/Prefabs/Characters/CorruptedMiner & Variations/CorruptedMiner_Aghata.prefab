@@ -1073,15 +1073,21 @@ MonoBehaviour:
   unitAnimator: {fileID: 2661120519215755275}
   idleStateName: Idle
   attackStateName: Attack
+  hitTakenStateName: HitTaken
   deathStateName: Death
   crossFadeSeconds: 0.08
   attackClipLengthFallbackSeconds: 2
+  hitTakenClipLengthFallbackSeconds: 0.5
   deathClipLengthFallbackSeconds: 2
   deathDespawnPunchDurationSeconds: 0.12
   deathDespawnPunchScale: {x: 0.12, y: 0.18, z: 0.12}
   deathDespawnPunchVibrato: 6
   deathDespawnPunchElasticity: 0.45
   deathDespawnScaleDownDurationSeconds: 0.35
+  hitTakenVfxPrefab: {fileID: 7188481448865770053, guid: 6864c224905db594b9967e131045699b, type: 3}
+  hitTakenVfxOffset: {x: 0, y: 0, z: 0}
+  destroySpawnedHitVfx: 1
+  destroyHitVfxAfterSeconds: 5
 --- !u!1 &4141668330505122431
 GameObject:
   m_ObjectHideFlags: 0
