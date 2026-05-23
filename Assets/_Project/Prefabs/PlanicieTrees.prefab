@@ -56,8 +56,49 @@ PrefabInstance:
       propertyPath: m_Name
       value: PlanicieTrees
       objectReference: {fileID: 0}
+    - target: {fileID: 4742473837712756890, guid: f9921caedea59c841b712a1c8b8cd878, type: 3}
+      propertyPath: m_LODs.Array.data[0].screenRelativeHeight
+      value: 0.7041178
+      objectReference: {fileID: 0}
+    - target: {fileID: 4742473837712756890, guid: f9921caedea59c841b712a1c8b8cd878, type: 3}
+      propertyPath: m_LODs.Array.data[1].screenRelativeHeight
+      value: 0.50045377
+      objectReference: {fileID: 0}
+    - target: {fileID: 4742473837712756890, guid: f9921caedea59c841b712a1c8b8cd878, type: 3}
+      propertyPath: m_LODs.Array.data[2].screenRelativeHeight
+      value: 0.39789194
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f9921caedea59c841b712a1c8b8cd878, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2867867006477893253}
   m_SourcePrefab: {fileID: 100100000, guid: f9921caedea59c841b712a1c8b8cd878, type: 3}
+--- !u!1 &8242831888866337916 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: f9921caedea59c841b712a1c8b8cd878, type: 3}
+  m_PrefabInstance: {fileID: 9125702693085436205}
+  m_PrefabAsset: {fileID: 0}
+--- !u!135 &2867867006477893253
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8242831888866337916}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.5
+  m_Center: {x: 0, y: 0, z: 0}
