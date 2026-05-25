@@ -4909,7 +4909,7 @@ ParticleSystemRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 9307ab68cdd1eeb4abc651173f11d7e2, type: 2}
+  - {fileID: 2100000, guid: 017033e0ce1187246937004395a855ce, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -9911,8 +9911,40 @@ PrefabInstance:
       value: Smoke
       objectReference: {fileID: 0}
     - target: {fileID: 6055661244091433127, guid: 424048b335ec6fd4b91c39dad246100d, type: 3}
+      propertyPath: lengthInSec
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6055661244091433127, guid: 424048b335ec6fd4b91c39dad246100d, type: 3}
+      propertyPath: VelocityModule.enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6055661244091433127, guid: 424048b335ec6fd4b91c39dad246100d, type: 3}
+      propertyPath: VelocityModule.x.scalar
+      value: -0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6055661244091433127, guid: 424048b335ec6fd4b91c39dad246100d, type: 3}
+      propertyPath: VelocityModule.z.scalar
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6055661244091433127, guid: 424048b335ec6fd4b91c39dad246100d, type: 3}
+      propertyPath: VelocityModule.inWorldSpace
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6055661244091433127, guid: 424048b335ec6fd4b91c39dad246100d, type: 3}
+      propertyPath: InitialModule.maxNumParticles
+      value: 120
+      objectReference: {fileID: 0}
+    - target: {fileID: 6055661244091433127, guid: 424048b335ec6fd4b91c39dad246100d, type: 3}
       propertyPath: InitialModule.startSpeed.scalar
-      value: 0.35
+      value: 0.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6055661244091433127, guid: 424048b335ec6fd4b91c39dad246100d, type: 3}
+      propertyPath: EmissionModule.rateOverTime.scalar
+      value: 12.54
+      objectReference: {fileID: 0}
+    - target: {fileID: 6055661244091433127, guid: 424048b335ec6fd4b91c39dad246100d, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.a
+      value: 0.79607844
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
