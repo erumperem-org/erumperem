@@ -94,7 +94,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0.0025634766, y: -0.000045776367}
+  m_AnchoredPosition: {x: 0.0024414062, y: -0.000045776367}
   m_SizeDelta: {x: -0.15002441, y: 0.30599976}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1518975596252158845
@@ -262,7 +262,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  m_Sprite: {fileID: 0}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -338,7 +338,7 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 0
-  m_Spacing: 0
+  m_Spacing: 5
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 0
@@ -908,7 +908,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0.07507324, y: 0.15284729}
+  m_AnchoredPosition: {x: 0.07519531, y: 0.15284729}
   m_SizeDelta: {x: -0.15002441, y: 0.3057022}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &953172155995836053
@@ -1231,6 +1231,14 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2252304540087942069, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+      propertyPath: m_text
+      value: Artifact of Return
+      objectReference: {fileID: 0}
+    - target: {fileID: 3473769678385578166, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 469174511, guid: 2d22d6e2d56dddf4e868ad8c3df7e054, type: 3}
     - target: {fileID: 6355114924766737796, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
       propertyPath: m_Name
       value: ItemBuyButton
@@ -1314,6 +1322,10 @@ PrefabInstance:
     - target: {fileID: 6726231428340911311, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7982956374015341007, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+      propertyPath: m_text
+      value: Use this artifact to return to the village.
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
