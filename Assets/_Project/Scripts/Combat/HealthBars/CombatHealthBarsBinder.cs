@@ -38,7 +38,20 @@ namespace Erumperem.Combat.HealthBars
 
         private CombatPrototypeController _combatSession;
         private readonly List<Transform> _spawnedHealthBarRoots = new();
+        private readonly Dictionary<string, HealthBarHudView> _healthBarHudViewsByCombatantId =
+            new(System.StringComparer.Ordinal);
         private Camera _mainCamera;
+
+        public bool TryGetHealthBarHudView(string combatantId, out HealthBarHudView healthBarHudView)
+        {
+            if (string.IsNullOrEmpty(combatantId))
+            {
+                healthBarHudView = null;
+                return false;
+            }
+
+            return _healthBarHudViewsByCombatantId.TryGetValue(combatantId, out healthBarHudView);
+        }
 
         private void OnEnable()
         {
@@ -168,6 +181,7 @@ namespace Erumperem.Combat.HealthBars
                 }
 
                 hudView.Configure(_combatSession, combatant.Identity.Id);
+                _healthBarHudViewsByCombatantId[combatant.Identity.Id] = hudView;
                 _spawnedHealthBarRoots.Add(healthBarInstance.transform);
             }
         }
@@ -189,6 +203,7 @@ namespace Erumperem.Combat.HealthBars
             }
 
             _spawnedHealthBarRoots.Clear();
+            _healthBarHudViewsByCombatantId.Clear();
         }
 
         private Transform ResolveFollowTargetUnderUnit(Transform unitVisualRoot)

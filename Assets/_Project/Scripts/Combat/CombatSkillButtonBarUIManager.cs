@@ -154,6 +154,12 @@ namespace Erumperem.Combat
             return false;
         }
 
+        public bool TryGetHoveredLivingCombatant(out Combatant hoveredCombatant)
+        {
+            hoveredCombatant = TryRaycastHoveredLivingCombatant();
+            return hoveredCombatant != null;
+        }
+
         private Combatant TryRaycastHoveredLivingCombatant()
         {
             if (_controller == null)

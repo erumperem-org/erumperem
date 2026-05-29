@@ -164,6 +164,66 @@ public class UnitTest1
     }
 
     [Fact]
+    public void SkillDamagePreviewCalculator_RespectsBaseRangeAndBlock()
+    {
+        var skill = new SkillDefinition
+        {
+            Id = "preview_strike",
+            Name = "Preview Strike",
+            Element = ElementType.Fire,
+            Type = "Active",
+            BaseDamage = new DamageRange { Min = 10, Max = 16 },
+            BaseCritChance = 0,
+            Accuracy = 1.0,
+            EffectsOnHit = [],
+        };
+        var battle = BattleFactory.CreateSampleBattle([skill], allyCount: 1, enemyCount: 1, corruptionValue: 0);
+        battle.Allies[0].Stats = new StatsComponent { Speed = 10, Accuracy = 1.0, CritChance = 0.0 };
+        battle.Allies[0].SkillLoadout.Skills.Clear();
+        battle.Allies[0].SkillLoadout.Skills.Add(skill.Id);
+        battle.Enemies[0].Health.CurrentHp = battle.Enemies[0].Health.MaxHp;
+
+        Assert.True(SkillDamagePreviewCalculator.TryCompute(
+            battle,
+            battle.Allies[0],
+            battle.Enemies[0],
+            skill,
+            out var withoutBlock));
+        Assert.True(withoutBlock.MinDamageOnHit > 0);
+        Assert.True(withoutBlock.MaxDamageOnHit >= withoutBlock.MinDamageOnHit);
+        Assert.Equal(
+            battle.Enemies[0].Health.CurrentHp - withoutBlock.MaxDamageOnHit,
+            withoutBlock.MinHpAfterHit);
+        Assert.Equal(
+            battle.Enemies[0].Health.CurrentHp - withoutBlock.MinDamageOnHit,
+            withoutBlock.MaxHpAfterHit);
+        Assert.False(withoutBlock.IsGuaranteedKillOnHit);
+
+        battle.Enemies[0].Tokens.Add(TokenType.Block, 1);
+        Assert.True(SkillDamagePreviewCalculator.TryCompute(
+            battle,
+            battle.Allies[0],
+            battle.Enemies[0],
+            skill,
+            out var withBlock));
+        Assert.True(withBlock.MaxDamageOnHit < withoutBlock.MaxDamageOnHit);
+
+        while (battle.Enemies[0].Tokens.ConsumeOne(TokenType.Block)) { }
+
+        while (battle.Enemies[0].Tokens.ConsumeOne(TokenType.BlockPlus)) { }
+
+        battle.Enemies[0].Health.CurrentHp = 1;
+        Assert.True(SkillDamagePreviewCalculator.TryCompute(
+            battle,
+            battle.Allies[0],
+            battle.Enemies[0],
+            skill,
+            out var lethalPreview));
+        Assert.True(lethalPreview.IsGuaranteedKillOnHit);
+        Assert.Equal(0, lethalPreview.MinHpAfterHit);
+    }
+
+    [Fact]
     public void CorpseIsNeverSpawnedOnEnemyKill()
     {
         var random = new SeededRandomSource(123);
