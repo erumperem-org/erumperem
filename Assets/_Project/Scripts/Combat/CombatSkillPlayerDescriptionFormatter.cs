@@ -1,63 +1,37 @@
-using System.Globalization;
 using Game.Core.Domain;
 using Game.Core.Models;
-using UnityEngine;
+using Game.Core.Presentation;
 
 namespace Erumperem.Combat
 {
     /// <summary>
-    /// Uma linha de texto para o jogador (ex.: "Talho Direto: 1 alvo | 6 de dano | 10% de crít.").
+    /// Ponte Unity para <see cref="SkillPlayerDescriptionBuilder"/>.
     /// </summary>
     public static class CombatSkillPlayerDescriptionFormatter
     {
-        public static string BuildSummaryLine(SkillDefinition skill)
+        public static string BuildSummaryLine(
+            SkillDefinition skill,
+            BattleState battleState = null,
+            Combatant actor = null,
+            Combatant previewTarget = null)
         {
             if (skill == null)
             {
                 return string.Empty;
             }
 
-            var targetPart = DescribeTargetForPlayer(skill);
-            var damagePart = DescribeDamageForPlayer(skill);
-            var critPart = DescribeCritForPlayer(skill);
-
-            return $"{skill.Name}: {targetPart} | {damagePart} | {critPart}.";
-        }
-
-        private static string DescribeTargetForPlayer(SkillDefinition skill) =>
-            skill.TargetKind switch
+            SkillPlayerDescriptionBuilder.SkillDescriptionContext context = null;
+            if (battleState != null || actor != null || previewTarget != null)
             {
-                SkillTargetKind.Enemy => "1 alvo",
-                SkillTargetKind.Ally => "1 aliado",
-                SkillTargetKind.Self => "ti (auto)",
-                _ => "1 alvo",
-            };
-
-        private static string DescribeDamageForPlayer(SkillDefinition skill)
-        {
-            var min = skill.BaseDamage.Min;
-            var max = skill.BaseDamage.Max;
-            if (min == 0 && max == 0)
-            {
-                return "sem dano direto";
+                context = new SkillPlayerDescriptionBuilder.SkillDescriptionContext
+                {
+                    BattleState = battleState,
+                    Actor = actor,
+                    PreviewTarget = previewTarget,
+                };
             }
 
-            if (min == max)
-            {
-                return $"{min} de dano";
-            }
-
-            return $"{min}–{max} de dano";
+            return SkillPlayerDescriptionBuilder.BuildSummaryLine(skill, context);
         }
-
-        private static string DescribeCritForPlayer(SkillDefinition skill)
-        {
-            var percent = (float)(skill.BaseCritChance * 100.0);
-            var text = percent == Mathf.Round(percent)
-                ? percent.ToString("0", CultureInfo.InvariantCulture)
-                : percent.ToString("0.#", CultureInfo.InvariantCulture);
-            return $"{text}% de crít";
-        }
-
     }
 }

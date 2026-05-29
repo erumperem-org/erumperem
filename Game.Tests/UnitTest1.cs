@@ -6,6 +6,7 @@ using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
 using Game.Core.Passives;
+using Game.Core.Presentation;
 using Game.Core.Progression;
 using Game.Simulations;
 
@@ -911,5 +912,42 @@ public class UnitTest1
         Assert.Contains("f_t3_a1", ids);
         Assert.Contains("f_t1_p1", ids);
         Assert.DoesNotContain("m_t1_p1", ids);
+    }
+
+    [Fact]
+    public void SkillPlayerDescriptionBuilder_PosturaDeLobo_DescribesTokensWithoutCrit()
+    {
+        var guardSkill = SampleCombatData.CreateSkills().First(skill => skill.Id == "wulfric_innate_guard");
+
+        var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(guardSkill);
+
+        Assert.Equal(
+            "Postura de lobo: ti (auto) | sem dano direto | +1 Bloqueio, +1 Provocação | sem corrupção.",
+            summary);
+        Assert.DoesNotContain("crít", summary, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void SkillPlayerDescriptionBuilder_ExecucaoDeLeilao_DescribesDamageAndCrit()
+    {
+        var executionSkill = SampleCombatData.CreateSkills().First(skill => skill.Id == "f_t3_a1");
+
+        var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(executionSkill);
+
+        Assert.Equal(
+            "Execução de leilão: 1 alvo | 10–16 de dano | 12% de crít | +1 corrupção.",
+            summary);
+    }
+
+    [Fact]
+    public void SkillPlayerDescriptionBuilder_RasgarTendao_IncludesDotAndCorruption()
+    {
+        var bleedSkill = SampleCombatData.CreateSkills().First(skill => skill.Id == "f_t1_a1");
+
+        var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(bleedSkill);
+
+        Assert.Contains("6–10 de dano", summary, StringComparison.Ordinal);
+        Assert.Contains("Sangramento (3 de dano por 3 turnos)", summary, StringComparison.Ordinal);
+        Assert.Contains("+1 corrupção", summary, StringComparison.Ordinal);
     }
 }
