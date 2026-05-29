@@ -1,76 +1,153 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace Erumperem.Input
 {
-    /// <summary>
-    /// Liga um <see cref="GameObject"/> da cena quando uma tecla configurável é pressionada.
-    /// Usa o novo Input System por evento (sem polling em <c>Update</c>) e cria a sua própria
-    /// <see cref="InputAction"/>, sem precisar de tocar no <see cref="InputManager"/> global.
-    /// </summary>
-    public sealed class ActivateObjectByInput : MonoBehaviour
+    public sealed class PanelInputController : MonoBehaviour
     {
-        [Header("Input")]
-        [Tooltip("Tecla que dispara a activação. Mude no Inspector.")]
-        [SerializeField] private Key _activationKey = Key.E;
+        [System.Serializable]
+        public class PanelBinding
+        {
+            [Header("Input")]
+            public Key activationKey = Key.E;
 
-        [Header("Alvo")]
-        [Tooltip("GameObject a activar/desactivar quando a tecla for pressionada.")]
-        [SerializeField] private GameObject _objectToToggleActivation;
+            [Header("Panel")]
+            public GameObject panelObject;
 
-        [Tooltip("Se verdadeiro, alterna entre activo/inactivo a cada press. " +
-                 "Se falso, força para o valor de 'Set Active To' a cada press.")]
-        [SerializeField] private bool _toggleOnEachPress = false;
+            [Tooltip("Animator do painel")]
+            public Animator animator;
 
-        [Tooltip("Estado aplicado ao GameObject quando 'Toggle On Each Press' está desligado.")]
-        [SerializeField] private bool _setActiveTo = true;
+            [Header("Animation")]
+            public string openTrigger = "Open";
+            public string closeTrigger = "Close";
 
-        private InputAction _activationInputAction;
+            [Header("Extra")]
+            [Tooltip("Painéis que serão fechados quando este abrir")]
+            public List<GameObject> panelsToDisable = new();
+        }
+
+        [Header("Panels")]
+        [SerializeField]
+        private List<PanelBinding> _panelBindings = new();
+
+        [Header("Animation")]
+        [Tooltip("Tempo para esperar a animação de fechamento")]
+        [SerializeField]
+        private float _closeAnimationDuration = 0.25f;
+
+        private readonly List<InputAction> _inputActions = new();
 
         private void OnEnable()
         {
-            _activationInputAction = BuildActivationInputAction(_activationKey);
-            _activationInputAction.performed += HandleActivationKeyPerformed;
-            _activationInputAction.Enable();
+            foreach (var binding in _panelBindings)
+            {
+                var action = BuildInputAction(binding.activationKey);
+
+                action.performed += _ =>
+                {
+                    HandlePanelActivation(binding);
+                };
+
+                action.Enable();
+                _inputActions.Add(action);
+            }
         }
 
         private void OnDisable()
         {
-            if (_activationInputAction == null)
+            foreach (var action in _inputActions)
             {
-                return;
+                action.Disable();
+                action.Dispose();
             }
 
-            _activationInputAction.performed -= HandleActivationKeyPerformed;
-            _activationInputAction.Disable();
-            _activationInputAction.Dispose();
-            _activationInputAction = null;
+            _inputActions.Clear();
         }
 
-        private void HandleActivationKeyPerformed(InputAction.CallbackContext callbackContext)
+        private void HandlePanelActivation(PanelBinding targetBinding)
         {
-            if (_objectToToggleActivation == null)
+            if (targetBinding.panelObject == null)
             {
-                Debug.LogWarning(
-                    $"{nameof(ActivateObjectByInput)} em '{name}': nenhum GameObject atribuído em 'Object To Toggle Activation'.",
-                    this);
+                Debug.LogWarning("Painel não configurado.", this);
                 return;
             }
 
-            if (_toggleOnEachPress)
+            bool isAlreadyActive = targetBinding.panelObject.activeSelf;
+
+            // Fecha todos os outros painéis
+            foreach (var binding in _panelBindings)
             {
-                _objectToToggleActivation.SetActive(!_objectToToggleActivation.activeSelf);
-                return;
+                if (binding.panelObject == null)
+                    continue;
+
+                if (binding.panelObject == targetBinding.panelObject)
+                    continue;
+
+                ClosePanel(binding);
             }
 
-            _objectToToggleActivation.SetActive(_setActiveTo);
+            // Fecha painéis extras configurados
+            foreach (var extraPanel in targetBinding.panelsToDisable)
+            {
+                if (extraPanel != null)
+                {
+                    extraPanel.SetActive(false);
+                }
+            }
+
+            // Toggle do painel atual
+            if (isAlreadyActive)
+            {
+                ClosePanel(targetBinding);
+            }
+            else
+            {
+                OpenPanel(targetBinding);
+            }
         }
 
-        private static InputAction BuildActivationInputAction(Key activationKey)
+        private void OpenPanel(PanelBinding binding)
         {
-            var keyboardBindingPath = $"<Keyboard>/{activationKey.ToString().ToLowerInvariant()}";
-            var inputAction = new InputAction(name: "ActivateObjectByInput", type: InputActionType.Button);
+            binding.panelObject.SetActive(true);
+
+            if (binding.animator != null)
+            {
+                binding.animator.ResetTrigger(binding.closeTrigger);
+                binding.animator.SetTrigger(binding.openTrigger);
+            }
+        }
+
+        private async void ClosePanel(PanelBinding binding)
+        {
+            if (!binding.panelObject.activeSelf)
+                return;
+
+            if (binding.animator != null)
+            {
+                binding.animator.ResetTrigger(binding.openTrigger);
+                binding.animator.SetTrigger(binding.closeTrigger);
+
+                await Awaitable.WaitForSecondsAsync(_closeAnimationDuration);
+            }
+
+            if (binding.panelObject != null)
+            {
+                binding.panelObject.SetActive(false);
+            }
+        }
+
+        private static InputAction BuildInputAction(Key activationKey)
+        {
+            var keyboardBindingPath =
+                $"<Keyboard>/{activationKey.ToString().ToLowerInvariant()}";
+
+            var inputAction = new InputAction(
+                name: $"Panel_{activationKey}",
+                type: InputActionType.Button);
+
             inputAction.AddBinding(keyboardBindingPath);
+
             return inputAction;
         }
     }
