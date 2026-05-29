@@ -28,7 +28,7 @@ namespace Erumperem.Combat.Tokens
             TokenType.Stealth =>
                 "[token stealth]: não pode ser alvejado por ataques diretos.",
             TokenType.Combo =>
-                "[token combo]: acumula e potencia habilidades específicas; é consumido ao usar.",
+                "[token combo]: acumula e potencializa habilidades específicas; é consumido ao usar.",
             TokenType.Stun =>
                 "[token stun]: o portador perde o próximo turno.",
             _ => tokenType.ToString(),
@@ -42,7 +42,7 @@ namespace Erumperem.Combat.Tokens
 
             return dotType switch
             {
-                DotType.Bleed => FormatPerTurnDotLine("dano físico", "[dot bleed]", potencyRangePhrase),
+                DotType.Bleed => FormatPerTurnDotLine("dano de sangramento", "[dot bleed]", potencyRangePhrase),
                 DotType.Blight => FormatPerTurnDotLine("dano de praga", "[dot blight]", potencyRangePhrase),
                 DotType.Burn => FormatPerTurnDotLine("dano de fogo", "[dot burn]", potencyRangePhrase),
                 _ => dotType.ToString(),

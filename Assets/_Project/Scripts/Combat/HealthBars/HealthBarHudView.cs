@@ -1,5 +1,6 @@
 using DG.Tweening;
 using Game.Core.Models;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -24,6 +25,9 @@ namespace Erumperem.Combat.HealthBars
                  "que mostra o trail de dano (laranja, lento) ou de cura (verde, rápido). " +
                  "Sem ela, o componente continua a funcionar mas sem efeito de trail.")]
         [SerializeField] private Image _trailingFillImage;
+
+        [Tooltip("Opcional: TMP que mostra HP actual / HP máximo (ex.: 75/100). Auto-resolvido por nome 'HealthBarText'.")]
+        [SerializeField] private TextMeshProUGUI _healthBarTextLabel;
 
         [Header("Cores (LERP via troca directa de cor)")]
         [SerializeField] private Color _currentHpColor = new(0.85f, 0.18f, 0.18f, 1f);
@@ -56,6 +60,8 @@ namespace Erumperem.Combat.HealthBars
         private string _combatantId = "";
         private float _lastSyncedHpPercent = -1f;
         private bool _hasInitializedFromBattleState;
+        private int _lastDisplayedCurrentHp = -1;
+        private int _lastDisplayedMaxHp = -1;
 
         public void Configure(CombatPrototypeController combatSession, string combatantId)
         {
@@ -63,11 +69,14 @@ namespace Erumperem.Combat.HealthBars
             _combatantId = combatantId ?? "";
             _hasInitializedFromBattleState = false;
             _lastSyncedHpPercent = -1f;
+            _lastDisplayedCurrentHp = -1;
+            _lastDisplayedMaxHp = -1;
         }
 
         private void Awake()
         {
             ResolveFillImageFromSliderIfMissing();
+            ResolveHealthBarTextLabelIfMissing();
             ApplyInitialColors();
         }
 
@@ -113,6 +122,8 @@ namespace Erumperem.Combat.HealthBars
             {
                 gameObject.SetActive(true);
             }
+
+            SyncHealthBarTextLabel(combatant);
 
             var targetHpPercent = ComputeHpPercentSafely(combatant);
             if (!_hasInitializedFromBattleState)
@@ -259,6 +270,43 @@ namespace Erumperem.Combat.HealthBars
             }
 
             _currentHpFillImage = _currentHpSlider.fillRect.GetComponent<Image>();
+        }
+
+        private void ResolveHealthBarTextLabelIfMissing()
+        {
+            if (_healthBarTextLabel != null)
+            {
+                return;
+            }
+
+            var textLabels = GetComponentsInChildren<TextMeshProUGUI>(includeInactive: true);
+            foreach (var textLabel in textLabels)
+            {
+                if (textLabel.name == "HealthBarText")
+                {
+                    _healthBarTextLabel = textLabel;
+                    return;
+                }
+            }
+        }
+
+        private void SyncHealthBarTextLabel(Combatant combatant)
+        {
+            if (_healthBarTextLabel == null || combatant == null)
+            {
+                return;
+            }
+
+            var currentHp = combatant.Health.CurrentHp;
+            var maxHp = combatant.Health.MaxHp;
+            if (currentHp == _lastDisplayedCurrentHp && maxHp == _lastDisplayedMaxHp)
+            {
+                return;
+            }
+
+            _lastDisplayedCurrentHp = currentHp;
+            _lastDisplayedMaxHp = maxHp;
+            _healthBarTextLabel.text = $"{currentHp}/{maxHp}";
         }
 
         private void ApplyInitialColors()
