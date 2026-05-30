@@ -2,6 +2,15 @@
 // NpcEnemyBuilder.cs
 // Namespace : Systems.NPC.Builder
 // ============================================================
+// Responsabilidade única: montar o NPC conectando pool,
+// config e sistemas externos.
+//
+// Mudanças em relação à versão original:
+//   • Não passa mais Detector no NpcEnemyConfig (campo removido —
+//     era um campo morto; o NpcEnemy já obtém o Detector via Awake).
+//   • Registra o NPC no NpcEnemyContactHandler após Activate().
+//   • Chama pool.Return(NpcEnemy) diretamente, sem cast de interface.
+// ============================================================
 
 using DetectionSystem.Core;
 using Services.Spawning;
@@ -15,15 +24,16 @@ namespace Systems.NPC.Builder
     public sealed class NpcEnemyBuilder : MonoBehaviour
     {
         [Header("Dependências")]
-        [SerializeField] private NpcEnemyPool _pool;
+        [SerializeField] private NpcEnemyPool                    _pool;
         [SerializeField] private NavMeshSpawnPositionServiceMono _spawnService;
+        [SerializeField] private NpcEnemyContactHandler          _contactHandler;
 
         [Header("Comportamento")]
         [SerializeField, Min(1f)]   private float _wanderRadius    = 8f;
         [SerializeField, Min(1f)]   private float _chaseRadius     = 20f;
         [SerializeField, Min(0.1f)] private float _contactDistance = 1.2f;
 
-        [Tooltip("Tempo máximo (segundos) que o NPC pode ficar em Wander antes de retornar à pool e ser realocado.")]
+        [Tooltip("Tempo máximo (s) em Wander antes de retornar à pool.")]
         [SerializeField, Min(1f)]   private float _wanderLifetime  = 30f;
 
         // ── API pública ───────────────────────────────────────────────────
@@ -63,20 +73,12 @@ namespace Systems.NPC.Builder
             return SpawnAt_Internal(exactSpawnPoint);
         }
 
-        // ── Implementação compartilhada ───────────────────────────────────
+        // ── Implementação ─────────────────────────────────────────────────
 
         private bool SpawnAt_Internal(Vector3 spawnPoint)
         {
             NpcEnemy npc = _pool.Get();
             if (npc == null) return false;
-
-            var detector = npc.GetComponent<Detector>();
-            if (detector == null)
-            {
-                Debug.LogError($"[NpcEnemyBuilder] '{npc.name}' sem Detector.", this);
-                _pool.Return(npc);
-                return false;
-            }
 
             var config = new NpcEnemyConfig(
                 spawnPoint      : spawnPoint,
@@ -84,12 +86,21 @@ namespace Systems.NPC.Builder
                 chaseRadius     : _chaseRadius,
                 contactDistance : _contactDistance,
                 wanderLifetime  : _wanderLifetime,
-                detector        : detector,
-                onReturnToPool  : (enemy) => _pool.Return(enemy)
+                onReturnToPool  : (enemy) =>
+                {
+                    // Cast seguro: o Builder sabe que só coloca NpcEnemy na pool
+                    if (enemy is NpcEnemy concreteEnemy)
+                    {
+                        _contactHandler?.Unregister(enemy);
+                        _pool.Return(concreteEnemy);
+                    }
+                }
             );
 
             npc.Initialize(config);
             npc.Activate();
+
+            _contactHandler?.Register(npc);
 
             Debug.Log($"[NpcEnemyBuilder] '{npc.name}' ativado em {spawnPoint} " +
                       $"[Wander: {_wanderRadius}m | Chase: {_chaseRadius}m | Lifetime: {_wanderLifetime}s]", npc);

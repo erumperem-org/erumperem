@@ -2,16 +2,11 @@
 // NpcEnemySpawner.cs
 // Namespace : Systems.NPC.Spawner
 // ============================================================
-// Ciclo de respawn:
+// Responsabilidade única: controlar o ciclo de respawn
+// (quando e quantos NPCs spawnar).
 //
-//   Start → SpawnBatch (spawn inicial)
-//               ↓
-//   NPC morre → ReturnToPool → pool.OnNpcReturned
-//               ↓
-//   Spawner ouve → aguarda _respawnDelay segundos → Build()
-//
-// O Spawner também mantém o loop periódico original para
-// preencher slots que nunca foram usados (ex: pool não cheia).
+// A decisão de ONDE spawnar foi extraída para ISpawnPointSelector
+// (PlayerAwareSpawnPointSelector ou RoundRobinSpawnPointSelector).
 // ============================================================
 
 using System.Collections;
@@ -30,13 +25,11 @@ namespace Systems.NPC.Spawner
         [SerializeField] private NpcEnemyPool    _pool;
 
         [Header("Spawn periódico")]
-        [Tooltip("Intervalo entre batches periódicos (preenche slots vazios).")]
-        [SerializeField, Min(0.1f)] private float _spawnInterval = 5f;
+        [SerializeField, Min(0.1f)] private float _spawnInterval  = 5f;
         [SerializeField, Min(1)]    private int   _spawnBatchSize = 1;
-        [SerializeField]            private bool  _autoStart = true;
+        [SerializeField]            private bool  _autoStart      = true;
 
         [Header("Respawn após retorno à pool")]
-        [Tooltip("Segundos de espera depois que um NPC morre antes de respawnar um novo.")]
         [SerializeField, Min(0f)] private float _respawnDelay = 3f;
 
         [Header("Spawn Points")]
@@ -46,11 +39,9 @@ namespace Systems.NPC.Spawner
 
         // ── Estado interno ────────────────────────────────────────────────
 
-        private Coroutine  _spawnLoopCoroutine;
-        private bool       _isRunning;
-        private int        _spawnPointIndex;
-        private Transform[] _sortedSpawnPoints = new Transform[0];
-        private int        _sortedIndex;
+        private Coroutine          _spawnLoopCoroutine;
+        private bool               _isRunning;
+        private ISpawnPointSelector _selector;
 
         public bool IsRunning => _isRunning;
 
@@ -60,24 +51,23 @@ namespace Systems.NPC.Spawner
         {
             if (_builder == null) Debug.LogError("[NpcEnemySpawner] Builder não configurado!", this);
             if (_pool    == null) Debug.LogError("[NpcEnemySpawner] Pool não configurada!",    this);
+
+            _selector = BuildSelector();
         }
 
         private void OnEnable()
         {
-            if (_pool != null)
-                _pool.OnNpcReturned += HandleNpcReturned;
+            if (_pool != null) _pool.OnNpcReturned += HandleNpcReturned;
         }
 
         private void OnDisable()
         {
-            if (_pool != null)
-                _pool.OnNpcReturned -= HandleNpcReturned;
+            if (_pool != null) _pool.OnNpcReturned -= HandleNpcReturned;
         }
 
         private void Start()
         {
-            if (_autoStart)
-                StartSpawning();
+            if (_autoStart) StartSpawning();
         }
 
         private void OnDestroy() => StopSpawning();
@@ -99,32 +89,23 @@ namespace Systems.NPC.Spawner
             _spawnLoopCoroutine = null;
         }
 
-        public void SpawnBatchNow()  => ExecuteSpawnBatch();
-        public void SpawnAt(Vector3 position) => _builder?.BuildAt(position);
+        public void SpawnBatchNow()            => ExecuteSpawnBatch();
+        public void SpawnAt(Vector3 position)  => _builder?.BuildAt(position);
 
         // ── Respawn reativo ───────────────────────────────────────────────
 
-        /// <summary>
-        /// Chamado pela pool cada vez que um NPC é devolvido.
-        /// Agenda um único respawn após _respawnDelay segundos.
-        /// </summary>
-        private void HandleNpcReturned()
-        {
-            StartCoroutine(RespawnAfterDelay());
-        }
+        private void HandleNpcReturned() => StartCoroutine(RespawnAfterDelay());
 
         private IEnumerator RespawnAfterDelay()
         {
             if (_respawnDelay > 0f)
                 yield return new WaitForSeconds(_respawnDelay);
 
-            // Só respawna se a pool tiver slot disponível
-            // (pode ter sido preenchido pelo loop periódico antes do delay acabar)
             if (_pool.HasAvailable)
                 SpawnOne();
         }
 
-        // ── Loop periódico (preenche slots nunca usados) ──────────────────
+        // ── Loop periódico ────────────────────────────────────────────────
 
         private IEnumerator SpawnLoopCoroutine()
         {
@@ -143,25 +124,13 @@ namespace Systems.NPC.Spawner
         {
             if (_builder == null || _pool == null || !_pool.HasAvailable) return;
 
-            if (_spawnPoints != null && _spawnPoints.Length > 0 && _playerTransform != null)
-            {
-                RebuildSortedSpawnPoints();
-                if (_sortedSpawnPoints.Length == 0) return;
-
-                Transform point = _sortedSpawnPoints[_sortedIndex % _sortedSpawnPoints.Length];
-                _sortedIndex++;
+            var point = _selector?.Next();
+            if (point != null)
                 _builder.BuildAt(point.position);
-            }
-            else if (_spawnPoints != null && _spawnPoints.Length > 0)
-            {
-                Transform point = _spawnPoints[_spawnPointIndex % _spawnPoints.Length];
-                _spawnPointIndex++;
-                _builder.BuildAt(point.position);
-            }
-            else
-            {
+            else if (_selector == null || !_selector.HasAny)
                 _builder.Build();
-            }
+            else
+                Debug.LogWarning("[NpcEnemySpawner] Todos os spawn points dentro do raio de visão.");
         }
 
         private void ExecuteSpawnBatch()
@@ -175,29 +144,16 @@ namespace Systems.NPC.Spawner
                 return;
             }
 
-            if (_spawnPoints != null && _spawnPoints.Length > 0 && _playerTransform != null)
-            {
-                RebuildSortedSpawnPoints();
-
-                if (_sortedSpawnPoints.Length == 0)
-                {
-                    Debug.LogWarning("[NpcEnemySpawner] Todos os spawn points dentro do raio de visão.");
-                    return;
-                }
-
-                for (int i = 0; i < toSpawn; i++)
-                {
-                    Transform point = _sortedSpawnPoints[_sortedIndex % _sortedSpawnPoints.Length];
-                    _sortedIndex++;
-                    if (!_builder.BuildAt(point.position)) break;
-                }
-            }
-            else if (_spawnPoints != null && _spawnPoints.Length > 0)
+            if (_selector != null && _selector.HasAny)
             {
                 for (int i = 0; i < toSpawn; i++)
                 {
-                    Transform point = _spawnPoints[_spawnPointIndex % _spawnPoints.Length];
-                    _spawnPointIndex++;
+                    var point = _selector.Next();
+                    if (point == null)
+                    {
+                        Debug.LogWarning("[NpcEnemySpawner] Todos os spawn points dentro do raio de visão.");
+                        break;
+                    }
                     if (!_builder.BuildAt(point.position)) break;
                 }
             }
@@ -208,46 +164,16 @@ namespace Systems.NPC.Spawner
             }
         }
 
-        // ── Helpers ───────────────────────────────────────────────────────
+        // ── Factory do selector ───────────────────────────────────────────
 
-        private void RebuildSortedSpawnPoints()
+        private ISpawnPointSelector BuildSelector()
         {
-            Vector3 playerPos      = _playerTransform.position;
-            float   visionRadiusSq = _playerVisionRadius * _playerVisionRadius;
+            if (_spawnPoints == null || _spawnPoints.Length == 0)
+                return null;
 
-            int validCount = 0;
-            var temp = new Transform[_spawnPoints.Length];
-
-            foreach (var point in _spawnPoints)
-            {
-                if (point == null) continue;
-                if ((point.position - playerPos).sqrMagnitude < visionRadiusSq) continue;
-                temp[validCount++] = point;
-            }
-
-            // Insertion sort por distância
-            for (int i = 1; i < validCount; i++)
-            {
-                var   key     = temp[i];
-                float keyDist = (key.position - playerPos).sqrMagnitude;
-                int   j       = i - 1;
-
-                while (j >= 0 && (temp[j].position - playerPos).sqrMagnitude > keyDist)
-                {
-                    temp[j + 1] = temp[j];
-                    j--;
-                }
-
-                temp[j + 1] = key;
-            }
-
-            if (_sortedSpawnPoints.Length != validCount)
-                _sortedSpawnPoints = new Transform[validCount];
-
-            System.Array.Copy(temp, _sortedSpawnPoints, validCount);
-
-            if (_sortedSpawnPoints.Length > 0)
-                _sortedIndex = _sortedIndex % _sortedSpawnPoints.Length;
+            return _playerTransform != null
+                ? new PlayerAwareSpawnPointSelector(_spawnPoints, _playerTransform, _playerVisionRadius)
+                : (ISpawnPointSelector) new RoundRobinSpawnPointSelector(_spawnPoints);
         }
 
         // ── Gizmos ────────────────────────────────────────────────────────

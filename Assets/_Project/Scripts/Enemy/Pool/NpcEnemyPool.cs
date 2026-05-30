@@ -2,6 +2,16 @@
 // NpcEnemyPool.cs
 // Namespace : Systems.NPC.Pool
 // ============================================================
+// Responsabilidade única: gerenciar disponibilidade dos NPCs
+// (Get / Return / PreWarm).
+//
+// Mudanças em relação à versão original:
+//   • Posicionamento físico delegado a IPoolStorage (GridPoolStorage)
+//   • Return() aceita NpcEnemy diretamente — o cast de INpcEnemy para
+//     NpcEnemy foi movido para NpcEnemyBuilder, que é quem conhece o
+//     tipo concreto. A pool não precisa depender da interface para
+//     depois fazer cast internamente.
+// ============================================================
 
 using System;
 using System.Collections.Generic;
@@ -14,20 +24,20 @@ namespace Systems.NPC.Pool
     public sealed class NpcEnemyPool : MonoBehaviour
     {
         [Header("Prefab")]
-        [Tooltip("Prefab do NPC inimigo.")]
         [SerializeField] private GameObject _npcPrefab;
 
         [Header("Capacidade")]
         [SerializeField, Min(1)] private int _poolSize = 10;
 
-        [Header("Posição de Armazenamento (fora do mapa)")]
-        [SerializeField] private Vector3 _storageOrigin = new Vector3(0f, -100f, 0f);
+        [Header("Armazenamento (fora do mapa)")]
+        [SerializeField] private Vector3 _storageOrigin  = new Vector3(0f, -100f, 0f);
         [SerializeField] private float   _storageSpacing = 3f;
 
         // ── Estado interno ────────────────────────────────────────────────
 
         private readonly Stack<NpcEnemy>   _available = new();
         private readonly HashSet<NpcEnemy> _active    = new();
+        private IPoolStorage               _storage;
 
         // ── Propriedades ──────────────────────────────────────────────────
 
@@ -37,10 +47,6 @@ namespace Systems.NPC.Pool
 
         // ── Evento ────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Disparado sempre que um NPC é devolvido à pool.
-        /// O Spawner se inscreve aqui para agendar respawns.
-        /// </summary>
         public event Action OnNpcReturned;
 
         // ── Unity Lifecycle ───────────────────────────────────────────────
@@ -53,6 +59,7 @@ namespace Systems.NPC.Pool
                 return;
             }
 
+            _storage = new GridPoolStorage(_storageOrigin, _storageSpacing);
             PrewarmPool();
         }
 
@@ -72,13 +79,13 @@ namespace Systems.NPC.Pool
             return npc;
         }
 
-        public void Return(INpcEnemy npc)
+        /// <summary>
+        /// Recebe NpcEnemy diretamente — sem cast de interface para concreto.
+        /// O Builder, que conhece o tipo concreto, é quem chama este método.
+        /// </summary>
+        public void Return(NpcEnemy enemy)
         {
-            if (npc is not NpcEnemy enemy)
-            {
-                Debug.LogWarning("[NpcEnemyPool] Tipo não suportado.");
-                return;
-            }
+            if (enemy == null) return;
 
             if (!_active.Contains(enemy))
             {
@@ -92,22 +99,19 @@ namespace Systems.NPC.Pool
             var agent = enemy.GetComponent<UnityEngine.AI.NavMeshAgent>();
             if (agent != null) agent.enabled = false;
 
-            RepositionInStorage(enemy, _available.Count - 1);
+            _storage.StoreAt(enemy, _available.Count - 1);
             enemy.gameObject.SetActive(false);
 
-            // Notifica o Spawner para que agende o próximo respawn
             OnNpcReturned?.Invoke();
         }
 
-        // ── Inicialização ─────────────────────────────────────────────────
+        // ── PreWarm ───────────────────────────────────────────────────────
 
         private void PrewarmPool()
         {
-            Vector3 birthPosition = transform.position;
-
             for (int i = 0; i < _poolSize; i++)
             {
-                var go = Instantiate(_npcPrefab, birthPosition, Quaternion.identity, transform);
+                var go = Instantiate(_npcPrefab, _storage.PositionFor(i), Quaternion.identity, transform);
                 go.name = $"NpcEnemy_{i:D2}";
 
                 var enemy = go.GetComponent<NpcEnemy>();
@@ -121,29 +125,11 @@ namespace Systems.NPC.Pool
                 var agent = go.GetComponent<UnityEngine.AI.NavMeshAgent>();
                 if (agent != null) agent.enabled = false;
 
-                go.transform.position = CalculateStoragePosition(i);
-                go.transform.rotation = Quaternion.identity;
                 go.SetActive(false);
-
                 _available.Push(enemy);
             }
 
             Debug.Log($"[NpcEnemyPool] Pool inicializada com {_available.Count} NPCs.", this);
-        }
-
-        // ── Grade de armazenamento ────────────────────────────────────────
-
-        private Vector3 CalculateStoragePosition(int index)
-        {
-            int col = index % 2;
-            int row = index / 2;
-            return _storageOrigin + new Vector3(col * _storageSpacing, 0f, row * _storageSpacing);
-        }
-
-        private void RepositionInStorage(NpcEnemy enemy, int indexInPool)
-        {
-            enemy.transform.position = CalculateStoragePosition(indexInPool);
-            enemy.transform.rotation = Quaternion.identity;
         }
 
         // ── Gizmos ────────────────────────────────────────────────────────
@@ -151,9 +137,10 @@ namespace Systems.NPC.Pool
 #if UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
+            var storage = new GridPoolStorage(_storageOrigin, _storageSpacing);
             Gizmos.color = new Color(0.2f, 0.6f, 1f, 0.4f);
             for (int i = 0; i < _poolSize; i++)
-                Gizmos.DrawWireCube(CalculateStoragePosition(i), Vector3.one * 0.8f);
+                Gizmos.DrawWireCube(storage.PositionFor(i), Vector3.one * 0.8f);
 
             Gizmos.color = Color.cyan;
             Gizmos.DrawSphere(_storageOrigin, 0.3f);
