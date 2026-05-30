@@ -49,6 +49,7 @@ public sealed class BattleSimulator
     /// <summary>Evento inicial de batalha (telemetria / UI).</summary>
     public void EmitBattleStarted(BattleState state)
     {
+        EnsureInitiativeResolved(state);
         Emit(
             state,
             BattleEventType.BattleStarted,
@@ -98,14 +99,21 @@ public sealed class BattleSimulator
         return true;
     }
 
-    /// <summary>Ordem de iniciativa do estado atual (vivo).</summary>
+    /// <summary>Ordem de turno da ronda actual (vivo), com base na iniciativa e posição/roster.</summary>
     public List<Combatant> BuildInitiativeOrder(BattleState state)
     {
-        return state.GetAllCombatants()
-            .Where(BattleState.IsActiveBattler)
-            .OrderByDescending(combatant => combatant.Stats.Speed)
-            .ThenBy(_ => _random.Next(0, int.MaxValue))
-            .ToList();
+        EnsureInitiativeResolved(state);
+        return InitiativeResolver.BuildTurnOrder(state);
+    }
+
+    private void EnsureInitiativeResolved(BattleState state)
+    {
+        if (state.Initiative is not null)
+        {
+            return;
+        }
+
+        state.Initiative = InitiativeResolver.RollInitiative(state, _random);
     }
 
     private void ResolveDotTick(BattleState state, Combatant actor)

@@ -52,6 +52,9 @@ namespace Erumperem.Combat
         [Header("Debug")]
         [SerializeField] private bool logEventsToConsole = true;
 
+        [Tooltip("Ignora o resultado da rolagem de iniciativa e faz a equipa dos aliados agir primeiro em cada ronda.")]
+        [SerializeField] private bool forceAlliesInitiativeFirst;
+
         [Header("Progression")]
         [Tooltip("Opcional na cena; se vazio usa PlayerProgressionService.Instance (DontDestroyOnLoad).")]
         [SerializeField] private PlayerProgressionService _progressionService;
@@ -392,6 +395,7 @@ namespace Erumperem.Combat
             }
 
             _sim.EmitBattleStarted(_state);
+            ApplyDebugInitiativeOverrides();
             BeginRound();
             _sessionHub?.RaiseCombatSessionReadyForUi(this);
 
@@ -501,6 +505,31 @@ namespace Erumperem.Combat
         {
             _leftClickPressedThisFrame = false;
             _rightClickPressedThisFrame = false;
+        }
+
+        private void ApplyDebugInitiativeOverrides()
+        {
+            if (!forceAlliesInitiativeFirst || _state?.Initiative is null)
+            {
+                return;
+            }
+
+            var rolledInitiative = _state.Initiative;
+            _state.Initiative = new BattleInitiativeSnapshot
+            {
+                FirstActingSide = Side.Allies,
+                AllyTeamTotal = rolledInitiative.AllyTeamTotal,
+                EnemyTeamTotal = rolledInitiative.EnemyTeamTotal,
+                RollsByCombatantId = rolledInitiative.RollsByCombatantId,
+            };
+
+            if (logEventsToConsole)
+            {
+                Debug.Log(
+                    $"Debug: iniciativa forçada para aliados " +
+                    $"(rolagem original: aliados {rolledInitiative.AllyTeamTotal} vs inimigos {rolledInitiative.EnemyTeamTotal}, " +
+                    $"vencedor seria {rolledInitiative.FirstActingSide}).");
+            }
         }
 
         private void BeginRound()

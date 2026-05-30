@@ -1010,4 +1010,111 @@ public class UnitTest1
         Assert.Contains("Sangramento (3 de dano por 3 turnos)", summary, StringComparison.Ordinal);
         Assert.Contains("+1 corrupção", summary, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void BuildInitiativeOrder_EnemiesWinInitiative_EnemiesActByRankThenAlliesMainCompanion()
+    {
+        var battle = BattleFactory.CreateSampleBattle([], allyCount: 2, enemyCount: 4);
+        battle.Initiative = new BattleInitiativeSnapshot
+        {
+            FirstActingSide = Side.Enemies,
+            AllyTeamTotal = 8,
+            EnemyTeamTotal = 14,
+            RollsByCombatantId = new Dictionary<string, int>(StringComparer.Ordinal),
+        };
+
+        var simulator = new BattleSimulator(new SeededRandomSource(0), new CombatEventCollector());
+        var turnOrder = simulator.BuildInitiativeOrder(battle);
+
+        Assert.Equal(
+            ["enemy_1", "enemy_2", "enemy_3", "enemy_4", "ally_1", "ally_2"],
+            turnOrder.Select(combatant => combatant.Identity.Id));
+    }
+
+    [Fact]
+    public void BuildInitiativeOrder_AlliesWinInitiative_AlliesMainCompanionThenEnemiesByRank()
+    {
+        var battle = BattleFactory.CreateSampleBattle([], allyCount: 2, enemyCount: 4);
+        battle.Initiative = new BattleInitiativeSnapshot
+        {
+            FirstActingSide = Side.Allies,
+            AllyTeamTotal = 16,
+            EnemyTeamTotal = 9,
+            RollsByCombatantId = new Dictionary<string, int>(StringComparer.Ordinal),
+        };
+
+        var simulator = new BattleSimulator(new SeededRandomSource(0), new CombatEventCollector());
+        var turnOrder = simulator.BuildInitiativeOrder(battle);
+
+        Assert.Equal(
+            ["ally_1", "ally_2", "enemy_1", "enemy_2", "enemy_3", "enemy_4"],
+            turnOrder.Select(combatant => combatant.Identity.Id));
+    }
+
+    [Fact]
+    public void BuildInitiativeOrder_SkipsDeadCombatantsButKeepsTeamOrder()
+    {
+        var battle = BattleFactory.CreateSampleBattle([], allyCount: 2, enemyCount: 4);
+        battle.Enemies[1].Health.CurrentHp = 0;
+        battle.Enemies[1].Health.IsDead = true;
+        battle.Initiative = new BattleInitiativeSnapshot
+        {
+            FirstActingSide = Side.Enemies,
+            AllyTeamTotal = 8,
+            EnemyTeamTotal = 14,
+            RollsByCombatantId = new Dictionary<string, int>(StringComparer.Ordinal),
+        };
+
+        var simulator = new BattleSimulator(new SeededRandomSource(0), new CombatEventCollector());
+        var turnOrder = simulator.BuildInitiativeOrder(battle);
+
+        Assert.Equal(
+            ["enemy_1", "enemy_3", "enemy_4", "ally_1", "ally_2"],
+            turnOrder.Select(combatant => combatant.Identity.Id));
+    }
+
+    [Fact]
+    public void RollInitiative_SumsAliveAllyRollsAndAllEnemyRolls()
+    {
+        var battle = BattleFactory.CreateSampleBattle([], allyCount: 2, enemyCount: 4);
+        battle.Allies[1].Health.CurrentHp = 0;
+        battle.Allies[1].Health.IsDead = true;
+
+        var random = new FixedRollRandomSource([7, 3, 4, 2, 5, 1]);
+        var initiative = InitiativeResolver.RollInitiative(battle, random);
+
+        Assert.Equal(7, initiative.AllyTeamTotal);
+        Assert.Equal(14, initiative.EnemyTeamTotal);
+        Assert.Equal(Side.Enemies, initiative.FirstActingSide);
+        Assert.Equal(7, initiative.RollsByCombatantId["ally_1"]);
+        Assert.False(initiative.RollsByCombatantId.ContainsKey("ally_2"));
+        Assert.Equal([3, 4, 2, 5], battle.Enemies.Select(enemy => initiative.RollsByCombatantId[enemy.Identity.Id]));
+    }
+
+    private sealed class FixedRollRandomSource : IRandomSource
+    {
+        private readonly int[] _rolls;
+        private int _index;
+
+        public FixedRollRandomSource(int[] rolls) => _rolls = rolls;
+
+        public int Next(int minValue, int maxValue)
+        {
+            if (_index >= _rolls.Length)
+            {
+                throw new InvalidOperationException("No more fixed rolls configured.");
+            }
+
+            var roll = _rolls[_index++];
+            if (roll < minValue || roll >= maxValue)
+            {
+                throw new InvalidOperationException(
+                    $"Fixed roll {roll} is outside Next({minValue}, {maxValue}).");
+            }
+
+            return roll;
+        }
+
+        public double NextDouble() => 0.5;
+    }
 }

@@ -22,6 +22,9 @@ public sealed class BattleState
     public required int TurnNumber { get; set; }
     public required Guid BattleId { get; init; }
 
+    /// <summary>Rolagem de iniciativa no início do combate; define qual equipa abre cada ronda.</summary>
+    public BattleInitiativeSnapshot? Initiative { get; set; }
+
     public IEnumerable<Combatant> GetAllCombatants()
     {
         return Allies.Concat(Enemies);
