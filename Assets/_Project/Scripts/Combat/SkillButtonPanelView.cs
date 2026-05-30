@@ -142,7 +142,11 @@ namespace Erumperem.Combat
 
             if (_skillButton == null)
             {
-                _skillButton = GetComponentInChildren<Button>(true);
+                _skillButton = GetComponent<Button>();
+                if (_skillButton == null)
+                {
+                    _skillButton = GetComponentInChildren<Button>(true);
+                }
             }
 
             if (_skillButton != null)
@@ -183,7 +187,8 @@ namespace Erumperem.Combat
         }
 
         public void ApplyVisuals(
-            Color skillColor,
+            Sprite skillIconOrNull,
+            Color skillIconColor,
             bool interactable,
             bool selected,
             string playerDescriptionLine,
@@ -198,6 +203,8 @@ namespace Erumperem.Combat
                 _hotkeyDigitLabel.text = hotkeyLabelOneToSeven.ToString();
             }
 
+            ApplySkillIconVisuals(skillIconOrNull, skillIconColor, interactable);
+
             if (_skillButton != null)
             {
                 _skillButton.interactable = interactable;
@@ -211,20 +218,6 @@ namespace Erumperem.Combat
 
                 _buttonCanvasGroup.interactable = true;
                 _buttonCanvasGroup.blocksRaycasts = interactable;
-            }
-
-            if (_panelBackgroundImage != null)
-            {
-                var c = Color.Lerp(_panelColorBase, skillColor, 0.85f);
-                c.a = _panelColorBase.a;
-                _panelBackgroundImage.color = c;
-            }
-
-            if (_buttonImage != null)
-            {
-                var c = Color.Lerp(_buttonColorBase, skillColor, 0.6f);
-                c.a = interactable ? 1f : 0.45f;
-                _buttonImage.color = c;
             }
 
             if (_rootRectTransform == null)
@@ -455,6 +448,25 @@ namespace Erumperem.Combat
 
 
 
+        }
+
+        private void ApplySkillIconVisuals(Sprite skillIconOrNull, Color skillIconColor, bool interactable)
+        {
+            EnsureButtonReferencesResolved();
+            if (_buttonImage == null)
+            {
+                return;
+            }
+
+            if (skillIconOrNull != null)
+            {
+                _buttonImage.sprite = skillIconOrNull;
+            }
+
+            _buttonImage.preserveAspect = false;
+            var tintedIconColor = skillIconColor;
+            tintedIconColor.a = interactable ? 1f : 0.45f;
+            _buttonImage.color = tintedIconColor;
         }
 
         private void CacheParentRow() =>
