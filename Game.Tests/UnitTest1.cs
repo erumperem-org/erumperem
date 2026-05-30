@@ -6,6 +6,7 @@ using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
 using Game.Core.Passives;
+using Game.Core.Presentation;
 using Game.Core.Progression;
 using Game.Simulations;
 
@@ -160,6 +161,66 @@ public class UnitTest1
         simulator.Simulate(battle, maxTurns: 1);
         Assert.True(enemy.Health.CurrentHp <= hpBefore - 2);
         Assert.Empty(enemy.Dots.ActiveDots);
+    }
+
+    [Fact]
+    public void SkillDamagePreviewCalculator_RespectsBaseRangeAndBlock()
+    {
+        var skill = new SkillDefinition
+        {
+            Id = "preview_strike",
+            Name = "Preview Strike",
+            Element = ElementType.Fire,
+            Type = "Active",
+            BaseDamage = new DamageRange { Min = 10, Max = 16 },
+            BaseCritChance = 0,
+            Accuracy = 1.0,
+            EffectsOnHit = [],
+        };
+        var battle = BattleFactory.CreateSampleBattle([skill], allyCount: 1, enemyCount: 1, corruptionValue: 0);
+        battle.Allies[0].Stats = new StatsComponent { Speed = 10, Accuracy = 1.0, CritChance = 0.0 };
+        battle.Allies[0].SkillLoadout.Skills.Clear();
+        battle.Allies[0].SkillLoadout.Skills.Add(skill.Id);
+        battle.Enemies[0].Health.CurrentHp = battle.Enemies[0].Health.MaxHp;
+
+        Assert.True(SkillDamagePreviewCalculator.TryCompute(
+            battle,
+            battle.Allies[0],
+            battle.Enemies[0],
+            skill,
+            out var withoutBlock));
+        Assert.True(withoutBlock.MinDamageOnHit > 0);
+        Assert.True(withoutBlock.MaxDamageOnHit >= withoutBlock.MinDamageOnHit);
+        Assert.Equal(
+            battle.Enemies[0].Health.CurrentHp - withoutBlock.MaxDamageOnHit,
+            withoutBlock.MinHpAfterHit);
+        Assert.Equal(
+            battle.Enemies[0].Health.CurrentHp - withoutBlock.MinDamageOnHit,
+            withoutBlock.MaxHpAfterHit);
+        Assert.False(withoutBlock.IsGuaranteedKillOnHit);
+
+        battle.Enemies[0].Tokens.Add(TokenType.Block, 1);
+        Assert.True(SkillDamagePreviewCalculator.TryCompute(
+            battle,
+            battle.Allies[0],
+            battle.Enemies[0],
+            skill,
+            out var withBlock));
+        Assert.True(withBlock.MaxDamageOnHit < withoutBlock.MaxDamageOnHit);
+
+        while (battle.Enemies[0].Tokens.ConsumeOne(TokenType.Block)) { }
+
+        while (battle.Enemies[0].Tokens.ConsumeOne(TokenType.BlockPlus)) { }
+
+        battle.Enemies[0].Health.CurrentHp = 1;
+        Assert.True(SkillDamagePreviewCalculator.TryCompute(
+            battle,
+            battle.Allies[0],
+            battle.Enemies[0],
+            skill,
+            out var lethalPreview));
+        Assert.True(lethalPreview.IsGuaranteedKillOnHit);
+        Assert.Equal(0, lethalPreview.MinHpAfterHit);
     }
 
     [Fact]
@@ -911,5 +972,42 @@ public class UnitTest1
         Assert.Contains("f_t3_a1", ids);
         Assert.Contains("f_t1_p1", ids);
         Assert.DoesNotContain("m_t1_p1", ids);
+    }
+
+    [Fact]
+    public void SkillPlayerDescriptionBuilder_PosturaDeLobo_DescribesTokensWithoutCrit()
+    {
+        var guardSkill = SampleCombatData.CreateSkills().First(skill => skill.Id == "wulfric_innate_guard");
+
+        var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(guardSkill);
+
+        Assert.Equal(
+            "Postura de lobo: ti (auto) | sem dano direto | +1 Bloqueio, +1 Provocação | sem corrupção.",
+            summary);
+        Assert.DoesNotContain("crít", summary, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void SkillPlayerDescriptionBuilder_ExecucaoDeLeilao_DescribesDamageAndCrit()
+    {
+        var executionSkill = SampleCombatData.CreateSkills().First(skill => skill.Id == "f_t3_a1");
+
+        var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(executionSkill);
+
+        Assert.Equal(
+            "Execução de leilão: 1 alvo | 10–16 de dano | 12% de crít | +1 corrupção.",
+            summary);
+    }
+
+    [Fact]
+    public void SkillPlayerDescriptionBuilder_RasgarTendao_IncludesDotAndCorruption()
+    {
+        var bleedSkill = SampleCombatData.CreateSkills().First(skill => skill.Id == "f_t1_a1");
+
+        var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(bleedSkill);
+
+        Assert.Contains("6–10 de dano", summary, StringComparison.Ordinal);
+        Assert.Contains("Sangramento (3 de dano por 3 turnos)", summary, StringComparison.Ordinal);
+        Assert.Contains("+1 corrupção", summary, StringComparison.Ordinal);
     }
 }

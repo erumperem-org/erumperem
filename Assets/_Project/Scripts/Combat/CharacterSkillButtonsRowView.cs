@@ -147,7 +147,11 @@ namespace Erumperem.Combat
                     continue;
                 }
 
-                var playerLine = CombatSkillPlayerDescriptionFormatter.BuildSummaryLine(skillDefinition);
+                var playerLine = CombatSkillPlayerDescriptionFormatter.BuildSummaryLine(
+                    skillDefinition,
+                    battleState,
+                    subject,
+                    selectedEnemyOrNull);
                 var skillColor = SkillUiColorPalette.GetColorForSkillId(skillId);
                 var interactable = !isEnemy && canThisRowIssuePlayerCommands &&
                     CombatSkillSlotUiEligibility.IsSlotUiInteractable(

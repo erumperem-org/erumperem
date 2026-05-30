@@ -126,6 +126,8 @@ namespace Erumperem.Combat.Tokens
                 return;
             }
 
+            EnsureSharedStripCanvasReceivesPointerEvents();
+
             _combatSession = controller;
             var state = controller.BattleState;
             if (state == null)
@@ -196,6 +198,25 @@ namespace Erumperem.Combat.Tokens
         {
             _combatSession = null;
             TearDownStrips();
+        }
+
+        private void EnsureSharedStripCanvasReceivesPointerEvents()
+        {
+            if (sharedStripParent == null)
+            {
+                return;
+            }
+
+            var sharedCanvas = sharedStripParent.GetComponentInParent<Canvas>();
+            if (sharedCanvas == null || sharedCanvas.renderMode != RenderMode.WorldSpace)
+            {
+                return;
+            }
+
+            if (sharedCanvas.worldCamera == null)
+            {
+                sharedCanvas.worldCamera = Camera.main;
+            }
         }
 
         private void TearDownStrips()

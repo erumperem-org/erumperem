@@ -1,5 +1,6 @@
 using DG.Tweening;
 using Game.Core.Models;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -24,6 +25,15 @@ namespace Erumperem.Combat.HealthBars
                  "que mostra o trail de dano (laranja, lento) ou de cura (verde, rápido). " +
                  "Sem ela, o componente continua a funcionar mas sem efeito de trail.")]
         [SerializeField] private Image _trailingFillImage;
+
+        [Tooltip("Opcional: TMP que mostra HP actual / HP máximo (ex.: 75/100). Auto-resolvido por nome 'HealthBarText'.")]
+        [SerializeField] private TextMeshProUGUI _healthBarTextLabel;
+
+        [Tooltip("Opcional: TMP flutuante acima da barra com o range de dano previsto. Auto-resolvido por 'DamagePreviewFloatingText'.")]
+        [SerializeField] private TextMeshProUGUI _damagePreviewFloatingTextLabel;
+
+        [Tooltip("Opcional: ícone de caveira quando o golpe garante morte ao acertar. Auto-resolvido por 'KillPreviewSkull'.")]
+        [SerializeField] private GameObject _lethalKillSkullIndicator;
 
         [Header("Cores (LERP via troca directa de cor)")]
         [SerializeField] private Color _currentHpColor = new(0.85f, 0.18f, 0.18f, 1f);
@@ -56,6 +66,12 @@ namespace Erumperem.Combat.HealthBars
         private string _combatantId = "";
         private float _lastSyncedHpPercent = -1f;
         private bool _hasInitializedFromBattleState;
+        private int _lastDisplayedCurrentHp = -1;
+        private int _lastDisplayedMaxHp = -1;
+        private bool _hasActiveSkillDamagePreview;
+        private int _previewMinHpAfterHit;
+        private int _previewMaxHpAfterHit;
+        private string _previewFloatingDamageText = "";
 
         public void Configure(CombatPrototypeController combatSession, string combatantId)
         {
@@ -63,12 +79,68 @@ namespace Erumperem.Combat.HealthBars
             _combatantId = combatantId ?? "";
             _hasInitializedFromBattleState = false;
             _lastSyncedHpPercent = -1f;
+            _lastDisplayedCurrentHp = -1;
+            _lastDisplayedMaxHp = -1;
+            ClearSkillDamagePreview();
+        }
+
+        public void SetSkillDamagePreview(
+            int minDamageOnHit,
+            int maxDamageOnHit,
+            int minHpAfterHit,
+            int maxHpAfterHit,
+            bool isGuaranteedKillOnHit,
+            string floatingDamageText)
+        {
+            _hasActiveSkillDamagePreview = true;
+            _previewMinHpAfterHit = minHpAfterHit;
+            _previewMaxHpAfterHit = maxHpAfterHit;
+            _previewFloatingDamageText = floatingDamageText ?? "";
+
+            if (_damagePreviewFloatingTextLabel != null)
+            {
+                _damagePreviewFloatingTextLabel.gameObject.SetActive(true);
+                _damagePreviewFloatingTextLabel.text = _previewFloatingDamageText;
+            }
+
+            if (_lethalKillSkullIndicator != null)
+            {
+                _lethalKillSkullIndicator.SetActive(isGuaranteedKillOnHit);
+            }
+        }
+
+        public void ClearSkillDamagePreview()
+        {
+            if (!_hasActiveSkillDamagePreview)
+            {
+                return;
+            }
+
+            _hasActiveSkillDamagePreview = false;
+            _previewFloatingDamageText = "";
+            _lastDisplayedCurrentHp = -1;
+            _lastDisplayedMaxHp = -1;
+
+            if (_damagePreviewFloatingTextLabel != null)
+            {
+                _damagePreviewFloatingTextLabel.gameObject.SetActive(false);
+            }
+
+            if (_lethalKillSkullIndicator != null)
+            {
+                _lethalKillSkullIndicator.SetActive(false);
+            }
+
+            RestoreBarsAfterSkillDamagePreview();
         }
 
         private void Awake()
         {
             ResolveFillImageFromSliderIfMissing();
+            ResolveHealthBarTextLabelIfMissing();
+            ResolveDamagePreviewWidgetsIfMissing();
             ApplyInitialColors();
+            ClearSkillDamagePreview();
         }
 
         private void OnDestroy()
@@ -112,6 +184,14 @@ namespace Erumperem.Combat.HealthBars
             if (!gameObject.activeSelf)
             {
                 gameObject.SetActive(true);
+            }
+
+            SyncHealthBarTextLabel(combatant);
+
+            if (_hasActiveSkillDamagePreview)
+            {
+                ApplySkillDamagePreviewToSlider(combatant);
+                return;
             }
 
             var targetHpPercent = ComputeHpPercentSafely(combatant);
@@ -259,6 +339,157 @@ namespace Erumperem.Combat.HealthBars
             }
 
             _currentHpFillImage = _currentHpSlider.fillRect.GetComponent<Image>();
+        }
+
+        private void ResolveHealthBarTextLabelIfMissing()
+        {
+            if (_healthBarTextLabel != null)
+            {
+                return;
+            }
+
+            var textLabels = GetComponentsInChildren<TextMeshProUGUI>(includeInactive: true);
+            foreach (var textLabel in textLabels)
+            {
+                if (textLabel.name == "HealthBarText")
+                {
+                    _healthBarTextLabel = textLabel;
+                    return;
+                }
+            }
+        }
+
+        private void SyncHealthBarTextLabel(Combatant combatant)
+        {
+            if (_healthBarTextLabel == null || combatant == null)
+            {
+                return;
+            }
+
+            var currentHp = combatant.Health.CurrentHp;
+            var maxHp = combatant.Health.MaxHp;
+            if (currentHp == _lastDisplayedCurrentHp && maxHp == _lastDisplayedMaxHp)
+            {
+                return;
+            }
+
+            _lastDisplayedCurrentHp = currentHp;
+            _lastDisplayedMaxHp = maxHp;
+
+            if (_hasActiveSkillDamagePreview)
+            {
+                _healthBarTextLabel.text = FormatHealthTextWithDamagePreview(currentHp, maxHp);
+                return;
+            }
+
+            _healthBarTextLabel.text = $"{currentHp}/{maxHp}";
+        }
+
+        private string FormatHealthTextWithDamagePreview(int currentHp, int maxHp)
+        {
+            if (_previewMinHpAfterHit == _previewMaxHpAfterHit)
+            {
+                return $"{currentHp}/{maxHp} → {_previewMinHpAfterHit}/{maxHp}";
+            }
+
+            return $"{currentHp}/{maxHp} → {_previewMinHpAfterHit}–{_previewMaxHpAfterHit}/{maxHp}";
+        }
+
+        private void ApplySkillDamagePreviewToSlider(Combatant combatant)
+        {
+            if (_currentHpSlider == null || combatant.Health.MaxHp <= 0)
+            {
+                return;
+            }
+
+            DOTween.Kill(GetTweenIdScopedToInstance(CurrentHpTweenId), false);
+            DOTween.Kill(GetTweenIdScopedToInstance(TrailingHpTweenId), false);
+
+            var actualHpPercent = ComputeHpPercentSafely(combatant);
+            var previewHpPercent = Mathf.Clamp01((float)_previewMaxHpAfterHit / combatant.Health.MaxHp);
+            _currentHpSlider.value = previewHpPercent;
+
+            if (_trailingFillImage != null)
+            {
+                _trailingFillImage.color = _damageTrailColor;
+                _trailingFillImage.fillAmount = actualHpPercent;
+            }
+
+            if (_currentHpFillImage != null)
+            {
+                _currentHpFillImage.color = _currentHpColor;
+            }
+        }
+
+        private void RestoreBarsAfterSkillDamagePreview()
+        {
+            if (_combatSession == null || string.IsNullOrEmpty(_combatantId))
+            {
+                return;
+            }
+
+            var combatant = _combatSession.FindCombatantById(_combatantId);
+            if (combatant == null)
+            {
+                return;
+            }
+
+            var actualHpPercent = ComputeHpPercentSafely(combatant);
+            SnapBarsToValue(actualHpPercent);
+        }
+
+        private void ResolveDamagePreviewWidgetsIfMissing()
+        {
+            if (_damagePreviewFloatingTextLabel == null)
+            {
+                var textLabels = GetComponentsInChildren<TextMeshProUGUI>(includeInactive: true);
+                foreach (var textLabel in textLabels)
+                {
+                    if (textLabel == _healthBarTextLabel)
+                    {
+                        continue;
+                    }
+
+                    if (textLabel.name is "DamagePreviewFloatingText" or "DamagePreviewText" or "DamageEstimateText" or "Text (TMP)")
+                    {
+                        _damagePreviewFloatingTextLabel = textLabel;
+                        break;
+                    }
+                }
+            }
+
+            if (_lethalKillSkullIndicator == null)
+            {
+                foreach (var candidateName in new[] { "KillEstimateIcon", "KillPreviewSkull", "LethalKillSkull", "SkullKillIcon", "Skull" })
+                {
+                    var skullTransform = FindDescendantTransform(transform, candidateName);
+                    if (skullTransform != null)
+                    {
+                        _lethalKillSkullIndicator = skullTransform.gameObject;
+                        break;
+                    }
+                }
+            }
+        }
+
+        private static Transform FindDescendantTransform(Transform root, string targetName)
+        {
+            for (var childIndex = 0; childIndex < root.childCount; childIndex++)
+            {
+                var child = root.GetChild(childIndex);
+                if (child.name == targetName)
+                {
+                    return child;
+                }
+
+                var nested = FindDescendantTransform(child, targetName);
+                if (nested != null)
+                {
+                    return nested;
+                }
+            }
+
+            return null;
         }
 
         private void ApplyInitialColors()
