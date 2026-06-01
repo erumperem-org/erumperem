@@ -10,7 +10,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: 4.82
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
       propertyPath: m_LocalPosition.y
@@ -87,16 +87,11 @@ PrefabInstance:
       addedObject: {fileID: 1737629136810504889}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 2739721456065641114}
+      addedObject: {fileID: 6676677907479605919}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 6676677907479605919}
+      addedObject: {fileID: 6077542428169060333}
   m_SourcePrefab: {fileID: 100100000, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
---- !u!137 &6719668242030803035 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 3438196526767402093, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
-  m_PrefabInstance: {fileID: 8284339833716593718}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &9094609322646104423 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: ef488ee66c3d55343bafa3d8c1ea7e89, type: 3}
@@ -161,23 +156,6 @@ NavMeshObstacle:
   m_CarveOnlyStationary: 1
   m_Center: {x: 0, y: 0, z: 0}
   m_TimeToStationary: 0.5
---- !u!114 &2739721456065641114
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9094609322646104423}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d8f0845b2c6cc394e99bdd6c78c8b8b0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::InteractableDetectionReceiver
-  onExitMaterial: {fileID: 2100000, guid: a63e6f37d2becfc4eb847047c93cd3f1, type: 2}
-  onEnterMaterial: {fileID: -8353058802397988234, guid: eb591be2d653e214b8b52dc4438fa552, type: 3}
-  objectRenderer: {fileID: 6719668242030803035}
-  transitionDuration: 0.5
-  interactable: {fileID: 0}
 --- !u!114 &6676677907479605919
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -190,9 +168,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 307ebca3baf0f5b4fbe81b7758c22eee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChestInteractable
-  reenableDelay: 9
-  receiver: {fileID: 0}
-  lootTable: {fileID: 11400000, guid: a6ceafd8fe67f064ba5f6727f9a33b95, type: 2}
-  opened: 0
-  animator: {fileID: 4337141751552200429}
-  inventory: {fileID: 0}
+  _reenableDelay: 9
+  _lootTable: {fileID: 11400000, guid: a6ceafd8fe67f064ba5f6727f9a33b95, type: 2}
+  _startOpened: 0
+  _animator: {fileID: 4337141751552200429}
+--- !u!114 &6077542428169060333
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9094609322646104423}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1896fd49fdfebc3439ea2e2869d01db1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InteractableDetectionReceiver
+  _onExitMaterial: {fileID: 0}
+  _onEnterMaterial: {fileID: 0}
+  _objectRenderer: {fileID: 0}
+  _transitionDuration: 0.3

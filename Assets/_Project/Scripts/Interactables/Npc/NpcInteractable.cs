@@ -1,41 +1,50 @@
-using Player;
 using TMPro;
 using UnityEngine;
 
+/// <summary>
+/// NPC que exibe um diálogo simples quando interagido.
+///
+/// MUDANÇAS:
+///   - Havia duas classes quase idênticas (<c>NpcInteractable</c> e <c>NPCInteractable</c>)
+///     com encoding corrompido na segunda — unificadas em uma só.
+///   - <c>dialogueViewText</c> e <c>dialogueCanvas</c> eram <c>public</c>; agora [SerializeField].
+///   - <c>Camera.main</c> cacheado em Awake (era chamado a cada LateUpdate nas versões anteriores).
+///   - <c>ExecuteInteraction</c> usa <see cref="InteractionContext"/> — não depende de controller.
+/// </summary>
 public sealed class NpcInteractable : Interactable
 {
     [TextArea]
-    [SerializeField] private string dialogue;
-
-    [SerializeField] private TMP_Text dialogueViewText;
-    [SerializeField] private Canvas dialogueCanvas;
+    [SerializeField] private string _dialogue;
+    [SerializeField] private TMP_Text _dialogueText;
+    [SerializeField] private Canvas   _dialogueCanvas;
 
     public override bool CanInteract => true;
 
-    private Transform _cam;
+    private Transform _camTransform;
 
-    private void Awake()
+    protected override void Awake()
     {
-        _cam = Camera.main.transform;
+        base.Awake();
+        // Camera.main é uma busca por tag — cacheamos uma única vez.
+        _camTransform = Camera.main != null ? Camera.main.transform : null;
 
-        if (dialogueCanvas != null)
-            dialogueCanvas.gameObject.SetActive(false);
+        if (_dialogueCanvas != null)
+            _dialogueCanvas.gameObject.SetActive(false);
     }
 
     private void LateUpdate()
     {
-        if (dialogueCanvas == null || !dialogueCanvas.gameObject.activeSelf) return;
+        if (_camTransform == null || _dialogueCanvas == null || !_dialogueCanvas.gameObject.activeSelf)
+            return;
 
-        // Faz o canvas olhar para a câmera e corrige rotação
-        dialogueCanvas.transform.LookAt(_cam);
-        dialogueCanvas.transform.Rotate(0f, 180f, 0f);
+        _dialogueCanvas.transform.LookAt(_camTransform);
+        _dialogueCanvas.transform.Rotate(0f, 180f, 0f);
     }
 
-    public override void ExecuteInteraction(PlayerMovementController controller)
+    public override void ExecuteInteraction(InteractionContext context)
     {
-        if (dialogueCanvas == null || dialogueViewText == null) return;
-
-        dialogueViewText.text = dialogue;
-        dialogueCanvas.gameObject.SetActive(true);
+        if (_dialogueCanvas == null || _dialogueText == null) return;
+        _dialogueText.text = _dialogue;
+        _dialogueCanvas.gameObject.SetActive(true);
     }
 }

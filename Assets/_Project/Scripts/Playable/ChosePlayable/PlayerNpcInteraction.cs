@@ -3,38 +3,36 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Vincula cada PlayableCharacter ao seu canvas de escolha.
-/// Para adicionar novos personagens, basta inserir uma entrada no array pelo Inspector.
+/// Vincula cada <see cref="PlayableCharacter"/> ao seu canvas de seleção.
+/// Responsabilidade única: fechar o canvas e delegar a transição de estado ao Manager.
 /// </summary>
-public class PlayerNpcInteraction : MonoBehaviour
+public sealed class PlayerNpcInteraction : MonoBehaviour
 {
     [Serializable]
     private struct CharacterEntry
     {
         public PlayableCharacter character;
-        public GameObject canvas;
+        public GameObject        canvas;
     }
 
-    [SerializeField] private List<CharacterEntry> entries;
-    [SerializeField] private PlayableCharactersManager manager;
+    [SerializeField] private List<CharacterEntry>       _entries;
+    [SerializeField] private PlayableCharactersManager  _manager;
 
-    public void ChoseAsMain(PlayableCharacter character)
+    public void ChooseAsMain(PlayableCharacter character)
     {
-        manager.SetState(PlayableCharacterState.Main, character);
+        _manager.SetState(PlayableCharacterState.Main, character);
         CloseCanvas(character);
     }
 
-    public void ChoseAsCompanion(PlayableCharacter character)
+    public void ChooseAsCompanion(PlayableCharacter character)
     {
-        manager.SetState(PlayableCharacterState.Companion, character);
+        _manager.SetState(PlayableCharacterState.Companion, character);
         CloseCanvas(character);
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────
 
     private void CloseCanvas(PlayableCharacter character)
     {
-        CharacterEntry entry = entries.Find(e => e.character == character);
+        var entry = _entries.Find(e => e.character == character);
         entry.canvas?.SetActive(false);
     }
 }
