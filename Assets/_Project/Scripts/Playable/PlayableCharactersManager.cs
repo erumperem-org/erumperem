@@ -1,112 +1,125 @@
 using System;
 using System.Collections.Generic;
+using Player;
 using Services.DebugUtilities;
 using UnityEngine;
 
-public class PlayableCharactersManager : MonoBehaviour
+/// <summary>
+/// Orquestra os personagens jogáveis.
+///
+/// ADIÇÃO em relação à versão anterior:
+///   - <c>Playables</c>: expõe a lista gerenciada como <c>IReadOnlyList</c>
+///     para que <see cref="ExplorationLoadContext"/> não precise de reflexão.
+/// </summary>
+public sealed class PlayableCharactersManager : MonoBehaviour
 {
-    [SerializeField] private List<PlayableCharacter> playables;
-    [SerializeField] private PlayableCharacterStatesBuilder stateBuilder = new();
+    [SerializeField] private List<PlayableCharacter> _playables;
+    [SerializeField] private PlayerInputReader _inputReader;
 
-    public PlayableCharacter MainCharacter;
-    public PlayableCharacter CompanionCharacter;
-    public event Action<PlayableCharacter> MainCharacterChange;
-    public event Action<PlayableCharacter> CompanionCharacterChange;
+    /// <summary>Lista somente-leitura de todos os personagens gerenciados.</summary>
+    public IReadOnlyList<PlayableCharacter> Playables => _playables;
 
+    public IPlayableCharacter Main      { get; private set; }
+    public IPlayableCharacter Companion { get; private set; }
+
+    public event Action<IPlayableCharacter> OnMainChanged;
+    public event Action<IPlayableCharacter> OnCompanionChanged;
+
+    private readonly PlayableStateTransitioner _transitioner = new();
+
+    // ── API pública ───────────────────────────────────────────────────────
 
     public void SetState(PlayableCharacterState newState, PlayableCharacter character)
     {
+        if (!_playables.Contains(character))
+            throw new InvalidOperationException(
+                $"[PlayableCharactersManager] '{character.CharacterName}' não pertence à lista gerenciada.");
+
         if (newState == character.CurrentState) return;
 
         try
         {
             switch (newState)
             {
-                case PlayableCharacterState.Main:
-                    PromoteToMain(character);
-                    break;
-
-                case PlayableCharacterState.Companion:
-                    PromoteToCompanion(character);
-                    break;
-
-                case PlayableCharacterState.Resting:
-                    stateBuilder.BuildRestingCharacter(character);
-                    character.CurrentState = PlayableCharacterState.Resting;
-                    break;
-
+                case PlayableCharacterState.Main:      PromoteToMain(character);      break;
+                case PlayableCharacterState.Companion: PromoteToCompanion(character); break;
+                case PlayableCharacterState.Resting:   PromoteToResting(character);   break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
             }
 
             LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[{character.characterName.ToUpper()}] Estado alterado para {newState}.",
-                LogCategory.Player);
+                $"[{character.CharacterName.ToUpper()}] → {newState}.", LogCategory.Player);
         }
         catch (Exception e)
         {
             LoggerService.PrintLogMessage(LogLevel.Error,
-                $"[{character.characterName.ToUpper()}] Falha ao alterar estado para {newState}: {e}",
+                $"[{character.CharacterName.ToUpper()}] Falha ao transitar para {newState}: {e}",
                 LogCategory.Player);
             throw;
         }
     }
 
-    // ── Helpers privados ──────────────────────────────────────────────────
+    // ── Transições ────────────────────────────────────────────────────────
 
-    // PlayableCharactersManager — PromoteToMain (Caso 2: swap)
-    private void PromoteToMain(PlayableCharacter character)
+    private void PromoteToMain(PlayableCharacter next)
     {
-        if (character == CompanionCharacter)
+        if (next == Companion)
         {
-            if (MainCharacter != null)
+            var previousMain = Main as PlayableCharacter;
+            if (previousMain != null)
             {
-                stateBuilder.BuildCompanionCharacter(MainCharacter, character.transform);
-                MainCharacter.CurrentState = PlayableCharacterState.Companion;
-                CompanionCharacter = MainCharacter;
-                CompanionCharacterChange?.Invoke(CompanionCharacter);
+                _transitioner.ApplyCompanion(previousMain);
+                previousMain.CurrentState = PlayableCharacterState.Companion;
+                previousMain.UpdateStateExposed();
+                Companion = previousMain;
+                OnCompanionChanged?.Invoke(Companion);
             }
             else
             {
-                CompanionCharacter = null;
-                CompanionCharacterChange?.Invoke(null);
+                Companion = null;
+                OnCompanionChanged?.Invoke(null);
             }
         }
-        else if (MainCharacter != null && MainCharacter != character)
+        else if (Main != null && Main != next)
         {
-            SetState(PlayableCharacterState.Resting, MainCharacter);
+            PromoteToResting(Main as PlayableCharacter);
         }
 
-        stateBuilder.BuildMainCharacter(character);
-        character.CurrentState = PlayableCharacterState.Main;
-        character.detectionSystem.availableInteractables.Clear();
-        MainCharacter = character;
-        MainCharacterChange?.Invoke(MainCharacter);
+        _transitioner.ApplyMain(next, _inputReader);
+        next.CurrentState = PlayableCharacterState.Main;
+        next.UpdateStateExposed();
+        next.DetectionSystem.ClearAvailable();
+        Main = next;
+        OnMainChanged?.Invoke(Main);
 
-        // Reatualiza o companion com o transform do novo main
-        // (cobre o caso: resting → main quando companion já existe)
-        if (CompanionCharacter != null && character != CompanionCharacter)
-            stateBuilder.BuildCompanionCharacter(CompanionCharacter, MainCharacter.transform);
+        if (Companion != null && Companion != next)
+            _transitioner.ApplyCompanion(Companion as PlayableCharacter);
     }
 
-    // PlayableCharactersManager — PromoteToCompanion (Bug 3: invoke único no fim)
-    private void PromoteToCompanion(PlayableCharacter character)
+    private void PromoteToCompanion(PlayableCharacter next)
     {
-        if (character == MainCharacter)
+        if (next == Main)
         {
-            MainCharacter = null;
-            MainCharacterChange?.Invoke(null);
+            Main = null;
+            OnMainChanged?.Invoke(null);
         }
 
-        if (CompanionCharacter != null && CompanionCharacter != character)
-        {
-            SetState(PlayableCharacterState.Resting, CompanionCharacter);
-        }
+        if (Companion != null && Companion != next)
+            PromoteToResting(Companion as PlayableCharacter);
 
-        // mainTransform já foi atualizado por BuildMainCharacter — usa direto
-        stateBuilder.BuildCompanionCharacter(character, stateBuilder.mainTransform);
-        character.CurrentState = PlayableCharacterState.Companion;
-        CompanionCharacter = character;
-        CompanionCharacterChange?.Invoke(CompanionCharacter); // único invoke, no fim
+        _transitioner.ApplyCompanion(next);
+        next.CurrentState = PlayableCharacterState.Companion;
+        next.UpdateStateExposed();
+        Companion = next;
+        OnCompanionChanged?.Invoke(Companion);
+    }
+
+    private void PromoteToResting(PlayableCharacter character)
+    {
+        if (character == null) return;
+        _transitioner.ApplyResting(character);
+        character.CurrentState = PlayableCharacterState.Resting;
+        character.UpdateStateExposed();
     }
 }

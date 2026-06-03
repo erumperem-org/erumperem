@@ -1,418 +1,393 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Services.DebugUtilities;
+using Services.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-[System.Serializable]
-public class PlayableCharacterData
-{
-    public string characterName;
-    public Vector3 position;
-    public Quaternion rotation;
-    public PlayableCharacterState state;
+// ── DTO de snapshot ───────────────────────────────────────────────────────────
 
-    public PlayableCharacterData(string name, Vector3 pos, Quaternion rot, PlayableCharacterState currentState)
+[Serializable]
+public sealed class PlayableCharacterSnapshot
+{
+    public string                 CharacterName;
+    public Vector3                Position;
+    public Quaternion             Rotation;
+    public PlayableCharacterState State;
+    public float                  CurrentHealth;
+    public float                  MaxHealth;
+
+    public PlayableCharacterSnapshot(
+        string name, Vector3 pos, Quaternion rot,
+        PlayableCharacterState state,
+        float currentHealth, float maxHealth)
     {
-        characterName = name;
-        position = pos;
-        rotation = rot;
-        state = currentState;
+        CharacterName = name;
+        Position      = pos;
+        Rotation      = rot;
+        State         = state;
+        CurrentHealth = currentHealth;
+        MaxHealth     = maxHealth;
     }
 }
 
-public class ExplorationLoadContext : MonoBehaviour
+// ── Wrapper para serialização JSON ───────────────────────────────────────────
+
+[Serializable]
+internal sealed class SnapshotSaveData
 {
-    [SerializeField] private string explorationSceneName = "Exploration"; // Ajuste conforme necessário
-    
-    private List<PlayableCharacterData> charactersData;
-    private string mainCharacterName;
-    private string companionCharacterName;
-    private bool hasDataToRestore = false;
+    public List<PlayableCharacterSnapshot> Snapshots = new();
+}
 
-    private PlayableCharactersManager cachedManager;
-    private List<PlayableCharacter> cachedPlayables;
-    private bool isExplorationScene = false;
+// ── Configuração de estado padrão ────────────────────────────────────────────
 
-    private static ExplorationLoadContext instance;
+[Serializable]
+public struct DefaultCharacterSetup
+{
+    public PlayableCharacter      Character;
+    public PlayableCharacterState InitialState;
+
+    [Tooltip("HP máximo inicial do personagem.")]
+    [Min(1f)]
+    public float MaxHealth;
+
+    [Tooltip("HP corrente inicial. Se zero, iniciará com HP cheio.")]
+    [Min(0f)]
+    public float StartingHealth;
+}
+
+// ── ExplorationLoadContext ────────────────────────────────────────────────────
+
+/// <summary>
+/// Ponto central de save/load da exploração.
+/// Orquestra personagens (<see cref="PlayableCharactersManager"/>) e
+/// corrupção (<see cref="ExplorationCorruptionSystem"/>) num único ciclo.
+///
+/// MUDANÇAS vs versão anterior:
+///   - Recebe referência opcional a <see cref="ExplorationCorruptionSystem"/>.
+///   - <c>SaveState</c>   → também chama <c>corruptionSystem.SaveState()</c>.
+///   - <c>RestoreState</c>→ também chama <c>corruptionSystem.RestoreState()</c>.
+///   - <c>ClearSave</c>   → também chama <c>corruptionSystem.ClearSave()</c>.
+///   - Corrupção é carregada/zerada de forma independente pelo próprio sistema;
+///     o LoadContext apenas coordena o momento da chamada.
+/// </summary>
+public sealed class ExplorationLoadContext : MonoBehaviour
+{
+    // ── Inspector ─────────────────────────────────────────────────────────
+
+    [SerializeField] private string _explorationSceneName = "Exploration";
+
+    [Tooltip("Estado padrão de cada personagem quando não há save.")]
+    [SerializeField] private List<DefaultCharacterSetup> _defaultSetups = new();
+
+    [Header("Sistemas")]
+    [Tooltip("Referência ao ExplorationCorruptionSystem da cena. " +
+             "Se nulo, a corrupção é ignorada no ciclo de save/load.")]
+    [SerializeField] private ExplorationCorruptionSystem _corruptionSystem;
+
+    [Header("IO Settings")]
+    [SerializeField] private string _saveFileName   = "exploration_save.json";
+    [SerializeField] private string _saveFolderName = "Saves";
+
+    // ── Singleton ─────────────────────────────────────────────────────────
+
+    public static ExplorationLoadContext Instance { get; private set; }
+
+    // ── Serviço de IO ─────────────────────────────────────────────────────
+
+    private readonly IFileService _fileService = new FileService();
+
+    // ── Estado interno ────────────────────────────────────────────────────
+
+    private List<PlayableCharacterSnapshot> _snapshots = new();
+    private bool   _hasSave;
+    private string _saveDirectory;
+
+    private PlayableCharactersManager _manager;
+
+    // ── Unity lifecycle ───────────────────────────────────────────────────
 
     private void Awake()
     {
-        // Singleton - persiste entre cenas
-        if (instance != null && instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        instance = this;
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        charactersData = new List<PlayableCharacterData>();
-        mainCharacterName = string.Empty;
-        companionCharacterName = string.Empty;
+        _saveDirectory = System.IO.Path.Combine(Application.persistentDataPath, _saveFolderName);
     }
 
-    private void OnEnable()
-    {
-        SceneManager.sceneLoaded += OnSceneLoaded;
-    }
-
-    private void OnDisable()
-    {
-        SceneManager.sceneLoaded -= OnSceneLoaded;
-    }
+    private void OnEnable()  => SceneManager.sceneLoaded += OnSceneLoaded;
+    private void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
 
     private void Start()
     {
-        // Verifica se já estamos na cena de exploração no Start
-        if (SceneManager.GetActiveScene().name == explorationSceneName)
-        {
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[SAVE/LOAD] Cena exploração detectada no Start",
-                LogCategory.Player);
-            isExplorationScene = true;
-            CacheManagerAndPlayables();
-            RestoreState();
-        }
+        if (SceneManager.GetActiveScene().name == _explorationSceneName)
+            TryRestoreOnSceneReady();
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        // Verifica se é a cena de exploração
-        if (scene.name == explorationSceneName)
+        if (scene.name == _explorationSceneName)
+            StartCoroutine(RestoreNextFrame());
+    }
+
+    // ── API pública ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Salva posição, rotação, estado, HP de todos os personagens
+    /// e o valor atual de corrupção.
+    /// </summary>
+    public async void SaveState()
+    {
+        if (!TryGetManager()) return;
+
+        // ── Personagens ──────────────────────────────────────────────────
+        _snapshots.Clear();
+        foreach (var character in _manager.Playables)
         {
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[SAVE/LOAD] Cena exploração carregada via callback",
+            if (character == null) continue;
+
+            var hp = character.HealthBar;
+            if (hp == null)
+                LoggerService.PrintLogMessage(LogLevel.Warning,
+                    $"[SAVE] '{character.CharacterName}' não possui HealthBar — HP ignorado.",
+                    LogCategory.Player);
+
+            _snapshots.Add(new PlayableCharacterSnapshot(
+                character.CharacterName,
+                character.Transform.position,
+                character.Transform.rotation,
+                character.CurrentState,
+                hp?.CurrentHealth ?? 0f,
+                hp?.MaxHealth     ?? 0f));
+        }
+
+        _hasSave = _snapshots.Count > 0;
+        if (_hasSave)
+            await SaveToFileAsync();
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[SAVE] {_snapshots.Count} personagens salvos.", LogCategory.Player);
+
+        // ── Corrupção ────────────────────────────────────────────────────
+        if (_corruptionSystem != null)
+            _corruptionSystem.SaveState();
+        else
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[SAVE] ExplorationCorruptionSystem não atribuído — corrupção não salva.",
                 LogCategory.Player);
-            isExplorationScene = true;
-            // Aguarda um frame para o PlayableCharactersManager inicializar
-            StartCoroutine(RestoreStateNextFrame());
+    }
+
+    /// <summary>
+    /// Carrega o save do disco (se necessário) e restaura personagens e corrupção.
+    /// Aguarda explicitamente o IO da corrupção antes de aplicar, garantindo
+    /// que o valor correto esteja disponível independente da ordem de Start().
+    /// </summary>
+    public async void RestoreState()
+    {
+        if (!TryGetManager()) return;
+
+        // ── Corrupção: lê o arquivo primeiro (awaited) ───────────────────
+        if (_corruptionSystem != null)
+            await _corruptionSystem.LoadAsync();
+
+        // ── Personagens ──────────────────────────────────────────────────
+        if (!_hasSave || _snapshots.Count == 0)
+            await LoadFromFileAsync();
+
+        if (_hasSave && _snapshots.Count > 0)
+            ApplySnapshots();
+        else
+            ApplyDefaultSetups();
+
+        // ── Corrupção: aplica o valor já carregado ───────────────────────
+        if (_corruptionSystem != null)
+            _corruptionSystem.RestoreState();
+    }
+
+    /// <summary>
+    /// Limpa o save em memória, remove os arquivos em disco e zera a corrupção (novo jogo).
+    /// </summary>
+    public async void ClearSave()
+    {
+        // ── Personagens ──────────────────────────────────────────────────
+        _snapshots.Clear();
+        _hasSave = false;
+
+        try
+        {
+            await _fileService.DeleteAsync(_saveFileName, _saveDirectory);
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                "[SAVE] Arquivo de personagens deletado.", LogCategory.Player);
+        }
+        catch (Exception ex)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                $"[SAVE] Falha ao deletar arquivo de personagens: {ex.Message}", LogCategory.Player);
+        }
+
+        // ── Corrupção ────────────────────────────────────────────────────
+        if (_corruptionSystem != null)
+            _corruptionSystem.ClearSave();
+    }
+
+    public bool HasSave() => _hasSave;
+
+    // ── IO (personagens) ──────────────────────────────────────────────────
+
+    private async System.Threading.Tasks.Task SaveToFileAsync()
+    {
+        try
+        {
+            var saveData = new SnapshotSaveData { Snapshots = _snapshots };
+            string json  = JsonUtility.ToJson(saveData, prettyPrint: true);
+
+            var fileData = new FileData(json, _saveFileName, _saveDirectory);
+            await _fileService.WriteAsync(fileData);
+
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"[SAVE] Arquivo gravado em: {fileData.FullPath}", LogCategory.Player);
+        }
+        catch (Exception ex)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Error,
+                $"[SAVE] Falha ao gravar save: {ex.Message}", LogCategory.Player);
         }
     }
 
-    private System.Collections.IEnumerator RestoreStateNextFrame()
+    private async System.Threading.Tasks.Task LoadFromFileAsync()
+    {
+        try
+        {
+            bool exists = await _fileService.ExistsAsync(_saveFileName, _saveDirectory);
+            if (!exists)
+            {
+                LoggerService.PrintLogMessage(LogLevel.Debug,
+                    "[LOAD] Nenhum arquivo de save encontrado.", LogCategory.Player);
+                return;
+            }
+
+            FileData fileData = await _fileService.ReadAsync(_saveFileName, _saveDirectory);
+            var saveData = JsonUtility.FromJson<SnapshotSaveData>(fileData._fileContent);
+
+            if (saveData?.Snapshots != null && saveData.Snapshots.Count > 0)
+            {
+                _snapshots = saveData.Snapshots;
+                _hasSave   = true;
+
+                LoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"[LOAD] {_snapshots.Count} snapshots carregados de '{fileData.FullPath}'.",
+                    LogCategory.Player);
+            }
+        }
+        catch (Exception ex)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Error,
+                $"[LOAD] Falha ao ler save: {ex.Message}", LogCategory.Player);
+        }
+    }
+
+    // ── Restauração (personagens) ─────────────────────────────────────────
+
+    private IEnumerator RestoreNextFrame()
     {
         yield return null;
-        
-        LoggerService.PrintLogMessage(LogLevel.Debug,
-            $"[SAVE/LOAD] Iniciando restauração (Frame N+1)",
-            LogCategory.Player);
+        TryRestoreOnSceneReady();
+    }
 
-        // Tenta encontrar o manager se não foi cacheado
-        if (cachedManager == null)
-        {
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[SAVE/LOAD] Cache vazio, buscando manager...",
-                LogCategory.Player);
-            CacheManagerAndPlayables();
-        }
-
+    private void TryRestoreOnSceneReady()
+    {
+        if (!TryGetManager()) return;
         RestoreState();
     }
 
-    /// <summary>
-    /// Encontra e cacheia o manager e playables
-    /// </summary>
-    private void CacheManagerAndPlayables()
+    private void ApplySnapshots()
     {
-        cachedManager = FindFirstObjectByType<PlayableCharactersManager>();
-        
-        if (cachedManager != null)
+        foreach (var character in _manager.Playables)
         {
-            cachedPlayables = GetAllPlayableCharacters(cachedManager);
+            var snap = _snapshots.Find(s => s.CharacterName == character.CharacterName);
+            if (snap == null)
+            {
+                LoggerService.PrintLogMessage(LogLevel.Warning,
+                    $"[LOAD] Snapshot não encontrado para '{character.CharacterName}'.",
+                    LogCategory.Player);
+                continue;
+            }
+
+            character.Transform.SetPositionAndRotation(snap.Position, snap.Rotation);
+            _manager.SetState(snap.State, character);
+
+            if (character.HealthBar != null && snap.MaxHealth > 0f)
+            {
+                character.HealthBar.SetMaxHealth(snap.MaxHealth, keepRatio: false);
+                character.HealthBar.Kill();
+                character.HealthBar.Heal(snap.CurrentHealth);
+
+                LoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"[LOAD] '{character.CharacterName}' HP → {snap.CurrentHealth}/{snap.MaxHealth}",
+                    LogCategory.Player);
+            }
+
             LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[SAVE/LOAD] Cache criado: Manager encontrado, {cachedPlayables?.Count ?? 0} personagens",
+                $"[LOAD] '{character.CharacterName}' → {snap.State} @ {snap.Position}",
                 LogCategory.Player);
         }
-        else
+
+        _hasSave = false;
+    }
+
+    private void ApplyDefaultSetups()
+    {
+        if (_defaultSetups.Count == 0)
         {
             LoggerService.PrintLogMessage(LogLevel.Warning,
-                "[SAVE/LOAD] Manager não encontrado durante cache",
-                LogCategory.Player);
-        }
-    }
-
-    /// <summary>
-    /// Restaura o estado baseado nos dados salvos ou carrega padrão
-    /// </summary>
-    public void RestoreState()
-    {
-        if (cachedManager == null || cachedPlayables == null || cachedPlayables.Count == 0)
-        {
-            LoggerService.PrintLogMessage(LogLevel.Error,
-                "[SAVE/LOAD] PlayableCharactersManager ou personagens não encontrados",
-                LogCategory.Player);
+                "[LOAD] Nenhum DefaultCharacterSetup configurado no Inspector.", LogCategory.Player);
             return;
         }
 
-        try
+        foreach (var setup in _defaultSetups)
         {
-            if (hasDataToRestore && CharactersDataIsValid())
+            if (setup.Character == null) continue;
+
+            _manager.SetState(setup.InitialState, setup.Character);
+
+            var hp = setup.Character.HealthBar;
+            if (hp != null && setup.MaxHealth > 0f)
             {
+                hp.SetMaxHealth(setup.MaxHealth, keepRatio: false);
+
+                float startHp = setup.StartingHealth > 0f
+                    ? Mathf.Clamp(setup.StartingHealth, 0f, setup.MaxHealth)
+                    : setup.MaxHealth;
+
+                hp.Kill();
+                hp.Heal(startHp);
+
                 LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"[SAVE/LOAD] Dados salvos encontrados, restaurando...",
+                    $"[LOAD] '{setup.Character.CharacterName}' HP padrão → {startHp}/{setup.MaxHealth}",
                     LogCategory.Player);
-                RestorePlayableCharactersState();
             }
-            else
-            {
-                // Se nenhum dado foi salvo, carrega padrão
-                LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"[SAVE/LOAD] Nenhum dado salvo, carregando padrão...",
-                    LogCategory.Player);
-                LoadDefaultState();
-            }
+
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"[LOAD] '{setup.Character.CharacterName}' (padrão) → {setup.InitialState}",
+                LogCategory.Player);
         }
-        catch (Exception e)
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    private bool TryGetManager()
+    {
+        if (_manager != null) return true;
+        _manager = FindFirstObjectByType<PlayableCharactersManager>();
+
+        if (_manager == null)
         {
             LoggerService.PrintLogMessage(LogLevel.Error,
-                $"[SAVE/LOAD] Erro ao restaurar estado: {e}",
-                LogCategory.Player);
+                "[LOAD] PlayableCharactersManager não encontrado na cena.", LogCategory.Player);
+            return false;
         }
-    }
-
-    /// <summary>
-    /// Salva o estado atual dos personagens jogáveis
-    /// </summary>
-    public void SavePlayableCharactersState(PlayableCharactersManager manager, List<PlayableCharacter> playables)
-    {
-        if (manager == null || playables == null)
-        {
-            LoggerService.PrintLogMessage(LogLevel.Warning,
-                "[SAVE/LOAD] Manager ou lista de personagens nula ao salvar estado",
-                LogCategory.Player);
-            return;
-        }
-
-        charactersData.Clear();
-
-        // Salva dados de cada personagem
-        foreach (var character in playables)
-        {
-            if (character != null)
-            {
-                var data = new PlayableCharacterData(
-                    character.characterName,
-                    character.transform.position,
-                    character.transform.rotation,
-                    character.CurrentState
-                );
-                charactersData.Add(data);
-            }
-        }
-
-        // Salva referências do main e companion
-        mainCharacterName = manager.MainCharacter != null ? manager.MainCharacter.characterName : string.Empty;
-        companionCharacterName = manager.CompanionCharacter != null ? manager.CompanionCharacter.characterName : string.Empty;
-
-        hasDataToRestore = true;
-
-        LoggerService.PrintLogMessage(LogLevel.Debug,
-            $"[SAVE/LOAD] Estado salvo: {charactersData.Count} personagens | Main: {mainCharacterName} | Companion: {companionCharacterName}",
-            LogCategory.Player);
-    }
-
-    /// <summary>
-    /// Restaura o estado dos personagens salvos usando cached manager
-    /// </summary>
-    private void RestorePlayableCharactersState()
-    {
-        try
-        {
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[SAVE/LOAD] Restaurando {charactersData.Count} personagens...",
-                LogCategory.Player);
-
-            // Restaura posições e estados dos personagens
-            foreach (var character in cachedPlayables)
-            {
-                var savedData = charactersData.Find(d => d.characterName == character.characterName);
-
-                if (savedData != null)
-                {
-                    // Restaura posição e rotação
-                    character.transform.position = savedData.position;
-                    character.transform.rotation = savedData.rotation;
-
-                    // Restaura estado via manager usando SetState
-                    cachedManager.SetState(savedData.state, character);
-
-                    LoggerService.PrintLogMessage(LogLevel.Debug,
-                        $"[SAVE/LOAD] {character.characterName} restaurado | Estado: {savedData.state} | Pos: {savedData.position}",
-                        LogCategory.Player);
-                }
-                else
-                {
-                    LoggerService.PrintLogMessage(LogLevel.Warning,
-                        $"[SAVE/LOAD] {character.characterName}: dados não encontrados",
-                        LogCategory.Player);
-                }
-            }
-
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                "[SAVE/LOAD] Todos os personagens restaurados com sucesso",
-                LogCategory.Player);
-
-            hasDataToRestore = false;
-        }
-        catch (Exception e)
-        {
-            LoggerService.PrintLogMessage(LogLevel.Error,
-                $"[SAVE/LOAD] Erro ao restaurar estado: {e}",
-                LogCategory.Player);
-        }
-    }
-
-    /// <summary>
-    /// Obtém todos os personagens jogáveis do manager
-    /// </summary>
-    private List<PlayableCharacter> GetAllPlayableCharacters(PlayableCharactersManager manager)
-    {
-        // Usando reflexão para acessar a lista privada
-        var field = typeof(PlayableCharactersManager).GetField("playables",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-        if (field != null)
-        {
-            var result = field.GetValue(manager) as List<PlayableCharacter>;
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[SAVE/LOAD]   └─ Reflexão OK: {result?.Count ?? 0} personagens encontrados",
-                LogCategory.Player);
-            return result;
-        }
-
-        LoggerService.PrintLogMessage(LogLevel.Error,
-            "[SAVE/LOAD] Reflexão falhou: campo 'playables' não encontrado",
-            LogCategory.Player);
-        return null;
-    }
-
-    /// <summary>
-    /// Verifica se os dados salvos são válidos
-    /// </summary>
-    private bool CharactersDataIsValid()
-    {
-        return charactersData != null && charactersData.Count > 0 && !string.IsNullOrEmpty(mainCharacterName);
-    }
-
-    /// <summary>
-    /// Carrega o estado padrão quando nenhum dado foi salvo
-    /// </summary>
-    private void LoadDefaultState()
-    {
-        if (cachedManager == null || cachedPlayables == null || cachedPlayables.Count < 3)
-        {
-            LoggerService.PrintLogMessage(LogLevel.Error,
-                "[SAVE/LOAD] PlayableCharactersManager ou personagens insuficientes para padrão",
-                LogCategory.Player);
-            return;
-        }
-
-        try
-        {
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                "[SAVE/LOAD] Carregando configuração padrão...",
-                LogCategory.Player);
-
-            // Padrão: Wulfric Variant (Main), Buck Variant (Resting), Girl Variant (Resting)
-            var wulfric = GameObject.Find("Wulfric Variant").GetComponent<PlayableCharacter>();
-            var buck = GameObject.Find("Buck Variant").GetComponent<PlayableCharacter>();
-            var girl = GameObject.Find("Girl Variant").GetComponent<PlayableCharacter>();
-
-            if (wulfric != null)
-            {
-                cachedManager.SetState(PlayableCharacterState.Main, wulfric);
-                LoggerService.PrintLogMessage(LogLevel.Debug,
-                    "[SAVE/LOAD] Wulfric Variant → Main",
-                    LogCategory.Player);
-            }
-            else
-            {
-                LoggerService.PrintLogMessage(LogLevel.Warning,
-                    "[SAVE/LOAD] Wulfric Variant não encontrado",
-                    LogCategory.Player);
-            }
-
-            if (buck != null)
-            {
-                cachedManager.SetState(PlayableCharacterState.Resting, buck);
-                LoggerService.PrintLogMessage(LogLevel.Debug,
-                    "[SAVE/LOAD] Buck Variant → Resting",
-                    LogCategory.Player);
-            }
-            else
-            {
-                LoggerService.PrintLogMessage(LogLevel.Warning,
-                    "[SAVE/LOAD] Buck Variant não encontrado",
-                    LogCategory.Player);
-            }
-
-            if (girl != null)
-            {
-                cachedManager.SetState(PlayableCharacterState.Resting, girl);
-                LoggerService.PrintLogMessage(LogLevel.Debug,
-                    "[SAVE/LOAD] Girl Variant → Resting",
-                    LogCategory.Player);
-            }
-            else
-            {
-                LoggerService.PrintLogMessage(LogLevel.Warning,
-                    "[SAVE/LOAD] Girl Variant não encontrado",
-                    LogCategory.Player);
-            }
-
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                "[SAVE/LOAD] Configuração padrão carregada",
-                LogCategory.Player);
-        }
-        catch (Exception e)
-        {
-            LoggerService.PrintLogMessage(LogLevel.Error,
-                $"[SAVE/LOAD] Erro ao carregar padrão: {e}",
-                LogCategory.Player);
-        }
-    }
-
-    /// <summary>
-    /// Limpa todos os dados (útil para novo jogo)
-    /// </summary>
-    public void ClearData()
-    {
-        charactersData.Clear();
-        mainCharacterName = string.Empty;
-        companionCharacterName = string.Empty;
-        hasDataToRestore = false;
-
-        LoggerService.PrintLogMessage(LogLevel.Debug,
-            "[SAVE/LOAD] 🗑️ Todos os dados limpos",
-            LogCategory.Player);
-    }
-
-    /// <summary>
-    /// Verifica se há dados válidos salvos
-    /// </summary>
-    public bool HasValidData()
-    {
-        return CharactersDataIsValid();
-    }
-
-    /// <summary>
-    /// Retorna a instância singleton
-    /// </summary>
-    public static ExplorationLoadContext Instance
-    {
-        get
-        {
-            if (instance == null)
-            {
-                var existingObject = FindFirstObjectByType<ExplorationLoadContext>();
-                if (existingObject != null)
-                {
-                    instance = existingObject;
-                }
-            }
-            return instance;
-        }
+        return true;
     }
 }

@@ -9,6 +9,11 @@ public sealed class PlayerInventorySystem : MonoBehaviour
 
     public event Action<IStorageable, int> OnItemAdded;
     public event Action<IStorageable, int> OnItemRemoved;
+    /// <summary>
+    /// Retorna todos os itens e suas quantidades no inventário.
+    /// Usado pelo InventoryPanelView para popular a UI no OnEnable.
+    /// </summary>
+    public IEnumerable<KeyValuePair<IStorageable, int>> GetAll() => _inventory;
 
     // ── API pública ───────────────────────────────────────────────────────
 
