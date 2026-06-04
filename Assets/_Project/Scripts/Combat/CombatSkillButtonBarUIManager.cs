@@ -1,33 +1,39 @@
 using System;
-using System.Collections.Generic;
 using Game.Core.Models;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Erumperem.Combat
 {
     /// <summary>
-    /// Uma row por combatente, uma visível. Sem skill selecionada, o hover 3D mostra a row desse personagem.
-    /// Com slot selecionado (clique ou 1–7), a row do dono fica travada ao hover.
+    /// Spawns combat skill buttons inside the Combat HUD <c>SkillsPanel</c> for the active combatant.
     /// </summary>
     public sealed class CombatSkillButtonBarUIManager : MonoBehaviour
     {
-        [SerializeField] private Transform rowsParent;
-        [SerializeField] private GameObject characterSkillButtonsRowPrefab;
-        [SerializeField] private GameObject skillButtonPanelPrefab;
+        [FormerlySerializedAs("rowsParent")]
+        [SerializeField] private Transform skillsPanelParent;
+        [FormerlySerializedAs("skillButtonPanelPrefab")]
+        [SerializeField] private GameObject skillButtonCombatPrefab;
+        [SerializeField] private SkillVisualCatalog skillVisualCatalog;
         [SerializeField] private float worldRaycastDistance = 200f;
         [SerializeField] private CombatSkillBarSelectionController skillBarSelectionController;
 
         private CombatPrototypeController _controller;
-        private readonly Dictionary<string, CharacterSkillButtonsRowView> _rowsByCombatantId =
-            new(StringComparer.Ordinal);
+        private CharacterSkillButtonsRowView _skillsRowView;
         private string _activeSkillRowCombatantId;
+
+        private void Awake()
+        {
+            TryResolveSkillsPanelParentIfMissing();
+        }
 
         public void Initialize(CombatPrototypeController controller)
         {
             _controller = controller;
-            if (rowsParent == null)
+            TryResolveSkillsPanelParentIfMissing();
+            if (skillsPanelParent == null)
             {
-                rowsParent = transform;
+                skillsPanelParent = transform;
             }
 
             if (skillBarSelectionController == null)
@@ -37,47 +43,24 @@ namespace Erumperem.Combat
 
             skillBarSelectionController?.Bind(controller);
 
-            if (_controller == null)
+            if (_controller == null || skillButtonCombatPrefab == null)
             {
                 return;
             }
 
-            var state = _controller.BattleState;
-            if (state == null)
+            _skillsRowView = skillsPanelParent.GetComponent<CharacterSkillButtonsRowView>();
+            if (_skillsRowView == null)
             {
-                return;
+                _skillsRowView = skillsPanelParent.gameObject.AddComponent<CharacterSkillButtonsRowView>();
             }
 
-            foreach (var entry in _rowsByCombatantId)
-            {
-                if (entry.Value != null)
-                {
-                    Destroy(entry.Value.gameObject);
-                }
-            }
-
-            _rowsByCombatantId.Clear();
-            if (characterSkillButtonsRowPrefab == null || skillButtonPanelPrefab == null)
-            {
-                return;
-            }
-
-            foreach (var combatant in state.GetAllCombatants())
-            {
-                var id = combatant.Identity.Id;
-                if (string.IsNullOrEmpty(id))
-                {
-                    continue;
-                }
-
-                var rowObject = Instantiate(characterSkillButtonsRowPrefab, rowsParent, false);
-                rowObject.name = "SkillRow_" + id;
-                rowObject.SetActive(false);
-                var row = rowObject.GetComponent<CharacterSkillButtonsRowView>() ??
-                    rowObject.AddComponent<CharacterSkillButtonsRowView>();
-                row.Build(this, id, skillButtonPanelPrefab, skillBarSelectionController);
-                _rowsByCombatantId[id] = row;
-            }
+            _skillsRowView.Build(
+                this,
+                skillButtonCombatPrefab,
+                skillVisualCatalog,
+                skillBarSelectionController);
+            _skillsRowView.HideAllSlots();
+            _activeSkillRowCombatantId = null;
         }
 
         /// <summary>Fallback se não houver <see cref="CombatSkillBarSelectionController"/> na cena.</summary>
@@ -100,7 +83,7 @@ namespace Erumperem.Combat
         public void OnBattleEnded()
         {
             _activeSkillRowCombatantId = null;
-            HideAllRows();
+            _skillsRowView?.HideAllSlots();
         }
 
         public void OnSkillBarSelectionCleared()
@@ -110,23 +93,22 @@ namespace Erumperem.Combat
 
         public void SyncVisibleRowWithBattle()
         {
-            TryLockActiveRowToSelection();
-            if (string.IsNullOrEmpty(_activeSkillRowCombatantId) ||
-                !_rowsByCombatantId.TryGetValue(_activeSkillRowCombatantId, out var row) ||
-                row == null)
+            if (_skillsRowView == null || _controller == null || string.IsNullOrEmpty(_activeSkillRowCombatantId))
             {
                 return;
             }
 
-            _controller.GetSkillBarSelection(out var slot, out var owner);
+            TryLockActiveRowToSelection();
             var subject = _controller.FindCombatantById(_activeSkillRowCombatantId);
             if (subject == null)
             {
                 return;
             }
 
+            _controller.GetSkillBarSelection(out var slot, out var owner);
             var canIssue = _controller.IsPlayerCommandingCombatant(subject);
-            row.Refresh(
+            _skillsRowView.SetActiveCombatantId(_activeSkillRowCombatantId);
+            _skillsRowView.Refresh(
                 _controller.BattleState,
                 _controller.BattleSimulator,
                 subject,
@@ -201,7 +183,7 @@ namespace Erumperem.Combat
 
         public void Tick()
         {
-            if (_controller == null || _controller.BattleState == null)
+            if (_controller == null || _controller.BattleState == null || _skillsRowView == null)
             {
                 return;
             }
@@ -225,12 +207,7 @@ namespace Erumperem.Combat
 
             if (string.IsNullOrEmpty(_activeSkillRowCombatantId))
             {
-                HideAllRows();
-                return;
-            }
-
-            if (!_rowsByCombatantId.TryGetValue(_activeSkillRowCombatantId, out var row) || row == null)
-            {
+                _skillsRowView.HideAllSlots();
                 return;
             }
 
@@ -239,19 +216,14 @@ namespace Erumperem.Combat
             {
                 _activeSkillRowCombatantId = null;
                 _controller.ClearSkillBarSelection();
-                HideAllRows();
-                return;
-            }
-
-            SetRowVisibilityForActiveId(_activeSkillRowCombatantId);
-            if (!row.gameObject.activeInHierarchy)
-            {
+                _skillsRowView.HideAllSlots();
                 return;
             }
 
             _controller.GetSkillBarSelection(out var selectedSlot, out var owner);
             var canIssue = _controller.IsPlayerCommandingCombatant(displaySubject);
-            row.Refresh(
+            _skillsRowView.SetActiveCombatantId(_activeSkillRowCombatantId);
+            _skillsRowView.Refresh(
                 _controller.BattleState,
                 _controller.BattleSimulator,
                 displaySubject,
@@ -261,36 +233,17 @@ namespace Erumperem.Combat
                 _controller.CurrentSelectedEnemy);
         }
 
-        private void SetRowVisibilityForActiveId(string activeCombatantId)
+        private void TryResolveSkillsPanelParentIfMissing()
         {
-            foreach (var idAndRow in _rowsByCombatantId)
+            if (skillsPanelParent != null)
             {
-                if (idAndRow.Value == null)
-                {
-                    continue;
-                }
-
-                var shouldShow = string.Equals(
-                    idAndRow.Key,
-                    activeCombatantId,
-                    StringComparison.Ordinal);
-                if (idAndRow.Value.gameObject.activeSelf == shouldShow)
-                {
-                    continue;
-                }
-
-                idAndRow.Value.gameObject.SetActive(shouldShow);
+                return;
             }
-        }
 
-        private void HideAllRows()
-        {
-            foreach (var row in _rowsByCombatantId.Values)
+            var skillsPanelAnchor = FindFirstObjectByType<CombatSkillsPanelAnchor>();
+            if (skillsPanelAnchor != null)
             {
-                if (row != null)
-                {
-                    row.gameObject.SetActive(false);
-                }
+                skillsPanelParent = skillsPanelAnchor.transform;
             }
         }
     }
