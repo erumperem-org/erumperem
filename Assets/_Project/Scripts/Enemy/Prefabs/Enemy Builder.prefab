@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2741747832922669031}
-  - component: {fileID: 8817426472389150087}
+  - component: {fileID: 1673071689652519894}
   m_Layer: 0
   m_Name: Enemy Builder
   m_TagString: Untagged
@@ -26,13 +26,13 @@ Transform:
   m_GameObject: {fileID: 2087822813978231053}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.33917, y: -0, z: 2.1099}
+  m_LocalPosition: {x: 0, y: -0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8817426472389150087
+--- !u!114 &1673071689652519894
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -41,11 +41,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 2087822813978231053}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb83e9539c50a7a4384ca3413461926c, type: 3}
+  m_Script: {fileID: 11500000, guid: 8f2b7aa404ab482418fb868941c7c8b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Systems.NPC.Builder.NpcEnemyBuilder
   _pool: {fileID: 0}
   _spawnService: {fileID: 0}
+  _contactHandler: {fileID: 0}
   _wanderRadius: 8
   _chaseRadius: 20
   _contactDistance: 1.2
+  _wanderLifetime: 30

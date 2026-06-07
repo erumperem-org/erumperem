@@ -4,36 +4,39 @@ using System.Linq;
 using DetectionSystem.Core;
 using Services.DebugUtilities;
 using UnityEngine;
-using Player;
 
 [RequireComponent(typeof(Detector))]
-public class PlayerDetectionSystem : MonoBehaviour
+public sealed class PlayerDetectionSystem : MonoBehaviour
 {
-    [SerializeField] private PlayableAnimationController animationController;
-    [SerializeField] private PlayableCharacter playableCharacter;
-    [SerializeField] public List<Interactable> availableInteractables;
+    [SerializeField] private PlayableAnimationController _animationController;
+    [SerializeField] private PlayableCharacter _character;
+    [SerializeField] private PlayerInventorySystem _inventory;
 
+    public IReadOnlyList<Interactable> Available => _available;
+    [SerializeField] private List<Interactable> _available = new();
     private Detector _detector;
     private Coroutine _scanCoroutine;
 
-    private static readonly string[] DetectionAreas =
+    private static readonly string[] RelevantAreas =
     {
         "InteractableDetectionArea",
         "CharactersDetectionArea"
     };
 
+    // ── Unity lifecycle ───────────────────────────────────────────────────
+
     private void Awake()
     {
         _detector = GetComponent<Detector>();
-        _detector.OnDetectorEnter += OnDetectorEnter;
-        _detector.OnDetectorExit += OnDetectorExit;
+        _detector.OnDetectorEnter += OnEnter;
+        _detector.OnDetectorExit += OnExit;
     }
 
     private void OnDisable() => StopScan();
 
-    // ── Scan ──────────────────────────────────────────────────────────────
+    // ── API pública ───────────────────────────────────────────────────────
 
-    public void Scan()
+    public void StartScan()
     {
         StopScan();
         _scanCoroutine = StartCoroutine(ScanLoop());
@@ -46,50 +49,21 @@ public class PlayerDetectionSystem : MonoBehaviour
         _scanCoroutine = null;
     }
 
-    private IEnumerator ScanLoop()
-    {
-        while (true)
-        {
-            _detector.Scan();
-            yield return null;
-        }
-    }
+    public void ClearAvailable() => _available.Clear();
 
-    // ── Detecção ──────────────────────────────────────────────────────────
+    public void SetTag(string tag) => gameObject.tag = tag;
 
-    private void OnDetectorEnter(Collider collider, string shapeLabel, int shapeIndex)
-    {
-        if (!IsRelevantArea(shapeLabel)) return;
-
-        var interactable = collider.gameObject.GetComponent<Interactable>();
-        if (interactable == null || availableInteractables.Contains(interactable)) return;
-        availableInteractables.Add(interactable);
-        LoggerService.PrintLogMessage(LogLevel.Debug, $"Interactable [{collider.gameObject.name}] found");
-    }
-
-    private void OnDetectorExit(Collider collider, string shapeLabel, int shapeIndex)
-    {
-        if (!IsRelevantArea(shapeLabel)) return;
-
-        var interactable = collider.gameObject.GetComponent<Interactable>();
-        if (interactable == null) return;
-
-        availableInteractables.Remove(interactable);
-        LoggerService.PrintLogMessage(LogLevel.Debug, $"Interactable [{collider.gameObject.name}] lost");
-    }
-
-    private static bool IsRelevantArea(string label) =>
-        System.Array.IndexOf(DetectionAreas, label) >= 0;
-
-    // ── Interação ─────────────────────────────────────────────────────────
+    /// <summary>
+    /// Executa a interação com o interactable mais próximo.
+    /// Chamado via <see cref="Player.PlayerInputReader.OnInteract"/> — não lê input diretamente.
+    /// </summary>
 
     public void Interact()
     {
-        availableInteractables.RemoveAll(t => t == null);
+        _available.RemoveAll(t => t == null);
+        if (_available.Count == 0) return;
 
-        if (availableInteractables.Count == 0) return;
-
-        Interactable closest = availableInteractables
+        var closest = _available
             .OrderBy(t => (transform.position - t.transform.position).sqrMagnitude)
             .FirstOrDefault();
 
@@ -97,28 +71,71 @@ public class PlayerDetectionSystem : MonoBehaviour
 
         if (!closest.CanInteract)
         {
-            availableInteractables.Remove(closest);
+            _available.Remove(closest);
             return;
         }
 
-        TriggerAnimation(closest);
-        closest.ExecuteInteraction(playableCharacter.movementController);
+        TriggerInteractionAnimation(closest);
+
+        // ── FIX: captura o reader no momento da interação, não na closure ──
+        // Se PlayerInput for null aqui o personagem já não é Main — a lambda
+        // vira um no-op seguro em vez de lançar NullReferenceException.
+        var inputReader = _character != null ? _character.PlayerInput : null;
+
+        var ctx = new InteractionContext(
+            setInputBlocked: blocked =>
+            {
+                if (inputReader != null)
+                    inputReader.IsBlocked = blocked;
+            },
+            inventory: _inventory);
+
+        closest.ExecuteInteraction(ctx);
 
         if (!closest.CanInteract)
-            availableInteractables.Remove(closest);
+            _available.Remove(closest);
     }
 
-    private void TriggerAnimation(Interactable interactable)
+    // ── Detecção ──────────────────────────────────────────────────────────
+
+    private IEnumerator ScanLoop()
+    {
+        while (true) { _detector.Scan(); yield return null; }
+    }
+
+    private void OnEnter(Collider col, string label, int _)
+    {
+        if (!IsRelevant(label)) return;
+        var interactable = col.GetComponent<Interactable>();
+        if (interactable == null || _available.Contains(interactable)) return;
+        _available.Add(interactable);
+        LoggerService.PrintLogMessage(LogLevel.Debug, $"Interactable [{col.gameObject.name}] found");
+    }
+
+    private void OnExit(Collider col, string label, int _)
+    {
+        if (!IsRelevant(label)) return;
+        var interactable = col.GetComponent<Interactable>();
+        if (interactable != null) _available.Remove(interactable);
+        LoggerService.PrintLogMessage(LogLevel.Debug, $"Interactable [{col.gameObject.name}] lost");
+    }
+
+    private static bool IsRelevant(string label) =>
+        System.Array.IndexOf(RelevantAreas, label) >= 0;
+
+    // ── Animação ──────────────────────────────────────────────────────────
+
+    private void TriggerInteractionAnimation(Interactable interactable)
     {
         switch (interactable)
         {
             case DoorInteractable door:
-                if (door.opened) animationController.TriggerClosingDoor();
-                else animationController.TriggerOpeningDoor();
+                if (door.IsOpened) _animationController.TriggerClosingDoor();
+                else _animationController.TriggerOpeningDoor();
                 break;
 
             case ChestInteractable:
-                animationController.TriggerOpeningChest();
+                _animationController.TriggerOpeningChest();
                 break;
         }
     }

@@ -1,27 +1,56 @@
 using Player;
 using UnityEngine;
 
+/// <summary>
+/// Dados e referências de um personagem jogável. Data-holder puro.
+///
+/// ADIÇÃO em relação à versão anterior:
+///   - <c>PlayerInput</c> exposto como <c>internal</c> para que
+///     <see cref="PlayerDetectionSystem"/> possa montar o <see cref="InteractionContext"/>
+///     com o callback de bloqueio de input — sem que sistemas externos acessem o reader.
+/// </summary>
 [RequireComponent(typeof(PlayerMovementController))]
-public class PlayableCharacter : MonoBehaviour
+public sealed class PlayableCharacter : MonoBehaviour, IPlayableCharacter
 {
     [Header("Identificação")]
-    public string characterName;
-    public Sprite icon;
-
-    [Header("Estado")]
-    public PlayableCharacterState CurrentState;
+    [SerializeField] private string _characterName;
+    [SerializeField] private Sprite _icon;
 
     [Header("Sub-systems")]
-    public PlayerInputReader playerInput;
-    public PlayerMovementController movementController;
-    public PlayerDetectionSystem detectionSystem;
+    [SerializeField] private PlayerMovementController    _movementController;
+    [SerializeField] private PlayerDetectionSystem       _detectionSystem;
+    [SerializeField] private PlayableAnimationController _animationController;
+    [SerializeField] private PlayerInputReader           _playerInput;
+    public PlayableHealthBar HealthBar;
 
     [Header("Resting")]
-    [Tooltip("Posição para onde este personagem caminha ao entrar em Resting.")]
-    public Transform restingPoint;
+    [SerializeField] private Transform _restingPoint;
 
-    private void Awake()
+    // ── IPlayableCharacter ────────────────────────────────────────────────
+    public string    CharacterName => _characterName;
+    public Sprite    Icon          => _icon;
+    public Transform Transform     => transform;
+
+    public PlayableCharacterState CurrentState { get; internal set; } = PlayableCharacterState.None;
+    public PlayableCharacterState CurrentStateExposed;
+
+    // ── Acesso interno ────────────────────────────────────────────────────
+    internal PlayerMovementController    MovementController  => _movementController;
+    internal PlayerDetectionSystem       DetectionSystem     => _detectionSystem;
+    internal PlayableAnimationController AnimationController => _animationController;
+    internal PlayerInputReader           PlayerInput         => _playerInput;
+    internal Transform                   RestingPoint        => _restingPoint;
+
+    private void Reset()
     {
-        movementController._inputReader = playerInput;
+        _movementController  = GetComponent<PlayerMovementController>();
+        _detectionSystem     = GetComponent<PlayerDetectionSystem>();
+        _animationController = GetComponent<PlayableAnimationController>();
+        _playerInput         = GetComponent<PlayerInputReader>();
+    }
+
+    public void UpdateStateExposed()
+    {
+        CurrentStateExposed = CurrentState;
     }
 }
