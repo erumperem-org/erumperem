@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 5680860253760396728}
   - component: {fileID: 6242708248137626149}
   - component: {fileID: 3414151830357270176}
+  - component: {fileID: 5990319276389140073}
   m_Layer: 5
   m_Name: EpicCurrency
   m_TagString: Untagged
@@ -77,6 +78,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &5990319276389140073
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2062190238875689402}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1e0138bb771be94a8b0994862bf8aea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCurrencyView
+  _currency: {fileID: 11400000, guid: 6d20f39a3f0ade346968a782dce8c5d0, type: 2}
+  _inventorySystem: {fileID: 0}
+  _quantity: {fileID: 2729921758180112105}
 --- !u!1 &6862456998025695358
 GameObject:
   m_ObjectHideFlags: 0

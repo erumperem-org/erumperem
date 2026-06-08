@@ -1239,6 +1239,38 @@ PrefabInstance:
       propertyPath: m_Sprite
       value: 
       objectReference: {fileID: 469174511, guid: 2d22d6e2d56dddf4e868ad8c3df7e054, type: 3}
+    - target: {fileID: 4626199676618437859, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+      propertyPath: _item
+      value: 
+      objectReference: {fileID: 11400000, guid: 7d74a3ca6acc49c4ea0144f2d64e567a, type: 2}
+    - target: {fileID: 4626199676618437859, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+      propertyPath: _name
+      value: 
+      objectReference: {fileID: 4107741553953484314}
+    - target: {fileID: 4626199676618437859, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+      propertyPath: _button
+      value: 
+      objectReference: {fileID: 6373145337709451864}
+    - target: {fileID: 4626199676618437859, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+      propertyPath: _sprite
+      value: 
+      objectReference: {fileID: 1618240564141020441}
+    - target: {fileID: 4626199676618437859, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+      propertyPath: _quanity
+      value: 
+      objectReference: {fileID: 766748751042882616}
+    - target: {fileID: 4626199676618437859, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+      propertyPath: _currency
+      value: 
+      objectReference: {fileID: 11400000, guid: 6d20f39a3f0ade346968a782dce8c5d0, type: 2}
+    - target: {fileID: 4626199676618437859, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+      propertyPath: _description
+      value: 
+      objectReference: {fileID: 5226782101527667808}
+    - target: {fileID: 4626199676618437859, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+      propertyPath: _prices.Array.size
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6355114924766737796, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
       propertyPath: m_Name
       value: ItemBuyButton
@@ -1332,6 +1364,61 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+--- !u!114 &766748751042882616 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3234820155964946839, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+  m_PrefabInstance: {fileID: 2756319684422981039}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!114 &1618240564141020441 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3473769678385578166, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+  m_PrefabInstance: {fileID: 2756319684422981039}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+--- !u!114 &4107741553953484314 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2252304540087942069, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+  m_PrefabInstance: {fileID: 2756319684422981039}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!114 &5226782101527667808 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7982956374015341007, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+  m_PrefabInstance: {fileID: 2756319684422981039}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!114 &6373145337709451864 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 9093224826149605367, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+  m_PrefabInstance: {fileID: 2756319684422981039}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
 --- !u!224 &8869898835139680608 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6726231428340911311, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
@@ -1345,6 +1432,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1613720078424054406}
     m_Modifications:
+    - target: {fileID: 78886995090031061, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 78886995090031061, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 78886995090031061, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 78886995090031061, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6355114924766737796, guid: d17d3cc974ecd04488aae91a30e58c2f, type: 3}
       propertyPath: m_Name
       value: ItemBuyButton (2)
