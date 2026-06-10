@@ -74,8 +74,7 @@ namespace Erumperem.Combat.HealthBars
                 damagePreview.MaxDamageOnHit,
                 damagePreview.MinHpAfterHit,
                 damagePreview.MaxHpAfterHit,
-                damagePreview.IsGuaranteedKillOnHit,
-                FormatFloatingDamageText(damagePreview));
+                damagePreview.IsGuaranteedKillOnHit);
         }
 
         private bool TryResolveSkillDamagePreviewContext(
@@ -145,21 +144,6 @@ namespace Erumperem.Combat.HealthBars
                 hoveredEnemy,
                 skill,
                 out damagePreview);
-        }
-
-        private static string FormatFloatingDamageText(SkillDamagePreview damagePreview)
-        {
-            var damageRangeText = damagePreview.MinDamageOnHit == damagePreview.MaxDamageOnHit
-                ? $"{damagePreview.MinDamageOnHit}"
-                : $"{damagePreview.MinDamageOnHit}–{damagePreview.MaxDamageOnHit}";
-
-            var hitChancePercent = (int)System.Math.Round(damagePreview.HitChanceFraction * 100.0);
-            if (hitChancePercent < 100)
-            {
-                return $"{damageRangeText} ({hitChancePercent}% acerto)";
-            }
-
-            return damageRangeText;
         }
 
         private void ClearActivePreview()
