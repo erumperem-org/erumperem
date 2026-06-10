@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Player
@@ -13,17 +14,21 @@ namespace Player
     public sealed class PlayerTorchHandler : MonoBehaviour
     {
         [Header("Referências")]
-        [SerializeField] private GameObject              _torchObject;
-        [SerializeField] private GameObject              _naturalLightObject;
+        [SerializeField] private GameObject _torchObject;
+        [SerializeField] private GameObject _naturalLightObject;
+#nullable enable
+        [SerializeField] private List<GameObject> _handItensObject;
+#nullable disable
+
         [SerializeField] private PlayableAnimationController _animationController;
-        [SerializeField] private PlayableCharacter       _character;
-        [SerializeField] private PlayerInputReader       _inputReader;
+        [SerializeField] private PlayableCharacter _character;
+        [SerializeField] private PlayerInputReader _inputReader;
 
         private bool _isOn;
 
         // ── Unity lifecycle ───────────────────────────────────────────────
 
-        private void OnEnable()  => _inputReader.OnTorch += Toggle;
+        private void OnEnable() => _inputReader.OnTorch += Toggle;
         private void OnDisable() => _inputReader.OnTorch -= Toggle;
 
         // ── Lógica ───────────────────────────────────────────────────────
@@ -36,6 +41,10 @@ namespace Player
 
             _isOn = !_isOn;
             _naturalLightObject.SetActive(!_isOn);
+            foreach (var itens in _handItensObject)
+            {
+                itens.SetActive(!_isOn);
+            }
             _torchObject.SetActive(_isOn);
             _animationController.SetIsTorchOn(_isOn);
         }

@@ -22,11 +22,13 @@ using UnityEngine.UI;
 public sealed class InventorySlotView : MonoBehaviour
 {
     [Header("Referências (prefab)")]
-    [SerializeField] private Image    _icon;
+    [SerializeField] private Image _icon;
     [SerializeField] private TMP_Text _itemName;
     [SerializeField] private TMP_Text _amount;
-    [SerializeField] private Button   _button;
-
+    [SerializeField] private Button _executeButton;
+    [SerializeField] private Button _discardButton;
+    public PlayerInventorySystem inventorySystem;
+    public GameObject options;
     /// <summary>
     /// Disparado quando o jogador clica no slot.
     /// O assinante recebe o IItem vinculado.
@@ -39,12 +41,16 @@ public sealed class InventorySlotView : MonoBehaviour
 
     private void Awake()
     {
-        _button?.onClick.AddListener(HandleClick);
+        this.GetComponent<Button>().onClick.AddListener(ShowOptions);
+        _executeButton?.onClick.AddListener(HandleClick);
+        _discardButton?.onClick.AddListener(HandleDiscard);
     }
 
     private void OnDestroy()
     {
-        _button?.onClick.RemoveListener(HandleClick);
+        this.GetComponent<Button>().onClick.RemoveListener(ShowOptions);
+        _executeButton?.onClick.RemoveListener(HandleClick);
+        _discardButton?.onClick.RemoveListener(HandleDiscard);
     }
 
     // ── API pública ───────────────────────────────────────────────────────
@@ -53,15 +59,15 @@ public sealed class InventorySlotView : MonoBehaviour
     /// Preenche o slot com os dados do item.
     /// Chamado pelo InventoryPanelView ao gerar ou atualizar cada linha.
     /// </summary>
-    public void Bind(IItem item, int quantity)
+    public void Bind(IItem item, int quantity, PlayerInventorySystem inventorySystem)
     {
         _item = item;
-
+        this.inventorySystem = inventorySystem;
         _itemName.text = item is UnityEngine.Object obj ? obj.name : item.GetType().Name;
 
         if (_icon != null)
         {
-            _icon.sprite  = item.Sprite;
+            _icon.sprite = item.Sprite;
             _icon.enabled = item.Sprite != null;
         }
 
@@ -76,5 +82,19 @@ public sealed class InventorySlotView : MonoBehaviour
 
     // ── Privado ───────────────────────────────────────────────────────────
 
-    private void HandleClick() => OnSlotClicked?.Invoke(_item);
+    private void HandleClick()
+    {
+        _item.ExecuteItemEffect();
+        inventorySystem.RemoveItem(_item);
+    }
+
+    private void HandleDiscard()
+    {
+        inventorySystem.RemoveItem(_item);
+    }
+
+    private void ShowOptions()
+    {
+        options.SetActive(true);
+    }
 }

@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 7485967182066074174}
   - component: {fileID: 9193967950768713123}
   - component: {fileID: 456137003171316006}
+  - component: {fileID: 1046496360854517540}
   m_Layer: 5
   m_Name: RareCurrency
   m_TagString: Untagged
@@ -77,6 +78,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &1046496360854517540
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3867281636470521404}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1e0138bb771be94a8b0994862bf8aea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCurrencyView
+  _currency: {fileID: 11400000, guid: 884280a021f87d244b02bdb7a691edc6, type: 2}
+  _inventorySystem: {fileID: 0}
+  _quantity: {fileID: 925391111775496559}
 --- !u!1 &5860097242858126554
 GameObject:
   m_ObjectHideFlags: 0

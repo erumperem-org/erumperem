@@ -145,7 +145,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5014687880673131674}
-  - {fileID: 7284106132012553402}
   - {fileID: 6316315852450203247}
   - {fileID: 5015548909230825912}
   - {fileID: 4034128993425023436}
@@ -226,6 +225,9 @@ MonoBehaviour:
   _detectionSystem: {fileID: 1213314104056471266}
   _animationController: {fileID: 0}
   _playerInput: {fileID: 0}
+  HealthBar:
+    MaxHealth: 0
+    CurrentHealth: 0
   _restingPoint: {fileID: 0}
   CurrentStateExposed: 0
 --- !u!114 &85350168259835853
@@ -240,7 +242,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a098518eee0b6043b7ca713102c6680, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player.PlayerTorchHandler
-  _torchObject: {fileID: 7952661241832017408}
+  _torchObject: {fileID: 0}
   _naturalLightObject: {fileID: 1285396969534779272}
   _animationController: {fileID: 0}
   _character: {fileID: 7660477565840652046}
@@ -698,77 +700,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!1001 &1412568599580095038
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 8338916238106846543}
-    m_Modifications:
-    - target: {fileID: 8542242480946275972, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -0.48428
-      objectReference: {fileID: 0}
-    - target: {fileID: 8542242480946275972, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0.84455
-      objectReference: {fileID: 0}
-    - target: {fileID: 8542242480946275972, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0.1244
-      objectReference: {fileID: 0}
-    - target: {fileID: 8542242480946275972, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8542242480946275972, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8542242480946275972, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8542242480946275972, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8542242480946275972, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8542242480946275972, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8542242480946275972, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 9063482067622149182, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
-      propertyPath: m_Name
-      value: Torch (1)
-      objectReference: {fileID: 0}
-    - target: {fileID: 9063482067622149182, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
---- !u!4 &7284106132012553402 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 8542242480946275972, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
-  m_PrefabInstance: {fileID: 1412568599580095038}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &7952661241832017408 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 9063482067622149182, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
-  m_PrefabInstance: {fileID: 1412568599580095038}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &4764097517875305329
 PrefabInstance:
   m_ObjectHideFlags: 0
