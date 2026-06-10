@@ -70,7 +70,7 @@ public sealed class InventoryPanelView : MonoBehaviour
 
         if (_slots.TryGetValue(item, out var existing))
         {
-            existing.Bind(item, total);
+            existing.Bind(item, total, _inventory);
         }
         else
         {
@@ -96,7 +96,7 @@ public sealed class InventoryPanelView : MonoBehaviour
         else
         {
             if (_slots.TryGetValue(item, out var slot))
-                slot.Bind(item, remaining);
+                slot.Bind(item, remaining, _inventory);
         }
     }
 
@@ -133,7 +133,7 @@ public sealed class InventoryPanelView : MonoBehaviour
             return null;
         }
 
-        slot.Bind(item, quantity);
+        slot.Bind(item, quantity, _inventory);
         slot.OnSlotClicked += HandleSlotClicked;
 
         return slot;
