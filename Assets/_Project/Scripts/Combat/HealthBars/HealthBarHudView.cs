@@ -7,11 +7,12 @@ using UnityEngine.UI;
 namespace Erumperem.Combat.HealthBars
 {
     /// <summary>
-    /// HUD diegética por unidade. Faz poll do HP em <c>LateUpdate</c> e dispara animações DOTween:
-    /// vermelho = HP actual (slider), laranja = trail de dano (lento), verde = trail de cura (rápido).
+    /// HUD diegética por unidade. Fica oculta até <see cref="SetHoverVisible"/>; em <c>LateUpdate</c> sincroniza HP
+    /// e dispara animações DOTween: vermelho = HP actual (slider), laranja = trail de dano (lento), verde = trail de cura (rápido).
     /// Não conhece o <see cref="CombatPrototypeController"/> directamente; só lê <see cref="Combatant.Health"/>
     /// via referência fornecida em <see cref="Configure"/>.
     /// </summary>
+    [DefaultExecutionOrder(35)]
     public sealed class HealthBarHudView : MonoBehaviour
     {
         [Header("Bindings (Slider obrigatório)")]
@@ -58,6 +59,9 @@ namespace Erumperem.Combat.HealthBars
         [Tooltip("Esconde a barra quando o combatente está marcado como morto (Health.IsDead).")]
         [SerializeField] private bool _hideWhenCombatantDead = true;
 
+        [Tooltip("Controla alpha da barra no hover. Se vazio, é criado/resolvido no Awake.")]
+        [SerializeField] private CanvasGroup _visibilityCanvasGroup;
+
         private const string CurrentHpTweenId = "HealthBarCurrentHpTween";
         private const string TrailingHpTweenId = "HealthBarTrailingHpTween";
         private const string DamagePunchTweenId = "HealthBarDamagePunchTween";
@@ -71,7 +75,7 @@ namespace Erumperem.Combat.HealthBars
         private bool _hasActiveSkillDamagePreview;
         private int _previewMinHpAfterHit;
         private int _previewMaxHpAfterHit;
-        private string _previewFloatingDamageText = "";
+        private bool _isHoverVisible;
 
         public void Configure(CombatPrototypeController combatSession, string combatantId)
         {
@@ -81,7 +85,41 @@ namespace Erumperem.Combat.HealthBars
             _lastSyncedHpPercent = -1f;
             _lastDisplayedCurrentHp = -1;
             _lastDisplayedMaxHp = -1;
+            _isHoverVisible = false;
             ClearSkillDamagePreview();
+            EnsureVisibilityCanvasGroup();
+            if (!gameObject.activeSelf)
+            {
+                gameObject.SetActive(true);
+            }
+
+            ApplyHoverVisibilityState(forceHidden: true);
+        }
+
+        public void SetHoverVisible(bool isHoverVisible)
+        {
+            var hoverStateChanged = _isHoverVisible != isHoverVisible;
+            if (!hoverStateChanged && !NeedsVisibilityRefresh(isHoverVisible))
+            {
+                return;
+            }
+
+            _isHoverVisible = isHoverVisible;
+            if (!isHoverVisible)
+            {
+                ClearSkillDamagePreview();
+            }
+            else
+            {
+                _hasInitializedFromBattleState = false;
+            }
+
+            if (!gameObject.activeSelf)
+            {
+                gameObject.SetActive(true);
+            }
+
+            ApplyHoverVisibilityState();
         }
 
         public void SetSkillDamagePreview(
@@ -89,19 +127,11 @@ namespace Erumperem.Combat.HealthBars
             int maxDamageOnHit,
             int minHpAfterHit,
             int maxHpAfterHit,
-            bool isGuaranteedKillOnHit,
-            string floatingDamageText)
+            bool isGuaranteedKillOnHit)
         {
             _hasActiveSkillDamagePreview = true;
             _previewMinHpAfterHit = minHpAfterHit;
             _previewMaxHpAfterHit = maxHpAfterHit;
-            _previewFloatingDamageText = floatingDamageText ?? "";
-
-            if (_damagePreviewFloatingTextLabel != null)
-            {
-                _damagePreviewFloatingTextLabel.gameObject.SetActive(true);
-                _damagePreviewFloatingTextLabel.text = _previewFloatingDamageText;
-            }
 
             if (_lethalKillSkullIndicator != null)
             {
@@ -117,7 +147,6 @@ namespace Erumperem.Combat.HealthBars
             }
 
             _hasActiveSkillDamagePreview = false;
-            _previewFloatingDamageText = "";
             _lastDisplayedCurrentHp = -1;
             _lastDisplayedMaxHp = -1;
 
@@ -136,10 +165,12 @@ namespace Erumperem.Combat.HealthBars
 
         private void Awake()
         {
+            EnsureVisibilityCanvasGroup();
             ResolveFillImageFromSliderIfMissing();
             ResolveHealthBarTextLabelIfMissing();
             ResolveDamagePreviewWidgetsIfMissing();
             ApplyInitialColors();
+            DisableFloatingDamagePreviewTextPermanently();
             ClearSkillDamagePreview();
         }
 
@@ -173,24 +204,23 @@ namespace Erumperem.Combat.HealthBars
 
             if (combatant.Health.IsDead && _hideWhenCombatantDead)
             {
-                if (gameObject.activeSelf)
-                {
-                    gameObject.SetActive(false);
-                }
-
+                ApplyHoverVisibilityState(forceHidden: true);
                 return;
             }
 
-            if (!gameObject.activeSelf)
-            {
-                gameObject.SetActive(true);
-            }
+            ApplyHoverVisibilityState();
 
             SyncHealthBarTextLabel(combatant);
 
             if (_hasActiveSkillDamagePreview)
             {
                 ApplySkillDamagePreviewToSlider(combatant);
+                return;
+            }
+
+            if (!_isHoverVisible)
+            {
+                SyncHiddenHealthState(combatant);
                 return;
             }
 
@@ -470,6 +500,61 @@ namespace Erumperem.Combat.HealthBars
                     }
                 }
             }
+        }
+
+        private void EnsureVisibilityCanvasGroup()
+        {
+            if (_visibilityCanvasGroup != null)
+            {
+                return;
+            }
+
+            _visibilityCanvasGroup = GetComponent<CanvasGroup>();
+            if (_visibilityCanvasGroup == null)
+            {
+                _visibilityCanvasGroup = gameObject.AddComponent<CanvasGroup>();
+            }
+
+            _visibilityCanvasGroup.blocksRaycasts = false;
+            _visibilityCanvasGroup.interactable = false;
+        }
+
+        private void ApplyHoverVisibilityState(bool forceHidden = false)
+        {
+            EnsureVisibilityCanvasGroup();
+            var shouldShow = !forceHidden && _isHoverVisible;
+            _visibilityCanvasGroup.alpha = shouldShow ? 1f : 0f;
+            _visibilityCanvasGroup.blocksRaycasts = false;
+            _visibilityCanvasGroup.interactable = false;
+        }
+
+        private bool NeedsVisibilityRefresh(bool isHoverVisible)
+        {
+            EnsureVisibilityCanvasGroup();
+            var targetAlpha = isHoverVisible ? 1f : 0f;
+            return !Mathf.Approximately(_visibilityCanvasGroup.alpha, targetAlpha);
+        }
+
+        private void SyncHiddenHealthState(Combatant combatant)
+        {
+            var targetHpPercent = ComputeHpPercentSafely(combatant);
+            if (!_hasInitializedFromBattleState ||
+                !Mathf.Approximately(targetHpPercent, _lastSyncedHpPercent))
+            {
+                SnapBarsToValue(targetHpPercent);
+                _lastSyncedHpPercent = targetHpPercent;
+                _hasInitializedFromBattleState = true;
+            }
+        }
+
+        private void DisableFloatingDamagePreviewTextPermanently()
+        {
+            if (_damagePreviewFloatingTextLabel == null)
+            {
+                return;
+            }
+
+            _damagePreviewFloatingTextLabel.gameObject.SetActive(false);
         }
 
         private static Transform FindDescendantTransform(Transform root, string targetName)

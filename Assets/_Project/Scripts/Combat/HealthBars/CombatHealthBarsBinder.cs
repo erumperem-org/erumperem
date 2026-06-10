@@ -36,6 +36,13 @@ namespace Erumperem.Combat.HealthBars
                  "nesse caso o canvas já está sempre virado ao ecrã.")]
         [SerializeField] private bool faceMainCameraEachFrame = true;
 
+        [Header("Visibilidade")]
+        [Tooltip("Só mostra a barra de vida da unidade sob o rato.")]
+        [SerializeField] private bool showHealthBarOnlyOnHover = true;
+
+        [SerializeField] private float pointerRaycastMaxDistance = 200f;
+        [SerializeField] private LayerMask pointerRaycastLayerMask = ~0;
+
         private CombatPrototypeController _combatSession;
         private readonly List<Transform> _spawnedHealthBarRoots = new();
         private readonly Dictionary<string, HealthBarHudView> _healthBarHudViewsByCombatantId =
@@ -78,6 +85,8 @@ namespace Erumperem.Combat.HealthBars
 
         private void LateUpdate()
         {
+            UpdateHealthBarHoverVisibility();
+
             if (!faceMainCameraEachFrame || _spawnedHealthBarRoots.Count == 0)
             {
                 return;
@@ -190,6 +199,85 @@ namespace Erumperem.Combat.HealthBars
         {
             _combatSession = null;
             TearDownSpawnedHealthBars();
+        }
+
+        private void UpdateHealthBarHoverVisibility()
+        {
+            if (_healthBarHudViewsByCombatantId.Count == 0)
+            {
+                return;
+            }
+
+            if (!showHealthBarOnlyOnHover)
+            {
+                foreach (var healthBarView in _healthBarHudViewsByCombatantId.Values)
+                {
+                    healthBarView.SetHoverVisible(true);
+                }
+
+                return;
+            }
+
+            string hoveredCombatantId = null;
+            if (_combatSession != null && _combatSession.IsBattleOngoing)
+            {
+                var hoveredCombatant = TryRaycastLivingCombatantUnderPointer();
+                hoveredCombatantId = hoveredCombatant?.Identity.Id;
+            }
+
+            foreach (var combatantIdAndHealthBarView in _healthBarHudViewsByCombatantId)
+            {
+                var isHovered = !string.IsNullOrEmpty(hoveredCombatantId) &&
+                                string.Equals(
+                                    combatantIdAndHealthBarView.Key,
+                                    hoveredCombatantId,
+                                    System.StringComparison.Ordinal);
+                combatantIdAndHealthBarView.Value.SetHoverVisible(isHovered);
+            }
+        }
+
+        private Game.Core.Models.Combatant TryRaycastLivingCombatantUnderPointer()
+        {
+            if (_combatSession == null)
+            {
+                return null;
+            }
+
+            if (_mainCamera == null)
+            {
+                _mainCamera = Camera.main;
+            }
+
+            if (_mainCamera == null)
+            {
+                return null;
+            }
+
+            if (InputManager.Instance == null ||
+                !InputManager.Instance.TryGetPointerScreenPosition(out var pointerScreenPosition))
+            {
+                return null;
+            }
+
+            var ray = _mainCamera.ScreenPointToRay(pointerScreenPosition);
+            if (!Physics.Raycast(ray, out var hit, pointerRaycastMaxDistance, pointerRaycastLayerMask))
+            {
+                return null;
+            }
+
+            var capsuleTag = hit.collider.GetComponentInParent<CombatCapsuleTag>();
+            if (capsuleTag == null || string.IsNullOrEmpty(capsuleTag.combatantId))
+            {
+                return null;
+            }
+
+            var combatant = _combatSession.FindCombatantById(capsuleTag.combatantId);
+            if (combatant == null || combatant.Health.IsDead)
+            {
+                return null;
+            }
+
+            return combatant;
         }
 
         private void TearDownSpawnedHealthBars()
