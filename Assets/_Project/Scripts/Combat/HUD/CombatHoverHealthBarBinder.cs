@@ -1,9 +1,12 @@
-using UnityEngine;
-using TMPro;
-using UnityEngine.UI; // ADICIONADO: Necessário para componentes de Imagem (UI)
+using System;
 using System.Collections;
-using System.Collections.Generic; // ADICIONADO: Necessário para usar Listas e Dicionários
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using Erumperem.Combat;
 using Erumperem.Combat.HealthBars;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace Erumperem.Combat.HealthBars
 {
@@ -16,11 +19,11 @@ namespace Erumperem.Combat.HealthBars
         {
             [Tooltip("Arraste o PREFAB original da unidade aqui.")]
             public GameObject unitPrefab;
-            [Tooltip("Arraste a foto/ícone correspondente a esta unidade.")]
+            [Tooltip("Arraste a foto/˜cone correspondente a esta unidade.")]
             public Sprite unitIcon;
         }
 
-        [Header("Referência Central (Arraste o 'combatlogc' aqui)")]
+        [Header("Refer˜ncia Central (Arraste o 'combatlogc' aqui)")]
         [SerializeField] private GameObject combatLogicCenter;
 
         [Header("Filtro de Alvo")]
@@ -28,13 +31,13 @@ namespace Erumperem.Combat.HealthBars
         [SerializeField] private bool isPlayerBar = false;
 
         [Header("UI de Texto e Imagem")]
-        [Tooltip("Arraste o componente de texto que exibirá o nome do Prefab aqui.")]
+        [Tooltip("Arraste o componente de texto que exibir˜ o nome do Prefab aqui.")]
         [SerializeField] private TextMeshProUGUI unitNameText;
 
-        [Tooltip("Arraste o componente de Image da UI que exibirá o retrato da unidade.")]
-        [SerializeField] private Image unitPortraitImage; // ADICIONADO: Referência para a imagem na UI
+        [Tooltip("Arraste o componente de Image da UI que exibir˜ o retrato da unidade.")]
+        [SerializeField] private Image unitPortraitImage; // ADICIONADO: Refer˜ncia para a imagem na UI
 
-        [Header("Configuração de Ícones (Novo)")]
+        [Header("Configura˜˜o de ˜cones (Novo)")]
         [Tooltip("Adicione os prefabs e suas respectivas imagens aqui.")]
         [SerializeField] private List<UnitIconMapping> iconMappings; // ADICIONADO: Lista que aparece no Inspector
 
@@ -46,43 +49,94 @@ namespace Erumperem.Combat.HealthBars
         private string _currentTrackedCombatantId = "";
         private Coroutine _initializationRoutine;
 
-        // Otimização: Dicionário em cache para buscas ultra rápidas por nome
+        // Otimiza˜˜o: Dicion˜rio em cache para buscas ultra r˜pidas por nome
         private readonly Dictionary<string, Sprite> _iconCache = new();
 
         private void Awake()
         {
             _hudView = GetComponent<HealthBarHudView>();
+            ResolveCombatServices();
+            RebuildIconCache();
+        }
+
+        private void ResolveCombatServices()
+        {
+            if (combatLogicCenter == null)
+            {
+                var sessionHubInScene = FindFirstObjectByType<CombatSessionHub>();
+                if (sessionHubInScene != null)
+                {
+                    combatLogicCenter = sessionHubInScene.gameObject;
+                }
+            }
 
             if (combatLogicCenter != null)
             {
                 _sessionHub = combatLogicCenter.GetComponent<CombatSessionHub>();
                 _hoverMarker = combatLogicCenter.GetComponent<CombatHoverFocusMarker>();
             }
-            else
-            {
-                Debug.LogError($"{nameof(CombatHoverHealthBarBinder)}: O objeto 'combatLogicCenter' não foi arrastado no Inspetor!", this);
-            }
 
-            // ADICIONADO: Transforma a lista do Inspector em um dicionário rápido em memória
-            InitializeIconCache();
+            if (_sessionHub == null)
+            {
+                Debug.LogError($"{nameof(CombatHoverHealthBarBinder)}: CombatSessionHub nao encontrado na cena.", this);
+            }
         }
 
-        // ADICIONADO: Preenche o dicionário usando o nome do prefab como chave
-        private void InitializeIconCache()
+        private void RebuildIconCache()
         {
-            if (iconMappings == null) return;
-
-            foreach (var mapping in iconMappings)
+            _iconCache.Clear();
+            if (iconMappings == null)
             {
-                if (mapping.unitPrefab != null && mapping.unitIcon != null)
+                return;
+            }
+
+            foreach (var iconMapping in iconMappings)
+            {
+                if (iconMapping.unitPrefab == null || iconMapping.unitIcon == null)
                 {
-                    // Guardamos o nome do prefab original (sem "(Clone)")
-                    string prefabName = mapping.unitPrefab.name;
-                    if (!_iconCache.ContainsKey(prefabName))
-                    {
-                        _iconCache.Add(prefabName, mapping.unitIcon);
-                    }
+                    continue;
                 }
+
+                var lookupName = GetVisualLookupName(iconMapping.unitPrefab.name);
+                if (!_iconCache.ContainsKey(lookupName))
+                {
+                    _iconCache.Add(lookupName, iconMapping.unitIcon);
+                }
+            }
+        }
+
+        private void SupplementIconCacheFromVisualRoots(CombatPrototypeController controller)
+        {
+            if (iconMappings == null || controller == null)
+            {
+                return;
+            }
+
+            for (var mappingIndex = 0; mappingIndex < iconMappings.Count; mappingIndex++)
+            {
+                var iconMapping = iconMappings[mappingIndex];
+                if (iconMapping.unitIcon == null)
+                {
+                    continue;
+                }
+
+                if (iconMapping.unitPrefab != null)
+                {
+                    _iconCache[GetVisualLookupName(iconMapping.unitPrefab.name)] = iconMapping.unitIcon;
+                    continue;
+                }
+
+                var combatantId = isPlayerBar
+                    ? $"ally_{mappingIndex + 1}"
+                    : $"enemy_{mappingIndex + 1}";
+
+                var visualRoot = controller.TryGetUnitVisualRoot(combatantId);
+                if (visualRoot == null)
+                {
+                    continue;
+                }
+
+                _iconCache[GetVisualLookupName(visualRoot.gameObject.name)] = iconMapping.unitIcon;
             }
         }
 
@@ -110,6 +164,7 @@ namespace Erumperem.Combat.HealthBars
         private void HandleCombatSessionReady(CombatPrototypeController controller)
         {
             _activeCombatSession = controller;
+            SupplementIconCacheFromVisualRoots(controller);
 
             string defaultId = isPlayerBar ? "ally_1" : "enemy_1";
 
@@ -157,7 +212,7 @@ namespace Erumperem.Combat.HealthBars
                 return;
             }
 
-            bool isAlly = targetCombatantId.StartsWith("ally", System.StringComparison.OrdinalIgnoreCase);
+            bool isAlly = targetCombatantId.StartsWith("ally", StringComparison.OrdinalIgnoreCase);
 
             if (isPlayerBar != isAlly)
             {
@@ -187,7 +242,7 @@ namespace Erumperem.Combat.HealthBars
             return null;
         }
 
-        // ALTERADO: Método renomeado de UpdateNameText para UpdateVisuals pois agora cuida da Imagem também
+        // ALTERADO: M˜todo renomeado de UpdateNameText para UpdateVisuals pois agora cuida da Imagem tamb˜m
         private void UpdateVisuals(string combatantId)
         {
             if (_activeCombatSession == null) return;
@@ -200,47 +255,27 @@ namespace Erumperem.Combat.HealthBars
                 {
                     if (capsule.combatantId == combatantId)
                     {
-                        string rawName = capsule.gameObject.name;
+                        var visualLookupName = GetVisualLookupName(capsule.gameObject.name);
 
-                        // Limpa o "(Clone)" para podermos comparar com o Prefab original
-                        if (rawName.EndsWith("(Clone)", System.StringComparison.OrdinalIgnoreCase))
-                        {
-                            rawName = rawName.Replace("(Clone)", "").Trim();
-                        }
-
-                        // ==========================================
-                        // LÓGICA DA IMAGEM (NOVO)
-                        // ==========================================
                         if (unitPortraitImage != null)
                         {
-                            // Buscamos no nosso dicionário se existe uma imagem para o nome desse prefab limpo
-                            if (_iconCache.TryGetValue(rawName, out Sprite unitSprite))
+                            if (TryResolvePortraitSprite(combatantId, visualLookupName, out var portraitSprite))
                             {
                                 unitPortraitImage.gameObject.SetActive(true);
-                                unitPortraitImage.sprite = unitSprite;
+                                unitPortraitImage.sprite = portraitSprite;
                             }
                             else
                             {
-                                // Se não achar o ícone, desativa a imagem ou coloca um ícone padrão
                                 unitPortraitImage.gameObject.SetActive(false);
                             }
                         }
 
-                        // ==========================================
-                        // LÓGICA DO TEXTO (MANTIDA)
-                        // ==========================================
                         if (unitNameText != null)
                         {
-                            rawName = rawName.Replace("_", " ");
-
-                            string formattedName = System.Text.RegularExpressions.Regex.Replace(
-                                rawName,
-                                "([a-z])([A-Z])",
-                                "$1 $2"
-                            );
-
-                            formattedName = System.Text.RegularExpressions.Regex.Replace(formattedName, @"\s+", " ").Trim();
-                            unitNameText.text = formattedName;
+                            var displayName = visualLookupName.Replace("_", " ");
+                            displayName = Regex.Replace(displayName, "([a-z])([A-Z])", "$1 $2");
+                            displayName = Regex.Replace(displayName, @"\s+", " ").Trim();
+                            unitNameText.text = displayName;
                         }
 
                         return;
@@ -249,6 +284,53 @@ namespace Erumperem.Combat.HealthBars
 
                 if (unitNameText != null) unitNameText.text = combatantId;
             }
+        }
+
+        private bool TryResolvePortraitSprite(string combatantId, string visualLookupName, out Sprite portraitSprite)
+        {
+            if (_iconCache.TryGetValue(visualLookupName, out portraitSprite))
+            {
+                return true;
+            }
+
+            if (iconMappings == null || string.IsNullOrEmpty(combatantId))
+            {
+                portraitSprite = null;
+                return false;
+            }
+
+            var combatantIndex = ParseCombatantIndex(combatantId);
+            if (combatantIndex < 0 || combatantIndex >= iconMappings.Count)
+            {
+                portraitSprite = null;
+                return false;
+            }
+
+            portraitSprite = iconMappings[combatantIndex].unitIcon;
+            return portraitSprite != null;
+        }
+
+        private static int ParseCombatantIndex(string combatantId)
+        {
+            var separatorIndex = combatantId.LastIndexOf('_');
+            if (separatorIndex < 0 || separatorIndex >= combatantId.Length - 1)
+            {
+                return -1;
+            }
+
+            return int.TryParse(combatantId[(separatorIndex + 1)..], out var parsedIndex)
+                ? parsedIndex - 1
+                : -1;
+        }
+
+        private static string GetVisualLookupName(string rawObjectName)
+        {
+            if (rawObjectName.EndsWith("(Clone)", StringComparison.OrdinalIgnoreCase))
+            {
+                return rawObjectName.Replace("(Clone)", "", StringComparison.OrdinalIgnoreCase).Trim();
+            }
+
+            return rawObjectName;
         }
     }
 }
