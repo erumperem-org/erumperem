@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Erumperem.Combat;
 using Erumperem.Combat.HealthBars;
+using Game.Core.Models;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,43 +14,38 @@ namespace Erumperem.Combat.HealthBars
     [RequireComponent(typeof(HealthBarHudView))]
     public sealed class CombatHoverHealthBarBinder : MonoBehaviour
     {
-        // ADICIONADO: Uma estrutura simples para criar o mapeamento no Inspector
-        [System.Serializable]
+        [Serializable]
         public struct UnitIconMapping
         {
             [Tooltip("Arraste o PREFAB original da unidade aqui.")]
             public GameObject unitPrefab;
-            [Tooltip("Arraste a foto/˜cone correspondente a esta unidade.")]
+            [Tooltip("Arraste o icone correspondente a esta unidade.")]
             public Sprite unitIcon;
         }
 
-        [Header("Refer˜ncia Central (Arraste o 'combatlogc' aqui)")]
+        [Header("Referencia central")]
         [SerializeField] private GameObject combatLogicCenter;
 
-        [Header("Filtro de Alvo")]
-        [Tooltip("Marque TRUE se esta barra for para exibir apenas os Aliados/Players. Marque FALSE se for apenas para Inimigos.")]
+        [Header("Painel")]
+        [Tooltip("TRUE = painel esquerdo (aliado). FALSE = painel direito (foco contextual).")]
         [SerializeField] private bool isPlayerBar = false;
 
-        [Header("UI de Texto e Imagem")]
-        [Tooltip("Arraste o componente de texto que exibir˜ o nome do Prefab aqui.")]
+        [Header("UI de texto e imagem")]
         [SerializeField] private TextMeshProUGUI unitNameText;
+        [SerializeField] private TextMeshProUGUI unitDescriptionText;
+        [SerializeField] private Image unitPortraitImage;
 
-        [Tooltip("Arraste o componente de Image da UI que exibir˜ o retrato da unidade.")]
-        [SerializeField] private Image unitPortraitImage; // ADICIONADO: Refer˜ncia para a imagem na UI
-
-        [Header("Configura˜˜o de ˜cones (Novo)")]
-        [Tooltip("Adicione os prefabs e suas respectivas imagens aqui.")]
-        [SerializeField] private List<UnitIconMapping> iconMappings; // ADICIONADO: Lista que aparece no Inspector
+        [Header("Icones")]
+        [SerializeField] private List<UnitIconMapping> iconMappings;
 
         private CombatSessionHub _sessionHub;
-        private CombatHoverFocusMarker _hoverMarker;
+        private CombatHudPanelFocusCoordinator _panelFocusCoordinator;
         private HealthBarHudView _hudView;
 
         private CombatPrototypeController _activeCombatSession;
-        private string _currentTrackedCombatantId = "";
+        private string _currentTrackedCombatantId = string.Empty;
         private Coroutine _initializationRoutine;
 
-        // Otimiza˜˜o: Dicion˜rio em cache para buscas ultra r˜pidas por nome
         private readonly Dictionary<string, Sprite> _iconCache = new();
 
         private void Awake()
@@ -73,7 +69,12 @@ namespace Erumperem.Combat.HealthBars
             if (combatLogicCenter != null)
             {
                 _sessionHub = combatLogicCenter.GetComponent<CombatSessionHub>();
-                _hoverMarker = combatLogicCenter.GetComponent<CombatHoverFocusMarker>();
+            }
+
+            _panelFocusCoordinator = GetComponentInParent<CombatHudPanelFocusCoordinator>();
+            if (_panelFocusCoordinator == null)
+            {
+                _panelFocusCoordinator = FindFirstObjectByType<CombatHudPanelFocusCoordinator>();
             }
 
             if (_sessionHub == null)
@@ -142,7 +143,10 @@ namespace Erumperem.Combat.HealthBars
 
         private void OnEnable()
         {
-            if (_sessionHub == null) return;
+            if (_sessionHub == null)
+            {
+                return;
+            }
 
             _sessionHub.OnCombatSessionReadyForUi += HandleCombatSessionReady;
             _sessionHub.OnCombatSessionClosed += HandleCombatSessionClosed;
@@ -150,7 +154,10 @@ namespace Erumperem.Combat.HealthBars
 
         private void OnDisable()
         {
-            if (_sessionHub == null) return;
+            if (_sessionHub == null)
+            {
+                return;
+            }
 
             _sessionHub.OnCombatSessionReadyForUi -= HandleCombatSessionReady;
             _sessionHub.OnCombatSessionClosed -= HandleCombatSessionClosed;
@@ -166,22 +173,24 @@ namespace Erumperem.Combat.HealthBars
             _activeCombatSession = controller;
             SupplementIconCacheFromVisualRoots(controller);
 
-            string defaultId = isPlayerBar ? "ally_1" : "enemy_1";
-
-            if (_activeCombatSession != null && _activeCombatSession.FindCombatantById(defaultId) != null)
+            var defaultCombatantId = isPlayerBar ? "ally_1" : "enemy_1";
+            if (_activeCombatSession != null && _activeCombatSession.FindCombatantById(defaultCombatantId) != null)
             {
-                _currentTrackedCombatantId = defaultId;
-                _hudView.Configure(_activeCombatSession, _currentTrackedCombatantId);
+                ApplyTrackedCombatant(defaultCombatantId);
 
-                if (_initializationRoutine != null) StopCoroutine(_initializationRoutine);
-                _initializationRoutine = StartCoroutine(DeferredInitialTextUpdate(_currentTrackedCombatantId));
+                if (_initializationRoutine != null)
+                {
+                    StopCoroutine(_initializationRoutine);
+                }
+
+                _initializationRoutine = StartCoroutine(DeferredInitialTextUpdate(defaultCombatantId));
             }
         }
 
         private IEnumerator DeferredInitialTextUpdate(string combatantId)
         {
             yield return new WaitForEndOfFrame();
-            UpdateVisuals(combatantId); // ALTERADO: Agora atualiza Texto E Imagem
+            UpdateVisuals(combatantId);
             _initializationRoutine = null;
         }
 
@@ -194,101 +203,137 @@ namespace Erumperem.Combat.HealthBars
             }
 
             _activeCombatSession = null;
-            _currentTrackedCombatantId = "";
+            _currentTrackedCombatantId = string.Empty;
             _hudView.ClearSkillDamagePreview();
         }
 
         private void LateUpdate()
         {
-            if (_activeCombatSession == null || !_activeCombatSession.IsBattleOngoing || _hoverMarker == null)
+            if (_activeCombatSession == null ||
+                !_activeCombatSession.IsBattleOngoing ||
+                _panelFocusCoordinator == null)
             {
                 return;
             }
 
-            string targetCombatantId = FindCurrentHoveredCombatantId();
+            var focusCombatantId = isPlayerBar
+                ? _panelFocusCoordinator.LeftAllyCombatantId
+                : _panelFocusCoordinator.RightFocusCombatantId;
 
-            if (string.IsNullOrEmpty(targetCombatantId))
+            if (string.IsNullOrEmpty(focusCombatantId))
             {
                 return;
             }
 
-            bool isAlly = targetCombatantId.StartsWith("ally", StringComparison.OrdinalIgnoreCase);
-
-            if (isPlayerBar != isAlly)
+            if (!string.Equals(focusCombatantId, _currentTrackedCombatantId, StringComparison.Ordinal))
             {
-                return;
-            }
-
-            if (targetCombatantId != _currentTrackedCombatantId)
-            {
-                _currentTrackedCombatantId = targetCombatantId;
-                _hudView.Configure(_activeCombatSession, _currentTrackedCombatantId);
-                UpdateVisuals(_currentTrackedCombatantId); // ALTERADO: Agora atualiza Texto E Imagem
+                ApplyTrackedCombatant(focusCombatantId);
+                UpdateVisuals(focusCombatantId);
             }
         }
 
-        private string FindCurrentHoveredCombatantId()
+        private void ApplyTrackedCombatant(string combatantId)
         {
-            if (!_hoverMarker.isActiveAndEnabled) return null;
-
-            var fieldInfo = typeof(CombatHoverFocusMarker).GetField("_lastJuiceCombatantId",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            if (fieldInfo != null)
-            {
-                return fieldInfo.GetValue(_hoverMarker) as string;
-            }
-
-            return null;
+            _currentTrackedCombatantId = combatantId;
+            _hudView.Configure(_activeCombatSession, combatantId);
         }
 
-        // ALTERADO: M˜todo renomeado de UpdateNameText para UpdateVisuals pois agora cuida da Imagem tamb˜m
         private void UpdateVisuals(string combatantId)
         {
-            if (_activeCombatSession == null) return;
+            if (_activeCombatSession == null)
+            {
+                return;
+            }
 
             var combatant = _activeCombatSession.FindCombatantById(combatantId);
-            if (combatant != null)
+            if (combatant == null)
             {
-                var allCapsules = FindObjectsByType<CombatCapsuleTag>(FindObjectsSortMode.None);
-                foreach (var capsule in allCapsules)
-                {
-                    if (capsule.combatantId == combatantId)
-                    {
-                        var visualLookupName = GetVisualLookupName(capsule.gameObject.name);
-
-                        if (unitPortraitImage != null)
-                        {
-                            if (TryResolvePortraitSprite(combatantId, visualLookupName, out var portraitSprite))
-                            {
-                                unitPortraitImage.gameObject.SetActive(true);
-                                unitPortraitImage.sprite = portraitSprite;
-                            }
-                            else
-                            {
-                                unitPortraitImage.gameObject.SetActive(false);
-                            }
-                        }
-
-                        if (unitNameText != null)
-                        {
-                            var displayName = visualLookupName.Replace("_", " ");
-                            displayName = Regex.Replace(displayName, "([a-z])([A-Z])", "$1 $2");
-                            displayName = Regex.Replace(displayName, @"\s+", " ").Trim();
-                            unitNameText.text = displayName;
-                        }
-
-                        return;
-                    }
-                }
-
-                if (unitNameText != null) unitNameText.text = combatantId;
+                return;
             }
+
+            var displayName = BuildDisplayName(combatant, combatantId);
+            if (unitNameText != null)
+            {
+                unitNameText.text = displayName;
+            }
+
+            if (unitDescriptionText != null)
+            {
+                unitDescriptionText.text = BuildDescriptionLine(combatant);
+            }
+
+            if (unitPortraitImage == null)
+            {
+                return;
+            }
+
+            var visualLookupName = TryGetVisualLookupNameForCombatant(combatantId);
+            if (TryResolvePortraitSprite(combatantId, visualLookupName, out var portraitSprite))
+            {
+                unitPortraitImage.gameObject.SetActive(true);
+                unitPortraitImage.sprite = portraitSprite;
+            }
+            else
+            {
+                unitPortraitImage.gameObject.SetActive(false);
+            }
+        }
+
+        private string BuildDisplayName(Combatant combatant, string combatantId)
+        {
+            var visualLookupName = TryGetVisualLookupNameForCombatant(combatantId);
+            if (!string.IsNullOrEmpty(visualLookupName))
+            {
+                return FormatVisualDisplayName(visualLookupName);
+            }
+
+            if (!string.IsNullOrWhiteSpace(combatant.Identity.DisplayName))
+            {
+                return combatant.Identity.DisplayName;
+            }
+
+            return combatantId;
+        }
+
+        private static string BuildDescriptionLine(Combatant combatant)
+        {
+            var maxHp = Math.Max(1, combatant.Health.MaxHp);
+            var currentHp = Math.Clamp(combatant.Health.CurrentHp, 0, maxHp);
+            var healthPercent = Mathf.RoundToInt((float)currentHp / maxHp * 100f);
+            return $"{currentHp}/{maxHp} HP ({healthPercent}%)";
+        }
+
+        private string TryGetVisualLookupNameForCombatant(string combatantId)
+        {
+            var visualRoot = _activeCombatSession.TryGetUnitVisualRoot(combatantId);
+            if (visualRoot != null)
+            {
+                return GetVisualLookupName(visualRoot.gameObject.name);
+            }
+
+            var allCapsules = FindObjectsByType<CombatCapsuleTag>(FindObjectsSortMode.None);
+            foreach (var capsule in allCapsules)
+            {
+                if (capsule.combatantId == combatantId)
+                {
+                    return GetVisualLookupName(capsule.gameObject.name);
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static string FormatVisualDisplayName(string visualLookupName)
+        {
+            var displayName = visualLookupName.Replace("_", " ");
+            displayName = Regex.Replace(displayName, "([a-z])([A-Z])", "$1 $2");
+            return Regex.Replace(displayName, @"\s+", " ").Trim();
         }
 
         private bool TryResolvePortraitSprite(string combatantId, string visualLookupName, out Sprite portraitSprite)
         {
-            if (_iconCache.TryGetValue(visualLookupName, out portraitSprite))
+            if (!string.IsNullOrEmpty(visualLookupName) &&
+                _iconCache.TryGetValue(visualLookupName, out portraitSprite))
             {
                 return true;
             }
