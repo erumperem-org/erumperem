@@ -82,17 +82,27 @@ public static class SkillCombatHudStatsBuilder
 
         foreach (var effect in effects)
         {
-            if (!string.Equals(effect.EffectScope, "AllAllies", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(effect.EffectScope, "AllAllies", StringComparison.OrdinalIgnoreCase))
             {
+                var sameSideCombatants = actor.Position.Side == Side.Allies
+                    ? battleState.Allies
+                    : battleState.Enemies;
+
+                var livingCombatantsOnSameSide = sameSideCombatants.Count(combatant => !combatant.Health.IsDead);
+                targetCount = Math.Max(targetCount, livingCombatantsOnSameSide);
                 continue;
             }
 
-            var sameSideCombatants = actor.Position.Side == Side.Allies
-                ? battleState.Allies
-                : battleState.Enemies;
+            if (string.Equals(effect.EffectScope, "AllEnemies", StringComparison.OrdinalIgnoreCase))
+            {
+                var oppositeSideCombatants = actor.Position.Side == Side.Allies
+                    ? battleState.Enemies
+                    : battleState.Allies;
 
-            var livingCombatantsOnSide = sameSideCombatants.Count(combatant => !combatant.Health.IsDead);
-            targetCount = Math.Max(targetCount, livingCombatantsOnSide);
+                var livingCombatantsOnOppositeSide =
+                    oppositeSideCombatants.Count(combatant => !combatant.Health.IsDead);
+                targetCount = Math.Max(targetCount, livingCombatantsOnOppositeSide);
+            }
         }
     }
 }

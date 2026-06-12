@@ -118,6 +118,8 @@ namespace Erumperem.Combat
         private readonly Dictionary<string, Transform> _views = new(StringComparer.Ordinal);
         private readonly HashSet<string> _damageFeedbackBusy = new(StringComparer.Ordinal);
         private bool _presentationBusy;
+        private string _ongoingPresentationActorCombatantId = string.Empty;
+        private string _ongoingPresentationTargetCombatantId = string.Empty;
         private Transform _actionRockTransform;
         private Vector3 _actionRockBaseLocalPosition;
         private Combatant _selectedEnemyTarget;
@@ -134,6 +136,24 @@ namespace Erumperem.Combat
         public Combatant CurrentSelectedEnemy => _selectedEnemyTarget;
 
         public bool IsBattleOngoing => !_battleEnded && _state != null;
+
+        public bool IsActionPresentationOngoing => _presentationBusy && !_battleEnded;
+
+        public bool TryGetOngoingActionPresentationCombatantIds(
+            out string actorCombatantId,
+            out string targetCombatantId)
+        {
+            if (!_presentationBusy)
+            {
+                actorCombatantId = string.Empty;
+                targetCombatantId = string.Empty;
+                return false;
+            }
+
+            actorCombatantId = _ongoingPresentationActorCombatantId;
+            targetCombatantId = _ongoingPresentationTargetCombatantId;
+            return true;
+        }
 
         public Transform TryGetUnitVisualRoot(string combatantId)
         {
@@ -909,9 +929,11 @@ namespace Erumperem.Combat
                 }
 
                 _sessionHub?.RaiseActionPresentationStarted();
+                _ongoingPresentationActorCombatantId = action.Actor.Identity.Id;
+                _ongoingPresentationTargetCombatantId = action.Target.Identity.Id;
                 _sessionHub?.RaiseCombatSkillExecutionPresentationStarted(
-                    action.Actor.Identity.Id,
-                    action.Target.Identity.Id);
+                    _ongoingPresentationActorCombatantId,
+                    _ongoingPresentationTargetCombatantId);
                 enemyActorVisual?.NotifyAttackPresentationBegin(play);
                 var rockDuration = Mathf.Max(0f, play + postPause);
 
@@ -993,6 +1015,8 @@ namespace Erumperem.Combat
             {
                 _sessionHub?.RaiseCinemachineFocusEnded();
                 StopActorActionRock();
+                _ongoingPresentationActorCombatantId = string.Empty;
+                _ongoingPresentationTargetCombatantId = string.Empty;
                 _presentationBusy = false;
                 onStepComplete?.Invoke();
                 _sessionHub?.RaiseTurnEnded();

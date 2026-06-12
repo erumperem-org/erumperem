@@ -18080,6 +18080,7 @@ GameObject:
   - component: {fileID: 1677878620781844739}
   - component: {fileID: 8100000000000000001}
   - component: {fileID: 8100000000000000002}
+  - component: {fileID: 8100000000000000003}
   - component: {fileID: 267978060972295176}
   m_Layer: 0
   m_Name: CombatLogic
@@ -18213,6 +18214,26 @@ MonoBehaviour:
   currentTurnMarkerLocalOffset: {x: 0, y: -0.9, z: 0}
   currentTurnMarkerBaseEuler: {x: 90, y: 0, z: 0}
   currentTurnMarkerZSpinDegreesPerSecond: 0
+--- !u!114 &8100000000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6656784344468029839}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4e8f2a19d3b4e6f9a1c0d5e7b823456, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatEnemySelectionMarkerBinder
+  combatSession: {fileID: 7103085520931988737}
+  sessionHub: {fileID: 8100000000000000001}
+  skillButtonBarUIManager: {fileID: 5213722406700642896}
+  enemySelectionMarkerPrefab: {fileID: 6230526980531908440, guid: f24da76e8f8dab540a46c0f8f09a11b3, type: 3}
+  markerLocalOffset: {x: 0, y: -0.9, z: 0}
+  markerBaseEuler: {x: 90, y: 0, z: 0}
+  markerSpinZDegreesPerSecond: 0
+  worldRaycastDistance: 200
 --- !u!114 &267978060972295176
 MonoBehaviour:
   m_ObjectHideFlags: 0
