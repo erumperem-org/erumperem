@@ -22,6 +22,8 @@ namespace Erumperem.Combat
         private CharacterSkillButtonsRowView _skillsRowView;
         private string _activeSkillRowCombatantId;
 
+        public CharacterSkillButtonsRowView SkillsRowView => _skillsRowView;
+
         private void Awake()
         {
             TryResolveSkillsPanelParentIfMissing();

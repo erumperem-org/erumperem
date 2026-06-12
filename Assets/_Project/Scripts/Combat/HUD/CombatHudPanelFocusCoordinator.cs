@@ -33,15 +33,40 @@ namespace Erumperem.Combat.HealthBars
 
         private void OnEnable()
         {
+            ResolveCombatServices();
+            SubscribeToSessionHubIfAvailable();
+            TryCatchUpWithActiveCombatSession();
+        }
+
+        private void SubscribeToSessionHubIfAvailable()
+        {
             if (_sessionHub == null)
             {
                 return;
             }
 
+            _sessionHub.OnCombatSessionReadyForUi -= HandleCombatSessionReady;
+            _sessionHub.OnCombatSessionClosed -= HandleCombatSessionClosed;
+            _sessionHub.OnCombatSkillExecutionPresentationStarted -= HandleSkillPresentationStarted;
+            _sessionHub.OnActionPresentationEnded -= HandleActionPresentationEnded;
             _sessionHub.OnCombatSessionReadyForUi += HandleCombatSessionReady;
             _sessionHub.OnCombatSessionClosed += HandleCombatSessionClosed;
             _sessionHub.OnCombatSkillExecutionPresentationStarted += HandleSkillPresentationStarted;
             _sessionHub.OnActionPresentationEnded += HandleActionPresentationEnded;
+        }
+
+        private void TryCatchUpWithActiveCombatSession()
+        {
+            if (_combatSession != null)
+            {
+                return;
+            }
+
+            var activeCombatSession = FindFirstObjectByType<CombatPrototypeController>();
+            if (activeCombatSession != null && activeCombatSession.IsBattleOngoing)
+            {
+                HandleCombatSessionReady(activeCombatSession);
+            }
         }
 
         private void OnDisable()

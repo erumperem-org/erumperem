@@ -13,6 +13,13 @@ public static class SkillDamagePreviewCalculator
     public static bool HasDirectDamage(SkillDefinition skill) =>
         skill.BaseDamage.Min > 0 || skill.BaseDamage.Max > 0;
 
+    public static double ComputeEffectiveCriticalChanceFraction(
+        BattleState state,
+        Combatant actor,
+        Combatant target,
+        SkillDefinition skill) =>
+        EffectiveCritChance(state, actor, target, skill);
+
     public static bool TryCompute(
         BattleState state,
         Combatant actor,

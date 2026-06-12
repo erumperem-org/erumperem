@@ -11,6 +11,7 @@ using UnityEngine.UI;
 
 namespace Erumperem.Combat.HealthBars
 {
+    [DefaultExecutionOrder(25)]
     [RequireComponent(typeof(HealthBarHudView))]
     public sealed class CombatHoverHealthBarBinder : MonoBehaviour
     {
@@ -143,13 +144,36 @@ namespace Erumperem.Combat.HealthBars
 
         private void OnEnable()
         {
+            ResolveCombatServices();
+            SubscribeToSessionHubIfAvailable();
+            TryCatchUpWithActiveCombatSession();
+        }
+
+        private void SubscribeToSessionHubIfAvailable()
+        {
             if (_sessionHub == null)
             {
                 return;
             }
 
+            _sessionHub.OnCombatSessionReadyForUi -= HandleCombatSessionReady;
+            _sessionHub.OnCombatSessionClosed -= HandleCombatSessionClosed;
             _sessionHub.OnCombatSessionReadyForUi += HandleCombatSessionReady;
             _sessionHub.OnCombatSessionClosed += HandleCombatSessionClosed;
+        }
+
+        private void TryCatchUpWithActiveCombatSession()
+        {
+            if (_activeCombatSession != null)
+            {
+                return;
+            }
+
+            var activeCombatSession = FindFirstObjectByType<CombatPrototypeController>();
+            if (activeCombatSession != null && activeCombatSession.IsBattleOngoing)
+            {
+                HandleCombatSessionReady(activeCombatSession);
+            }
         }
 
         private void OnDisable()

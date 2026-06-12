@@ -15,18 +15,22 @@ namespace Erumperem.Combat
     [DisallowMultipleComponent]
     public sealed class CharacterSkillButtonsRowView : MonoBehaviour
     {
-        private const int MaxSlots = 6;
+        public const int MaxVisibleSlots = 6;
+        private const int MaxSlots = MaxVisibleSlots;
         private const float RowIntroScaleFrom = 0.94f;
         private const float RowIntroDuration = 0.2f;
 
         private readonly SkillButtonPanelView[] _slots = new SkillButtonPanelView[MaxSlots];
         private string _combatantId = string.Empty;
+        private int? _hoveredZeroBasedSlotIndex;
         private CombatSkillButtonBarUIManager _barManager;
         private GameObject _skillButtonCombatPrefab;
         private SkillVisualCatalog _skillVisualCatalog;
         private RectTransform _rowRect;
 
         public string CombatantId => _combatantId;
+
+        public int? HoveredZeroBasedSlotIndex => _hoveredZeroBasedSlotIndex;
 
         public void Build(
             CombatSkillButtonBarUIManager barManager,
@@ -66,7 +70,24 @@ namespace Erumperem.Combat
                         () => _barManager.NotifySkillBarSlotSelected(_combatantId, indexCopy));
                 }
 
+                var capturedSlotIndex = slotIndex;
+                slot.PointerEntered += _ => HandleSkillSlotPointerEntered(capturedSlotIndex);
+                slot.PointerExited += _ => HandleSkillSlotPointerExited(capturedSlotIndex);
+
                 _slots[slotIndex] = slot;
+            }
+        }
+
+        private void HandleSkillSlotPointerEntered(int zeroBasedSlotIndex)
+        {
+            _hoveredZeroBasedSlotIndex = zeroBasedSlotIndex;
+        }
+
+        private void HandleSkillSlotPointerExited(int zeroBasedSlotIndex)
+        {
+            if (_hoveredZeroBasedSlotIndex == zeroBasedSlotIndex)
+            {
+                _hoveredZeroBasedSlotIndex = null;
             }
         }
 
@@ -75,6 +96,7 @@ namespace Erumperem.Combat
 
         public void HideAllSlots()
         {
+            _hoveredZeroBasedSlotIndex = null;
             for (var slotIndex = 0; slotIndex < MaxSlots; slotIndex++)
             {
                 _slots[slotIndex]?.SetVisible(false);
