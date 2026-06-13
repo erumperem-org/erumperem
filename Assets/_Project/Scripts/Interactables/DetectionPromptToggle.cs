@@ -16,6 +16,9 @@ public class DetectionPromptToggle : MonoBehaviour
 {
     [SerializeField] private GameObject promptRoot;
     [SerializeField] private bool faceMainCamera = true;
+    [SerializeField] private Vector3 promptOffsetAboveColliderTop = new(0f, 0.25f, 0f);
+
+    private const float FallbackPromptLocalHeight = 2f;
 
     private Detector _localDetector;
     private DetectionReceiver _detectionReceiver;
@@ -35,6 +38,7 @@ public class DetectionPromptToggle : MonoBehaviour
 
         if (promptRoot != null)
         {
+            ApplyPromptAnchorLocalPosition();
             promptRoot.SetActive(false);
         }
     }
@@ -47,7 +51,7 @@ public class DetectionPromptToggle : MonoBehaviour
             _localDetector.OnDetectorExit += HandleColliderExited;
         }
 
-        if (_detectionReceiver != null)
+        if (_detectionReceiver != null && _detectionReceiver is not PlayableDetectionReceiver)
         {
             _detectionReceiver.OnEnter += HandleDetectorEnteredThisObject;
             _detectionReceiver.OnExit += HandleDetectorExitedThisObject;
@@ -62,7 +66,7 @@ public class DetectionPromptToggle : MonoBehaviour
             _localDetector.OnDetectorExit -= HandleColliderExited;
         }
 
-        if (_detectionReceiver != null)
+        if (_detectionReceiver != null && _detectionReceiver is not PlayableDetectionReceiver)
         {
             _detectionReceiver.OnEnter -= HandleDetectorEnteredThisObject;
             _detectionReceiver.OnExit -= HandleDetectorExitedThisObject;
@@ -72,9 +76,31 @@ public class DetectionPromptToggle : MonoBehaviour
         SetPromptActive(false);
     }
 
+    /// <summary>
+    /// Chamado pelo <see cref="PlayerDetectionSystem"/> quando o Main entra na área de personagem.
+    /// </summary>
+    public void RegisterPlayerProximity()
+    {
+        _collidersInsideCount++;
+        SetPromptActive(true);
+    }
+
+    /// <summary>
+    /// Chamado pelo <see cref="PlayerDetectionSystem"/> quando o Main sai da área de personagem.
+    /// </summary>
+    public void UnregisterPlayerProximity()
+    {
+        _collidersInsideCount = Mathf.Max(0, _collidersInsideCount - 1);
+
+        if (_collidersInsideCount == 0)
+        {
+            SetPromptActive(false);
+        }
+    }
+
     private void LateUpdate()
     {
-        if (!faceMainCamera || promptRoot == null || !promptRoot.activeSelf)
+        if (!faceMainCamera || promptRoot == null || !promptRoot.activeInHierarchy)
         {
             return;
         }
@@ -85,7 +111,11 @@ public class DetectionPromptToggle : MonoBehaviour
             return;
         }
 
-        promptRoot.transform.rotation = mainCamera.transform.rotation;
+        var promptTransform = promptRoot.transform;
+        var cameraTransform = mainCamera.transform;
+        promptTransform.rotation = Quaternion.LookRotation(
+            promptTransform.position - cameraTransform.position,
+            cameraTransform.up);
     }
 
     private void HandleColliderEntered(Collider otherCollider, string shapeLabel, int shapeIndex)
@@ -106,12 +136,22 @@ public class DetectionPromptToggle : MonoBehaviour
 
     private void HandleDetectorEnteredThisObject(Detector detector, string shapeLabel, int shapeIndex)
     {
+        if (!ShouldShowPromptForDetection(detector, shapeLabel))
+        {
+            return;
+        }
+
         _collidersInsideCount++;
         SetPromptActive(true);
     }
 
     private void HandleDetectorExitedThisObject(Detector detector, string shapeLabel, int shapeIndex)
     {
+        if (!ShouldShowPromptForDetection(detector, shapeLabel))
+        {
+            return;
+        }
+
         _collidersInsideCount = Mathf.Max(0, _collidersInsideCount - 1);
 
         if (_collidersInsideCount == 0)
@@ -120,13 +160,124 @@ public class DetectionPromptToggle : MonoBehaviour
         }
     }
 
+    private bool ShouldShowPromptForDetection(Detector detector, string shapeLabel)
+    {
+        if (_detectionReceiver is PlayableDetectionReceiver)
+        {
+            return detector != null
+                   && detector.gameObject.CompareTag("Player")
+                   && shapeLabel == "CharactersDetectionArea";
+        }
+
+        return true;
+    }
+
     private void SetPromptActive(bool isActive)
     {
-        if (promptRoot == null || promptRoot.activeSelf == isActive)
+        if (promptRoot == null)
+        {
+            return;
+        }
+
+        if (isActive)
+        {
+            EnsurePromptHierarchyActive();
+            ApplyPromptAnchorLocalPosition();
+        }
+
+        if (promptRoot.activeSelf == isActive)
         {
             return;
         }
 
         promptRoot.SetActive(isActive);
+
+        if (isActive)
+        {
+            EnsurePromptTextChildrenActive();
+        }
+    }
+
+    private void ApplyPromptAnchorLocalPosition()
+    {
+        if (promptRoot == null)
+        {
+            return;
+        }
+
+        var promptTransform = promptRoot.transform;
+        if (promptTransform.parent != transform)
+        {
+            return;
+        }
+
+        var localTopY = TryGetLocalColliderTopY(out var colliderTopLocalY)
+            ? colliderTopLocalY
+            : FallbackPromptLocalHeight;
+
+        var anchoredLocalPosition = new Vector3(
+            promptOffsetAboveColliderTop.x,
+            localTopY + promptOffsetAboveColliderTop.y,
+            promptOffsetAboveColliderTop.z);
+
+        if (promptTransform is RectTransform promptRectTransform)
+        {
+            promptRectTransform.localPosition = anchoredLocalPosition;
+            promptRectTransform.anchoredPosition = new Vector2(
+                anchoredLocalPosition.x,
+                anchoredLocalPosition.y);
+        }
+        else
+        {
+            promptTransform.localPosition = anchoredLocalPosition;
+        }
+    }
+
+    private bool TryGetLocalColliderTopY(out float localTopY)
+    {
+        localTopY = 0f;
+
+        var characterColliders = GetComponentsInChildren<Collider>(includeInactive: false);
+        var foundCollider = false;
+
+        foreach (var characterCollider in characterColliders)
+        {
+            if (characterCollider == null || !characterCollider.enabled || characterCollider.isTrigger)
+            {
+                continue;
+            }
+
+            var colliderTopLocalY = transform.InverseTransformPoint(characterCollider.bounds.max).y;
+            localTopY = foundCollider ? Mathf.Max(localTopY, colliderTopLocalY) : colliderTopLocalY;
+            foundCollider = true;
+        }
+
+        return foundCollider;
+    }
+
+    private void EnsurePromptHierarchyActive()
+    {
+        var canvas = promptRoot.GetComponent<Canvas>();
+        if (canvas == null)
+        {
+            canvas = promptRoot.GetComponentInParent<Canvas>(includeInactive: true);
+        }
+
+        if (canvas != null && !canvas.gameObject.activeSelf)
+        {
+            canvas.gameObject.SetActive(true);
+        }
+    }
+
+    private void EnsurePromptTextChildrenActive()
+    {
+        var textComponents = promptRoot.GetComponentsInChildren<TMPro.TMP_Text>(includeInactive: true);
+        foreach (var textComponent in textComponents)
+        {
+            if (!textComponent.gameObject.activeSelf)
+            {
+                textComponent.gameObject.SetActive(true);
+            }
+        }
     }
 }

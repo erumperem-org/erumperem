@@ -28,8 +28,30 @@ namespace Player
 
         // ── Unity lifecycle ───────────────────────────────────────────────
 
-        private void OnEnable() => _inputReader.OnTorch += Toggle;
-        private void OnDisable() => _inputReader.OnTorch -= Toggle;
+        private void Awake()
+        {
+            if (_animationController == null)
+            {
+                _animationController = GetComponentInChildren<PlayableAnimationController>();
+            }
+
+            if (_inputReader == null)
+            {
+                _inputReader = GetComponent<PlayerInputReader>();
+            }
+        }
+
+        private void OnEnable()
+        {
+            if (_inputReader == null) return;
+            _inputReader.OnTorch += Toggle;
+        }
+
+        private void OnDisable()
+        {
+            if (_inputReader == null) return;
+            _inputReader.OnTorch -= Toggle;
+        }
 
         // ── Lógica ───────────────────────────────────────────────────────
 
@@ -46,7 +68,7 @@ namespace Player
                 itens.SetActive(!_isOn);
             }
             _torchObject.SetActive(_isOn);
-            _animationController.SetIsTorchOn(_isOn);
+            _animationController?.SetIsTorchOn(_isOn);
         }
     }
 }

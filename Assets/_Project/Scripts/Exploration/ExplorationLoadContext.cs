@@ -122,14 +122,24 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
     private void Start()
     {
-        if (SceneManager.GetActiveScene().name == _explorationSceneName)
+        if (IsConfiguredExplorationScene(SceneManager.GetActiveScene()))
             TryRestoreOnSceneReady();
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (scene.name == _explorationSceneName)
+        if (IsConfiguredExplorationScene(scene))
             StartCoroutine(RestoreNextFrame());
+    }
+
+    private bool IsConfiguredExplorationScene(Scene scene)
+    {
+        if (!scene.IsValid())
+        {
+            return false;
+        }
+
+        return string.Equals(scene.name, _explorationSceneName, StringComparison.Ordinal);
     }
 
     // ── API pública ───────────────────────────────────────────────────────
@@ -341,6 +351,11 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     {
         if (_defaultSetups.Count == 0)
         {
+            TryBuildFallbackDefaultSetups();
+        }
+
+        if (_defaultSetups.Count == 0)
+        {
             LoggerService.PrintLogMessage(LogLevel.Warning,
                 "[LOAD] Nenhum DefaultCharacterSetup configurado no Inspector.", LogCategory.Player);
             return;
@@ -373,6 +388,52 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 $"[LOAD] '{setup.Character.CharacterName}' (padrão) → {setup.InitialState}",
                 LogCategory.Player);
         }
+    }
+
+    private void TryBuildFallbackDefaultSetups()
+    {
+        if (!TryGetManager())
+        {
+            return;
+        }
+
+        foreach (var playableCharacter in _manager.Playables)
+        {
+            if (playableCharacter == null)
+            {
+                continue;
+            }
+
+            _defaultSetups.Add(new DefaultCharacterSetup
+            {
+                Character = playableCharacter,
+                InitialState = ResolveFallbackInitialState(playableCharacter.CharacterName),
+                MaxHealth = ResolveFallbackMaxHealth(playableCharacter.CharacterName),
+                StartingHealth = 0f,
+            });
+        }
+    }
+
+    private static PlayableCharacterState ResolveFallbackInitialState(string characterName)
+    {
+        return characterName switch
+        {
+            "Wulfric" => PlayableCharacterState.Main,
+            "Girl" => PlayableCharacterState.Companion,
+            "Buck" => PlayableCharacterState.Resting,
+            _ => PlayableCharacterState.Resting,
+        };
+    }
+
+    private static float ResolveFallbackMaxHealth(string characterName)
+    {
+        return characterName switch
+        {
+            "Wulfric" => 100f,
+            "Buck" => 200f,
+            "Girl" => 30f,
+            _ => 100f,
+        };
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

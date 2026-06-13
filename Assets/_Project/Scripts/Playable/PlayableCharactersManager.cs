@@ -1,7 +1,8 @@
-using System;
-using System.Collections.Generic;
 using Player;
 using Services.DebugUtilities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -11,6 +12,7 @@ using UnityEngine;
 ///   - <c>Playables</c>: expõe a lista gerenciada como <c>IReadOnlyList</c>
 ///     para que <see cref="ExplorationLoadContext"/> não precise de reflexão.
 /// </summary>
+[DefaultExecutionOrder(-100)]
 public sealed class PlayableCharactersManager : MonoBehaviour
 {
     [SerializeField] private List<PlayableCharacter> _playables;
@@ -27,10 +29,32 @@ public sealed class PlayableCharactersManager : MonoBehaviour
 
     private readonly PlayableStateTransitioner _transitioner = new();
 
+    private void Awake()
+    {
+        EnsureSceneReferencesResolved();
+    }
+
+    private void EnsureSceneReferencesResolved()
+    {
+        if (_playables == null || _playables.Count == 0)
+        {
+            _playables = FindObjectsByType<PlayableCharacter>(FindObjectsInactive.Exclude, FindObjectsSortMode.None)
+                .OrderBy(playableCharacter => playableCharacter.CharacterName, StringComparer.Ordinal)
+                .ToList();
+        }
+
+        if (_inputReader == null)
+        {
+            _inputReader = FindFirstObjectByType<PlayerInputReader>();
+        }
+    }
+
     // ── API pública ───────────────────────────────────────────────────────
 
     public void SetState(PlayableCharacterState newState, PlayableCharacter character)
     {
+        EnsureSceneReferencesResolved();
+
         if (!_playables.Contains(character))
             throw new InvalidOperationException(
                 $"[PlayableCharactersManager] '{character.CharacterName}' não pertence à lista gerenciada.");

@@ -84,9 +84,13 @@ namespace Systems.NPC.Enemy
 
         public void Activate()
         {
-            transform.position = _config.SpawnPoint;
+            Vector3 spawnPoint = _config.SpawnPoint;
+            transform.position = spawnPoint;
             _movementController.NavMesh.EnableAgent(_adapter);
-            _movementController.NavMesh.Warp(_adapter, _config.SpawnPoint);
+
+            if (!_movementController.NavMesh.Warp(_adapter, spawnPoint))
+                _movementController.NavMesh.TeleportToNearestNavMeshPoint(_adapter, spawnPoint);
+
             _movementController.NavMesh.ResetAgent(_adapter);
 
             _detectionHandler.StartPolling();

@@ -30,6 +30,11 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
         _detector = GetComponent<Detector>();
         _detector.OnDetectorEnter += OnEnter;
         _detector.OnDetectorExit += OnExit;
+
+        if (_animationController == null)
+        {
+            _animationController = GetComponentInChildren<PlayableAnimationController>();
+        }
     }
 
     private void OnDisable() => StopScan();
@@ -105,19 +110,60 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
 
     private void OnEnter(Collider col, string label, int _)
     {
+        TryToggleCharacterInteractPrompt(col, label, shouldShow: true);
+
         if (!IsRelevant(label)) return;
-        var interactable = col.GetComponent<Interactable>();
+
+        var interactable = ResolveInteractable(col);
         if (interactable == null || _available.Contains(interactable)) return;
+
         _available.Add(interactable);
         LoggerService.PrintLogMessage(LogLevel.Debug, $"Interactable [{col.gameObject.name}] found");
     }
 
     private void OnExit(Collider col, string label, int _)
     {
+        TryToggleCharacterInteractPrompt(col, label, shouldShow: false);
+
         if (!IsRelevant(label)) return;
-        var interactable = col.GetComponent<Interactable>();
+
+        var interactable = ResolveInteractable(col);
         if (interactable != null) _available.Remove(interactable);
+
         LoggerService.PrintLogMessage(LogLevel.Debug, $"Interactable [{col.gameObject.name}] lost");
+    }
+
+    private static void TryToggleCharacterInteractPrompt(Collider collider, string shapeLabel, bool shouldShow)
+    {
+        if (shapeLabel != "CharactersDetectionArea")
+        {
+            return;
+        }
+
+        var promptToggle = collider.GetComponentInParent<DetectionPromptToggle>();
+        if (promptToggle == null)
+        {
+            return;
+        }
+
+        if (shouldShow)
+        {
+            promptToggle.RegisterPlayerProximity();
+        }
+        else
+        {
+            promptToggle.UnregisterPlayerProximity();
+        }
+    }
+
+    private static Interactable ResolveInteractable(Collider collider)
+    {
+        if (collider.TryGetComponent(out Interactable interactableOnCollider))
+        {
+            return interactableOnCollider;
+        }
+
+        return collider.GetComponentInParent<Interactable>();
     }
 
     private static bool IsRelevant(string label) =>
@@ -127,6 +173,8 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
 
     private void TriggerInteractionAnimation(Interactable interactable)
     {
+        if (_animationController == null) return;
+
         switch (interactable)
         {
             case DoorInteractable door:

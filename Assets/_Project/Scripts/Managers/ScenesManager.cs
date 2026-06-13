@@ -11,7 +11,9 @@ public class ScenesManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Destroy(gameObject);
+            // Destrói só este componente para não levar junto outros scripts
+            // no mesmo GameObject (ex.: SceneTransitionHandler no CombatScene).
+            Destroy(this);
             return;
         }
         Instance = this;
@@ -55,7 +57,7 @@ public class ScenesManager : MonoBehaviour
     public void LoadSceneByName(string sceneName)
     {
         Time.timeScale = 1f;
-        SceneManager.LoadScene(sceneName);
+        SceneTransitionHandler.LoadScene(sceneName);
     }
 
     public void QuitGame()

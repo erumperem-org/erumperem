@@ -49,25 +49,26 @@ namespace Systems.NPC.Spawner
 
         private void Awake()
         {
+            ResolveDependencies();
+            ResolveSpawnPointsIfNeeded();
+            RebuildSelector();
+
             if (_builder == null) Debug.LogError("[NpcEnemySpawner] Builder não configurado!", this);
             if (_pool    == null) Debug.LogError("[NpcEnemySpawner] Pool não configurada!",    this);
-
-            _selector = BuildSelector();
         }
 
         private void OnEnable()
         {
             if (_pool != null) _pool.OnNpcReturned += HandleNpcReturned;
+
+            if (_autoStart && !_isRunning)
+                StartSpawning();
         }
 
         private void OnDisable()
         {
             if (_pool != null) _pool.OnNpcReturned -= HandleNpcReturned;
-        }
-
-        private void Start()
-        {
-            if (_autoStart) StartSpawning();
+            StopSpawning();
         }
 
         private void OnDestroy() => StopSpawning();
@@ -94,14 +95,19 @@ namespace Systems.NPC.Spawner
 
         // ── Respawn reativo ───────────────────────────────────────────────
 
-        private void HandleNpcReturned() => StartCoroutine(RespawnAfterDelay());
+        private void HandleNpcReturned()
+        {
+            if (!isActiveAndEnabled) return;
+            StartCoroutine(RespawnAfterDelay());
+        }
 
         private IEnumerator RespawnAfterDelay()
         {
             if (_respawnDelay > 0f)
                 yield return new WaitForSeconds(_respawnDelay);
 
-            if (_pool.HasAvailable)
+            if (!_isRunning || !isActiveAndEnabled) yield break;
+            if (_pool != null && _pool.HasAvailable)
                 SpawnOne();
         }
 
@@ -109,12 +115,32 @@ namespace Systems.NPC.Spawner
 
         private IEnumerator SpawnLoopCoroutine()
         {
-            ExecuteSpawnBatch();
+            yield return null;
+
+            ResolveSpawnPointsIfNeeded();
+            RebuildSelector();
+            SpawnOneAtEachSpawnPoint();
 
             while (_isRunning)
             {
                 yield return new WaitForSeconds(_spawnInterval);
                 if (_isRunning) ExecuteSpawnBatch();
+            }
+        }
+
+        /// <summary>
+        /// Preenche cada marcador de spawn com um NPC ao iniciar o jogo.
+        /// </summary>
+        private void SpawnOneAtEachSpawnPoint()
+        {
+            if (!_isRunning || !isActiveAndEnabled) return;
+            if (_builder == null || _pool == null) return;
+
+            Transform[] validSpawnPoints = FilterValidSpawnPoints(_spawnPoints);
+            foreach (Transform spawnPoint in validSpawnPoints)
+            {
+                if (!_pool.HasAvailable) break;
+                _builder.BuildAt(spawnPoint.position);
             }
         }
 
@@ -135,6 +161,7 @@ namespace Systems.NPC.Spawner
 
         private void ExecuteSpawnBatch()
         {
+            if (!_isRunning || !isActiveAndEnabled) return;
             if (_builder == null || _pool == null) return;
 
             int toSpawn = Mathf.Min(_spawnBatchSize, _pool.AvailableCount);
@@ -164,16 +191,98 @@ namespace Systems.NPC.Spawner
             }
         }
 
+        // ── Resolução de dependências ─────────────────────────────────────
+
+        private void ResolveDependencies()
+        {
+            Transform enemySystemRoot = transform.parent;
+            if (enemySystemRoot == null) return;
+
+            if (_builder == null)
+                _builder = enemySystemRoot.GetComponentInChildren<NpcEnemyBuilder>(true);
+
+            if (_pool == null)
+                _pool = enemySystemRoot.GetComponentInChildren<NpcEnemyPool>(true);
+        }
+
+        private void ResolveSpawnPointsIfNeeded()
+        {
+            if (FilterValidSpawnPoints(_spawnPoints).Length > 0)
+                return;
+
+            Transform enemySystemRoot = transform.parent;
+            if (enemySystemRoot == null) return;
+
+            Transform spawnPointsParent = enemySystemRoot.Find("Enemy Spawn Points");
+            if (spawnPointsParent == null) return;
+
+            var discoveredSpawnPoints = new System.Collections.Generic.List<Transform>();
+            CollectSpawnMarkers(spawnPointsParent, discoveredSpawnPoints);
+
+            if (discoveredSpawnPoints.Count == 0) return;
+
+            _spawnPoints = discoveredSpawnPoints.ToArray();
+        }
+
+        private static void CollectSpawnMarkers(Transform parent, System.Collections.Generic.List<Transform> results)
+        {
+            foreach (Transform child in parent)
+            {
+                if (IsLeafSpawnMarker(child))
+                    results.Add(child);
+
+                if (child.childCount > 0)
+                    CollectSpawnMarkers(child, results);
+            }
+        }
+
+        private void RebuildSelector() => _selector = BuildSelector();
+
         // ── Factory do selector ───────────────────────────────────────────
 
         private ISpawnPointSelector BuildSelector()
         {
-            if (_spawnPoints == null || _spawnPoints.Length == 0)
+            Transform[] validSpawnPoints = FilterValidSpawnPoints(_spawnPoints);
+            if (validSpawnPoints.Length == 0)
                 return null;
 
             return _playerTransform != null
-                ? new PlayerAwareSpawnPointSelector(_spawnPoints, _playerTransform, _playerVisionRadius)
-                : (ISpawnPointSelector) new RoundRobinSpawnPointSelector(_spawnPoints);
+                ? new PlayerAwareSpawnPointSelector(validSpawnPoints, _playerTransform, _playerVisionRadius)
+                : (ISpawnPointSelector) new RoundRobinSpawnPointSelector(validSpawnPoints);
+        }
+
+        /// <summary>
+        /// Ignora entradas nulas e transforms-pai (ex.: "Enemy Spawn Points")
+        /// que não são marcadores <c>ExplorationEnemySpawnPoint</c>.
+        /// </summary>
+        private static Transform[] FilterValidSpawnPoints(Transform[] spawnPoints)
+        {
+            if (spawnPoints == null || spawnPoints.Length == 0)
+                return System.Array.Empty<Transform>();
+
+            var validSpawnPoints = new System.Collections.Generic.List<Transform>(spawnPoints.Length);
+            foreach (Transform spawnPoint in spawnPoints)
+            {
+                if (spawnPoint == null) continue;
+                if (!IsLeafSpawnMarker(spawnPoint)) continue;
+                validSpawnPoints.Add(spawnPoint);
+            }
+
+            return validSpawnPoints.ToArray();
+        }
+
+        private static bool IsLeafSpawnMarker(Transform spawnPoint)
+        {
+            if (spawnPoint.name.Contains("ExplorationEnemySpawnPoint"))
+                return true;
+
+            foreach (Transform child in spawnPoint)
+            {
+                if (child.name.Contains("ExplorationEnemySpawnPoint"))
+                    return false;
+            }
+
+            return spawnPoint.childCount == 0;
         }
 
         // ── Gizmos ────────────────────────────────────────────────────────

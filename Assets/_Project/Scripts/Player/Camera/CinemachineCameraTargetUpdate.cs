@@ -16,10 +16,28 @@ public sealed class CinemachineCameraTargetUpdate : MonoBehaviour
     private void Awake()
     {
         _camera = GetComponent<CinemachineCamera>();
+        if (_manager == null)
+        {
+            _manager = FindFirstObjectByType<PlayableCharactersManager>();
+        }
+
+        if (_manager == null)
+        {
+            Debug.LogError("[CinemachineCameraTargetUpdate] PlayableCharactersManager não encontrado na cena.", this);
+            enabled = false;
+            return;
+        }
+
         _manager.OnMainChanged += OnMainChanged;
     }
 
-    private void OnDestroy() => _manager.OnMainChanged -= OnMainChanged;
+    private void OnDestroy()
+    {
+        if (_manager != null)
+        {
+            _manager.OnMainChanged -= OnMainChanged;
+        }
+    }
 
     private void OnMainChanged(IPlayableCharacter main)
     {

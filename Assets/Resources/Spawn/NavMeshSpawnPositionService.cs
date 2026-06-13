@@ -37,6 +37,9 @@ namespace Services.Spawning
         /// <inheritdoc/>
         public Vector3 GetPosition(Vector3 center, float radius)
         {
+            if (_navMesh == null)
+                return Vector3.zero;
+
             Vector3 candidate = center + Random.insideUnitSphere * radius;
             candidate.y = center.y; // mantém altura de referência antes do sample
 
@@ -52,6 +55,12 @@ namespace Services.Spawning
         /// <inheritdoc/>
         public bool TryGetPosition(Vector3 center, float radius, out Vector3 result)
         {
+            if (_navMesh == null)
+            {
+                result = Vector3.zero;
+                return false;
+            }
+
             Vector3 candidate = center + Random.insideUnitSphere * radius;
             candidate.y = center.y;
 

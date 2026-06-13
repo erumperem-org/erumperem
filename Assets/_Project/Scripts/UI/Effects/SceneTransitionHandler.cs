@@ -93,9 +93,15 @@ public class SceneTransitionHandler : MonoBehaviour
 
     IEnumerator FadeIn()
     {
+        if (fadeCanvasGroup == null)
+            yield break;
+
         fadeCanvasGroup.alpha = 1f;
 
         yield return null;
+
+        if (fadeCanvasGroup == null)
+            yield break;
 
         yield return fadeCanvasGroup
             .DOFade(0f, fadeDuration)
@@ -104,6 +110,8 @@ public class SceneTransitionHandler : MonoBehaviour
 
     public void FadeOut(float duration = -1f)
     {
+        if (fadeCanvasGroup == null) return;
+
         float finalDuration = duration >= 0 ? duration : fadeDuration;
 
         fadeCanvasGroup.DOFade(1f, finalDuration);
@@ -180,9 +188,12 @@ public class SceneTransitionHandler : MonoBehaviour
 
     IEnumerator LoadSceneWithFade(string sceneName)
     {
-        yield return fadeCanvasGroup
-            .DOFade(1f, fadeDuration)
-            .WaitForCompletion();
+        if (fadeCanvasGroup != null)
+        {
+            yield return fadeCanvasGroup
+                .DOFade(1f, fadeDuration)
+                .WaitForCompletion();
+        }
 
         AsyncOperation asyncLoad =
             SceneManager.LoadSceneAsync(sceneName);
