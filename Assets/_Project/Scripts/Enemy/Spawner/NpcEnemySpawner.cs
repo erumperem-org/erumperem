@@ -39,6 +39,10 @@ namespace Systems.NPC.Spawner
 
         // ── Estado interno ────────────────────────────────────────────────
 
+        private const float SpawnOccupancyRadius = 2f;
+
+        private static bool s_hasCompletedInitialSpawnFill;
+
         private Coroutine          _spawnLoopCoroutine;
         private bool               _isRunning;
         private ISpawnPointSelector _selector;
@@ -60,7 +64,10 @@ namespace Systems.NPC.Spawner
         private void OnEnable()
         {
             if (_pool != null) _pool.OnNpcReturned += HandleNpcReturned;
+        }
 
+        private void Start()
+        {
             if (_autoStart && !_isRunning)
                 StartSpawning();
         }
@@ -119,7 +126,12 @@ namespace Systems.NPC.Spawner
 
             ResolveSpawnPointsIfNeeded();
             RebuildSelector();
-            SpawnOneAtEachSpawnPoint();
+
+            if (!s_hasCompletedInitialSpawnFill)
+            {
+                SpawnOneAtEachSpawnPoint();
+                s_hasCompletedInitialSpawnFill = true;
+            }
 
             while (_isRunning)
             {
@@ -140,6 +152,7 @@ namespace Systems.NPC.Spawner
             foreach (Transform spawnPoint in validSpawnPoints)
             {
                 if (!_pool.HasAvailable) break;
+                if (_pool.HasActiveEnemyNear(spawnPoint.position, SpawnOccupancyRadius)) continue;
                 _builder.BuildAt(spawnPoint.position);
             }
         }
@@ -152,7 +165,10 @@ namespace Systems.NPC.Spawner
 
             var point = _selector?.Next();
             if (point != null)
+            {
+                if (_pool.HasActiveEnemyNear(point.position, SpawnOccupancyRadius)) return;
                 _builder.BuildAt(point.position);
+            }
             else if (_selector == null || !_selector.HasAny)
                 _builder.Build();
             else
@@ -181,6 +197,7 @@ namespace Systems.NPC.Spawner
                         Debug.LogWarning("[NpcEnemySpawner] Todos os spawn points dentro do raio de visão.");
                         break;
                     }
+                    if (_pool.HasActiveEnemyNear(point.position, SpawnOccupancyRadius)) continue;
                     if (!_builder.BuildAt(point.position)) break;
                 }
             }
@@ -207,8 +224,12 @@ namespace Systems.NPC.Spawner
 
         private void ResolveSpawnPointsIfNeeded()
         {
-            if (FilterValidSpawnPoints(_spawnPoints).Length > 0)
+            Transform[] configuredSpawnPoints = FilterValidSpawnPoints(_spawnPoints);
+            if (configuredSpawnPoints.Length > 0)
+            {
+                _spawnPoints = configuredSpawnPoints;
                 return;
+            }
 
             Transform enemySystemRoot = transform.parent;
             if (enemySystemRoot == null) return;
@@ -228,11 +249,14 @@ namespace Systems.NPC.Spawner
         {
             foreach (Transform child in parent)
             {
+                if (child.childCount > 0)
+                {
+                    CollectSpawnMarkers(child, results);
+                    continue;
+                }
+
                 if (IsLeafSpawnMarker(child))
                     results.Add(child);
-
-                if (child.childCount > 0)
-                    CollectSpawnMarkers(child, results);
             }
         }
 
@@ -261,10 +285,13 @@ namespace Systems.NPC.Spawner
                 return System.Array.Empty<Transform>();
 
             var validSpawnPoints = new System.Collections.Generic.List<Transform>(spawnPoints.Length);
+            var seenSpawnPointIds = new System.Collections.Generic.HashSet<int>();
+
             foreach (Transform spawnPoint in spawnPoints)
             {
                 if (spawnPoint == null) continue;
                 if (!IsLeafSpawnMarker(spawnPoint)) continue;
+                if (!seenSpawnPointIds.Add(spawnPoint.GetInstanceID())) continue;
                 validSpawnPoints.Add(spawnPoint);
             }
 
@@ -273,8 +300,8 @@ namespace Systems.NPC.Spawner
 
         private static bool IsLeafSpawnMarker(Transform spawnPoint)
         {
-            if (spawnPoint.name.Contains("ExplorationEnemySpawnPoint"))
-                return true;
+            if (spawnPoint == null) return false;
+            if (!spawnPoint.name.Contains("ExplorationEnemySpawnPoint")) return false;
 
             foreach (Transform child in spawnPoint)
             {
@@ -282,7 +309,7 @@ namespace Systems.NPC.Spawner
                     return false;
             }
 
-            return spawnPoint.childCount == 0;
+            return true;
         }
 
         // ── Gizmos ────────────────────────────────────────────────────────

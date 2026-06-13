@@ -14,8 +14,9 @@ public sealed class PlayableStateTransitioner
 
         MainTransform = character.Transform;
 
-        character.MovementController.SetInputReader(inputReader); // <- adicionar
+        character.MovementController.SetInputReader(inputReader);
         character.MovementController.EnableMovement();
+        SetPhysicsLayerRecursively(character.gameObject, LayerMask.NameToLayer("Player"));
         character.DetectionSystem.SetTag("Player");
         character.DetectionSystem.StartScan();
 
@@ -24,6 +25,7 @@ public sealed class PlayableStateTransitioner
 
     public void ApplyCompanion(PlayableCharacter character)
     {
+        SetPhysicsLayerRecursively(character.gameObject, LayerMask.NameToLayer("Default"));
         character.DetectionSystem.SetTag("Npc");
         character.DetectionSystem.StopScan();
 
@@ -35,6 +37,7 @@ public sealed class PlayableStateTransitioner
 
     public void ApplyResting(PlayableCharacter character)
     {
+        SetPhysicsLayerRecursively(character.gameObject, LayerMask.NameToLayer("Default"));
         character.DetectionSystem.SetTag("Npc");
         character.DetectionSystem.StopScan();
 
@@ -54,5 +57,14 @@ public sealed class PlayableStateTransitioner
 
         foreach (var r in receivers)
             r.ForceExit();
+    }
+
+    private static void SetPhysicsLayerRecursively(GameObject gameObject, int layer)
+    {
+        if (gameObject == null || layer < 0) return;
+
+        gameObject.layer = layer;
+        foreach (Transform child in gameObject.transform)
+            SetPhysicsLayerRecursively(child.gameObject, layer);
     }
 }
