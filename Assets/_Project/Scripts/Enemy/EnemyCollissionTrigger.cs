@@ -13,6 +13,7 @@ public class EnemyCollissionTrigger : MonoBehaviour
         if (!IsPlayerCollider(other))
             return;
 
+        CombatExplorationBridge.Instance?.NotifyEnteringCombat();
         SceneTransitionHandler.LoadScene(CombatSceneName);
     }
 

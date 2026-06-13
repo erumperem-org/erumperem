@@ -30,7 +30,7 @@ namespace Systems.NPC.Builder
 
         [Header("Comportamento")]
         [SerializeField, Min(1f)]   private float _wanderRadius    = 8f;
-        [SerializeField, Min(1f)]   private float _chaseRadius     = 20f;
+        [SerializeField, Min(1f)]   private float _chaseRadius     = 40f;
         [SerializeField, Min(0.1f)] private float _contactDistance = 1.2f;
 
         [Tooltip("Tempo máximo (s) em Wander antes de retornar à pool.")]

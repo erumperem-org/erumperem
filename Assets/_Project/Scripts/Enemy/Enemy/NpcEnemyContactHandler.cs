@@ -59,6 +59,8 @@ namespace Systems.NPC.Enemy
         {
             Debug.Log($"[NpcEnemyContactHandler] Contato: '{(enemy as UnityEngine.Object)?.name}' → Player.");
 
+            CombatExplorationBridge.Instance?.NotifyEnteringCombat();
+
             if (HasConfiguredContactReaction())
                 _onContact.Invoke();
             else
