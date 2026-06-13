@@ -56,6 +56,12 @@ public class ScenesManager : MonoBehaviour
 
     public void LoadSceneByName(string sceneName)
     {
+        if (string.IsNullOrWhiteSpace(sceneName))
+        {
+            Debug.LogError("[ScenesManager] Nome de cena vazio — load cancelado.");
+            return;
+        }
+
         Time.timeScale = 1f;
         SceneTransitionHandler.LoadScene(sceneName);
     }

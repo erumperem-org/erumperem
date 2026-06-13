@@ -17,6 +17,7 @@ public class SceneTransitionHandler : MonoBehaviour
     public bool autoFadeOutOnDestroy = false;
 
     private static SceneTransitionHandler instance;
+    private static bool isSceneLoadInProgress;
 
     void Awake()
     {
@@ -160,62 +161,120 @@ public class SceneTransitionHandler : MonoBehaviour
 
     public static void LoadScene(string sceneName)
     {
+        if (string.IsNullOrWhiteSpace(sceneName))
+        {
+            Debug.LogError("[SceneTransitionHandler] Nome de cena vazio — load cancelado.");
+            return;
+        }
+
+        if (isSceneLoadInProgress)
+        {
+            Debug.LogWarning($"[SceneTransitionHandler] Load de '{sceneName}' ignorado — outro load já está em curso.");
+            return;
+        }
+
         if (instance != null)
         {
+            isSceneLoadInProgress = true;
             instance.StartCoroutine(
                 instance.LoadSceneWithFade(sceneName)
             );
+            return;
         }
-        else
-        {
-            SceneManager.LoadScene(sceneName);
-        }
+
+        isSceneLoadInProgress = true;
+        SceneManager.LoadScene(sceneName);
+        isSceneLoadInProgress = false;
     }
 
     public static void LoadScene(int sceneBuildIndex)
     {
+        if (sceneBuildIndex < 0 || sceneBuildIndex >= SceneManager.sceneCountInBuildSettings)
+        {
+            Debug.LogError($"[SceneTransitionHandler] Build index inválido: {sceneBuildIndex}.");
+            return;
+        }
+
+        if (isSceneLoadInProgress)
+        {
+            Debug.LogWarning($"[SceneTransitionHandler] Load do build index {sceneBuildIndex} ignorado — outro load já está em curso.");
+            return;
+        }
+
         if (instance != null)
         {
+            isSceneLoadInProgress = true;
             instance.StartCoroutine(
                 instance.LoadSceneWithFade(sceneBuildIndex)
             );
+            return;
         }
-        else
-        {
-            SceneManager.LoadScene(sceneBuildIndex);
-        }
+
+        isSceneLoadInProgress = true;
+        SceneManager.LoadScene(sceneBuildIndex);
+        isSceneLoadInProgress = false;
     }
 
     IEnumerator LoadSceneWithFade(string sceneName)
     {
-        if (fadeCanvasGroup != null)
+        try
         {
-            yield return fadeCanvasGroup
-                .DOFade(1f, fadeDuration)
-                .WaitForCompletion();
+            if (string.IsNullOrWhiteSpace(sceneName))
+            {
+                Debug.LogError("[SceneTransitionHandler] Nome de cena vazio — load cancelado.");
+                yield break;
+            }
+
+            if (fadeCanvasGroup != null)
+            {
+                yield return fadeCanvasGroup
+                    .DOFade(1f, fadeDuration)
+                    .WaitForCompletion();
+            }
+
+            AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
+            if (asyncLoad == null)
+            {
+                Debug.LogError($"[SceneTransitionHandler] Falha ao carregar cena '{sceneName}'.");
+                yield break;
+            }
+
+            while (!asyncLoad.isDone)
+                yield return null;
         }
-
-        AsyncOperation asyncLoad =
-            SceneManager.LoadSceneAsync(sceneName);
-
-        while (!asyncLoad.isDone)
+        finally
         {
-            yield return null;
+            isSceneLoadInProgress = false;
         }
     }
 
     IEnumerator LoadSceneWithFade(int sceneBuildIndex)
     {
-        yield return fadeCanvasGroup
-            .DOFade(1f, fadeDuration)
-            .WaitForCompletion();
-
-        AsyncOperation asyncLoad =
-            SceneManager.LoadSceneAsync(sceneBuildIndex);
-
-        while (!asyncLoad.isDone)
+        try
         {
-            yield return null;
+            if (fadeCanvasGroup == null)
+            {
+                SceneManager.LoadScene(sceneBuildIndex);
+                yield break;
+            }
+
+            yield return fadeCanvasGroup
+                .DOFade(1f, fadeDuration)
+                .WaitForCompletion();
+
+            AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneBuildIndex, LoadSceneMode.Single);
+            if (asyncLoad == null)
+            {
+                Debug.LogError($"[SceneTransitionHandler] Falha ao carregar build index {sceneBuildIndex}.");
+                yield break;
+            }
+
+            while (!asyncLoad.isDone)
+                yield return null;
+        }
+        finally
+        {
+            isSceneLoadInProgress = false;
         }
     }
 }

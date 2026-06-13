@@ -76,7 +76,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 {
     // ── Inspector ─────────────────────────────────────────────────────────
 
-    [SerializeField] private string _explorationSceneName = "Exploration";
+    [SerializeField] private string _explorationSceneName = "Overworld";
 
     [Tooltip("Estado padrão de cada personagem quando não há save.")]
     [SerializeField] private List<DefaultCharacterSetup> _defaultSetups = new();
@@ -110,7 +110,13 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        if (Instance != null && Instance != this)
+        {
+            Instance.AdoptSceneConfigurationFrom(this);
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
@@ -128,8 +134,38 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (IsConfiguredExplorationScene(scene))
-            StartCoroutine(RestoreNextFrame());
+        if (!IsConfiguredExplorationScene(scene))
+        {
+            return;
+        }
+
+        _manager = null;
+        StartCoroutine(RestoreNextFrame());
+    }
+
+    private void AdoptSceneConfigurationFrom(ExplorationLoadContext sceneInstance)
+    {
+        if (sceneInstance == null)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(sceneInstance._explorationSceneName))
+        {
+            _explorationSceneName = sceneInstance._explorationSceneName;
+        }
+
+        if (sceneInstance._defaultSetups != null && sceneInstance._defaultSetups.Count > 0)
+        {
+            _defaultSetups = new List<DefaultCharacterSetup>(sceneInstance._defaultSetups);
+        }
+
+        if (sceneInstance._corruptionSystem != null)
+        {
+            _corruptionSystem = sceneInstance._corruptionSystem;
+        }
+
+        _manager = null;
     }
 
     private bool IsConfiguredExplorationScene(Scene scene)
@@ -139,7 +175,9 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             return false;
         }
 
-        return string.Equals(scene.name, _explorationSceneName, StringComparison.Ordinal);
+        return string.Equals(scene.name, _explorationSceneName, StringComparison.Ordinal)
+            || (string.Equals(_explorationSceneName, "Overworld", StringComparison.Ordinal)
+                && string.Equals(scene.name, "OverorldMerge", StringComparison.Ordinal));
     }
 
     // ── API pública ───────────────────────────────────────────────────────
@@ -349,6 +387,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
     private void ApplyDefaultSetups()
     {
+        RemoveDestroyedDefaultSetups();
+
         if (_defaultSetups.Count == 0)
         {
             TryBuildFallbackDefaultSetups();
@@ -438,10 +478,28 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
+    private void RemoveDestroyedDefaultSetups()
+    {
+        for (int setupIndex = _defaultSetups.Count - 1; setupIndex >= 0; setupIndex--)
+        {
+            if (_defaultSetups[setupIndex].Character == null)
+            {
+                _defaultSetups.RemoveAt(setupIndex);
+            }
+        }
+    }
+
     private bool TryGetManager()
     {
-        if (_manager != null) return true;
-        _manager = FindFirstObjectByType<PlayableCharactersManager>();
+        if (_manager != null && !_manager.gameObject.scene.isLoaded)
+        {
+            _manager = null;
+        }
+
+        if (_manager == null)
+        {
+            _manager = FindFirstObjectByType<PlayableCharactersManager>();
+        }
 
         if (_manager == null)
         {
@@ -449,6 +507,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 "[LOAD] PlayableCharactersManager não encontrado na cena.", LogCategory.Player);
             return false;
         }
+
         return true;
     }
 }
