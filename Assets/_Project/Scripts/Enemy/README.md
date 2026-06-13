@@ -1,196 +1,117 @@
-# Sistema de NPC Inimigo — Documentação Técnica
+# Sistema de NPC Inimigo — Documentação Técnica (Refatorado)
 
-## Visão Geral
+## O que mudou (SRP)
 
-Sistema completo de NPC inimigo para Unity, baseado em **Coroutines controláveis**,
-aproveitando 100% dos sistemas já existentes do pack:
-
-| Sistema do Pack         | Como é usado                                      |
-|-------------------------|---------------------------------------------------|
-| `NavMeshService`        | Movimentação (wander + chase) via `INavMeshService` |
-| `NavMeshAgentAdapter`   | Adapter do agente por NPC                         |
-| `NpcMovementController` | Troca atômica de strategies (Wander / Pursuing)   |
-| `WanderBehavior`        | Caminhada aleatória via NavMesh                   |
-| `PursuingBehavior`      | Perseguição contínua do Player                    |
-| `Detector`              | Detecção de colisores com tag "Player"            |
-| `NavMeshSpawnPositionService` | Spawn em posições válidas no NavMesh        |
+| Problema original | Solução |
+|---|---|
+| `NpcEnemy` acumulava máquina de estados, comportamento, detecção, ciclo de vida e transição de cena | Dividido em `NpcEnemyStateMachine`, `NpcEnemyBehaviorRunner`, `NpcEnemyDetectionHandler` e `NpcEnemy` (orquestrador) |
+| `NpcEnemy.OnContactWithPlayer()` chamava `ScenesManager.LoadScene("CombatScene")` diretamente | `NpcEnemy` dispara `OnPlayerContact`; `NpcEnemyContactHandler` decide o que fazer via `UnityEvent` |
+| `EnemyCollissionTrigger` duplicava a mesma lógica de `LoadScene` | Removida — consolidada no `NpcEnemyContactHandler` |
+| `NpcEnemySpawner` continha lógica de filtro e ordenação de spawn points | Extraída para `ISpawnPointSelector` (`PlayerAwareSpawnPointSelector` / `RoundRobinSpawnPointSelector`) |
+| `NpcEnemyPool` calculava posições de grid junto à gestão de disponibilidade | Extraída para `IPoolStorage` (`GridPoolStorage`) |
+| `NpcEnemyPool.Return(INpcEnemy)` fazia cast `as NpcEnemy` internamente (DIP) | `Return(NpcEnemy)` recebe o tipo concreto; o cast fica no Builder, que é quem conhece o tipo |
+| `NpcEnemyConfig` tinha campo `Detector` morto (nunca lido pelo NpcEnemy) | Campo removido |
 
 ---
 
-## Arquitetura — Classes e Responsabilidades
+## Nova Arquitetura
 
 ```
 Systems/NPC/
 ├── Contracts/
-│   ├── INpcEnemy.cs          → Interface pública do NPC (pool/builder só conhecem esta)
-│   └── NpcEnemyConfig.cs     → Dados imutáveis por ciclo de vida (spawn, radii, callbacks)
+│   ├── INpcEnemy.cs              → Interface pública (+ evento OnPlayerContact)
+│   └── NpcEnemyConfig.cs         → Dados imutáveis por ciclo de vida
 │
 ├── Enemy/
-│   ├── NpcEnemy.cs           → MonoBehaviour principal — máquina de estados via Coroutines
-│   └── NpcPursuitTarget.cs   → Handler estático global do alvo de perseguição
+│   ├── StateMachine/
+│   │   └── NpcEnemyStateMachine.cs   → Transições de estado + eventos OnEnter*
+│   ├── NpcEnemyDetectionHandler.cs   → Polling do Detector + OnDetectorEnter/Exit
+│   ├── NpcEnemyBehaviorRunner.cs     → Coroutines de Wander/Chase/Monitor
+│   ├── NpcEnemy.cs                   → Orquestrador (MonoBehaviour enxuto)
+│   ├── NpcEnemyContactHandler.cs     → Reação ao contato com Player (UnityEvent)
+│   └── NpcPursuitTarget.cs           → Handler estático global (inalterado)
 │
 ├── Pool/
-│   └── NpcEnemyPool.cs       → Pool de objetos (max 10, grade de armazenamento, sem Instantiate/Destroy)
+│   ├── IPoolStorage.cs               → Abstrai posicionamento físico dos NPCs inativos
+│   ├── GridPoolStorage.cs            → Implementação em grade
+│   └── NpcEnemyPool.cs               → Gerencia disponibilidade (Get/Return/PreWarm)
 │
 ├── Builder/
-│   └── NpcEnemyBuilder.cs    → Factory — conecta pool + config + NPC
+│   └── NpcEnemyBuilder.cs            → Monta NPC: pool + config + registro no ContactHandler
 │
 └── Spawner/
-    └── NpcEnemySpawner.cs    → Dispara spawns em intervalo via Coroutine
+    ├── ISpawnPointSelector.cs         → Abstrai seleção de spawn points
+    ├── PlayerAwareSpawnPointSelector.cs → Filtra por visão do Player, ordena por distância
+    ├── RoundRobinSpawnPointSelector.cs  → Round-robin simples
+    └── NpcEnemySpawner.cs             → Controla ciclo de respawn (quando/quantos)
 ```
 
 ---
 
-## Estados e Coroutines
+## Responsabilidades por classe
 
-```
-Activate()
-    │
-    ├─▶ [DetectionPollingCoroutine]  → roda sempre, faz Scan() no Detector a cada 0.15s
-    │
-    └─▶ [WanderCoroutine]           → estado WANDER
-            │  (Player detectado → OnDetectorEnter)
-            ▼
-        [ChaseCoroutine]            → estado CHASE  (perseguição via PursuingBehavior)
-        [ChaseRadiusMonitorCoroutine] ← paralelo → checa distância do SpawnPoint
-            │  (ultrapassa ChaseRadius)
-            ▼
-        ReturnToPool()
-            │  StopAllBehaviorCoroutines()
-            │  Reset NavMeshAgent
-            │  ClearTarget
-            │  SetActive(false)
-            ▼
-        [Pool — disponível para reuso]
-```
+### `NpcEnemyStateMachine`
+Gerencia transições de estado e dispara eventos `OnEnterWander`, `OnEnterChase`, `OnEnterReturnToPool`. Não sabe nada de coroutines, navegação ou detecção.
 
-**Regra de Coroutines:**
-- Cada estado tem **1 coroutine** (+ 1 paralela para monitoramento em Chase).
-- Ao trocar de estado: coroutine anterior é `StopCoroutine`d imediatamente.
-- `ReturnToPool` → `StopAllBehaviorCoroutines()` → zero processamento residual.
+### `NpcEnemyDetectionHandler`
+Gerencia o polling do `Detector` e traduz `OnDetectorEnter/Exit` em chamadas à `StateMachine`. Inclui o tratamento da shape `"Contact"` que notifica `NpcEnemy.NotifyPlayerContact()`.
+
+### `NpcEnemyBehaviorRunner`
+Executa as coroutines de comportamento (`WanderCoroutine`, `ChaseCoroutine`, `ChaseRadiusMonitorCoroutine`, `WanderLifetimeCoroutine`) em resposta aos eventos da `StateMachine`. Expõe `OnShouldReturnToPool` para notificar quando o NPC deve ser devolvido.
+
+### `NpcEnemy`
+Orquestrador: cria e conecta os três colaboradores acima, implementa o ciclo de vida `INpcEnemy` e expõe `OnPlayerContact` como evento. Não tem nenhum conhecimento de cenas ou sistemas externos.
+
+### `NpcEnemyContactHandler`
+MonoBehaviour que escuta `OnPlayerContact` de cada NPC e executa um `UnityEvent` configurável no Inspector. Substitui o `ScenesManager.LoadScene(...)` hardcoded e o `EnemyCollissionTrigger` duplicado.
+
+### `ISpawnPointSelector` / implementações
+Abstrai a seleção do próximo spawn point. O `NpcEnemySpawner` constrói o selector correto no `Awake` baseado na presença de `_playerTransform`.
+
+### `IPoolStorage` / `GridPoolStorage`
+Abstrai o posicionamento físico dos NPCs inativos. A `NpcEnemyPool` delega totalmente para o storage, sem saber do layout.
 
 ---
 
-## Setup no Unity — Passo a Passo
+## Setup no Unity
 
-### 1. Prefab do NPC Inimigo
-
-Componentes **obrigatórios** no prefab:
-- `NpcEnemy` (script gerado)
-- `NpcMovementController` (do pack)
-- `NavMeshAgentAdapter` (do pack)
-- `NavMeshAgent` (Unity built-in)
-- `Detector` (do pack) — configure a shape de detecção no Inspector
-- `DetectionComponent` (do pack, requerido pelo Detector)
-- `Collider` — para detecção por overlap
-
-> **Importante:** O `Detector` usa `Detector.Scan()` manualmente.
-> NÃO adicione `TickingDetector` — o `NpcEnemy` gerencia o polling via Coroutine.
-
-### 2. Cena — Hierarquia sugerida
+### Hierarquia sugerida (inalterada)
 
 ```
 [NpcEnemySystem]
-├── NpcEnemyPool          ← NpcEnemyPool.cs
-│   ├── NpcEnemy_00       ← gerado automaticamente no Awake
-│   ├── NpcEnemy_01
-│   └── ...
-│
-├── NpcEnemyBuilder       ← NpcEnemyBuilder.cs
-│
-├── NpcEnemySpawner       ← NpcEnemySpawner.cs
-│
-└── SpawnPositionService  ← NavMeshSpawnPositionServiceMono (do pack)
+├── NpcEnemyPool
+├── NpcEnemyBuilder
+├── NpcEnemyContactHandler    ← NOVO: configure o UnityEvent no Inspector
+├── NpcEnemySpawner
+└── SpawnPositionService
 ```
 
-### 3. Configuração dos Componentes
+### NpcEnemyContactHandler
 
-#### NpcEnemyPool
-| Campo            | Valor sugerido                    |
-|------------------|-----------------------------------|
-| Npc Prefab       | Prefab do NPC (com todos os comps)|
-| Pool Size        | 10                                |
-| Storage Origin   | (0, -100, 0) — fora do mapa       |
-| Storage Spacing  | 3                                 |
+| Campo | Valor sugerido |
+|---|---|
+| On Contact (UnityEvent) | `ScenesManager.LoadSceneByName("CombatScene")` |
 
-#### NpcEnemyBuilder
-| Campo             | Valor sugerido |
-|-------------------|----------------|
-| Pool              | NpcEnemyPool   |
-| Spawn Service     | NavMeshSpawnPositionServiceMono |
-| Wander Radius     | 8              |
-| Chase Radius      | 20             |
-| Contact Distance  | 1.2            |
+O `NpcEnemyBuilder` registra/desregistra cada NPC automaticamente.
 
-#### NpcEnemySpawner
-| Campo          | Valor sugerido |
-|----------------|----------------|
-| Builder        | NpcEnemyBuilder|
-| Pool           | NpcEnemyPool   |
-| Spawn Interval | 5 (segundos)   |
-| Batch Size     | 1              |
-| Auto Start     | ✓              |
-| Spawn Points   | (opcional)     |
+### EnemyCollissionTrigger
+
+**Remover dos prefabs.** A lógica foi consolidada no `NpcEnemyContactHandler`.
 
 ---
 
-## Fluxo de Execução Completo
+## Fluxo de contato com o Player (novo)
 
 ```
-[Awake — NpcEnemyPool]
-  └─ Instancia 10 NPCs → SetActive(false) → posiciona na grade
-
-[Start — NpcEnemySpawner]
-  └─ StartSpawning() → inicia SpawnLoopCoroutine
-
-[SpawnLoopCoroutine]  ←── Coroutine
-  └─ WaitForSeconds(5s)
-  └─ Builder.Build()
-       ├─ Pool.Get()          → SetActive(true), retira da stack
-       ├─ SpawnService.TryGetPosition() → ponto válido no NavMesh
-       ├─ new NpcEnemyConfig(spawnPoint, wanderRadius, chaseRadius, ...)
-       ├─ npc.Initialize(config)
-       │    └─ Registra OnDetectorEnter/Exit
-       └─ npc.Activate()
-            ├─ transform.position = spawnPoint
-            ├─ NavMesh.ResetAgent()
-            ├─ StartDetectionPolling() → DetectionPollingCoroutine
-            └─ EnterWander()
-                 └─ WanderCoroutine → SetStrategy(WanderBehavior)
-                                          └─ Caminha aleatoriamente no NavMesh
-
-[DetectionPollingCoroutine]  ←── Coroutine paralela
-  └─ WaitForSeconds(0.15s)
+[DetectionPollingCoroutine]
   └─ detector.Scan()
-       └─ [Player encontrado] → OnDetectorEnter(playerCollider)
-            └─ EnterChase(playerTransform)
-                 ├─ StopCoroutine(WanderCoroutine)
-                 ├─ ChaseCoroutine → SetStrategy(PursuingBehavior)
-                 └─ ChaseRadiusMonitorCoroutine (paralela)
-                      └─ WaitForSeconds(0.2s)
-                      └─ distFromSpawn > chaseRadius → ReturnToPool()
-
-[ReturnToPool()]
-  ├─ StopAllBehaviorCoroutines()
-  ├─ Desregistra eventos do Detector
-  ├─ NavMesh.Stop() + ResetAgent()
-  ├─ config.OnReturnToPool(this) → Pool.Return(npc)
-  │    ├─ RepositionInStorage()
-  │    └─ SetActive(false)
-  └─ [NPC disponível na stack para reuso]
+       └─ OnDetectorEnter(playerCollider, "Contact", ...)
+            └─ NpcEnemyDetectionHandler → npcEnemy.NotifyPlayerContact()
+                 └─ NpcEnemy.OnPlayerContact?.Invoke(this)
+                      └─ NpcEnemyContactHandler.HandleContact()
+                           └─ _onContact.Invoke()  ← UnityEvent configurado
+                                └─ ScenesManager.LoadSceneByName("CombatScene")
 ```
-
----
-
-## Ciclo Completo (spawn → wander → chase → pool → respawn)
-
-O sistema suporta múltiplos ciclos sem degradação:
-
-1. **spawn** — NPC sai da pool, posicionado no NavMesh
-2. **wander** — Caminha aleatoriamente, Detector polling ativo
-3. **chase** — Player detectado, PursuingBehavior ativo
-4. **return to pool** — Limite ultrapassado ou Player saiu, todas as coroutines encerradas
-5. **respawn** — SpawnLoopCoroutine detecta slot disponível → repete do passo 1
 
 ---
 
@@ -198,28 +119,12 @@ O sistema suporta múltiplos ciclos sem degradação:
 
 ### Adicionar novo estado (ex: Attack)
 1. Adicionar `Attack` ao enum `NpcEnemyState`
-2. Criar `AttackCoroutine()` em `NpcEnemy`
-3. Criar `EnterAttack()` que chama `StopStateBehaviorCoroutine()` + inicia nova coroutine
-4. Chamar `EnterAttack()` de `OnContactWithPlayer()`
+2. Adicionar `event Action OnEnterAttack` na `NpcEnemyStateMachine` + método `ToAttack()`
+3. Criar `RunAttack()` no `NpcEnemyBehaviorRunner`
+4. Conectar em `NpcEnemy.Initialize()`: `_stateMachine.OnEnterAttack += _behaviorRunner.RunAttack`
 
-### Adicionar novo comportamento de movimento
-1. Criar `XyzBehavior : IReversibleCharacterMovementStrategy` (padrão do pack)
-2. Criar `XyzBehaviorContext : CharacterMovementContextBase`
-3. Chamar `_movementController.SetStrategy(new XyzBehavior(), context)` na coroutine do estado
+### Adicionar nova estratégia de spawn points
+Implementar `ISpawnPointSelector` e ajustar `NpcEnemySpawner.BuildSelector()`.
 
-### Limitar pool por tipo de NPC
-- Criar subclasses de `NpcEnemyPool` ou adicionar categoria ao `NpcEnemyConfig`
-- O Builder escolhe a pool correta baseado no tipo solicitado
-
----
-
-## Notas de Performance
-
-| Preocupação              | Solução adotada                              |
-|--------------------------|----------------------------------------------|
-| Update/FixedUpdate       | ❌ Nenhum — 100% Coroutines                  |
-| Instantiate/Destroy      | ❌ Apenas no Awake — pool reutiliza          |
-| Coroutines órfãs         | ✅ ReturnToPool() encerra todas              |
-| Loops residuais          | ✅ StopCoroutine explícito em cada transição |
-| Allocations em poll      | ✅ WaitForSeconds cacheado por coroutine     |
-| NavMesh estado sujo      | ✅ ResetAgent() a cada ciclo                 |
+### Adicionar novo layout de storage da pool
+Implementar `IPoolStorage` e injetar em `NpcEnemyPool`.

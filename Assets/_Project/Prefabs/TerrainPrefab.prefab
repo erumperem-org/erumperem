@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 3077107185696046072}
   - component: {fileID: 1506091380636881893}
   - component: {fileID: 304265565965727151}
+  - component: {fileID: 909000346998206283}
   m_Layer: 8
   m_Name: TerrainPrefab
   m_TagString: Untagged
@@ -48,10 +49,10 @@ Terrain:
   m_TreeBillboardDistance: 50
   m_TreeCrossFadeLength: 5
   m_TreeMaximumFullLODCount: 50
-  m_DetailObjectDistance: 50
+  m_DetailObjectDistance: 1000
   m_DetailObjectDensity: 1
   m_HeightmapPixelError: 5
-  m_SplatMapDistance: 1000
+  m_SplatMapDistance: 417
   m_HeightmapMinimumLODSimplification: 0
   m_HeightmapMaximumLOD: 0
   m_ShadowCastingMode: 1
@@ -94,6 +95,18 @@ TerrainCollider:
   serializedVersion: 2
   m_TerrainData: {fileID: 15600000, guid: 7f20d189ad616154e8d89daa1a233e30, type: 2}
   m_EnableTreeColliders: 1
+--- !u!114 &909000346998206283
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3374100475281307680}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7fed9cd613e63143bce2d18916065de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TreeColilision
 --- !u!1001 &7998197611443494128
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -173,8 +186,38 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 2191a37e651adac4581a37da630ddd54, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7072255286967941559}
   m_SourcePrefab: {fileID: 100100000, guid: 2191a37e651adac4581a37da630ddd54, type: 3}
+--- !u!1 &7079139129702392225 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 2191a37e651adac4581a37da630ddd54, type: 3}
+  m_PrefabInstance: {fileID: 7998197611443494128}
+  m_PrefabAsset: {fileID: 0}
+--- !u!64 &7072255286967941559
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7079139129702392225}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: -8803937527578110353, guid: 2191a37e651adac4581a37da630ddd54, type: 3}
 --- !u!4 &7599251682660907803 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 2191a37e651adac4581a37da630ddd54, type: 3}

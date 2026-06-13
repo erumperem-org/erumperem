@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 9222707436896887724}
   - component: {fileID: 3555625949035696960}
   - component: {fileID: 6673271154308315710}
+  - component: {fileID: -2050128839461235428}
   m_Layer: 0
   m_Name: GallonWaterDrink
   m_TagString: Untagged
@@ -26,7 +27,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1620337299664577358}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 24.317942, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -91,6 +92,27 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &-2050128839461235428
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1620337299664577358}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.77078176, y: 1.6113381, z: 0.7653176}
+  m_Center: {x: 0, y: 0.80550015, z: 0}
 --- !u!1 &6032148575271883534
 GameObject:
   m_ObjectHideFlags: 0
@@ -102,6 +124,7 @@ GameObject:
   - component: {fileID: 6382424527129462252}
   - component: {fileID: 6477789013922135832}
   - component: {fileID: 6878941629231412048}
+  - component: {fileID: 7519526003755917644}
   m_Layer: 0
   m_Name: WaterGallon
   m_TagString: Untagged
@@ -157,7 +180,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: ed5bf1dfaa181a643b72da5af3b220be, type: 2}
+  - {fileID: 2100000, guid: 41185a5655775ee46950ebd127d76e6c, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -181,3 +204,24 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &7519526003755917644
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6032148575271883534}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.5636513, y: 0.9582264, z: 0.5636513}
+  m_Center: {x: 0, y: 0.4791132, z: 0}

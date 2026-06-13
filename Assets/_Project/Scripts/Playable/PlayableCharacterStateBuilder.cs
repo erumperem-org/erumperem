@@ -1,11 +1,10 @@
-using Player;
 using UnityEngine;
 
 [System.Serializable]
-public class PlayableCharacterStatesBuilder
+public sealed class PlayableCharacterStatesBuilder
 {
     [Header("Input (Main)")]
-    public PlayerInputReader inputReader;
+    public Player.PlayerInputReader inputReader;
 
     [Header("Companion")]
     [Tooltip("Referência ao transform do Main atual — atualizada em BuildMainCharacter.")]
@@ -17,42 +16,40 @@ public class PlayableCharacterStatesBuilder
     {
         ForceExitAllReceivers();
 
-        mainTransform = character.transform;
+        mainTransform = character.Transform;
 
-        character.movementController.EnableMovement();
-        character.detectionSystem.gameObject.tag = "Player";
-        character.detectionSystem.Scan();
+        character.MovementController.EnableMovement();
+        character.DetectionSystem.SetTag("Player");
+        character.DetectionSystem.StartScan();
 
-        if (inputReader != null)
-            inputReader.playerDetectionSystem = character.detectionSystem;
+        inputReader?.BindDetectionSystem(character.DetectionSystem);
     }
-    // PlayableCharacterStatesBuilder
+
     public void BuildCompanionCharacter(PlayableCharacter character, Transform currentMainTransform)
     {
-        character.detectionSystem.gameObject.tag = "Npc";
-        character.detectionSystem.StopScan();
+        character.DetectionSystem.SetTag("Npc");
+        character.DetectionSystem.StopScan();
 
         if (currentMainTransform != null)
-            character.movementController.EnableFollow(currentMainTransform);
+            character.MovementController.EnableFollow(currentMainTransform);
         else
-            character.movementController.DisableMovement();
+            character.MovementController.DisableMovement();
     }
 
     public void BuildRestingCharacter(PlayableCharacter character)
     {
-        character.detectionSystem.gameObject.tag = "Npc";
-        character.detectionSystem.StopScan();
+        character.DetectionSystem.SetTag("Npc");
+        character.DetectionSystem.StopScan();
 
-        // Cada personagem conhece seu próprio ponto de descanso
-        if (character.restingPoint != null)
-            character.movementController.EnableWalkToPoint(character.restingPoint.position);
+        if (character.RestingPoint != null)
+            character.MovementController.EnableWalkToPoint(character.RestingPoint.position);
         else
-            character.movementController.DisableMovement();
+            character.MovementController.DisableMovement();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
-    private void ForceExitAllReceivers()
+    private static void ForceExitAllReceivers()
     {
         var receivers = Object.FindObjectsByType<PlayableDetectionReceiver>(
             FindObjectsInactive.Exclude,
