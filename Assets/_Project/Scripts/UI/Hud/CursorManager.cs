@@ -47,16 +47,19 @@ public class CursorManager : MonoBehaviour
     private Dictionary<CursorType, CursorState> stateLookup;
 
     private Coroutine animationRoutine;
+    private Coroutine clickFeedbackRoutine;
 
     private CursorType currentState;
-
-    private bool isHoveringUI;
 
     private readonly List<RaycastResult> raycastResults = new();
 
     private PointerEventData pointerEventData;
 
-    #region Unity Methods
+    [Header("Click Settings")]
+    [SerializeField]
+    private float clickDuration = 0.15f;
+
+    #region Unity
 
     private void Awake()
     {
@@ -91,8 +94,7 @@ public class CursorManager : MonoBehaviour
         if (Mouse.current == null)
             return;
 
-        HandleUIHover();
-        HandleUIClick();
+        UpdateCursorState();
     }
 
     private void OnEnable()
@@ -107,54 +109,72 @@ public class CursorManager : MonoBehaviour
 
     #endregion
 
-    #region Scene Management
+    #region Scene
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        StopAllCoroutines();
+
+        animationRoutine = null;
+        clickFeedbackRoutine = null;
+
         SetState(CursorType.Normal);
     }
 
     #endregion
 
-    #region UI Detection
+    #region Cursor Logic
 
-    private void HandleUIHover()
+    private void UpdateCursorState()
     {
-        bool hoveringNow = IsHoveringInteractableUI();
-
-        if (hoveringNow && !isHoveringUI)
-        {
-            isHoveringUI = true;
-
-            if (!Mouse.current.leftButton.isPressed)
-            {
-                SetState(CursorType.Hover);
-            }
-        }
-        else if (!hoveringNow && isHoveringUI)
-        {
-            isHoveringUI = false;
-
-            if (!Mouse.current.leftButton.isPressed)
-            {
-                SetState(CursorType.Normal);
-            }
-        }
-    }
-
-    private void HandleUIClick()
-    {
-        if (!isHoveringUI)
-            return;
+        bool hoveringInteractable = IsHoveringInteractableUI();
 
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
-            SetState(CursorType.Click);
+            if (hoveringInteractable)
+            {
+                SetState(CursorType.Click);
+
+                if (clickFeedbackRoutine != null)
+                {
+                    StopCoroutine(clickFeedbackRoutine);
+                }
+
+                clickFeedbackRoutine =
+                    StartCoroutine(ClickFeedbackRoutine());
+            }
+
+            return;
         }
 
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
+        if (clickFeedbackRoutine != null)
+            return;
+
+        if (hoveringInteractable)
         {
             SetState(CursorType.Hover);
+        }
+        else
+        {
+            SetState(CursorType.Normal);
+        }
+    }
+
+    private IEnumerator ClickFeedbackRoutine()
+    {
+        yield return new WaitForSeconds(clickDuration);
+
+        clickFeedbackRoutine = null;
+
+        bool hoveringInteractable = IsHoveringInteractableUI();
+
+        if (hoveringInteractable)
+        {
+            SetState(CursorType.Hover);
+        }
+        else
+        {
+            SetState(CursorType.Normal);
         }
     }
 
@@ -164,7 +184,8 @@ public class CursorManager : MonoBehaviour
             return false;
 
         pointerEventData = new PointerEventData(EventSystem.current);
-        pointerEventData.position = Mouse.current.position.ReadValue();
+        pointerEventData.position =
+            Mouse.current.position.ReadValue();
 
         raycastResults.Clear();
 
@@ -194,12 +215,17 @@ public class CursorManager : MonoBehaviour
 
     public void SetState(CursorType stateType)
     {
-        if (currentState == stateType)
+        if (currentState == stateType &&
+            stateType != CursorType.Click)
+        {
             return;
+        }
 
         if (!stateLookup.TryGetValue(stateType, out CursorState state))
         {
-            Debug.LogWarning($"Cursor State '{stateType}' não encontrado.");
+            Debug.LogWarning(
+                $"Cursor State '{stateType}' não encontrado."
+            );
             return;
         }
 
