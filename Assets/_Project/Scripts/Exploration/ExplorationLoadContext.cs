@@ -121,6 +121,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
     private List<PlayableCharacterSnapshot> _snapshots = new();
     private bool   _hasSave;
+    private bool   _preferInMemorySnapshotsOnNextRestore;
     private string _saveDirectory;
     private float  _savedCorruptionValue;
 
@@ -310,7 +311,17 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             await _corruptionSystem.LoadAsync();
 
         // ── Personagens ──────────────────────────────────────────────────
-        await LoadFromFileAsync();
+        if (_preferInMemorySnapshotsOnNextRestore)
+        {
+            _preferInMemorySnapshotsOnNextRestore = false;
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                "[LOAD] Restaurando snapshots em memória (retorno de combate).",
+                LogCategory.Player);
+        }
+        else
+        {
+            await LoadFromFileAsync();
+        }
 
         bool shouldApplySavedSnapshots = _hasSave && _snapshots.Count > 0;
         if (shouldApplySavedSnapshots)
@@ -401,7 +412,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     public void ApplyCombatOutcomeToSnapshots(
         Game.Core.Models.BattleState battleState,
         IReadOnlyList<string> combatAllyCharacterNames,
-        bool returnToVillage)
+        bool returnToVillage,
+        bool persistToDisk = true)
     {
         if (battleState == null)
         {
@@ -437,7 +449,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         }
 
         _hasSave = _snapshots.Count > 0;
-        if (_hasSave)
+        if (_hasSave && persistToDisk)
         {
             _ = SaveToFileAsync();
         }
@@ -446,6 +458,15 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         {
             _corruptionSystem.SaveState();
         }
+    }
+
+    /// <summary>
+    /// Grava snapshots em memória e carrega a cena de exploração após retorno de combate.
+    /// Evita race: nudge pós-vitória deve ser persistido antes do reload.
+    /// </summary>
+    public void FinishCombatReturnAndLoadExploration(string sceneName)
+    {
+        StartCoroutine(FinishCombatReturnAndLoadExplorationRoutine(sceneName));
     }
 
     // ── IO (personagens) ──────────────────────────────────────────────────
@@ -533,6 +554,28 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         RestoreState();
     }
 
+    private IEnumerator FinishCombatReturnAndLoadExplorationRoutine(string sceneName)
+    {
+        _preferInMemorySnapshotsOnNextRestore = true;
+        _hasSave = _snapshots.Count > 0;
+
+        var saveTask = SaveToFileAsync();
+        while (!saveTask.IsCompleted)
+        {
+            yield return null;
+        }
+
+        if (ScenesManager.Instance == null)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[LOAD] ScenesManager ausente — retorno de combate abortado.",
+                LogCategory.Player);
+            yield break;
+        }
+
+        ScenesManager.Instance.LoadSceneByName(sceneName);
+    }
+
     public bool TryGetSavedPositionForCharacter(string characterName, out Vector3 position)
     {
         var snapshot = _snapshots.Find(savedSnapshot =>
@@ -575,6 +618,32 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             var nudgedPosition = flatCombatEntry + pushDirection * minimumSeparationDistance;
             nudgedPosition.y = snapshot.Position.y;
             snapshot.Position = nudgedPosition;
+        }
+    }
+
+    /// <summary>
+    /// Reposiciona o grupo após combate com inimigo estático do spawn:
+    /// Wulfric no reset da vila; restantes nos Resting Points conhecidos.
+    /// </summary>
+    public void ReturnSnapshotsToResetSpawn()
+    {
+        var wulfricResetSpawnTransform = ResolveWulfricResetSpawnTransform();
+
+        foreach (var snapshot in _snapshots)
+        {
+            if (string.Equals(snapshot.CharacterName, "Wulfric", StringComparison.Ordinal)
+                && wulfricResetSpawnTransform != null)
+            {
+                snapshot.Position = wulfricResetSpawnTransform.position;
+                snapshot.Rotation = wulfricResetSpawnTransform.rotation;
+            }
+            else if (_villageSpawnByCharacterName.TryGetValue(snapshot.CharacterName, out var villageSpawn))
+            {
+                snapshot.Position = villageSpawn.Position;
+                snapshot.Rotation = villageSpawn.Rotation;
+            }
+
+            snapshot.State = ResolveFallbackInitialState(snapshot.CharacterName);
         }
     }
 

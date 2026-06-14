@@ -26,6 +26,7 @@ public sealed class StaticExplorationEnemyContact : MonoBehaviour
         if (_detector != null)
         {
             _detector.OnDetectorEnter += HandleDetectorEnter;
+            _detector.OnDetectorExit += HandleDetectorExit;
         }
     }
 
@@ -34,12 +35,13 @@ public sealed class StaticExplorationEnemyContact : MonoBehaviour
         if (_detector != null)
         {
             _detector.OnDetectorEnter -= HandleDetectorEnter;
+            _detector.OnDetectorExit -= HandleDetectorExit;
         }
     }
 
     private void Update()
     {
-        if (_detector == null || CombatExplorationBridge.IsCombatReentryBlocked)
+        if (_detector == null || IsCombatTriggerBlocked())
         {
             return;
         }
@@ -59,14 +61,36 @@ public sealed class StaticExplorationEnemyContact : MonoBehaviour
             return;
         }
 
-        if (_combatTriggered || CombatExplorationBridge.IsCombatReentryBlocked)
+        if (_combatTriggered || IsCombatTriggerBlocked())
         {
             return;
         }
 
         _combatTriggered = true;
+        CombatExplorationBridge.Instance?.NotifyStaticCombatContactTriggered();
         CombatExplorationBridge.Instance?.NotifyEnteringCombat();
         SceneTransitionHandler.LoadScene(CombatSceneName);
+    }
+
+    private void HandleDetectorExit(Collider detectedCollider, string shapeLabel, int shapeIndex)
+    {
+        if (!string.Equals(shapeLabel, ContactShapeLabel, System.StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (!IsPlayerCollider(detectedCollider))
+        {
+            return;
+        }
+
+        CombatExplorationBridge.Instance?.NotifyPlayerLeftCombatEntryZone();
+    }
+
+    private static bool IsCombatTriggerBlocked()
+    {
+        return CombatExplorationBridge.IsCombatReentryBlocked
+            || CombatExplorationBridge.RequiresCombatEntryZoneClearance;
     }
 
     private static bool IsPlayerCollider(Collider collider)

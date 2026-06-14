@@ -21,11 +21,26 @@ public class EnemyCollissionTrigger : MonoBehaviour
         if (!IsPlayerCollider(other))
             return;
 
-        if (CombatExplorationBridge.IsCombatReentryBlocked)
+        if (IsCombatTriggerBlocked())
             return;
 
+        CombatExplorationBridge.Instance?.NotifyStaticCombatContactTriggered();
         CombatExplorationBridge.Instance?.NotifyEnteringCombat();
         SceneTransitionHandler.LoadScene(CombatSceneName);
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (!IsPlayerCollider(other))
+            return;
+
+        CombatExplorationBridge.Instance?.NotifyPlayerLeftCombatEntryZone();
+    }
+
+    private static bool IsCombatTriggerBlocked()
+    {
+        return CombatExplorationBridge.IsCombatReentryBlocked
+            || CombatExplorationBridge.RequiresCombatEntryZoneClearance;
     }
 
     private void EnsureTriggerPhysicsConfigured()
