@@ -12,7 +12,7 @@ using UnityEngine;
 /// </summary>
 public sealed class CombatExplorationBridge : MonoBehaviour
 {
-    private static readonly string[] CombatAllyCharacterNames = { "Wulfric", "Girl" };
+    private static readonly string[] CombatAllyCharacterNames = { "Wulfric", "Matsuda" };
 
     private const float CombatReentryBlockSeconds = 2.5f;
     private const float VictoryReturnSeparationFromCombatEntry = 4f;

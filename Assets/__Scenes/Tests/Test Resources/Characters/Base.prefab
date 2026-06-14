@@ -244,6 +244,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Player.PlayerTorchHandler
   _torchObject: {fileID: 0}
   _naturalLightObject: {fileID: 1285396969534779272}
+  _handItensObject: []
   _animationController: {fileID: 0}
   _character: {fileID: 7660477565840652046}
   _inputReader: {fileID: 0}
@@ -396,6 +397,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DetectionPromptToggle
   promptRoot: {fileID: 6335115879115962391}
   faceMainCamera: 1
+  promptOffsetAboveColliderTop: {x: 0, y: 0.25, z: 0}
 --- !u!54 &6017633130661371091
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -421,7 +423,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
+  m_Constraints: 8
   m_CollisionDetection: 0
 --- !u!95 &281483597044789567
 Animator:

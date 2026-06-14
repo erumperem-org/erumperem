@@ -699,7 +699,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         return characterName switch
         {
             "Wulfric" => PlayableCharacterState.Main,
-            "Girl" => PlayableCharacterState.Companion,
+            "Matsuda" => PlayableCharacterState.Companion,
             "Buck" => PlayableCharacterState.Resting,
             _ => PlayableCharacterState.Resting,
         };
@@ -711,7 +711,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         {
             "Wulfric" => 100f,
             "Buck" => 200f,
-            "Girl" => 30f,
+            "Matsuda" => 30f,
             _ => 100f,
         };
     }
