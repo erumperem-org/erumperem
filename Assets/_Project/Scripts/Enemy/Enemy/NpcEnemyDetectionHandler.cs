@@ -92,7 +92,11 @@ namespace Systems.NPC.Enemy
                 _stateMachine.ToChase(ResolvePlayerTransform(detected));
 
             if (shapeLabel == "Contact")
+            {
                 _npcEnemy.NotifyPlayerContact();
+                //ScenesManager.Instance.LoadSceneByName("CombatScene");
+            }
+                
         }
 
         private void OnDetectorExit(Collider detected, string shapeLabel, int shapeIndex)

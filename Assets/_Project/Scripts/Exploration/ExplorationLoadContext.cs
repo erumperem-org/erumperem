@@ -578,6 +578,77 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         }
     }
 
+    /// <summary>Snapshots em memória (elementos mutáveis).</summary>
+    public IReadOnlyList<PlayableCharacterSnapshot> Snapshots => _snapshots;
+
+    /// <summary>
+    /// Atualiza posição/rotação de cada snapshot para o RestingPoint do personagem na cena.
+    /// </summary>
+    /// <returns>Número de snapshots actualizados.</returns>
+    public int MoveSnapshotsToCharacterRestingPoints()
+    {
+        if (!TryGetManager())
+        {
+            return 0;
+        }
+
+        var patchedSnapshotCount = 0;
+
+        foreach (var snapshot in _snapshots)
+        {
+            var playableCharacter = FindPlayableCharacterByName(snapshot.CharacterName);
+            if (playableCharacter == null)
+            {
+                continue;
+            }
+
+            var restingPointTransform = playableCharacter.RestingPoint;
+            if (restingPointTransform == null)
+            {
+                continue;
+            }
+
+            var previousPosition = snapshot.Position;
+            snapshot.Position = restingPointTransform.position;
+            snapshot.Rotation = restingPointTransform.rotation;
+            patchedSnapshotCount++;
+
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"[RestingPointPatcher] '{snapshot.CharacterName}' {previousPosition} → {snapshot.Position} (RestingPoint)",
+                LogCategory.Player);
+        }
+
+        return patchedSnapshotCount;
+    }
+
+    /// <summary>
+    /// Aplica snapshots já em memória na cena e grava em disco, sem reler o arquivo.
+    /// </summary>
+    public async void ApplySnapshotsAndSave()
+    {
+        if (!TryGetManager())
+        {
+            return;
+        }
+
+        _hasSave = _snapshots.Count > 0;
+        if (!_hasSave)
+        {
+            return;
+        }
+
+        ApplySnapshots();
+
+        _savedCorruptionValue = ResolveCurrentCorruptionValue();
+        await SaveToFileAsync();
+
+        if (_corruptionSystem != null)
+        {
+            _corruptionSystem.Corruption = _savedCorruptionValue;
+            _corruptionSystem.SaveState();
+        }
+    }
+
     private void CacheVillageSpawnPointsFromActiveScene()
     {
         _villageSpawnByCharacterName.Clear();
@@ -826,6 +897,24 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 _defaultSetups.RemoveAt(setupIndex);
             }
         }
+    }
+
+    private PlayableCharacter FindPlayableCharacterByName(string characterName)
+    {
+        foreach (var candidate in _manager.Playables)
+        {
+            if (candidate == null)
+            {
+                continue;
+            }
+
+            if (string.Equals(candidate.CharacterName, characterName, StringComparison.Ordinal))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     private bool TryGetManager()

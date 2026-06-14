@@ -32,12 +32,20 @@ public sealed class ShopItemButton : MonoBehaviour
 
     private void Awake()
     {
-        if (_item is IItem item)
+        if (_item is IStorageable item)
         {
             _button.onClick.AddListener(OnClick);
             _quanity.text = _price.ToString();
             _name.text = item.GetType().Name.ToString();
-            _spriteItem.sprite = item.Sprite;
+            if (item is IItem item1)
+            {
+                _spriteItem.sprite = item1.Sprite;
+            }
+            if (item is AnomalousArtifact anomalousArtifact)
+            {
+                _spriteItem.sprite = anomalousArtifact.Sprite;
+            }
+            _description.text = item.Description.ToString();
             _spriteCurrency.sprite = _currency.Sprite;
             RefreshInteractable();
         }

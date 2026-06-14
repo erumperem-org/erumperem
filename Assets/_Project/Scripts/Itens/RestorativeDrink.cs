@@ -28,10 +28,15 @@ namespace Core.Exploration.Items.Usables
         // ── IStorageable ──────────────────────────────────────────────────
 
         public StorageMode storageMode => StorageMode.Stackable;
+        [SerializeField] private string _itemId;
+        public string ItemId => _itemId;
+                public string Description => _description;
+        [SerializeField] private string _description;
 
         // ── IItem ─────────────────────────────────────────────────────────
 
         public Sprite Sprite => spriteExposed;
+
         public Sprite spriteExposed;
 
         public void ExecuteItemEffect()
