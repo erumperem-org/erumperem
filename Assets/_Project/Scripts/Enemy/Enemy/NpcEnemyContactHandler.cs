@@ -59,6 +59,9 @@ namespace Systems.NPC.Enemy
         {
             Debug.Log($"[NpcEnemyContactHandler] Contato: '{(enemy as UnityEngine.Object)?.name}' → Player.");
 
+            if (CombatExplorationBridge.IsCombatReentryBlocked)
+                return;
+
             CombatExplorationBridge.Instance?.NotifyEnteringCombat();
 
             if (HasConfiguredContactReaction())

@@ -13,6 +13,9 @@ public class EnemyCollissionTrigger : MonoBehaviour
         if (!IsPlayerCollider(other))
             return;
 
+        if (CombatExplorationBridge.IsCombatReentryBlocked)
+            return;
+
         CombatExplorationBridge.Instance?.NotifyEnteringCombat();
         SceneTransitionHandler.LoadScene(CombatSceneName);
     }
