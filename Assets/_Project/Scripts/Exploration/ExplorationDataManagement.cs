@@ -1,26 +1,24 @@
-using System.Collections.Generic;
 using UnityEngine;
 
-public class ExplorationDataManagement : MonoBehaviour
+/// <summary>
+/// Fachada de cena para operações de save/load de exploração.
+/// Invocada por botões de UI, triggers de cena, etc.
+///
+/// MUDANÇAS:
+///   - Não recebe mais <c>List&lt;PlayableCharacter&gt;</c> externamente —
+///     o Manager expõe <c>Playables</c> diretamente.
+///   - Métodos renomeados para refletir semântica clara.
+/// </summary>
+public sealed class ExplorationDataManagement : MonoBehaviour
 {
-    [SerializeField] private List<PlayableCharacter> playableCharacters;
-    [SerializeField] private PlayableCharactersManager playableCharactersManager;
+    // ExplorationLoadContext é um singleton DontDestroyOnLoad — acesso via Instance.
 
-    public void SaveExplorationState()
-    {
-        var context = ExplorationLoadContext.Instance;
-        context.SavePlayableCharactersState(playableCharactersManager, playableCharacters);
-    }
+    /// <summary>Persiste o estado atual dos personagens antes de trocar de cena.</summary>
+    public void Save()  => ExplorationLoadContext.Instance?.SaveState();
 
-    public void ResetExplorationContext()
-    {
-        var context = ExplorationLoadContext.Instance;
-        context.ClearData();
-    }
+    /// <summary>Restaura o estado salvo (ou aplica o padrão configurado).</summary>
+    public void Load()  => ExplorationLoadContext.Instance?.RestoreState();
 
-    public void LoadExplorationContext()
-    {
-        var context = ExplorationLoadContext.Instance;
-        context.RestoreState();
-    }
+    /// <summary>Apaga o save (novo jogo).</summary>
+    public void Reset() => ExplorationLoadContext.Instance?.ClearSave();
 }

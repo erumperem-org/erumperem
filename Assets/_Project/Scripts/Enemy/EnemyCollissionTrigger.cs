@@ -1,13 +1,30 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
+/// <summary>
+/// Gatilho de combate para inimigos estáticos colocados na cena (ex.: fantasma da vila).
+/// Os NPCs da pool usam <see cref="Systems.NPC.Enemy.NpcEnemyContactHandler"/>.
+/// </summary>
 public class EnemyCollissionTrigger : MonoBehaviour
 {
-    void OnTriggerEnter(Collider other)
+    private const string CombatSceneName = "CombatScene";
+
+    private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
-        {
-            SceneManager.LoadScene("CombatScene");
-        }
+        if (!IsPlayerCollider(other))
+            return;
+
+        if (CombatExplorationBridge.IsCombatReentryBlocked)
+            return;
+
+        CombatExplorationBridge.Instance?.NotifyEnteringCombat();
+        SceneTransitionHandler.LoadScene(CombatSceneName);
+    }
+
+    private static bool IsPlayerCollider(Collider collider)
+    {
+        if (collider.CompareTag("Player"))
+            return true;
+
+        return collider.GetComponentInParent<PlayableCharacter>() != null;
     }
 }

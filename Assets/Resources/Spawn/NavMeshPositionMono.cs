@@ -31,22 +31,39 @@ namespace Services.Spawning
             // Se centro não foi configurado, usa a posição do próprio GameObject
             Vector3 center = _center == Vector3.zero ? transform.position : _center;
 
-            _service = new NavMeshSpawnPositionService(_navMeshService, center, _radius);
+            INavMeshService navMeshService = _navMeshService ?? new NavMeshService();
+            _service = new NavMeshSpawnPositionService(navMeshService, center, _radius);
         }
 
         // ── ISpawnPositionService (delega para o serviço puro) ─────────────────
 
         public Vector3 GetPosition(Vector3 center, float radius)
-            => _service.GetPosition(center, radius);
+            => _service?.GetPosition(center, radius) ?? Vector3.zero;
 
         public Vector3 GetPosition()
-            => _service.GetPosition();
+            => _service?.GetPosition() ?? Vector3.zero;
 
         public bool TryGetPosition(Vector3 center, float radius, out Vector3 result)
-            => _service.TryGetPosition(center, radius, out result);
+        {
+            if (_service == null)
+            {
+                result = Vector3.zero;
+                return false;
+            }
+
+            return _service.TryGetPosition(center, radius, out result);
+        }
 
         public bool TryGetPosition(out Vector3 result)
-=> _service.TryGetPosition(out result);
+        {
+            if (_service == null)
+            {
+                result = Vector3.zero;
+                return false;
+            }
+
+            return _service.TryGetPosition(out result);
+        }
 
         // ── Gizmo de debug ────────────────────────────────────────────────────
 

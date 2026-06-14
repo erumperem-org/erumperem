@@ -52,6 +52,9 @@ namespace Erumperem.Combat
         [Header("Debug")]
         [SerializeField] private bool logEventsToConsole = true;
 
+        [Tooltip("Ignora o resultado da rolagem de iniciativa e faz a equipa dos aliados agir primeiro em cada ronda.")]
+        [SerializeField] private bool forceAlliesInitiativeFirst;
+
         [Header("Progression")]
         [Tooltip("Opcional na cena; se vazio usa PlayerProgressionService.Instance (DontDestroyOnLoad).")]
         [SerializeField] private PlayerProgressionService _progressionService;
@@ -115,6 +118,8 @@ namespace Erumperem.Combat
         private readonly Dictionary<string, Transform> _views = new(StringComparer.Ordinal);
         private readonly HashSet<string> _damageFeedbackBusy = new(StringComparer.Ordinal);
         private bool _presentationBusy;
+        private string _ongoingPresentationActorCombatantId = string.Empty;
+        private string _ongoingPresentationTargetCombatantId = string.Empty;
         private Transform _actionRockTransform;
         private Vector3 _actionRockBaseLocalPosition;
         private Combatant _selectedEnemyTarget;
@@ -131,6 +136,24 @@ namespace Erumperem.Combat
         public Combatant CurrentSelectedEnemy => _selectedEnemyTarget;
 
         public bool IsBattleOngoing => !_battleEnded && _state != null;
+
+        public bool IsActionPresentationOngoing => _presentationBusy && !_battleEnded;
+
+        public bool TryGetOngoingActionPresentationCombatantIds(
+            out string actorCombatantId,
+            out string targetCombatantId)
+        {
+            if (!_presentationBusy)
+            {
+                actorCombatantId = string.Empty;
+                targetCombatantId = string.Empty;
+                return false;
+            }
+
+            actorCombatantId = _ongoingPresentationActorCombatantId;
+            targetCombatantId = _ongoingPresentationTargetCombatantId;
+            return true;
+        }
 
         public Transform TryGetUnitVisualRoot(string combatantId)
         {
@@ -366,6 +389,8 @@ namespace Erumperem.Combat
                 passivesById: passives,
                 unlockAllPassiveNodesForAllies: false);
 
+            CombatExplorationBridge.Instance?.SeedBattleFromExploration(_state);
+
             if (progression != null)
             {
                 var pointsSpent = SkillTreeLookup.SumUnlockedNodeCosts(characterTrees, unlockedForBattle);
@@ -392,6 +417,7 @@ namespace Erumperem.Combat
             }
 
             _sim.EmitBattleStarted(_state);
+            ApplyDebugInitiativeOverrides();
             BeginRound();
             _sessionHub?.RaiseCombatSessionReadyForUi(this);
 
@@ -501,6 +527,31 @@ namespace Erumperem.Combat
         {
             _leftClickPressedThisFrame = false;
             _rightClickPressedThisFrame = false;
+        }
+
+        private void ApplyDebugInitiativeOverrides()
+        {
+            if (!forceAlliesInitiativeFirst || _state?.Initiative is null)
+            {
+                return;
+            }
+
+            var rolledInitiative = _state.Initiative;
+            _state.Initiative = new BattleInitiativeSnapshot
+            {
+                FirstActingSide = Side.Allies,
+                AllyTeamTotal = rolledInitiative.AllyTeamTotal,
+                EnemyTeamTotal = rolledInitiative.EnemyTeamTotal,
+                RollsByCombatantId = rolledInitiative.RollsByCombatantId,
+            };
+
+            if (logEventsToConsole)
+            {
+                Debug.Log(
+                    $"Debug: iniciativa forçada para aliados " +
+                    $"(rolagem original: aliados {rolledInitiative.AllyTeamTotal} vs inimigos {rolledInitiative.EnemyTeamTotal}, " +
+                    $"vencedor seria {rolledInitiative.FirstActingSide}).");
+            }
         }
 
         private void BeginRound()
@@ -823,6 +874,10 @@ namespace Erumperem.Combat
             {
                 Debug.Log("Empate?");
             }
+
+            CombatExplorationBridge.Instance?.NotifyCombatEnded(
+                _state,
+                alliesWon: _state.Winner == Side.Allies);
         }
 
         private void LogLastEvents()
@@ -880,9 +935,11 @@ namespace Erumperem.Combat
                 }
 
                 _sessionHub?.RaiseActionPresentationStarted();
+                _ongoingPresentationActorCombatantId = action.Actor.Identity.Id;
+                _ongoingPresentationTargetCombatantId = action.Target.Identity.Id;
                 _sessionHub?.RaiseCombatSkillExecutionPresentationStarted(
-                    action.Actor.Identity.Id,
-                    action.Target.Identity.Id);
+                    _ongoingPresentationActorCombatantId,
+                    _ongoingPresentationTargetCombatantId);
                 enemyActorVisual?.NotifyAttackPresentationBegin(play);
                 var rockDuration = Mathf.Max(0f, play + postPause);
 
@@ -964,6 +1021,8 @@ namespace Erumperem.Combat
             {
                 _sessionHub?.RaiseCinemachineFocusEnded();
                 StopActorActionRock();
+                _ongoingPresentationActorCombatantId = string.Empty;
+                _ongoingPresentationTargetCombatantId = string.Empty;
                 _presentationBusy = false;
                 onStepComplete?.Invoke();
                 _sessionHub?.RaiseTurnEnded();

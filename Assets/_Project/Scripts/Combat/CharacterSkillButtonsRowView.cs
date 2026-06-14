@@ -9,33 +9,39 @@ using UnityEngine;
 namespace Erumperem.Combat
 {
     /// <summary>
-    /// Uma linha (prefab <c>CharacterSkillButtonsHorizontalContainer</c>) com até
-    /// <see cref="MaxSlots"/> instâncias de <c>SkillButtonPanel</c>, reutilizável por combatente.
+    /// Spawns up to <see cref="MaxSlots"/> <see cref="SkillButtonCombat"/> instances inside the combat HUD
+    /// <c>SkillsPanel</c> horizontal layout.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CharacterSkillButtonsRowView : MonoBehaviour
     {
-        private const int MaxSlots = 6;
+        public const int MaxVisibleSlots = 6;
+        private const int MaxSlots = MaxVisibleSlots;
         private const float RowIntroScaleFrom = 0.94f;
         private const float RowIntroDuration = 0.2f;
 
         private readonly SkillButtonPanelView[] _slots = new SkillButtonPanelView[MaxSlots];
-        private string _combatantId;
+        private string _combatantId = string.Empty;
+        private int? _hoveredZeroBasedSlotIndex;
         private CombatSkillButtonBarUIManager _barManager;
-        private GameObject _slotPrefab;
+        private GameObject _skillButtonCombatPrefab;
+        private SkillVisualCatalog _skillVisualCatalog;
         private RectTransform _rowRect;
 
         public string CombatantId => _combatantId;
 
+        public int? HoveredZeroBasedSlotIndex => _hoveredZeroBasedSlotIndex;
+
         public void Build(
             CombatSkillButtonBarUIManager barManager,
-            string combatantId,
-            GameObject skillButtonPanelPrefab,
+            GameObject skillButtonCombatPrefab,
+            SkillVisualCatalog skillVisualCatalog,
             CombatSkillBarSelectionController skillBarSelectionOrNull = null)
         {
             _barManager = barManager;
-            _combatantId = combatantId;
-            _slotPrefab = skillButtonPanelPrefab;
+            _skillButtonCombatPrefab = skillButtonCombatPrefab;
+            _skillVisualCatalog = skillVisualCatalog;
+
             for (var childIndex = transform.childCount - 1; childIndex >= 0; childIndex--)
             {
                 var child = transform.GetChild(childIndex);
@@ -47,8 +53,9 @@ namespace Erumperem.Combat
 
             for (var slotIndex = 0; slotIndex < MaxSlots; slotIndex++)
             {
-                var go = Instantiate(_slotPrefab, transform, false);
-                var slot = go.GetComponent<SkillButtonPanelView>() ?? go.AddComponent<SkillButtonPanelView>();
+                var skillButtonInstance = Instantiate(_skillButtonCombatPrefab, transform, false);
+                var slot = skillButtonInstance.GetComponent<SkillButtonPanelView>() ??
+                           skillButtonInstance.AddComponent<SkillButtonPanelView>();
                 var indexCopy = slotIndex;
                 if (skillBarSelectionOrNull != null)
                 {
@@ -63,7 +70,36 @@ namespace Erumperem.Combat
                         () => _barManager.NotifySkillBarSlotSelected(_combatantId, indexCopy));
                 }
 
+                var capturedSlotIndex = slotIndex;
+                slot.PointerEntered += _ => HandleSkillSlotPointerEntered(capturedSlotIndex);
+                slot.PointerExited += _ => HandleSkillSlotPointerExited(capturedSlotIndex);
+
                 _slots[slotIndex] = slot;
+            }
+        }
+
+        private void HandleSkillSlotPointerEntered(int zeroBasedSlotIndex)
+        {
+            _hoveredZeroBasedSlotIndex = zeroBasedSlotIndex;
+        }
+
+        private void HandleSkillSlotPointerExited(int zeroBasedSlotIndex)
+        {
+            if (_hoveredZeroBasedSlotIndex == zeroBasedSlotIndex)
+            {
+                _hoveredZeroBasedSlotIndex = null;
+            }
+        }
+
+        public void SetActiveCombatantId(string combatantId) =>
+            _combatantId = combatantId ?? string.Empty;
+
+        public void HideAllSlots()
+        {
+            _hoveredZeroBasedSlotIndex = null;
+            for (var slotIndex = 0; slotIndex < MaxSlots; slotIndex++)
+            {
+                _slots[slotIndex]?.SetVisible(false);
             }
         }
 
@@ -122,12 +158,14 @@ namespace Erumperem.Combat
         {
             if (subject == null || string.IsNullOrEmpty(subject.Identity.Id))
             {
+                HideAllSlots();
                 return;
             }
 
+            _combatantId = subject.Identity.Id;
             var isEnemy = subject.Position.Side == Side.Enemies;
             var skillIds = subject.SkillLoadout.Skills
-                .Where(id => battleState.SkillsById.ContainsKey(id))
+                .Where(skillId => battleState.SkillsById.ContainsKey(skillId))
                 .Take(MaxSlots)
                 .ToList();
 
@@ -147,8 +185,12 @@ namespace Erumperem.Combat
                     continue;
                 }
 
-                var playerLine = CombatSkillPlayerDescriptionFormatter.BuildSummaryLine(skillDefinition);
-                var skillColor = SkillUiColorPalette.GetColorForSkillId(skillId);
+                var playerLine = CombatSkillPlayerDescriptionFormatter.BuildSummaryLine(
+                    skillDefinition,
+                    battleState,
+                    subject,
+                    selectedEnemyOrNull);
+                ResolveSkillIconVisuals(skillId, out var skillIcon, out var skillIconColor);
                 var interactable = !isEnemy && canThisRowIssuePlayerCommands &&
                     CombatSkillSlotUiEligibility.IsSlotUiInteractable(
                         battleState,
@@ -165,8 +207,32 @@ namespace Erumperem.Combat
                         _combatantId,
                         StringComparison.Ordinal);
                 slot.SetVisible(true);
-                slot.ApplyVisuals(skillColor, interactable, isSelected, playerLine, hotkeyLabelOneToSeven: slotIndex + 1);
+                slot.ApplyVisuals(
+                    skillIcon,
+                    skillIconColor,
+                    interactable,
+                    isSelected,
+                    playerLine,
+                    hotkeyLabelOneToSeven: slotIndex + 1);
             }
+        }
+
+        private void ResolveSkillIconVisuals(string skillId, out Sprite skillIcon, out Color skillIconColor)
+        {
+            skillIcon = null;
+            skillIconColor = Color.white;
+            if (_skillVisualCatalog == null || string.IsNullOrEmpty(skillId))
+            {
+                return;
+            }
+
+            if (!_skillVisualCatalog.TryGet(skillId, out var skillVisualDefinition))
+            {
+                return;
+            }
+
+            skillIcon = skillVisualDefinition.icon;
+            skillIconColor = skillVisualDefinition.iconColor;
         }
     }
 }

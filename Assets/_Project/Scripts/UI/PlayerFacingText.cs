@@ -6,6 +6,7 @@ using Game.Core.Analytics;
 using Game.Core.Domain;
 using Game.Core.Models;
 using Game.Core.Passives;
+using Game.Core.Presentation;
 using Erumperem.Progression;
 using UnityEngine;
 
@@ -90,13 +91,21 @@ namespace Erumperem.UI
                 return PresentForUi(BuildPassiveDescriptionFromAsset(nodeAsset));
             }
 
-            var body = nodeAsset.DescriptionForUi;
-            if (string.IsNullOrWhiteSpace(body))
+            try
             {
-                return nodeAsset.DisplayName;
+                var skillDefinition = nodeAsset.ToRuntimeSkillDefinition();
+                return PresentForUi(SkillPlayerDescriptionBuilder.BuildSummaryLine(skillDefinition));
             }
+            catch (InvalidOperationException)
+            {
+                var body = nodeAsset.DescriptionForUi;
+                if (string.IsNullOrWhiteSpace(body))
+                {
+                    return nodeAsset.DisplayName;
+                }
 
-            return PresentForUi(body);
+                return PresentForUi(body);
+            }
         }
 
         public static string FormatCombatLogLine(BattleState state, CombatEvent combatEvent)

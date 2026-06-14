@@ -14,7 +14,7 @@ public sealed class NPCInteractable : Interactable
 
     private Transform cam;
 
-    private void Awake()
+    protected override void Awake()
     {
         cam = Camera.main.transform;
 
@@ -34,12 +34,12 @@ public sealed class NPCInteractable : Interactable
         dialogueCanvas.transform.Rotate(0f, 180f, 0f);
     }
 
-    public override void ExecuteInteraction(PlayerMovementController controller)
-    {
-        if (dialogueCanvas == null || dialogueViewText == null)
-            return;
+    // public override void ExecuteInteraction(PlayerMovementController controller)
+    // {
+    //     if (dialogueCanvas == null || dialogueViewText == null)
+    //         return;
 
-        dialogueViewText.text = dialogue;
-        dialogueCanvas.gameObject.SetActive(true);
-    }
+    //     dialogueViewText.text = dialogue;
+    //     dialogueCanvas.gameObject.SetActive(true);
+    // }
 }

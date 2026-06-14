@@ -1,4 +1,7 @@
+using System.Collections.Generic;
+using System.Globalization;
 using Game.Core.Domain;
+using Game.Core.Models;
 
 namespace Erumperem.Combat.Tokens
 {
@@ -25,21 +28,76 @@ namespace Erumperem.Combat.Tokens
             TokenType.Stealth =>
                 "[token stealth]: não pode ser alvejado por ataques diretos.",
             TokenType.Combo =>
-                "[token combo]: acumula e potencia habilidades específicas; é consumido ao usar.",
+                "[token combo]: acumula e potencializa habilidades específicas; é consumido ao usar.",
             TokenType.Stun =>
                 "[token stun]: o portador perde o próximo turno.",
             _ => tokenType.ToString(),
         };
 
-        public static string GetDotAuthoredDescription(DotType dotType) => dotType switch
+        public static string GetDotAuthoredDescription(
+            DotType dotType,
+            IReadOnlyList<DotInstance> activeDots = null)
         {
-            DotType.Bleed =>
-                "[dot bleed]: causa [c damage]dano físico por turno[/c] enquanto activo.",
-            DotType.Blight =>
-                "[dot blight]: causa [c anomaly]dano de praga por turno[/c] (anomalia).",
-            DotType.Burn =>
-                "[dot burn]: causa [c fire]dano de fogo por turno[/c].",
-            _ => dotType.ToString(),
-        };
+            var potencyRangePhrase = BuildPotencyRangePhrase(activeDots, dotType);
+
+            return dotType switch
+            {
+                DotType.Bleed => FormatPerTurnDotLine("dano de sangramento", "[dot bleed]", potencyRangePhrase),
+                DotType.Blight => FormatPerTurnDotLine("dano de praga", "[dot blight]", potencyRangePhrase),
+                DotType.Burn => FormatPerTurnDotLine("dano de fogo", "[dot burn]", potencyRangePhrase),
+                _ => dotType.ToString(),
+            };
+        }
+
+        private static string FormatPerTurnDotLine(
+            string damageKindLabel,
+            string dotMarkupTag,
+            string potencyRangePhrase)
+        {
+            if (string.IsNullOrEmpty(potencyRangePhrase))
+            {
+                return $"Causa {damageKindLabel} de {dotMarkupTag} por turno.";
+            }
+
+            return $"Causa {potencyRangePhrase} de {dotMarkupTag} por turno.";
+        }
+
+        private static string BuildPotencyRangePhrase(IReadOnlyList<DotInstance> activeDots, DotType dotType)
+        {
+            if (activeDots == null || activeDots.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            int? minimumPotency = null;
+            int? maximumPotency = null;
+
+            foreach (var dotInstance in activeDots)
+            {
+                if (dotInstance.Type != dotType)
+                {
+                    continue;
+                }
+
+                minimumPotency = minimumPotency.HasValue
+                    ? System.Math.Min(minimumPotency.Value, dotInstance.Potency)
+                    : dotInstance.Potency;
+                maximumPotency = maximumPotency.HasValue
+                    ? System.Math.Max(maximumPotency.Value, dotInstance.Potency)
+                    : dotInstance.Potency;
+            }
+
+            if (!minimumPotency.HasValue || !maximumPotency.HasValue)
+            {
+                return string.Empty;
+            }
+
+            if (minimumPotency.Value == maximumPotency.Value)
+            {
+                return minimumPotency.Value.ToString(CultureInfo.InvariantCulture);
+            }
+
+            return $"{minimumPotency.Value}-{maximumPotency.Value}";
+        }
     }
 }

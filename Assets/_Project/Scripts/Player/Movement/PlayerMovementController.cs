@@ -1,66 +1,77 @@
-using UnityEngine;
-using Services.Navigation;
 using System.Collections;
 using System.Threading;
+using Services.Navigation;
+using UnityEngine;
+using UnityEngine.AI;
 
 namespace Player
 {
     public enum MovementMode { None, Player, Follow, WalkToPoint }
 
     [RequireComponent(typeof(NavMeshAgentAdapter))]
+    [RequireComponent(typeof(Rigidbody))]
     public sealed class PlayerMovementController : MonoBehaviour
     {
         [Header("Movimento")]
-        [SerializeField] private float _speed = 4f;
+        [SerializeField] private float _speed = 5f;
         [SerializeField] private float _projectionDistance = 3f;
         [SerializeField] private float _stoppingDistance = 0.1f;
         [SerializeField] private float _acceleration = 5f;
         [SerializeField] private PlayableAnimationController animationController;
-        private Vector3 _lastMoveDirection = Vector3.zero;
 
         [Header("Rotação")]
         [SerializeField] private float _rotationSpeed = 10f;
 
         [Header("Follow (Companion)")]
-        [Tooltip("Distância mínima do Main para o Companion começar a se mover.")]
         [SerializeField] private float _followMinDistance = 2f;
-        [Tooltip("Distância em que o Companion para de se aproximar.")]
         [SerializeField] private float _followStopDistance = 1.5f;
         [SerializeField] private float _directionChangeDotThreshold = 0.7f;
 
         [Header("Resting")]
-        [Tooltip("Margem extra além de stoppingDistance para considerar que chegou ao ponto.")]
         [SerializeField] private float _walkToPointTolerance = 0.3f;
 
-        // ── Dependências injetadas ─────────────────────────────────────────
+        // ── Dependências ──────────────────────────────────────────────────
 
-        [HideInInspector] public PlayerInputReader _inputReader;
-
+        [SerializeField] private PlayerInputReader _inputReader;
         private INavMeshService _navMesh;
         private NavMeshAgentAdapter _adapter;
+        private Rigidbody _rb;
 
-        // ── Estado interno ─────────────────────────────────────────────────
+        // ── Estado interno ────────────────────────────────────────────────
 
         private MovementMode _mode = MovementMode.None;
         private Transform _followTarget;
         private Vector3 _restingDestination;
         private bool _destinationSet;
+        private Vector3 _lastMoveDirection = Vector3.zero;
 
         private Coroutine _movementCoroutine;
         private CancellationTokenSource _linkCts;
         private bool _isTraversingLink;
 
-        // ── Propriedades ───────────────────────────────────────────────────
+        // ── Propriedades ──────────────────────────────────────────────────
+
+        public bool IsMoving => _mode == MovementMode.Player
+            ? _rb.linearVelocity.sqrMagnitude > 0.01f
+            : _navMesh != null && _adapter != null && _navMesh.IsMoving(_adapter);
 
         public void SetService(INavMeshService service) => _navMesh = service;
-        public bool IsMoving => _navMesh != null && _adapter != null && _navMesh.IsMoving(_adapter);
 
-        // ── Unity lifecycle ────────────────────────────────────────────────
+        // ── Unity lifecycle ───────────────────────────────────────────────
 
         private void Awake()
         {
             _adapter = GetComponent<NavMeshAgentAdapter>();
+            _rb = GetComponent<Rigidbody>();
             _navMesh = new NavMeshService();
+
+            if (animationController == null)
+            {
+                animationController = GetComponentInChildren<PlayableAnimationController>();
+            }
+
+            // Rigidbody não deve rotacionar por física — só por código.
+            _rb.freezeRotation = true;
         }
 
         private void Start()
@@ -71,6 +82,7 @@ namespace Player
                 enabled = false;
                 return;
             }
+
             _navMesh.SetAcceleration(_adapter, _acceleration);
             _navMesh.EnableAutoBraking(_adapter, true);
             _navMesh.SetSpeed(_adapter, _speed);
@@ -80,67 +92,113 @@ namespace Player
 
         private void OnDisable() => CancelLinkTraversal();
 
-        // ── API pública — usada pelo PlayableCharacterStatesBuilder ────────
+        // ── API pública ───────────────────────────────────────────────────
 
-        /// <summary>Main: controlado pelo input do jogador.</summary>
+        public void SetInputReader(PlayerInputReader inputReader) =>
+            _inputReader = inputReader;
+
         public void EnableMovement()
         {
             SetMode(MovementMode.Player);
         }
 
-        /// <summary>Companion: segue o Main via NavMesh.</summary>
         public void EnableFollow(Transform target)
         {
             bool targetChanged = target != _followTarget;
             _followTarget = target;
-
-            if (targetChanged)
-                _navMesh?.ClearPath(_adapter); // limpa rota antiga ao trocar de target
-
+            if (targetChanged) _navMesh?.ClearPath(_adapter);
             SetMode(MovementMode.Follow);
         }
 
-        /// <summary>Resting: caminha até uma posição fixa e para.</summary>
         public void EnableWalkToPoint(Vector3 destination)
         {
             _restingDestination = destination;
             SetMode(MovementMode.WalkToPoint);
         }
 
-        /// <summary>Para qualquer movimento (usado internamente ou para estados sem movimento).</summary>
         public void DisableMovement()
         {
             StopMovementCoroutine();
             _mode = MovementMode.None;
+            SetMovementBackend(MovementMode.None);
             _navMesh?.Stop(_adapter);
             animationController?.SetIsMoving(false);
         }
 
-        // ── Troca de modo ──────────────────────────────────────────────────
+        // ── Troca de modo ─────────────────────────────────────────────────
 
         private void SetMode(MovementMode mode)
         {
             StopMovementCoroutine();
-            _destinationSet = false; // reseta flag ao trocar de modo
+            _destinationSet = false;
             _mode = mode;
+
+            // Modo Player → física. Follow/WalkToPoint → NavMesh.
+            SetMovementBackend(mode);
+
             _movementCoroutine = StartCoroutine(MovementLoop());
         }
 
-        // ── Loop principal ─────────────────────────────────────────────────
+        /// <summary>
+        /// Liga/desliga Rigidbody e NavMeshAgent de forma mutuamente exclusiva.
+        /// Ambos ativos ao mesmo tempo causam conflito de posição.
+        /// </summary>
+        private void SetMovementBackend(MovementMode mode)
+        {
+            var useRigidbodyPhysics = mode == MovementMode.Player;
+            var useNavMeshAgent = mode is MovementMode.Follow or MovementMode.WalkToPoint;
+
+            _rb.isKinematic = !useRigidbodyPhysics;
+            if (!useRigidbodyPhysics)
+            {
+                _rb.linearVelocity = Vector3.zero;
+            }
+
+            var navMeshAgent = _adapter.Agent;
+            if (navMeshAgent == null)
+            {
+                return;
+            }
+
+            navMeshAgent.enabled = useNavMeshAgent;
+            if (!useNavMeshAgent)
+            {
+                return;
+            }
+
+            if (NavMesh.SamplePosition(transform.position, out var navMeshHit, 2f, NavMesh.AllAreas))
+            {
+                navMeshAgent.Warp(navMeshHit.position);
+            }
+
+            _navMesh?.ClearPath(_adapter);
+        }
+
+        // ── Loop principal ────────────────────────────────────────────────
 
         private IEnumerator MovementLoop()
         {
             while (true)
             {
-                if (_adapter.IsReady())
+                if (_mode == MovementMode.Player)
+                {
+                    // Física roda no FixedUpdate — fazemos tick ali.
+                    yield return new WaitForFixedUpdate();
+                    TickPlayer();
+                }
+                else if (_adapter.IsReady())
                 {
                     if (!_isTraversingLink && _navMesh.IsOnNavMeshLink(_adapter))
                         yield return StartCoroutine(TraverseLinkRoutine());
                     else if (!_isTraversingLink)
                         TickMode();
-                }
 
-                yield return null;
+                    yield return null;
+                }
+                else
+                {
+                    yield return null;
+                }
             }
         }
 
@@ -148,13 +206,12 @@ namespace Player
         {
             switch (_mode)
             {
-                case MovementMode.Player: TickPlayer(); break;
                 case MovementMode.Follow: TickFollow(); break;
                 case MovementMode.WalkToPoint: TickWalkToPoint(); break;
             }
         }
 
-        // ── Tick: Player (Main) ────────────────────────────────────────────
+        // ── Tick: Player (física) ─────────────────────────────────────────
 
         private void TickPlayer()
         {
@@ -165,32 +222,29 @@ namespace Player
             if (input.sqrMagnitude < 0.01f)
             {
                 _lastMoveDirection = Vector3.zero;
-                _navMesh.Stop(_adapter);
-                _navMesh.ClearPath(_adapter);
+                _rb.linearVelocity = Vector3.zero;
                 animationController?.SetIsMoving(false);
                 return;
             }
 
             var direction = new Vector3(input.x, 0f, input.y).normalized;
-
-            // Zera velocidade se a direção mudou bruscamente (produto escalar < threshold)
-            if (_lastMoveDirection.sqrMagnitude > 0.001f &&
-                Vector3.Dot(direction, _lastMoveDirection) < _directionChangeDotThreshold)
-            {
-                _navMesh.SetVelocity(_adapter, Vector3.zero);
-            }
-
             _lastMoveDirection = direction;
 
-            _navMesh.SetDestination(_adapter, transform.position + direction * _projectionDistance);
+            // Move por física — idêntico ao MovimentoXZ mas sem Rigidbody.MovePosition
+            // para não bypassar a física de colisão.
+            _rb.linearVelocity = direction * _speed;
+
             animationController?.SetIsMoving(true);
 
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                Quaternion.LookRotation(direction, Vector3.up),
-                _rotationSpeed * Time.deltaTime);
+            var targetRotation = Quaternion.LookRotation(direction, Vector3.up);
+            var smoothedRotation = Quaternion.Slerp(
+                _rb.rotation,
+                targetRotation,
+                _rotationSpeed * Time.fixedDeltaTime);
+            _rb.MoveRotation(smoothedRotation);
         }
-        // ── Tick: Follow (Companion) ───────────────────────────────────────
+
+        // ── Tick: Follow (NavMesh) ────────────────────────────────────────
 
         private void TickFollow()
         {
@@ -226,7 +280,7 @@ namespace Player
             }
         }
 
-        // ── Tick: WalkToPoint (Resting) ────────────────────────────────────
+        // ── Tick: WalkToPoint (NavMesh) ───────────────────────────────────
 
         private void TickWalkToPoint()
         {
@@ -237,15 +291,9 @@ namespace Player
             {
                 if (!_destinationSet)
                 {
-                    // MoveTo em vez de SetDestination: garante isStopped=false + limpa follow coroutine
                     bool ok = _navMesh.MoveTo(_adapter, _restingDestination);
-
-                    if (!ok)
-                    {
-                        // Ponto fora da NavMesh — valida e busca o mais próximo
-                        if (_navMesh.SamplePosition(_restingDestination, out var sampled, 2f))
-                            _navMesh.MoveTo(_adapter, sampled);
-                    }
+                    if (!ok && _navMesh.SamplePosition(_restingDestination, out var sampled, 2f))
+                        _navMesh.MoveTo(_adapter, sampled);
 
                     _navMesh.SetStoppingDistance(_adapter, _stoppingDistance);
                     _destinationSet = true;
@@ -269,10 +317,11 @@ namespace Player
                 animationController?.SetIsMoving(false);
                 StopMovementCoroutine();
                 _mode = MovementMode.None;
+                SetMovementBackend(MovementMode.None);
             }
         }
 
-        // ── NavMesh Link ───────────────────────────────────────────────────
+        // ── NavMesh Link ──────────────────────────────────────────────────
 
         private IEnumerator TraverseLinkRoutine()
         {
@@ -296,7 +345,7 @@ namespace Player
             _isTraversingLink = false;
         }
 
-        // ── Helpers ────────────────────────────────────────────────────────
+        // ── Helpers ───────────────────────────────────────────────────────
 
         private void StopMovementCoroutine()
         {
@@ -311,7 +360,16 @@ namespace Player
 #if UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
-            if (_navMesh == null || _adapter == null || !Application.isPlaying) return;
+            if (!Application.isPlaying) return;
+
+            if (_mode == MovementMode.Player && _rb != null)
+            {
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawRay(transform.position, _rb.linearVelocity);
+                return;
+            }
+
+            if (_navMesh == null || _adapter == null) return;
 
             Gizmos.color = Color.cyan;
             Gizmos.DrawSphere(_navMesh.GetCurrentDestination(_adapter), 0.15f);

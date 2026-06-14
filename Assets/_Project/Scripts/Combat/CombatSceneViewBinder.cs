@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Erumperem.Combat.HealthBars;
 using UnityEngine;
 
 namespace Erumperem.Combat
@@ -33,6 +34,11 @@ namespace Erumperem.Combat
         private string _turnMarkerLastCombatantId;
         private float _turnMarkerSpinZDegrees;
         private bool _skillBarInitialized;
+
+        private void Awake()
+        {
+            EnsureSkillDamagePreviewBinderExists();
+        }
 
         private void OnEnable()
         {
@@ -171,6 +177,16 @@ namespace Erumperem.Combat
         private void HandleSkillBarSelectionClearedBySession()
         {
             skillButtonBarUIManager?.OnSkillBarSelectionCleared();
+        }
+
+        private void EnsureSkillDamagePreviewBinderExists()
+        {
+            if (GetComponent<CombatSkillDamagePreviewBinder>() != null)
+            {
+                return;
+            }
+
+            gameObject.AddComponent<CombatSkillDamagePreviewBinder>();
         }
 
         private void DeactivateCurrentTurnMarker()

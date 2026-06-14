@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 708740743502979023}
-  - component: {fileID: 8737587290942376261}
+  - component: {fileID: 3373748412445953782}
   m_Layer: 0
   m_Name: Enemy Pool
   m_TagString: Untagged
@@ -26,13 +26,13 @@ Transform:
   m_GameObject: {fileID: 9092547445174392901}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.33917, y: -0, z: 2.1099}
+  m_LocalPosition: {x: 0, y: -0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8737587290942376261
+--- !u!114 &3373748412445953782
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -41,10 +41,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 9092547445174392901}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 311e5dd3490405341a8c862aa808cfe6, type: 3}
+  m_Script: {fileID: 11500000, guid: d9786e177537c5a489b7f847caf39b44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Systems.NPC.Pool.NpcEnemyPool
-  _npcPrefab: {fileID: 5458582549957236898, guid: 25c88be375409da4ab707faf84566e21, type: 3}
+  _npcPrefab: {fileID: 0}
   _poolSize: 10
   _storageOrigin: {x: 0, y: -100, z: 0}
   _storageSpacing: 3

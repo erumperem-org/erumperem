@@ -10,11 +10,11 @@ GameObject:
   m_Component:
   - component: {fileID: 8728546712410730901}
   - component: {fileID: 6948248592594450243}
-  - component: {fileID: 1857400927402193224}
-  - component: {fileID: 8806766028684247584}
-  - component: {fileID: 6401902208830884289}
-  - component: {fileID: 2417731461152433447}
-  - component: {fileID: 5874397283343216516}
+  - component: {fileID: 2996760090275336750}
+  - component: {fileID: 4080049674441029497}
+  - component: {fileID: 6490965129669470058}
+  - component: {fileID: 1145103615355512539}
+  - component: {fileID: 3386171543898322326}
   - component: {fileID: 4630302747134766427}
   m_Layer: 0
   m_Name: Exploration Enemy
@@ -61,7 +61,7 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &1857400927402193224
+--- !u!114 &2996760090275336750
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -73,7 +73,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f4c2ec9501881047bbb47c07f06f458, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Services.Navigation.NavMeshAgentAdapter
---- !u!114 &8806766028684247584
+--- !u!114 &4080049674441029497
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5458582549957236898}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d688e4ee75d81ec4195ed7a5f08619cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Systems.NPC.Enemy.NpcEnemy
+--- !u!114 &6490965129669470058
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -85,7 +97,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8166a01d44d71ee45a29a2226a09de90, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Core.Exploration.Character.Movement.NpcMovementController
---- !u!114 &6401902208830884289
+--- !u!114 &1145103615355512539
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -101,16 +113,16 @@ MonoBehaviour:
   - label: Perception
     shapeType: 0
     enabled: 1
-    offset: {x: 0, y: 0, z: 0}
+    offset: {x: 0, y: 1, z: 0}
     layerMasks:
     - serializedVersion: 2
-      m_Bits: 4294967295
+      m_Bits: 128
     filterTags:
     - Player
-    gizmoColor: {r: 0.93372107, g: 1, b: 0, a: 0}
-    solidAlpha: 0.358
+    gizmoColor: {r: 0, g: 0.87746024, b: 1, a: 0}
+    solidAlpha: 0.3
     sphere:
-      radius: 10
+      radius: 12
     box:
       halfExtents: {x: 0, y: 0, z: 0}
     cylinder:
@@ -128,18 +140,18 @@ MonoBehaviour:
   - label: Contact
     shapeType: 1
     enabled: 1
-    offset: {x: 0, y: 1.2, z: 0}
+    offset: {x: 0, y: 1, z: 0.6}
     layerMasks:
     - serializedVersion: 2
-      m_Bits: 4294967295
+      m_Bits: 128
     filterTags:
     - Player
-    gizmoColor: {r: 0.93372107, g: 1, b: 0, a: 0}
-    solidAlpha: 0.358
+    gizmoColor: {r: 0.91656363, g: 0.9811321, b: 0.1064436, a: 0}
+    solidAlpha: 0.3
     sphere:
-      radius: 10
+      radius: 0
     box:
-      halfExtents: {x: 1, y: 1.2, z: 1.5}
+      halfExtents: {x: 2, y: 2, z: 0.6}
     cylinder:
       radius: 0
       height: 0
@@ -154,7 +166,7 @@ MonoBehaviour:
       c: {x: 0, y: 0, z: 0}
   drawGizmos: 1
   showLabels: 1
---- !u!114 &2417731461152433447
+--- !u!114 &3386171543898322326
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -166,18 +178,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5832b752548ffd4b981307b23b843a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DetectionSystem.Core.Detector
---- !u!114 &5874397283343216516
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5458582549957236898}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ccb6f35ffc865a24296aef20a4fe1c50, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Systems.NPC.Enemy.NpcEnemy
 --- !u!114 &4630302747134766427
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -197,7 +197,7 @@ MonoBehaviour:
   showLabel: 1
   labelOffset: 0.25
   center: {x: 0, y: 0, z: 0}
-  radius: 1.5
+  radius: 6
   isFixed: 0
 --- !u!1001 &4982759974219393947
 PrefabInstance:
@@ -209,7 +209,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 6256490964612725206, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
       propertyPath: m_Name
-      value: GhostEnemy 1
+      value: GhostEnemy
       objectReference: {fileID: 0}
     - target: {fileID: 6744234788806124396, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
       propertyPath: m_LocalPosition.x

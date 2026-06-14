@@ -192,7 +192,9 @@ namespace Erumperem.Combat.Tokens
                     definition.backgroundTint,
                     dotTurnsSum,
                     showBackgroundTint: true,
-                    authoredHoverDescription: TokenAndDotDescriptionLibrary.GetDotAuthoredDescription(definition.DotType));
+                    authoredHoverDescription: TokenAndDotDescriptionLibrary.GetDotAuthoredDescription(
+                        definition.DotType,
+                        combatant.Dots.ActiveDots));
             }
 
             if (!anyVisible)

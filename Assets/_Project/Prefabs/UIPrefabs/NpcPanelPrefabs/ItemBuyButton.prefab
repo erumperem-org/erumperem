@@ -159,6 +159,7 @@ GameObject:
   - component: {fileID: 4219549130277596944}
   - component: {fileID: 5710275001533951683}
   - component: {fileID: 9093224826149605367}
+  - component: {fileID: 4626199676618437859}
   m_Layer: 5
   m_Name: ItemBuyButton
   m_TagString: Untagged
@@ -210,7 +211,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.54509807}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -271,6 +272,28 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &4626199676618437859
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6355114924766737796}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9d0d7dd820e3eb44b7a880852cde84c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShopItemButton
+  _item: {fileID: 0}
+  _currency: {fileID: 0}
+  _price: 1
+  _name: {fileID: 2252304540087942069}
+  _description: {fileID: 7982956374015341007}
+  _spriteItem: {fileID: 3473769678385578166}
+  _quanity: {fileID: 3234820155964946839}
+  _spriteCurrency: {fileID: 1335123896218127277}
+  _inventorySystem: {fileID: 0}
+  _button: {fileID: 9093224826149605367}
 --- !u!1 &7685988744057412309
 GameObject:
   m_ObjectHideFlags: 0
@@ -283,7 +306,7 @@ GameObject:
   - component: {fileID: 4355087835410115237}
   - component: {fileID: 7982956374015341007}
   m_Layer: 5
-  m_Name: Text (TMP) (1)
+  m_Name: Item Description
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -305,8 +328,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 261.16492, y: -51.32663}
-  m_SizeDelta: {x: 335.69, y: 35.995}
+  m_AnchoredPosition: {x: 261.16492, y: -58.447}
+  m_SizeDelta: {x: 335.69, y: 50.236}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4355087835410115237
 CanvasRenderer:
@@ -420,7 +443,7 @@ GameObject:
   - component: {fileID: 4401577152508046011}
   - component: {fileID: 2252304540087942069}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: Item Name
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -442,8 +465,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 148.32498, y: -19.448639}
-  m_SizeDelta: {x: 110.0024, y: 27.7615}
+  m_AnchoredPosition: {x: 339.66922, y: -19.448639}
+  m_SizeDelta: {x: 492.6908, y: 27.7615}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4401577152508046011
 CanvasRenderer:
@@ -509,7 +532,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 1
-  m_HorizontalAlignment: 2
+  m_HorizontalAlignment: 1
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
@@ -649,3 +672,25 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 4998049132488460539, guid: 9f4d5c33a2ad12343a2c277d6c673c40, type: 3}
   m_PrefabInstance: {fileID: 4919303504638626094}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1335123896218127277 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6252034656857113219, guid: 9f4d5c33a2ad12343a2c277d6c673c40, type: 3}
+  m_PrefabInstance: {fileID: 4919303504638626094}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+--- !u!114 &3234820155964946839 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7539170578167607481, guid: 9f4d5c33a2ad12343a2c277d6c673c40, type: 3}
+  m_PrefabInstance: {fileID: 4919303504638626094}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI

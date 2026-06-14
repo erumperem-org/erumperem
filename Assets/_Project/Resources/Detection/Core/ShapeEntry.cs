@@ -100,7 +100,23 @@ namespace DetectionSystem.Core
             if (filterTags.Count == 0) return true;
 
             for (int i = 0; i < filterTags.Count; i++)
-                if (!string.IsNullOrEmpty(filterTags[i]) && col.CompareTag(filterTags[i])) return true;
+            {
+                string filterTag = filterTags[i];
+                if (string.IsNullOrEmpty(filterTag)) continue;
+                if (HasTagInHierarchy(col.transform, filterTag)) return true;
+                if (filterTag == "Player" && col.GetComponentInParent<PlayableCharacter>() != null) return true;
+            }
+
+            return false;
+        }
+
+        private static bool HasTagInHierarchy(Transform transform, string tag)
+        {
+            while (transform != null)
+            {
+                if (transform.CompareTag(tag)) return true;
+                transform = transform.parent;
+            }
 
             return false;
         }

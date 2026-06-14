@@ -107,7 +107,7 @@ public sealed class CharacterSelectionCanvas : MonoBehaviour
         if (_current == null) return;
 
         // Nome e estado atual
-        _txtCharacterName.text = _current.characterName;
+        //_txtCharacterName.text = _current.characterName;
         _txtCurrentState.text  = $"Estado atual: {_current.CurrentState}";
 
         // Desabilita o botão correspondente ao estado atual (não faz sentido promover para o mesmo estado)

@@ -96,6 +96,12 @@ namespace Erumperem.Combat
                 return;
             }
 
+            if (IsEnemyCombatantId(capsuleTag.combatantId))
+            {
+                Hide();
+                return;
+            }
+
             var unitRoot = capsuleTag.transform;
             if (!unitRoot.gameObject.activeInHierarchy)
             {
@@ -215,5 +221,9 @@ namespace Erumperem.Combat
                 _instance.transform.DOKill();
             }
         }
+
+        private static bool IsEnemyCombatantId(string combatantId) =>
+            !string.IsNullOrEmpty(combatantId) &&
+            combatantId.StartsWith("enemy", System.StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -14,11 +14,29 @@ public class ChangeSceneButtonController : UiButtonController<ChangeSceneButtonM
 
     void IPointerDownHandler.OnPointerDown(PointerEventData eventData)
     {
-        if (!isDisabled)
+        if (isDisabled) return;
+
+        _fsm.TransitionTo(new ButtonPressed(this, uiButtonView._pressedEnterEffects, uiButtonView._pressedExitEffects));
+
+        if (string.IsNullOrWhiteSpace(uiButtonModel.sceneName))
         {
-            _fsm.TransitionTo(new ButtonPressed(this, uiButtonView._pressedEnterEffects, uiButtonView._pressedExitEffects));
-            ScenesManager.Instance.LoadSceneByName(uiButtonModel.sceneName);
+            Debug.LogError("[ChangeSceneButtonController] sceneName não configurado no botão.", this);
+            return;
         }
+
+        if (ScenesManager.Instance == null)
+        {
+            Debug.LogError("[ChangeSceneButtonController] ScenesManager.Instance não encontrado.", this);
+            return;
+        }
+
+        if (CombatExplorationBridge.Instance != null
+            && CombatExplorationBridge.Instance.TryCompleteReturnToExploration(uiButtonModel.sceneName))
+        {
+            return;
+        }
+
+        ScenesManager.Instance.LoadSceneByName(uiButtonModel.sceneName);
     }
 
     void IPointerExitHandler.OnPointerExit(PointerEventData eventData)

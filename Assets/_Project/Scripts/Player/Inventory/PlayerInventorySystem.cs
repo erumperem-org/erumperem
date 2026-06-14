@@ -9,6 +9,11 @@ public sealed class PlayerInventorySystem : MonoBehaviour
 
     public event Action<IStorageable, int> OnItemAdded;
     public event Action<IStorageable, int> OnItemRemoved;
+    /// <summary>
+    /// Retorna todos os itens e suas quantidades no inventário.
+    /// Usado pelo InventoryPanelView para popular a UI no OnEnable.
+    /// </summary>
+    public IEnumerable<KeyValuePair<IStorageable, int>> GetAll() => _inventory;
 
     // ── API pública ───────────────────────────────────────────────────────
 
@@ -47,7 +52,21 @@ public sealed class PlayerInventorySystem : MonoBehaviour
 
         PrintDebug();
     }
+    public void RemoveItem(IStorageable item)
+    {
+        if (!ValidateItem(item, "remove")) return;
 
+        if (!_inventory.ContainsKey(item))
+        {
+            Log(LogLevel.Warning, $"Attempted to remove non-existing item [{item}]");
+            return;
+        }
+
+        Log(LogLevel.Debug, $"Trying to remove [1] from [{item}]");
+        RemoveItem(item, 1);
+
+        PrintDebug();
+    }
     public bool Contains(IStorageable item) => _inventory.ContainsKey(item);
 
     public int GetAmount(IStorageable item) =>
@@ -152,7 +171,11 @@ public sealed class PlayerInventorySystem : MonoBehaviour
         {
             _inventory.Remove(item);
             Log(LogLevel.Debug, $"Removed empty stack [{item}]");
-            OnItemRemoved?.Invoke(item, 1);
+            OnItemRemoved?.Invoke(item, amount);
+        }
+        else
+        {
+            OnItemRemoved?.Invoke(item, amount);
         }
     }
 

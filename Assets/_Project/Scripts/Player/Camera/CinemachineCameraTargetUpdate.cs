@@ -1,28 +1,55 @@
 using Unity.Cinemachine;
 using UnityEngine;
 
-public class CinemachineCameraTargetUpdate : MonoBehaviour
+/// <summary>
+/// Atualiza o target da câmera Cinemachine quando o Main muda.
+/// Depende do evento <see cref="PlayableCharactersManager.OnMainChanged"/>
+/// e da interface <see cref="IPlayableCharacter"/> — nenhuma referência ao concreto.
+/// </summary>
+[RequireComponent(typeof(CinemachineCamera))]
+public sealed class CinemachineCameraTargetUpdate : MonoBehaviour
 {
-    public PlayableCharactersManager manager;
-    [SerializeField] private CinemachineCamera _cinemachineCamera;
-    void Awake()
+    [SerializeField] private PlayableCharactersManager _manager;
+
+    private CinemachineCamera _camera;
+
+    private void Awake()
     {
-        manager.MainCharacterChange += SetTarget;
-        if (_cinemachineCamera == null)
+        _camera = GetComponent<CinemachineCamera>();
+        if (_manager == null)
         {
-            this.GetComponent<CinemachineCamera>();
+            _manager = FindFirstObjectByType<PlayableCharactersManager>();
+        }
+
+        if (_manager == null)
+        {
+            Debug.LogError("[CinemachineCameraTargetUpdate] PlayableCharactersManager não encontrado na cena.", this);
+            enabled = false;
+            return;
+        }
+
+        _manager.OnMainChanged += OnMainChanged;
+    }
+
+    private void OnDestroy()
+    {
+        if (_manager != null)
+        {
+            _manager.OnMainChanged -= OnMainChanged;
         }
     }
 
-    public void SetTarget(PlayableCharacter main)
+    private void OnMainChanged(IPlayableCharacter main)
     {
-        _cinemachineCamera.Target.TrackingTarget = main.transform;
+        if (main == null) return;
+        _camera.Target.TrackingTarget = main.Transform;
     }
 
+    /// <summary>Sobrescreve follow e lookAt manualmente (ex: câmera de combate).</summary>
     public void SetFollowAndLookAt(Transform follow, Transform lookAt)
     {
-        _cinemachineCamera.Target.TrackingTarget = follow;
-        _cinemachineCamera.Target.CustomLookAtTarget = true;
-        _cinemachineCamera.Target.LookAtTarget = lookAt;
+        _camera.Target.TrackingTarget     = follow;
+        _camera.Target.CustomLookAtTarget = true;
+        _camera.Target.LookAtTarget       = lookAt;
     }
 }

@@ -35,7 +35,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 10}
+  m_SizeDelta: {x: 100, y: 97.5039}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3019735379419543290
 CanvasRenderer:
@@ -346,10 +346,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 774578930929887945}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 50}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8067430416852146832
 CanvasRenderer:
@@ -379,7 +379,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Causa 2-4 de :fire: por turno'
+  m_text: 'Causa 2-4 de :fire: por turno asdasdadsadadsoadshaddas'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -423,7 +423,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
+  m_TextWrappingMode: 2
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
@@ -462,13 +462,15 @@ GameObject:
   - component: {fileID: 774578930929887945}
   - component: {fileID: 2759232557708281048}
   - component: {fileID: 1330197722877377261}
+  - component: {fileID: 8193172076834350931}
+  - component: {fileID: 7303796957878675340}
   m_Layer: 5
   m_Name: TokenDescriptionPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &774578930929887945
 RectTransform:
   m_ObjectHideFlags: 0
@@ -486,8 +488,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -84.5}
-  m_SizeDelta: {x: 165.457, y: 43.7001}
+  m_AnchoredPosition: {x: 0, y: 117.4}
+  m_SizeDelta: {x: 168.2124, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2759232557708281048
 CanvasRenderer:
@@ -527,6 +529,46 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &8193172076834350931
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5561096597368857689}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3245ec927659c4140ac4f8d17403cc18, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ContentSizeFitter
+  m_HorizontalFit: 0
+  m_VerticalFit: 2
+--- !u!114 &7303796957878675340
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5561096597368857689}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.VerticalLayoutGroup
+  m_Padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
+  m_ChildAlignment: 0
+  m_Spacing: 0
+  m_ChildForceExpandWidth: 0
+  m_ChildForceExpandHeight: 0
+  m_ChildControlWidth: 1
+  m_ChildControlHeight: 1
+  m_ChildScaleWidth: 0
+  m_ChildScaleHeight: 0
+  m_ReverseArrangement: 0
 --- !u!1 &8109304737820291383
 GameObject:
   m_ObjectHideFlags: 0
@@ -539,6 +581,7 @@ GameObject:
   - component: {fileID: 1351384897437019137}
   - component: {fileID: 6476175189776377712}
   - component: {fileID: 1615480548132617239}
+  - component: {fileID: 7258941038152639405}
   m_Layer: 5
   m_Name: TokenIcon
   m_TagString: Untagged
@@ -621,4 +664,27 @@ MonoBehaviour:
   iconImage: {fileID: 6476175189776377712}
   backgroundImage: {fileID: 0}
   stackLabel: {fileID: 6280806237511692862}
-  hoverDescriptionView: {fileID: 0}
+  hoverDescriptionView: {fileID: 7258941038152639405}
+--- !u!114 &7258941038152639405
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8109304737820291383}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4725d82691ceafb448d89d3dbc1794e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.Tokens.TokenIconHoverDescriptionView
+  _descriptionPanelRoot: {fileID: 774578930929887945}
+  _descriptionTextLabel: {fileID: 269260514202796590}
+  _descriptionPanelCanvasGroup: {fileID: 0}
+  _panelPunchScale: {x: 0.18, y: 0.22, z: 0}
+  _panelPunchDuration: 0.32
+  _panelPunchVibrato: 8
+  _panelPunchElasticity: 0.6
+  _panelFadeInSeconds: 0.12
+  _panelFadeOutSeconds: 0.08
+  _disableRaycastOnPanelChildren: 1
+  _hideImmediatelyOnExit: 0
