@@ -121,6 +121,16 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
     private PlayableCharactersManager _manager;
 
+    private readonly Dictionary<string, VillageSpawnSnapshot> _villageSpawnByCharacterName =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    [Serializable]
+    private struct VillageSpawnSnapshot
+    {
+        public Vector3    Position;
+        public Quaternion Rotation;
+    }
+
     // ── Unity lifecycle ───────────────────────────────────────────────────
 
     private void Awake()
@@ -469,63 +479,95 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     private IEnumerator RestoreNextFrame()
     {
         yield return null;
+        CacheVillageSpawnPointsFromActiveScene();
         TryRestoreOnSceneReady();
     }
 
     private void TryRestoreOnSceneReady()
     {
         TryResolveCorruptionSystemFromScene();
+        CacheVillageSpawnPointsFromActiveScene();
         if (!TryGetManager()) return;
         RestoreState();
     }
 
-    private void OverwriteSnapshotsForVillageReturn()
+    public bool TryGetSavedPositionForCharacter(string characterName, out Vector3 position)
     {
-        RemoveDestroyedDefaultSetups();
+        var snapshot = _snapshots.Find(savedSnapshot =>
+            string.Equals(savedSnapshot.CharacterName, characterName, StringComparison.Ordinal));
 
-        foreach (var setup in _defaultSetups)
+        if (snapshot == null)
         {
-            if (setup.Character == null)
+            position = default;
+            return false;
+        }
+
+        position = snapshot.Position;
+        return true;
+    }
+
+    /// <summary>
+    /// Evita respawn em cima do gatilho de combate após vitória (ex.: fantasma estático da vila).
+    /// </summary>
+    public void NudgeSnapshotsAwayFromWorldPoint(Vector3 worldPoint, float minimumSeparationDistance)
+    {
+        if (minimumSeparationDistance <= 0f)
+        {
+            return;
+        }
+
+        var flatCombatEntry = new Vector3(worldPoint.x, 0f, worldPoint.z);
+        foreach (var snapshot in _snapshots)
+        {
+            var flatSnapshotPosition = new Vector3(snapshot.Position.x, 0f, snapshot.Position.z);
+            var offsetFromCombatEntry = flatSnapshotPosition - flatCombatEntry;
+            if (offsetFromCombatEntry.sqrMagnitude >= minimumSeparationDistance * minimumSeparationDistance)
             {
                 continue;
             }
 
-            var snapshot = _snapshots.Find(savedSnapshot =>
-                string.Equals(savedSnapshot.CharacterName, setup.Character.CharacterName, StringComparison.Ordinal));
+            var pushDirection = offsetFromCombatEntry.sqrMagnitude > 0.0001f
+                ? offsetFromCombatEntry.normalized
+                : Vector3.forward;
 
-            if (snapshot == null)
-            {
-                continue;
-            }
-
-            var villageSpawnTransform = TryFindVillageSpawnTransform(setup.Character.CharacterName);
-            if (villageSpawnTransform != null)
-            {
-                snapshot.Position = villageSpawnTransform.position;
-                snapshot.Rotation = villageSpawnTransform.rotation;
-            }
-
-            snapshot.State = setup.InitialState;
+            var nudgedPosition = flatCombatEntry + pushDirection * minimumSeparationDistance;
+            nudgedPosition.y = snapshot.Position.y;
+            snapshot.Position = nudgedPosition;
         }
     }
 
-    private static Transform TryFindVillageSpawnTransform(string characterName)
+    private void CacheVillageSpawnPointsFromActiveScene()
     {
+        _villageSpawnByCharacterName.Clear();
+
         var restingPointsRoot = GameObject.Find("Resting Points");
         if (restingPointsRoot == null)
         {
-            return null;
+            return;
         }
 
-        foreach (Transform childTransform in restingPointsRoot.transform)
+        foreach (Transform restingPointTransform in restingPointsRoot.transform)
         {
-            if (string.Equals(childTransform.name, characterName, StringComparison.OrdinalIgnoreCase))
+            _villageSpawnByCharacterName[restingPointTransform.name] = new VillageSpawnSnapshot
             {
-                return childTransform;
-            }
+                Position = restingPointTransform.position,
+                Rotation = restingPointTransform.rotation,
+            };
         }
+    }
 
-        return null;
+    private void OverwriteSnapshotsForVillageReturn()
+    {
+        foreach (var snapshot in _snapshots)
+        {
+            if (_villageSpawnByCharacterName.TryGetValue(snapshot.CharacterName, out var villageSpawn))
+            {
+                snapshot.Position = villageSpawn.Position;
+                snapshot.Rotation = villageSpawn.Rotation;
+            }
+
+            snapshot.State = ResolveFallbackInitialState(snapshot.CharacterName);
+        }
     }
 
     private float ResolveCurrentCorruptionValue()

@@ -14,11 +14,21 @@ public sealed class CombatExplorationBridge : MonoBehaviour
 {
     private static readonly string[] CombatAllyCharacterNames = { "Wulfric", "Girl" };
 
+    private const float CombatReentryBlockSeconds = 2.5f;
+    private const float VictoryReturnSeparationFromCombatEntry = 4f;
+    private const string MainExplorationCharacterName = "Wulfric";
+
     public static CombatExplorationBridge Instance { get; private set; }
+
+    public static bool IsCombatReentryBlocked =>
+        Instance != null && Time.time < Instance._combatReentryBlockedUntil;
 
     private bool _hasPendingCombatReturn;
     private bool _lastBattleAlliesWon;
     private BattleState _lastBattleState;
+    private float _combatReentryBlockedUntil;
+    private bool _hasLastCombatEntryPosition;
+    private Vector3 _lastCombatEntryWorldPosition;
 
     private void Awake()
     {
@@ -55,6 +65,7 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         }
 
         ExplorationLoadContext.Instance.SaveState();
+        RememberCombatEntryPosition(ExplorationLoadContext.Instance);
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
             "[COMBAT-BRIDGE] Estado de exploração salvo antes do combate.",
@@ -161,9 +172,34 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             CombatAllyCharacterNames,
             returnToVillage: !_lastBattleAlliesWon);
 
+        if (_lastBattleAlliesWon && _hasLastCombatEntryPosition)
+        {
+            loadContext.NudgeSnapshotsAwayFromWorldPoint(
+                _lastCombatEntryWorldPosition,
+                VictoryReturnSeparationFromCombatEntry);
+        }
+
+        _combatReentryBlockedUntil = Time.time + CombatReentryBlockSeconds;
         ClearPendingReturn();
         ScenesManager.Instance.LoadSceneByName(targetSceneName);
         return true;
+    }
+
+    private static void RememberCombatEntryPosition(ExplorationLoadContext loadContext)
+    {
+        if (loadContext == null)
+        {
+            return;
+        }
+
+        if (loadContext.TryGetSavedPositionForCharacter(MainExplorationCharacterName, out var entryPosition))
+        {
+            Instance._lastCombatEntryWorldPosition = entryPosition;
+            Instance._hasLastCombatEntryPosition = true;
+            return;
+        }
+
+        Instance._hasLastCombatEntryPosition = false;
     }
 
     private void ClearPendingReturn()
