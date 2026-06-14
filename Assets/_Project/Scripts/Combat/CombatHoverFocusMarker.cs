@@ -1,229 +1,241 @@
 using DG.Tweening;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Erumperem.Combat
 {
-    public enum HoverMarkerSpinAxis
-    {
-        WorldY,
-        LocalZ,
-    }
+	public enum HoverMarkerSpinAxis
+	{
+		WorldY,
+		LocalZ,
+	}
 
-    /// <summary>
-    /// Marcador sob unidade sob rato: mantém rotação local do prefab; spin só em eixo Y mundo (WorldAxisAdd).
-    /// </summary>
-    public sealed class CombatHoverFocusMarker : MonoBehaviour
-    {
-        [Header("Prefab")]
-        [Tooltip("Losango/cristal; rotação local do prefab (ex. 90,0,0) preservada.")]
-        [SerializeField] private GameObject markerPrefab;
+	/// <summary>
+	/// Marker displayed above hovered combatants.
+	/// Supports allies and enemies.
+	/// Preserves prefab local rotation.
+	/// </summary>
+	public sealed class CombatHoverFocusMarker : MonoBehaviour
+	{
+		[Header("Prefab")]
+		[SerializeField] private GameObject markerPrefab;
 
-        [Header("Raycast")]
-        [SerializeField] private Camera raycastCamera;
-        [SerializeField] private float raycastMaxDistance = 200f;
-        [SerializeField] private LayerMask raycastLayerMask = ~0;
+		[Header("Raycast")]
+		[SerializeField] private Camera raycastCamera;
+		[SerializeField] private float raycastMaxDistance = 200f;
+		[SerializeField] private LayerMask raycastLayerMask = ~0;
 
-        [Header("Posição")]
-        [Tooltip("Offset extra em Y mundo a partir do topo do collider (bounds.max.y). Valores negativos descem.")]
-        [FormerlySerializedAs("verticalOffsetBelowUnit")]
-        [SerializeField] private float verticalOffsetFromColliderTop = 0.35f;
+		[Header("Position Offset")]
+		[SerializeField] private Vector3 markerOffset = new Vector3(0f, 0.35f, 0f);
 
-        [Header("DOTween — aparecer")]
-        [SerializeField] private float punchDuration = 0.35f;
-        [SerializeField] private Vector3 punchScale = new(0.22f, 0.22f, 0.22f);
-        [SerializeField] private int punchVibrato = 10;
-        [SerializeField] private float punchElasticity = 0.45f;
+		[Header("Target Filtering")]
+		[SerializeField] private bool showOnEnemies = true;
 
-        [Header("DOTween — rotação contínua")]
-        [Tooltip("WorldY = DORotate WorldAxisAdd. LocalZ = DOLocalRotate LocalAxisAdd (útil se mesh alinhado em Z após tilt do prefab).")]
-        [SerializeField] private HoverMarkerSpinAxis spinAxis = HoverMarkerSpinAxis.WorldY;
-        [SerializeField] private float spinPeriodSeconds = 3.5f;
+		[Header("DOTween - Appear")]
+		[SerializeField] private float punchDuration = 0.35f;
+		[SerializeField] private Vector3 punchScale = new(0.22f, 0.22f, 0.22f);
+		[SerializeField] private int punchVibrato = 10;
+		[SerializeField] private float punchElasticity = 0.45f;
 
-        private GameObject _instance;
-        private Vector3 _baseLocalScale = Vector3.one;
-        private Quaternion _prefabBaseLocalRotation = Quaternion.identity;
-        private string _lastJuiceCombatantId;
+		[Header("DOTween - Rotation")]
+		[SerializeField] private HoverMarkerSpinAxis spinAxis = HoverMarkerSpinAxis.WorldY;
+		[SerializeField] private float spinPeriodSeconds = 3.5f;
 
-        private void Awake()
-        {
-            if (raycastCamera == null)
-            {
-                raycastCamera = Camera.main;
-            }
-        }
+		private GameObject _instance;
+		private Vector3 _baseLocalScale = Vector3.one;
+		private Quaternion _baseLocalRotation = Quaternion.identity;
+		private string _lastCombatantId;
 
-        private void Start()
-        {
-            EnsureCreated();
-        }
+		private void Awake()
+		{
+			if (raycastCamera == null)
+				raycastCamera = Camera.main;
+		}
 
-        private void OnDisable()
-        {
-            Hide();
-        }
+		private void Start()
+		{
+			EnsureCreated();
+		}
 
-        private void LateUpdate()
-        {
-            if (_instance == null || !isActiveAndEnabled)
-            {
-                return;
-            }
+		private void OnDisable()
+		{
+			Hide();
+		}
 
-            if (raycastCamera == null)
-            {
-                Hide();
-                return;
-            }
+		private void LateUpdate()
+		{
+			if (_instance == null || !isActiveAndEnabled)
+				return;
 
-            if (InputManager.Instance == null || !InputManager.Instance.TryGetPointerScreenPosition(out var pointerScreenPosition))
-            {
-                Hide();
-                return;
-            }
+			if (raycastCamera == null)
+			{
+				Hide();
+				return;
+			}
 
-            var ray = raycastCamera.ScreenPointToRay(pointerScreenPosition);
-            if (!Physics.Raycast(ray, out var hit, raycastMaxDistance, raycastLayerMask))
-            {
-                Hide();
-                return;
-            }
+			if (InputManager.Instance == null ||
+				!InputManager.Instance.TryGetPointerScreenPosition(out var pointerPosition))
+			{
+				Hide();
+				return;
+			}
 
-            var capsuleTag = hit.collider.GetComponentInParent<CombatCapsuleTag>();
-            if (capsuleTag == null || string.IsNullOrEmpty(capsuleTag.combatantId) || !capsuleTag.isActiveAndEnabled)
-            {
-                Hide();
-                return;
-            }
+			var ray = raycastCamera.ScreenPointToRay(pointerPosition);
 
-            if (IsEnemyCombatantId(capsuleTag.combatantId))
-            {
-                Hide();
-                return;
-            }
+			if (!Physics.Raycast(ray, out var hit, raycastMaxDistance, raycastLayerMask))
+			{
+				Hide();
+				return;
+			}
 
-            var unitRoot = capsuleTag.transform;
-            if (!unitRoot.gameObject.activeInHierarchy)
-            {
-                Hide();
-                return;
-            }
+			var capsuleTag = hit.collider.GetComponentInParent<CombatCapsuleTag>();
 
-            var topWorldY = CombatUnitColliderVerticalExtents.TryGetTopWorldY(unitRoot, out var colliderTopWorldY)
-                ? colliderTopWorldY
-                : unitRoot.position.y;
+			if (capsuleTag == null ||
+				string.IsNullOrEmpty(capsuleTag.combatantId) ||
+				!capsuleTag.isActiveAndEnabled)
+			{
+				Hide();
+				return;
+			}
 
-            var markerPosition = unitRoot.position;
-            markerPosition.y = topWorldY + verticalOffsetFromColliderTop;
+			if (!showOnEnemies &&
+				capsuleTag.combatantId.StartsWith("enemy",
+					System.StringComparison.OrdinalIgnoreCase))
+			{
+				Hide();
+				return;
+			}
 
-            PresentAt(markerPosition, capsuleTag.combatantId);
-        }
+			var unitRoot = capsuleTag.transform;
 
-        private void EnsureCreated()
-        {
-            if (markerPrefab == null || _instance != null)
-            {
-                return;
-            }
+			if (!unitRoot.gameObject.activeInHierarchy)
+			{
+				Hide();
+				return;
+			}
 
-            _instance = Instantiate(markerPrefab);
-            _instance.name = "HoverFocusMarker";
-            _baseLocalScale = _instance.transform.localScale;
-            _prefabBaseLocalRotation = _instance.transform.localRotation;
-            _instance.SetActive(false);
+			var topWorldY = CombatUnitColliderVerticalExtents.TryGetTopWorldY(
+				unitRoot,
+				out var colliderTopWorldY)
+				? colliderTopWorldY
+				: unitRoot.position.y;
 
-            var ignoreRaycastLayer = LayerMask.NameToLayer("Ignore Raycast");
-            if (ignoreRaycastLayer >= 0)
-            {
-                SetLayerRecursively(_instance, ignoreRaycastLayer);
-            }
-        }
+			var markerPosition = unitRoot.position;
+			markerPosition.y = topWorldY;
+			markerPosition += markerOffset;
 
-        private void Hide()
-        {
-            _lastJuiceCombatantId = null;
-            if (_instance != null)
-            {
-                var markerTransform = _instance.transform;
-                markerTransform.DOKill();
-                markerTransform.localScale = _baseLocalScale;
-                markerTransform.localRotation = _prefabBaseLocalRotation;
-                _instance.SetActive(false);
-            }
-        }
+			PresentAt(markerPosition, capsuleTag.combatantId);
+		}
 
-        private void PresentAt(Vector3 worldPosition, string combatantId)
-        {
-            if (_instance == null)
-            {
-                return;
-            }
+		private void EnsureCreated()
+		{
+			if (_instance != null || markerPrefab == null)
+				return;
 
-            _instance.SetActive(true);
-            var markerTransform = _instance.transform;
-            markerTransform.position = worldPosition;
+			_instance = Instantiate(markerPrefab);
+			_instance.name = "HoverFocusMarker";
 
-            if (_lastJuiceCombatantId != combatantId)
-            {
-                _lastJuiceCombatantId = combatantId;
-                PlayAppearJuice(markerTransform);
+			_baseLocalScale = _instance.transform.localScale;
+			_baseLocalRotation = _instance.transform.localRotation;
 
-                if (AudioManager.instance != null)
-                {
-                    AudioManager.instance.PlaySFX("CharacterHover");
-                }
-            }
-        }
+			_instance.SetActive(false);
 
-        private void PlayAppearJuice(Transform markerTransform)
-        {
-            markerTransform.DOKill();
-            markerTransform.localScale = _baseLocalScale;
-            markerTransform.localRotation = _prefabBaseLocalRotation;
+			var ignoreRaycastLayer = LayerMask.NameToLayer("Ignore Raycast");
 
-            markerTransform
-                .DOPunchScale(punchScale, punchDuration, punchVibrato, punchElasticity)
-                .SetLink(_instance);
+			if (ignoreRaycastLayer >= 0)
+				SetLayerRecursively(_instance, ignoreRaycastLayer);
+		}
 
-            var spinDuration = Mathf.Max(0.05f, spinPeriodSeconds);
-            if (spinAxis == HoverMarkerSpinAxis.WorldY)
-            {
-                markerTransform
-                    .DORotate(new Vector3(0f, 360f, 0f), spinDuration, RotateMode.WorldAxisAdd)
-                    .SetEase(Ease.Linear)
-                    .SetLoops(-1, LoopType.Incremental)
-                    .SetLink(_instance);
-            }
-            else
-            {
-                markerTransform
-                    .DOLocalRotate(new Vector3(0f, 0f, 360f), spinDuration, RotateMode.LocalAxisAdd)
-                    .SetEase(Ease.Linear)
-                    .SetLoops(-1, LoopType.Incremental)
-                    .SetLink(_instance);
-            }
-        }
+		private void PresentAt(Vector3 position, string combatantId)
+		{
+			_instance.SetActive(true);
 
-        private static void SetLayerRecursively(GameObject gameObject, int layer)
-        {
-            gameObject.layer = layer;
-            var transform = gameObject.transform;
-            for (var childIndex = 0; childIndex < transform.childCount; childIndex++)
-            {
-                SetLayerRecursively(transform.GetChild(childIndex).gameObject, layer);
-            }
-        }
+			var markerTransform = _instance.transform;
+			markerTransform.position = position;
 
-        private void OnDestroy()
-        {
-            if (_instance != null)
-            {
-                _instance.transform.DOKill();
-            }
-        }
+			if (_lastCombatantId == combatantId)
+				return;
 
-        private static bool IsEnemyCombatantId(string combatantId) =>
-            !string.IsNullOrEmpty(combatantId) &&
-            combatantId.StartsWith("enemy", System.StringComparison.OrdinalIgnoreCase);
-    }
+			_lastCombatantId = combatantId;
+
+			PlayAppearJuice(markerTransform);
+
+			if (AudioManager.instance != null)
+				AudioManager.instance.PlaySFX("CharacterHover");
+		}
+
+		private void Hide()
+		{
+			_lastCombatantId = null;
+
+			if (_instance == null)
+				return;
+
+			var markerTransform = _instance.transform;
+
+			markerTransform.DOKill();
+			markerTransform.localScale = _baseLocalScale;
+			markerTransform.localRotation = _baseLocalRotation;
+
+			_instance.SetActive(false);
+		}
+
+		private void PlayAppearJuice(Transform markerTransform)
+		{
+			markerTransform.DOKill();
+
+			markerTransform.localScale = _baseLocalScale;
+			markerTransform.localRotation = _baseLocalRotation;
+
+			markerTransform
+				.DOPunchScale(
+					punchScale,
+					punchDuration,
+					punchVibrato,
+					punchElasticity)
+				.SetLink(_instance);
+
+			var spinDuration = Mathf.Max(0.05f, spinPeriodSeconds);
+
+			if (spinAxis == HoverMarkerSpinAxis.WorldY)
+			{
+				markerTransform
+					.DORotate(
+						new Vector3(0f, 360f, 0f),
+						spinDuration,
+						RotateMode.WorldAxisAdd)
+					.SetEase(Ease.Linear)
+					.SetLoops(-1, LoopType.Incremental)
+					.SetLink(_instance);
+			}
+			else
+			{
+				markerTransform
+					.DOLocalRotate(
+						new Vector3(0f, 0f, 360f),
+						spinDuration,
+						RotateMode.LocalAxisAdd)
+					.SetEase(Ease.Linear)
+					.SetLoops(-1, LoopType.Incremental)
+					.SetLink(_instance);
+			}
+		}
+
+		private static void SetLayerRecursively(GameObject obj, int layer)
+		{
+			obj.layer = layer;
+
+			var transform = obj.transform;
+
+			for (int i = 0; i < transform.childCount; i++)
+			{
+				SetLayerRecursively(transform.GetChild(i).gameObject, layer);
+			}
+		}
+
+		private void OnDestroy()
+		{
+			if (_instance != null)
+				_instance.transform.DOKill();
+		}
+	}
 }

@@ -200,67 +200,86 @@ namespace Erumperem.Combat
             _turnMarkerLastCombatantId = null;
         }
 
-        private void SyncCurrentTurnMarker()
-        {
-            if (currentTurnMarkerPrefab == null || combatSession == null)
-            {
-                return;
-            }
+		private void SyncCurrentTurnMarker()
+		{
+			if (currentTurnMarkerPrefab == null || combatSession == null)
+			{
+				return;
+			}
 
-            if (!combatSession.TryGetPlayerTurnMarkerState(out var combatantId, out var shouldShowMarker))
-            {
-                DeactivateCurrentTurnMarker();
-                return;
-            }
+			if (!combatSession.TryGetPlayerTurnMarkerState(
+					out var combatantId,
+					out var shouldShowMarker))
+			{
+				DeactivateCurrentTurnMarker();
+				return;
+			}
 
-            if (!shouldShowMarker || string.IsNullOrEmpty(combatantId))
-            {
-                DeactivateCurrentTurnMarker();
-                return;
-            }
+			if (string.IsNullOrWhiteSpace(combatantId))
+			{
+				DeactivateCurrentTurnMarker();
+				return;
+			}
 
-            var parent = combatSession.TryGetUnitVisualRoot(combatantId);
-            if (parent == null)
-            {
-                return;
-            }
+			var parent = combatSession.TryGetUnitVisualRoot(combatantId);
 
-            if (_currentTurnMarkerTransform == null)
-            {
-                var turnMarkerObject = Instantiate(currentTurnMarkerPrefab, parent, false);
-                _currentTurnMarkerTransform = turnMarkerObject.transform;
-            }
-            else
-            {
-                if (_currentTurnMarkerTransform.parent != parent)
-                {
-                    _currentTurnMarkerTransform.SetParent(parent, false);
-                }
+			if (parent == null)
+			{
+				DeactivateCurrentTurnMarker();
+				return;
+			}
 
-                if (!_currentTurnMarkerTransform.gameObject.activeSelf)
-                {
-                    _currentTurnMarkerTransform.gameObject.SetActive(true);
-                }
-            }
+			if (_currentTurnMarkerTransform == null)
+			{
+				var markerObject =
+					Instantiate(currentTurnMarkerPrefab, parent, false);
 
-            if (!string.Equals(_turnMarkerLastCombatantId, combatantId, System.StringComparison.Ordinal))
-            {
-                _turnMarkerLastCombatantId = combatantId;
-                _turnMarkerSpinZDegrees = 0f;
-            }
+				_currentTurnMarkerTransform =
+					markerObject.transform;
+			}
+			else
+			{
+				if (_currentTurnMarkerTransform.parent != parent)
+				{
+					_currentTurnMarkerTransform.SetParent(parent, false);
+				}
 
-            _currentTurnMarkerTransform.localPosition = currentTurnMarkerLocalOffset;
-            _turnMarkerSpinZDegrees += currentTurnMarkerZSpinDegreesPerSecond * Time.deltaTime;
-            if (_turnMarkerSpinZDegrees >= 360f)
-            {
-                _turnMarkerSpinZDegrees -= 360f;
-            }
+				if (!_currentTurnMarkerTransform.gameObject.activeSelf)
+				{
+					_currentTurnMarkerTransform.gameObject.SetActive(true);
+				}
+			}
 
-            var baseEuler = currentTurnMarkerBaseEuler;
-            _currentTurnMarkerTransform.localEulerAngles = new Vector3(
-                baseEuler.x,
-                baseEuler.y,
-                baseEuler.z + _turnMarkerSpinZDegrees);
-        }
-    }
+			_currentTurnMarkerTransform.localPosition =
+				currentTurnMarkerLocalOffset;
+
+			if (!string.Equals(
+					_turnMarkerLastCombatantId,
+					combatantId,
+					System.StringComparison.Ordinal))
+			{
+				_turnMarkerLastCombatantId = combatantId;
+				_turnMarkerSpinZDegrees = 0f;
+			}
+
+			_turnMarkerSpinZDegrees +=
+				currentTurnMarkerZSpinDegreesPerSecond * Time.deltaTime;
+
+			if (_turnMarkerSpinZDegrees >= 360f)
+			{
+				_turnMarkerSpinZDegrees -= 360f;
+			}
+
+			var baseEuler = currentTurnMarkerBaseEuler;
+
+			_currentTurnMarkerTransform.localEulerAngles =
+				new Vector3(
+					baseEuler.x,
+					baseEuler.y,
+					baseEuler.z + _turnMarkerSpinZDegrees);
+
+			_currentTurnMarkerTransform.gameObject.SetActive(true);
+		}
+	}
 }
+
