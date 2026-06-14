@@ -27,6 +27,7 @@ namespace Systems.NPC.Builder
         [SerializeField] private NpcEnemyPool                    _pool;
         [SerializeField] private NavMeshSpawnPositionServiceMono _spawnService;
         [SerializeField] private NpcEnemyContactHandler          _contactHandler;
+        [SerializeField] private ExplorationCorruptionSystem corruptionSystem;
 
         [Header("Comportamento")]
         [SerializeField, Min(1f)]   private float _wanderRadius    = 8f;

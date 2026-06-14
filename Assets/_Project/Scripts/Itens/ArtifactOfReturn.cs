@@ -44,6 +44,11 @@ namespace Core.Exploration.Items.Usables
 
         public Sprite Sprite => spriteExposed;
 
+        [SerializeField] private string _itemId;
+        public string ItemId => _itemId;
+        public string Description => _description;
+        [SerializeField] private string _description;
+
         public Sprite spriteExposed;
 
         // ── IItem ─────────────────────────────────────────────────────────
@@ -79,7 +84,7 @@ namespace Core.Exploration.Items.Usables
                 return;
             }
 
-            bool resetMain      = _resetScope is ResetScope.MainOnly or ResetScope.Both;
+            bool resetMain = _resetScope is ResetScope.MainOnly or ResetScope.Both;
             bool resetCompanion = _resetScope is ResetScope.CompanionOnly or ResetScope.Both;
 
             if (resetMain && manager.Main is PlayableCharacter main)

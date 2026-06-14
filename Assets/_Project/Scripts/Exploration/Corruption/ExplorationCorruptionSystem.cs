@@ -136,10 +136,12 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     public async void SaveState() => await SaveToFileAsync();
 
     /// <summary>Zera a corrupção e apaga o arquivo em disco (novo jogo).</summary>
-    public async void ClearSave()
+    public async void ClearSave() => await ClearSaveAsync();
+
+    public async Task ClearSaveAsync()
     {
         _loadedCorruption = 0f;
-        _loadCompleted    = false;
+        _loadCompleted    = true;
         ApplyCorruption(0f, fireEvents: false);
 
         try

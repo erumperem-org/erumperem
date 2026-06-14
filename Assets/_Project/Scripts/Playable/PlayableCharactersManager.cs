@@ -19,7 +19,16 @@ public sealed class PlayableCharactersManager : MonoBehaviour
     [SerializeField] private PlayerInputReader _inputReader;
 
     /// <summary>Lista somente-leitura de todos os personagens gerenciados.</summary>
-    public IReadOnlyList<PlayableCharacter> Playables => _playables;
+    public IReadOnlyList<PlayableCharacter> Playables
+    {
+        get
+        {
+            EnsureSceneReferencesResolved();
+            return _playables != null
+                ? _playables
+                : Array.Empty<PlayableCharacter>();
+        }
+    }
 
     public IPlayableCharacter Main      { get; private set; }
     public IPlayableCharacter Companion { get; private set; }
@@ -46,6 +55,19 @@ public sealed class PlayableCharactersManager : MonoBehaviour
         if (_inputReader == null)
         {
             _inputReader = FindFirstObjectByType<PlayerInputReader>();
+        }
+
+        RemoveNullPlayableEntries();
+    }
+
+    private void RemoveNullPlayableEntries()
+    {
+        if (_playables == null) return;
+
+        for (int index = _playables.Count - 1; index >= 0; index--)
+        {
+            if (_playables[index] == null)
+                _playables.RemoveAt(index);
         }
     }
 
