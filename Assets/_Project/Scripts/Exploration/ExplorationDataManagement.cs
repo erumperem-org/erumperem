@@ -21,4 +21,17 @@ public sealed class ExplorationDataManagement : MonoBehaviour
 
     /// <summary>Apaga o save (novo jogo).</summary>
     public void Reset() => ExplorationLoadContext.Instance?.ClearSave();
+
+    /// <summary>Compatibilidade com botões de UI antigos.</summary>
+    public void SaveExplorationState() => Save();
+
+    /// <summary>Compatibilidade com botões de UI antigos.</summary>
+    public void LoadExplorationState() => Load();
+
+    /// <summary>Compatibilidade com botões de UI antigos.</summary>
+    public void ResetExplorationState()
+    {
+        Reset();
+        Load();
+    }
 }
