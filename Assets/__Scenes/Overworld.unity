@@ -1184,6 +1184,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 471615754}
   m_CullTransparentMesh: 1
+--- !u!1 &508664922
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 508664923}
+  m_Layer: 0
+  m_Name: ResetWulfricPosition
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &508664923
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 508664922}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1.33, y: 0, z: -9.56}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &508693415
 GameObject:
   m_ObjectHideFlags: 0
@@ -1230,6 +1261,7 @@ MonoBehaviour:
   _corruptionSystem: {fileID: 0}
   _saveFileName: exploration_save.json
   _saveFolderName: Saves
+  _wulfricResetSpawn: {fileID: 508664923}
 --- !u!4 &508693417
 Transform:
   m_ObjectHideFlags: 0
@@ -4843,3 +4875,4 @@ SceneRoots:
   - {fileID: 1153606656}
   - {fileID: 1158373132}
   - {fileID: 1638667951}
+  - {fileID: 508664923}

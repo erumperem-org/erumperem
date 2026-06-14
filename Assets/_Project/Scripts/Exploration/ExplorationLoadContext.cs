@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Services.DebugUtilities;
 using Services.IO;
 using UnityEngine;
@@ -104,6 +105,10 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     [SerializeField] private string _saveFileName   = "exploration_save.json";
     [SerializeField] private string _saveFolderName = "Saves";
 
+    [Header("Reset")]
+    [Tooltip("Spawn do Wulfric ao fazer reset. Se vazio, procura 'ResetWulfricPosition' na cena.")]
+    [SerializeField] private Transform _wulfricResetSpawn;
+
     // ── Singleton ─────────────────────────────────────────────────────────
 
     public static ExplorationLoadContext Instance { get; private set; }
@@ -199,6 +204,11 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             TryResolveCorruptionSystemFromScene();
         }
 
+        if (sceneInstance._wulfricResetSpawn != null)
+        {
+            _wulfricResetSpawn = sceneInstance._wulfricResetSpawn;
+        }
+
         _manager = null;
     }
 
@@ -270,7 +280,28 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     /// Aguarda explicitamente o IO da corrupção antes de aplicar, garantindo
     /// que o valor correto esteja disponível independente da ordem de Start().
     /// </summary>
-    public async void RestoreState()
+    public async void RestoreState() => await RestoreStateAsync();
+
+    /// <summary>Apaga o save e aplica posições/estado padrão da cena.</summary>
+    public async Task ResetToDefaultStateAsync()
+    {
+        if (!TryGetManager())
+        {
+            return;
+        }
+
+        await ClearSaveAsync();
+        CacheVillageSpawnPointsFromActiveScene();
+        TryResolveCorruptionSystemFromScene();
+        ApplyDefaultSetups();
+
+        if (_corruptionSystem != null)
+        {
+            _corruptionSystem.RestoreState();
+        }
+    }
+
+    public async Task RestoreStateAsync()
     {
         if (!TryGetManager()) return;
 
@@ -279,8 +310,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             await _corruptionSystem.LoadAsync();
 
         // ── Personagens ──────────────────────────────────────────────────
-        if (!_hasSave || _snapshots.Count == 0)
-            await LoadFromFileAsync();
+        await LoadFromFileAsync();
 
         bool shouldApplySavedSnapshots = _hasSave && _snapshots.Count > 0;
         if (shouldApplySavedSnapshots)
@@ -309,11 +339,14 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     /// <summary>
     /// Limpa o save em memória, remove os arquivos em disco e zera a corrupção (novo jogo).
     /// </summary>
-    public async void ClearSave()
+    public async void ClearSave() => await ClearSaveAsync();
+
+    public async Task ClearSaveAsync()
     {
         // ── Personagens ──────────────────────────────────────────────────
         _snapshots.Clear();
         _hasSave = false;
+        _savedCorruptionValue = 0f;
 
         try
         {
@@ -329,7 +362,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
         // ── Corrupção ────────────────────────────────────────────────────
         if (_corruptionSystem != null)
-            _corruptionSystem.ClearSave();
+            await _corruptionSystem.ClearSaveAsync();
     }
 
     public bool HasSave() => _hasSave;
@@ -448,6 +481,9 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             bool exists = await _fileService.ExistsAsync(_saveFileName, _saveDirectory);
             if (!exists)
             {
+                _snapshots.Clear();
+                _hasSave              = false;
+                _savedCorruptionValue = 0f;
                 LoggerService.PrintLogMessage(LogLevel.Debug,
                     "[LOAD] Nenhum arquivo de save encontrado.", LogCategory.Player);
                 return;
@@ -465,6 +501,12 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 LoggerService.PrintLogMessage(LogLevel.Debug,
                     $"[LOAD] {_snapshots.Count} snapshots carregados de '{fileData.FullPath}'.",
                     LogCategory.Player);
+            }
+            else
+            {
+                _snapshots.Clear();
+                _hasSave              = false;
+                _savedCorruptionValue = 0f;
             }
         }
         catch (Exception ex)
@@ -621,8 +663,6 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 $"[LOAD] '{character.CharacterName}' → {snap.State} @ {snap.Position}",
                 LogCategory.Player);
         }
-
-        _hasSave = false;
     }
 
     private void ApplyDefaultSetups()
@@ -641,26 +681,33 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             return;
         }
 
-        foreach (var setup in _defaultSetups)
+        ApplyDefaultSpawnPositions();
+
+        var orderedDefaultSetups = new List<DefaultCharacterSetup>(_defaultSetups);
+        orderedDefaultSetups.Sort((leftSetup, rightSetup) =>
+            GetDefaultSetupApplyOrder(leftSetup.InitialState)
+                .CompareTo(GetDefaultSetupApplyOrder(rightSetup.InitialState)));
+
+        foreach (var setup in orderedDefaultSetups)
         {
             if (setup.Character == null) continue;
 
             _manager.SetState(setup.InitialState, setup.Character);
 
-            var hp = setup.Character.HealthBar;
-            if (hp != null && setup.MaxHealth > 0f)
+            var healthBar = setup.Character.HealthBar;
+            if (healthBar != null && setup.MaxHealth > 0f)
             {
-                hp.SetMaxHealth(setup.MaxHealth, keepRatio: false);
+                healthBar.SetMaxHealth(setup.MaxHealth, keepRatio: false);
 
-                float startHp = setup.StartingHealth > 0f
+                float startingHealth = setup.StartingHealth > 0f
                     ? Mathf.Clamp(setup.StartingHealth, 0f, setup.MaxHealth)
                     : setup.MaxHealth;
 
-                hp.Kill();
-                hp.Heal(startHp);
+                healthBar.Kill();
+                healthBar.Heal(startingHealth);
 
                 LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"[LOAD] '{setup.Character.CharacterName}' HP padrão → {startHp}/{setup.MaxHealth}",
+                    $"[LOAD] '{setup.Character.CharacterName}' HP padrão → {startingHealth}/{setup.MaxHealth}",
                     LogCategory.Player);
             }
 
@@ -668,6 +715,58 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 $"[LOAD] '{setup.Character.CharacterName}' (padrão) → {setup.InitialState}",
                 LogCategory.Player);
         }
+    }
+
+    private void ApplyDefaultSpawnPositions()
+    {
+        var wulfricResetSpawnTransform = ResolveWulfricResetSpawnTransform();
+
+        foreach (var setup in _defaultSetups)
+        {
+            if (setup.Character == null)
+            {
+                continue;
+            }
+
+            if (string.Equals(setup.Character.CharacterName, "Wulfric", StringComparison.Ordinal)
+                && wulfricResetSpawnTransform != null)
+            {
+                setup.Character.Transform.SetPositionAndRotation(
+                    wulfricResetSpawnTransform.position,
+                    wulfricResetSpawnTransform.rotation);
+                continue;
+            }
+
+            var restingPoint = setup.Character.RestingPoint;
+            if (restingPoint != null)
+            {
+                setup.Character.Transform.SetPositionAndRotation(
+                    restingPoint.position,
+                    restingPoint.rotation);
+            }
+        }
+    }
+
+    private Transform ResolveWulfricResetSpawnTransform()
+    {
+        if (_wulfricResetSpawn != null)
+        {
+            return _wulfricResetSpawn;
+        }
+
+        var resetSpawnObject = GameObject.Find("ResetWulfricPosition");
+        return resetSpawnObject != null ? resetSpawnObject.transform : null;
+    }
+
+    private static int GetDefaultSetupApplyOrder(PlayableCharacterState initialState)
+    {
+        return initialState switch
+        {
+            PlayableCharacterState.Main      => 0,
+            PlayableCharacterState.Companion => 1,
+            PlayableCharacterState.Resting   => 2,
+            _                                => 3,
+        };
     }
 
     private void TryBuildFallbackDefaultSetups()

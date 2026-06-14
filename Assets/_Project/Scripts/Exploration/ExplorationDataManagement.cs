@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using UnityEngine;
 
 /// <summary>
@@ -30,7 +31,7 @@ public sealed class ExplorationDataManagement : MonoBehaviour
     public void LoadExplorationContext() => Load();
 
     /// <summary>Apaga o save e restaura o estado padrão da cena.</summary>
-    public void ResetExplorationContext()
+    public async void ResetExplorationContext()
     {
         var loadContext = ExplorationLoadContext.Instance;
         if (loadContext == null)
@@ -39,8 +40,7 @@ public sealed class ExplorationDataManagement : MonoBehaviour
             return;
         }
 
-        loadContext.ClearSave();
-        loadContext.RestoreState();
+        await loadContext.ResetToDefaultStateAsync();
     }
 
     private static void InvokeOnLoadContext(Action<ExplorationLoadContext> action)
