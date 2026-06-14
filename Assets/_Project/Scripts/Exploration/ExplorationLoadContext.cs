@@ -11,24 +11,26 @@ using UnityEngine.SceneManagement;
 [Serializable]
 public sealed class PlayableCharacterSnapshot
 {
-    public string                 CharacterName;
-    public Vector3                Position;
-    public Quaternion             Rotation;
+    public string CharacterName;
+    public Vector3 Position;
+    public Quaternion Rotation;
     public PlayableCharacterState State;
-    public float                  CurrentHealth;
-    public float                  MaxHealth;
+    public float CurrentHealth;
+    public float MaxHealth;
+    public Vector3 RestingPoint;
 
     public PlayableCharacterSnapshot(
         string name, Vector3 pos, Quaternion rot,
         PlayableCharacterState state,
-        float currentHealth, float maxHealth)
+        float currentHealth, float maxHealth, Vector3 restingPoint)
     {
         CharacterName = name;
-        Position      = pos;
-        Rotation      = rot;
-        State         = state;
+        Position = pos;
+        Rotation = rot;
+        State = state;
         CurrentHealth = currentHealth;
-        MaxHealth     = maxHealth;
+        MaxHealth = maxHealth;
+        RestingPoint = restingPoint;
     }
 }
 
@@ -45,7 +47,7 @@ internal sealed class SnapshotSaveData
 [Serializable]
 public struct DefaultCharacterSetup
 {
-    public PlayableCharacter      Character;
+    public PlayableCharacter Character;
     public PlayableCharacterState InitialState;
 
     [Tooltip("HP máximo inicial do personagem.")]
@@ -87,7 +89,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     [SerializeField] private ExplorationCorruptionSystem _corruptionSystem;
 
     [Header("IO Settings")]
-    [SerializeField] private string _saveFileName   = "exploration_save.json";
+    [SerializeField] private string _saveFileName = "exploration_save.json";
     [SerializeField] private string _saveFolderName = "Saves";
 
     // ── Singleton ─────────────────────────────────────────────────────────
@@ -101,12 +103,14 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     // ── Estado interno ────────────────────────────────────────────────────
 
     private List<PlayableCharacterSnapshot> _snapshots = new();
-    private bool   _hasSave;
+    private bool _hasSave;
     private string _saveDirectory;
 
     private PlayableCharactersManager _manager;
+    public List<PlayableCharacterSnapshot> Snapshots { get => _snapshots; }
 
     // ── Unity lifecycle ───────────────────────────────────────────────────
+
 
     private void Awake()
     {
@@ -117,7 +121,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         _saveDirectory = System.IO.Path.Combine(Application.persistentDataPath, _saveFolderName);
     }
 
-    private void OnEnable()  => SceneManager.sceneLoaded += OnSceneLoaded;
+    private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
     private void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
 
     private void Start()
@@ -160,7 +164,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 character.Transform.rotation,
                 character.CurrentState,
                 hp?.CurrentHealth ?? 0f,
-                hp?.MaxHealth     ?? 0f));
+                hp?.MaxHealth ?? 0f,
+                character.RestingPoint.position));
         }
 
         _hasSave = _snapshots.Count > 0;
@@ -197,7 +202,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             await LoadFromFileAsync();
 
         if (_hasSave && _snapshots.Count > 0)
-            ApplySnapshots();
+            ApplySnapshotsAndSave();
         else
             ApplyDefaultSetups();
 
@@ -241,7 +246,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         try
         {
             var saveData = new SnapshotSaveData { Snapshots = _snapshots };
-            string json  = JsonUtility.ToJson(saveData, prettyPrint: true);
+            string json = JsonUtility.ToJson(saveData, prettyPrint: true);
 
             var fileData = new FileData(json, _saveFileName, _saveDirectory);
             await _fileService.WriteAsync(fileData);
@@ -274,7 +279,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             if (saveData?.Snapshots != null && saveData.Snapshots.Count > 0)
             {
                 _snapshots = saveData.Snapshots;
-                _hasSave   = true;
+                _hasSave = true;
 
                 LoggerService.PrintLogMessage(LogLevel.Debug,
                     $"[LOAD] {_snapshots.Count} snapshots carregados de '{fileData.FullPath}'.",
@@ -336,7 +341,25 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
         _hasSave = false;
     }
+    public void ApplySnapshotsAndSave()
+    {
+        if (!TryGetManager()) return;
 
+        if (_snapshots == null || _snapshots.Count == 0)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[LOAD] ApplySnapshotsAndSave chamado sem snapshots em memória.",
+                LogCategory.Player);
+            return;
+        }
+
+        // Marca como tendo save para que ApplySnapshots entre no caminho correto
+        _hasSave = true;
+
+        ApplySnapshots(); // move os personagens na cena
+
+        SaveState();      // relê a cena (já com posições corretas) e grava no disco
+    }
     private void ApplyDefaultSetups()
     {
         if (_defaultSetups.Count == 0)
