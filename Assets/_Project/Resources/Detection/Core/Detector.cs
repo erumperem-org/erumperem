@@ -50,13 +50,14 @@ namespace DetectionSystem.Core
 
         // ── Unity lifecycle ────────────────────────────────────────────
 
-        protected virtual void Start()
+        private void Awake()
         {
             _detection = GetComponent<DetectionComponent>();
-            _scanner   = new DetectionScanner(_detection.Shapes, transform);
-            _scanner.OnEnter += HandleEnter;
-            _scanner.OnExit  += HandleExit;
         }
+
+        protected virtual void OnEnable() => EnsureScannerInitialized();
+
+        protected virtual void Start() => EnsureScannerInitialized();
 
         protected virtual void OnDestroy()
         {
@@ -71,7 +72,25 @@ namespace DetectionSystem.Core
         /// Runs one full detection pass. Call this whenever your logic requires
         /// a scan — every frame, on FixedUpdate, on an external trigger, etc.
         /// </summary>
-        public void Scan() => _scanner?.Tick(this);
+        public void Scan()
+        {
+            EnsureScannerInitialized();
+            _scanner?.Tick(this);
+        }
+
+        private void EnsureScannerInitialized()
+        {
+            if (_scanner != null) return;
+
+            if (_detection == null)
+                _detection = GetComponent<DetectionComponent>();
+
+            if (_detection == null) return;
+
+            _scanner = new DetectionScanner(_detection.Shapes, transform);
+            _scanner.OnEnter += HandleEnter;
+            _scanner.OnExit  += HandleExit;
+        }
 
         // ── Detector-side reaction hooks ───────────────────────────────
 

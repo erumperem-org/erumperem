@@ -27,6 +27,8 @@ namespace Systems.NPC.Enemy
     /// </summary>
     public sealed class NpcEnemyContactHandler : MonoBehaviour
     {
+        private const string DefaultCombatSceneName = "CombatScene";
+
         [Header("Reação ao contato com o Player")]
         [Tooltip("Ações a executar quando um NPC toca o Player. " +
                  "Ex: ScenesManager.LoadSceneByName(\"CombatScene\")")]
@@ -56,7 +58,31 @@ namespace Systems.NPC.Enemy
         private void HandleContact(INpcEnemy enemy)
         {
             Debug.Log($"[NpcEnemyContactHandler] Contato: '{(enemy as UnityEngine.Object)?.name}' → Player.");
-            _onContact?.Invoke();
+
+            if (CombatExplorationBridge.IsCombatReentryBlocked)
+                return;
+
+            CombatExplorationBridge.Instance?.NotifyEnteringCombat();
+
+            if (HasConfiguredContactReaction())
+                _onContact.Invoke();
+            else
+                SceneTransitionHandler.LoadScene(DefaultCombatSceneName);
+        }
+
+        private bool HasConfiguredContactReaction()
+        {
+            if (_onContact == null) return false;
+
+            int persistentListenerCount = _onContact.GetPersistentEventCount();
+            for (int listenerIndex = 0; listenerIndex < persistentListenerCount; listenerIndex++)
+            {
+                if (_onContact.GetPersistentTarget(listenerIndex) == null) continue;
+                if (string.IsNullOrEmpty(_onContact.GetPersistentMethodName(listenerIndex))) continue;
+                return true;
+            }
+
+            return false;
         }
     }
 }

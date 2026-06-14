@@ -45,6 +45,19 @@ namespace Systems.NPC.Pool
         public int  ActiveCount    => _active.Count;
         public bool HasAvailable   => _available.Count > 0;
 
+        public bool HasActiveEnemyNear(Vector3 position, float radius)
+        {
+            float radiusSquared = radius * radius;
+            foreach (NpcEnemy activeEnemy in _active)
+            {
+                if (activeEnemy == null) continue;
+                if ((activeEnemy.transform.position - position).sqrMagnitude <= radiusSquared)
+                    return true;
+            }
+
+            return false;
+        }
+
         // ── Evento ────────────────────────────────────────────────────────
 
         public event Action OnNpcReturned;

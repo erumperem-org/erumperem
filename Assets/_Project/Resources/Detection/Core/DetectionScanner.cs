@@ -323,12 +323,18 @@ namespace DetectionSystem.Core
 
         private DetectionReceiver GetOrCacheReceiver(Collider col, int id)
         {
-            if (!_receiverCache.TryGetValue(id, out DetectionReceiver r))
+            if (!_receiverCache.TryGetValue(id, out DetectionReceiver receiver))
             {
-                col.TryGetComponent(out r);
-                _receiverCache[id] = r;   // null is a valid cached value (means "has no receiver")
+                col.TryGetComponent(out receiver);
+                if (receiver == null)
+                {
+                    receiver = col.GetComponentInParent<DetectionReceiver>();
+                }
+
+                _receiverCache[id] = receiver;   // null is a valid cached value (means "has no receiver")
             }
-            return r;
+
+            return receiver;
         }
 
         private DetectionReceiver GetCachedReceiver(int id)

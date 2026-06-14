@@ -28,25 +28,77 @@ namespace Player
 
         // ── Unity lifecycle ───────────────────────────────────────────────
 
-        private void OnEnable() => _inputReader.OnTorch += Toggle;
-        private void OnDisable() => _inputReader.OnTorch -= Toggle;
+        private void Awake()
+        {
+            if (_animationController == null)
+            {
+                _animationController = GetComponentInChildren<PlayableAnimationController>();
+            }
+
+            if (_character == null)
+            {
+                _character = GetComponent<PlayableCharacter>();
+            }
+
+            if (_inputReader == null)
+            {
+                _inputReader = GetComponent<PlayerInputReader>();
+            }
+
+            if (_inputReader == null)
+            {
+                _inputReader = FindFirstObjectByType<PlayerInputReader>();
+            }
+        }
+
+        private void OnEnable()
+        {
+            if (_inputReader == null) return;
+            _inputReader.OnTorch += Toggle;
+        }
+
+        private void OnDisable()
+        {
+            if (_inputReader == null) return;
+            _inputReader.OnTorch -= Toggle;
+        }
 
         // ── Lógica ───────────────────────────────────────────────────────
 
         private void Toggle()
         {
+            if (_character == null || _inputReader == null)
+            {
+                return;
+            }
+
             var state = _character.CurrentState;
             if (state != PlayableCharacterState.Main && state != PlayableCharacterState.Companion)
                 return;
 
             _isOn = !_isOn;
-            _naturalLightObject.SetActive(!_isOn);
-            foreach (var itens in _handItensObject)
+            if (_naturalLightObject != null)
             {
-                itens.SetActive(!_isOn);
+                _naturalLightObject.SetActive(!_isOn);
             }
-            _torchObject.SetActive(_isOn);
-            _animationController.SetIsTorchOn(_isOn);
+
+            if (_handItensObject != null)
+            {
+                foreach (var handItemObject in _handItensObject)
+                {
+                    if (handItemObject != null)
+                    {
+                        handItemObject.SetActive(!_isOn);
+                    }
+                }
+            }
+
+            if (_torchObject != null)
+            {
+                _torchObject.SetActive(_isOn);
+            }
+
+            _animationController?.SetIsTorchOn(_isOn);
         }
     }
 }

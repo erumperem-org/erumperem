@@ -56,38 +56,93 @@ public sealed class CharacterViewHud : MonoBehaviour
     [Header("Slots (ordem: Main, Companion, Resting…)")]
     [SerializeField] private List<CharacterSlot> _slots;
 
+    private Action<IPlayableCharacter> _onMainChangedHandler;
+    private Action<IPlayableCharacter> _onCompanionChangedHandler;
+
     // ── Unity lifecycle ───────────────────────────────────────────────────
 
     private void Awake()
     {
-        // Garante que todos os slots começam ocultos.
+        ResolveDependencies();
+
+        if (_slots == null) return;
+
         foreach (var slot in _slots)
             slot.Root?.SetActive(false);
     }
 
     private void OnEnable()
     {
-        if (_manager == null) return;
-        _manager.OnMainChanged      += _ => RefreshAll();
-        _manager.OnCompanionChanged += _ => RefreshAll();
+        ResolveDependencies();
+        if (_manager == null || _slots == null || _slots.Count == 0) return;
+
+        _onMainChangedHandler      ??= _ => RefreshAll();
+        _onCompanionChangedHandler ??= _ => RefreshAll();
+
+        _manager.OnMainChanged      += _onMainChangedHandler;
+        _manager.OnCompanionChanged += _onCompanionChangedHandler;
         RefreshAll();
     }
 
+    private void Start() => RefreshAll();
+
     private void OnDisable()
     {
-        if (_manager == null) return;
-        _manager.OnMainChanged      -= _ => RefreshAll();
-        _manager.OnCompanionChanged -= _ => RefreshAll();
+        if (_manager != null)
+        {
+            if (_onMainChangedHandler != null)
+                _manager.OnMainChanged -= _onMainChangedHandler;
+            if (_onCompanionChangedHandler != null)
+                _manager.OnCompanionChanged -= _onCompanionChangedHandler;
+        }
+
+        if (_slots == null) return;
 
         foreach (var slot in _slots)
             UnbindHealth(slot);
+    }
+
+    private void ResolveDependencies()
+    {
+        if (_manager == null)
+            _manager = FindFirstObjectByType<PlayableCharactersManager>();
+
+        if (_slots != null && _slots.Count > 0) return;
+
+        _slots = BuildSlotsFromChildren();
+    }
+
+    private List<CharacterSlot> BuildSlotsFromChildren()
+    {
+        var discoveredSlots = new List<CharacterSlot>();
+        var charactersContainer = transform.Find("Characters");
+        if (charactersContainer == null) return discoveredSlots;
+
+        foreach (Transform childTransform in charactersContainer)
+        {
+            if (!childTransform.name.StartsWith("ChracterInfo")) continue;
+
+            var portraitTransform = childTransform.Find("Portrait");
+            var healthTransform   = childTransform.Find("Health");
+            var nameTransform     = childTransform.Find("CharacterName");
+
+            discoveredSlots.Add(new CharacterSlot
+            {
+                Root      = childTransform.gameObject,
+                Icon      = portraitTransform != null ? portraitTransform.GetComponent<Image>() : null,
+                HealthBar = healthTransform != null ? healthTransform.GetComponent<Slider>() : null,
+                NameLabel = nameTransform != null ? nameTransform.GetComponent<TMP_Text>() : null,
+            });
+        }
+
+        return discoveredSlots;
     }
 
     // ── Refresh ───────────────────────────────────────────────────────────
 
     private void RefreshAll()
     {
-        if (_manager == null) return;
+        if (_manager == null || _slots == null || _slots.Count == 0) return;
 
         var ordered = BuildDisplayOrder();
 

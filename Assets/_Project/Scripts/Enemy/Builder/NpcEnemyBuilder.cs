@@ -31,7 +31,7 @@ namespace Systems.NPC.Builder
 
         [Header("Comportamento")]
         [SerializeField, Min(1f)]   private float _wanderRadius    = 8f;
-        [SerializeField, Min(1f)]   private float _chaseRadius     = 20f;
+        [SerializeField, Min(1f)]   private float _chaseRadius     = 40f;
         [SerializeField, Min(0.1f)] private float _contactDistance = 1.2f;
 
         [Tooltip("Tempo máximo (s) em Wander antes de retornar à pool.")]
@@ -41,7 +41,7 @@ namespace Systems.NPC.Builder
 
         public bool Build(Vector3 spawnCenter = default)
         {
-            if (!ValidateDependencies()) return false;
+            if (!ValidateDependenciesForRandomSpawn()) return false;
             if (!_pool.HasAvailable)
             {
                 Debug.LogWarning("[NpcEnemyBuilder] Pool esgotada.");
@@ -64,7 +64,7 @@ namespace Systems.NPC.Builder
 
         public bool BuildAt(Vector3 exactSpawnPoint)
         {
-            if (!ValidateDependencies()) return false;
+            if (!ValidateDependenciesForExactSpawn()) return false;
             if (!_pool.HasAvailable)
             {
                 Debug.LogWarning("[NpcEnemyBuilder] Pool esgotada.");
@@ -109,8 +109,34 @@ namespace Systems.NPC.Builder
             return true;
         }
 
-        private bool ValidateDependencies()
+        private void Awake() => ResolveDependencies();
+
+        private void ResolveDependencies()
         {
+            Transform enemySystemRoot = transform.parent;
+            if (enemySystemRoot == null) return;
+
+            if (_pool == null)
+                _pool = enemySystemRoot.GetComponentInChildren<NpcEnemyPool>(true);
+
+            if (_spawnService == null)
+                _spawnService = enemySystemRoot.GetComponentInChildren<NavMeshSpawnPositionServiceMono>(true);
+
+            if (_contactHandler == null)
+                _contactHandler = enemySystemRoot.GetComponentInChildren<NpcEnemyContactHandler>(true);
+        }
+
+        private bool ValidateDependenciesForExactSpawn()
+        {
+            ResolveDependencies();
+            if (_pool != null) return true;
+            Debug.LogError("[NpcEnemyBuilder] Pool não configurada!", this);
+            return false;
+        }
+
+        private bool ValidateDependenciesForRandomSpawn()
+        {
+            ResolveDependencies();
             if (_pool != null && _spawnService != null) return true;
             Debug.LogError("[NpcEnemyBuilder] Pool ou SpawnService não configurados!", this);
             return false;

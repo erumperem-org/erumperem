@@ -86,10 +86,10 @@ namespace Systems.NPC.Enemy
         private void OnDetectorEnter(Collider detected, string shapeLabel, int shapeIndex)
         {
             if (_stateMachine.Is(NpcEnemyState.ReturningToPool)) return;
-            if (!detected.CompareTag("Player")) return;
+            if (!IsPlayerCollider(detected)) return;
 
             if (shapeLabel == "Perception" && _stateMachine.Is(NpcEnemyState.Wander))
-                _stateMachine.ToChase(detected.transform);
+                _stateMachine.ToChase(ResolvePlayerTransform(detected));
 
             if (shapeLabel == "Contact")
             {
@@ -102,10 +102,30 @@ namespace Systems.NPC.Enemy
         private void OnDetectorExit(Collider detected, string shapeLabel, int shapeIndex)
         {
             if (!_stateMachine.Is(NpcEnemyState.Chase)) return;
-            if (!detected.CompareTag("Player")) return;
+            if (!IsPlayerCollider(detected)) return;
 
             if (shapeLabel == "Perception")
                 _stateMachine.ToWander();
+        }
+
+        private static bool IsPlayerCollider(Collider collider)
+        {
+            if (collider == null) return false;
+
+            Transform current = collider.transform;
+            while (current != null)
+            {
+                if (current.CompareTag("Player")) return true;
+                current = current.parent;
+            }
+
+            return collider.GetComponentInParent<PlayableCharacter>() != null;
+        }
+
+        private static Transform ResolvePlayerTransform(Collider detected)
+        {
+            PlayableCharacter playableCharacter = detected.GetComponentInParent<PlayableCharacter>();
+            return playableCharacter != null ? playableCharacter.Transform : detected.transform;
         }
     }
 }

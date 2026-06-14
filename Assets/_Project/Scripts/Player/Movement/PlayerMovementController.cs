@@ -2,6 +2,7 @@ using System.Collections;
 using System.Threading;
 using Services.Navigation;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace Player
 {
@@ -64,6 +65,11 @@ namespace Player
             _rb = GetComponent<Rigidbody>();
             _navMesh = new NavMeshService();
 
+            if (animationController == null)
+            {
+                animationController = GetComponentInChildren<PlayableAnimationController>();
+            }
+
             // Rigidbody não deve rotacionar por física — só por código.
             _rb.freezeRotation = true;
         }
@@ -114,7 +120,7 @@ namespace Player
         {
             StopMovementCoroutine();
             _mode = MovementMode.None;
-            SetPhysicsMode(false);
+            SetMovementBackend(MovementMode.None);
             _navMesh?.Stop(_adapter);
             animationController?.SetIsMoving(false);
         }
@@ -128,8 +134,7 @@ namespace Player
             _mode = mode;
 
             // Modo Player → física. Follow/WalkToPoint → NavMesh.
-            bool isPhysics = mode == MovementMode.Player;
-            SetPhysicsMode(isPhysics);
+            SetMovementBackend(mode);
 
             _movementCoroutine = StartCoroutine(MovementLoop());
         }
@@ -138,10 +143,35 @@ namespace Player
         /// Liga/desliga Rigidbody e NavMeshAgent de forma mutuamente exclusiva.
         /// Ambos ativos ao mesmo tempo causam conflito de posição.
         /// </summary>
-        private void SetPhysicsMode(bool physics)
+        private void SetMovementBackend(MovementMode mode)
         {
-            _rb.isKinematic = !physics;
-            //_adapter.SetEnabled(!physics);  // habilita NavMesh apenas fora do modo Player
+            var useRigidbodyPhysics = mode == MovementMode.Player;
+            var useNavMeshAgent = mode is MovementMode.Follow or MovementMode.WalkToPoint;
+
+            _rb.isKinematic = !useRigidbodyPhysics;
+            if (!useRigidbodyPhysics)
+            {
+                _rb.linearVelocity = Vector3.zero;
+            }
+
+            var navMeshAgent = _adapter.Agent;
+            if (navMeshAgent == null)
+            {
+                return;
+            }
+
+            navMeshAgent.enabled = useNavMeshAgent;
+            if (!useNavMeshAgent)
+            {
+                return;
+            }
+
+            if (NavMesh.SamplePosition(transform.position, out var navMeshHit, 2f, NavMesh.AllAreas))
+            {
+                navMeshAgent.Warp(navMeshHit.position);
+            }
+
+            _navMesh?.ClearPath(_adapter);
         }
 
         // ── Loop principal ────────────────────────────────────────────────
@@ -205,7 +235,13 @@ namespace Player
             _rb.linearVelocity = direction * _speed;
 
             animationController?.SetIsMoving(true);
-            _rb.MoveRotation(Quaternion.LookRotation(direction, Vector3.up));
+
+            var targetRotation = Quaternion.LookRotation(direction, Vector3.up);
+            var smoothedRotation = Quaternion.Slerp(
+                _rb.rotation,
+                targetRotation,
+                _rotationSpeed * Time.fixedDeltaTime);
+            _rb.MoveRotation(smoothedRotation);
         }
 
         // ── Tick: Follow (NavMesh) ────────────────────────────────────────
@@ -281,7 +317,7 @@ namespace Player
                 animationController?.SetIsMoving(false);
                 StopMovementCoroutine();
                 _mode = MovementMode.None;
-                SetPhysicsMode(false);
+                SetMovementBackend(MovementMode.None);
             }
         }
 

@@ -11,19 +11,68 @@ public class PlayableAnimationController : MonoBehaviour
     private static readonly int IsTorchOn    = Animator.StringToHash("IsTorchOn");
     private static readonly int ClosingDoor  = Animator.StringToHash("ClosingDoor");
 
-    private void Awake() => _animator = GetComponent<Animator>();
+    private void Awake()
+    {
+        _animator = GetComponent<Animator>();
+        if (_animator == null)
+        {
+            _animator = GetComponentInChildren<Animator>();
+        }
+    }
 
     // ── Bools ─────────────────────────────────────────────────────────────
-    public void SetIsMoving(bool value)  => _animator.SetBool(IsMoving, value);
-    public void SetIsTalking(bool value) => _animator.SetBool(IsTalking, value);
-    public void SetIsTorchOn(bool value) => _animator.SetBool(IsTorchOn, value);
+    public void SetIsMoving(bool value)
+    {
+        if (_animator == null) return;
+        _animator.SetBool(IsMoving, value);
+    }
+
+    public void SetIsTalking(bool value)
+    {
+        if (_animator == null) return;
+        _animator.SetBool(IsTalking, value);
+    }
+
+    public void SetIsTorchOn(bool value)
+    {
+        if (_animator == null) return;
+        _animator.SetBool(IsTorchOn, value);
+    }
 
     // ── Triggers ──────────────────────────────────────────────────────────
-    public void TriggerOpeningChest() => _animator.SetTrigger(OpeningChest);
-    public void TriggerOpeningDoor()  => _animator.SetTrigger(OpeningDoor);
-    public void TriggerClosingDoor()  => _animator.SetTrigger(ClosingDoor);
+    public void TriggerOpeningChest()
+    {
+        if (_animator == null) return;
+        _animator.SetTrigger(OpeningChest);
+    }
 
-    public void ResetOpeningChest() => _animator.ResetTrigger(OpeningChest);
-    public void ResetOpeningDoor()  => _animator.ResetTrigger(OpeningDoor);
-    public void ResetClosingDoor()  => _animator.ResetTrigger(ClosingDoor);
+    public void TriggerOpeningDoor()
+    {
+        if (_animator == null) return;
+        _animator.SetTrigger(OpeningDoor);
+    }
+
+    public void TriggerClosingDoor()
+    {
+        if (_animator == null) return;
+        _animator.SetTrigger(ClosingDoor);
+    }
+
+    public void ResetOpeningChest()
+    {
+        if (_animator == null) return;
+        _animator.ResetTrigger(OpeningChest);
+    }
+
+    public void ResetOpeningDoor()
+    {
+        if (_animator == null) return;
+        _animator.ResetTrigger(OpeningDoor);
+    }
+
+    public void ResetClosingDoor()
+    {
+        if (_animator == null) return;
+        _animator.ResetTrigger(ClosingDoor);
+    }
 }

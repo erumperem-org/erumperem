@@ -1,5 +1,6 @@
 using Player;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Dados e referências de um personagem jogável. Data-holder puro.
@@ -20,10 +21,12 @@ public sealed class PlayableCharacter : MonoBehaviour, IPlayableCharacter
     [SerializeField] private PlayerMovementController    _movementController;
     [SerializeField] private PlayerDetectionSystem       _detectionSystem;
     [SerializeField] private PlayableAnimationController _animationController;
-    [SerializeField] private PlayerInputReader           _playerInput;
+    [FormerlySerializedAs("playerInput")]
+    [SerializeField] private PlayerInputReader _playerInput;
     public PlayableHealthBar HealthBar;
 
     [Header("Resting")]
+    [FormerlySerializedAs("restingPoint")]
     [SerializeField] private Transform _restingPoint;
 
     // ── IPlayableCharacter ────────────────────────────────────────────────
@@ -41,12 +44,35 @@ public sealed class PlayableCharacter : MonoBehaviour, IPlayableCharacter
     internal PlayerInputReader           PlayerInput         => _playerInput;
     internal Transform                   RestingPoint        => _restingPoint;
 
+    private void Awake()
+    {
+        EnsureSubsystemReferencesResolved();
+    }
+
     private void Reset()
     {
         _movementController  = GetComponent<PlayerMovementController>();
         _detectionSystem     = GetComponent<PlayerDetectionSystem>();
-        _animationController = GetComponent<PlayableAnimationController>();
+        _animationController = GetComponentInChildren<PlayableAnimationController>();
         _playerInput         = GetComponent<PlayerInputReader>();
+    }
+
+    private void EnsureSubsystemReferencesResolved()
+    {
+        if (_movementController == null)
+        {
+            _movementController = GetComponent<PlayerMovementController>();
+        }
+
+        if (_detectionSystem == null)
+        {
+            _detectionSystem = GetComponent<PlayerDetectionSystem>();
+        }
+
+        if (_animationController == null)
+        {
+            _animationController = GetComponentInChildren<PlayableAnimationController>();
+        }
     }
 
     public void UpdateStateExposed()

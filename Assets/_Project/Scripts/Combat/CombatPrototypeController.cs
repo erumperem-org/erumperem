@@ -389,6 +389,8 @@ namespace Erumperem.Combat
                 passivesById: passives,
                 unlockAllPassiveNodesForAllies: false);
 
+            CombatExplorationBridge.Instance?.SeedBattleFromExploration(_state);
+
             if (progression != null)
             {
                 var pointsSpent = SkillTreeLookup.SumUnlockedNodeCosts(characterTrees, unlockedForBattle);
@@ -872,6 +874,10 @@ namespace Erumperem.Combat
             {
                 Debug.Log("Empate?");
             }
+
+            CombatExplorationBridge.Instance?.NotifyCombatEnded(
+                _state,
+                alliesWon: _state.Winner == Side.Allies);
         }
 
         private void LogLastEvents()
