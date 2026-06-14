@@ -10,6 +10,10 @@ namespace Core.Exploration.Items.Currencies
         [SerializeField] private ArtifactRarity rarity;
         public ArtifactRarity Rarity => rarity;
         public StorageMode storageMode => StorageMode.Stackable;
+        [SerializeField] private string _itemId;
+        public string ItemId => _itemId;
+        public string Description => _description;
+        [SerializeField] private string _description;
         public Sprite Sprite;
     }
 }

@@ -11,24 +11,26 @@ using UnityEngine.SceneManagement;
 [Serializable]
 public sealed class PlayableCharacterSnapshot
 {
-    public string                 CharacterName;
-    public Vector3                Position;
-    public Quaternion             Rotation;
+    public string CharacterName;
+    public Vector3 Position;
+    public Quaternion Rotation;
     public PlayableCharacterState State;
-    public float                  CurrentHealth;
-    public float                  MaxHealth;
+    public float CurrentHealth;
+    public float MaxHealth;
+    public Vector3 RestingPoint;
 
     public PlayableCharacterSnapshot(
         string name, Vector3 pos, Quaternion rot,
         PlayableCharacterState state,
-        float currentHealth, float maxHealth)
+        float currentHealth, float maxHealth, Vector3 restingPoint)
     {
         CharacterName = name;
-        Position      = pos;
-        Rotation      = rot;
-        State         = state;
+        Position = pos;
+        Rotation = rot;
+        State = state;
         CurrentHealth = currentHealth;
-        MaxHealth     = maxHealth;
+        MaxHealth = maxHealth;
+        RestingPoint = restingPoint;
     }
 }
 
@@ -38,20 +40,6 @@ public sealed class PlayableCharacterSnapshot
 internal sealed class SnapshotSaveData
 {
     public List<PlayableCharacterSnapshot> Snapshots = new();
-    public float CorruptionValue;
-}
-
-[Serializable]
-public readonly struct ExplorationHealthSnapshot
-{
-    public readonly float CurrentHealth;
-    public readonly float MaxHealth;
-
-    public ExplorationHealthSnapshot(float currentHealth, float maxHealth)
-    {
-        CurrentHealth = currentHealth;
-        MaxHealth     = maxHealth;
-    }
 }
 
 // ── Configuração de estado padrão ────────────────────────────────────────────
@@ -59,7 +47,7 @@ public readonly struct ExplorationHealthSnapshot
 [Serializable]
 public struct DefaultCharacterSetup
 {
-    public PlayableCharacter      Character;
+    public PlayableCharacter Character;
     public PlayableCharacterState InitialState;
 
     [Tooltip("HP máximo inicial do personagem.")]
@@ -90,7 +78,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 {
     // ── Inspector ─────────────────────────────────────────────────────────
 
-    [SerializeField] private string _explorationSceneName = "Overworld";
+    [SerializeField] private string _explorationSceneName = "Exploration";
 
     [Tooltip("Estado padrão de cada personagem quando não há save.")]
     [SerializeField] private List<DefaultCharacterSetup> _defaultSetups = new();
@@ -101,7 +89,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     [SerializeField] private ExplorationCorruptionSystem _corruptionSystem;
 
     [Header("IO Settings")]
-    [SerializeField] private string _saveFileName   = "exploration_save.json";
+    [SerializeField] private string _saveFileName = "exploration_save.json";
     [SerializeField] private string _saveFolderName = "Saves";
 
     // ── Singleton ─────────────────────────────────────────────────────────
@@ -115,103 +103,37 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     // ── Estado interno ────────────────────────────────────────────────────
 
     private List<PlayableCharacterSnapshot> _snapshots = new();
-    private bool   _hasSave;
+    private bool _hasSave;
     private string _saveDirectory;
-    private float  _savedCorruptionValue;
 
     private PlayableCharactersManager _manager;
-
-    private readonly Dictionary<string, VillageSpawnSnapshot> _villageSpawnByCharacterName =
-        new(StringComparer.OrdinalIgnoreCase);
-
-    [Serializable]
-    private struct VillageSpawnSnapshot
-    {
-        public Vector3    Position;
-        public Quaternion Rotation;
-    }
+    public List<PlayableCharacterSnapshot> Snapshots { get => _snapshots; }
 
     // ── Unity lifecycle ───────────────────────────────────────────────────
 
+
     private void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Instance.AdoptSceneConfigurationFrom(this);
-            Destroy(gameObject);
-            return;
-        }
-
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
         _saveDirectory = System.IO.Path.Combine(Application.persistentDataPath, _saveFolderName);
-
-        if (GetComponent<CombatExplorationBridge>() == null)
-        {
-            gameObject.AddComponent<CombatExplorationBridge>();
-        }
     }
 
-    private void OnEnable()  => SceneManager.sceneLoaded += OnSceneLoaded;
+    private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
     private void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
 
     private void Start()
     {
-        if (IsConfiguredExplorationScene(SceneManager.GetActiveScene()))
+        if (SceneManager.GetActiveScene().name == _explorationSceneName)
             TryRestoreOnSceneReady();
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (!IsConfiguredExplorationScene(scene))
-        {
-            return;
-        }
-
-        _manager = null;
-        StartCoroutine(RestoreNextFrame());
-    }
-
-    private void AdoptSceneConfigurationFrom(ExplorationLoadContext sceneInstance)
-    {
-        if (sceneInstance == null)
-        {
-            return;
-        }
-
-        if (!string.IsNullOrWhiteSpace(sceneInstance._explorationSceneName))
-        {
-            _explorationSceneName = sceneInstance._explorationSceneName;
-        }
-
-        if (sceneInstance._defaultSetups != null && sceneInstance._defaultSetups.Count > 0)
-        {
-            _defaultSetups = new List<DefaultCharacterSetup>(sceneInstance._defaultSetups);
-        }
-
-        if (sceneInstance._corruptionSystem != null)
-        {
-            _corruptionSystem = sceneInstance._corruptionSystem;
-        }
-        else
-        {
-            TryResolveCorruptionSystemFromScene();
-        }
-
-        _manager = null;
-    }
-
-    private bool IsConfiguredExplorationScene(Scene scene)
-    {
-        if (!scene.IsValid())
-        {
-            return false;
-        }
-
-        return string.Equals(scene.name, _explorationSceneName, StringComparison.Ordinal)
-            || (string.Equals(_explorationSceneName, "Overworld", StringComparison.Ordinal)
-                && string.Equals(scene.name, "OverorldMerge", StringComparison.Ordinal));
+        if (scene.name == _explorationSceneName)
+            StartCoroutine(RestoreNextFrame());
     }
 
     // ── API pública ───────────────────────────────────────────────────────
@@ -242,10 +164,10 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 character.Transform.rotation,
                 character.CurrentState,
                 hp?.CurrentHealth ?? 0f,
-                hp?.MaxHealth     ?? 0f));
+                hp?.MaxHealth ?? 0f,
+                character.RestingPoint.position));
         }
 
-        _savedCorruptionValue = ResolveCurrentCorruptionValue();
         _hasSave = _snapshots.Count > 0;
         if (_hasSave)
             await SaveToFileAsync();
@@ -255,13 +177,10 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
         // ── Corrupção ────────────────────────────────────────────────────
         if (_corruptionSystem != null)
-        {
-            _corruptionSystem.Corruption = _savedCorruptionValue;
             _corruptionSystem.SaveState();
-        }
         else
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[SAVE] Corrupção ({_savedCorruptionValue:F1}) persistida no save de exploração.",
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[SAVE] ExplorationCorruptionSystem não atribuído — corrupção não salva.",
                 LogCategory.Player);
     }
 
@@ -282,28 +201,14 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         if (!_hasSave || _snapshots.Count == 0)
             await LoadFromFileAsync();
 
-        bool shouldApplySavedSnapshots = _hasSave && _snapshots.Count > 0;
-        if (shouldApplySavedSnapshots)
-            ApplySnapshots();
+        if (_hasSave && _snapshots.Count > 0)
+            ApplySnapshotsAndSave();
         else
             ApplyDefaultSetups();
 
         // ── Corrupção: aplica o valor já carregado ───────────────────────
         if (_corruptionSystem != null)
-        {
             _corruptionSystem.RestoreState();
-
-            if (shouldApplySavedSnapshots)
-            {
-                _corruptionSystem.Corruption = Mathf.Clamp(_savedCorruptionValue, 0f, 100f);
-            }
-        }
-        else if (_savedCorruptionValue > 0f)
-        {
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[LOAD] Corrupção em memória ({_savedCorruptionValue:F1}) sem ExplorationCorruptionSystem na cena.",
-                LogCategory.Player);
-        }
     }
 
     /// <summary>
@@ -334,99 +239,14 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
     public bool HasSave() => _hasSave;
 
-    public IReadOnlyDictionary<string, ExplorationHealthSnapshot> GetSavedHealthByCharacterName()
-    {
-        var healthByCharacterName = new Dictionary<string, ExplorationHealthSnapshot>(StringComparer.Ordinal);
-        foreach (var snapshot in _snapshots)
-        {
-            if (string.IsNullOrWhiteSpace(snapshot.CharacterName))
-            {
-                continue;
-            }
-
-            healthByCharacterName[snapshot.CharacterName] =
-                new ExplorationHealthSnapshot(snapshot.CurrentHealth, snapshot.MaxHealth);
-        }
-
-        return healthByCharacterName;
-    }
-
-    public double GetSavedCorruptionValue()
-    {
-        if (_corruptionSystem != null)
-        {
-            return _corruptionSystem.Corruption;
-        }
-
-        return _savedCorruptionValue;
-    }
-
-    /// <summary>
-    /// Atualiza snapshots em memória com HP/corrupção pós-combate e,
-    /// em derrota, reposiciona o grupo na aldeia.
-    /// </summary>
-    public void ApplyCombatOutcomeToSnapshots(
-        Game.Core.Models.BattleState battleState,
-        IReadOnlyList<string> combatAllyCharacterNames,
-        bool returnToVillage)
-    {
-        if (battleState == null)
-        {
-            return;
-        }
-
-        var allies = battleState.Allies;
-        for (int allyIndex = 0; allyIndex < allies.Count && allyIndex < combatAllyCharacterNames.Count; allyIndex++)
-        {
-            var characterName = combatAllyCharacterNames[allyIndex];
-            var snapshot = _snapshots.Find(savedSnapshot =>
-                string.Equals(savedSnapshot.CharacterName, characterName, StringComparison.Ordinal));
-
-            if (snapshot == null)
-            {
-                continue;
-            }
-
-            var ally = allies[allyIndex];
-            snapshot.CurrentHealth = ally.Health.CurrentHp;
-            snapshot.MaxHealth     = ally.Health.MaxHp;
-        }
-
-        _savedCorruptionValue = (float)Math.Max(0, battleState.CorruptionValue);
-        if (_corruptionSystem != null)
-        {
-            _corruptionSystem.Corruption = Mathf.Clamp(_savedCorruptionValue, 0f, 100f);
-        }
-
-        if (returnToVillage)
-        {
-            OverwriteSnapshotsForVillageReturn();
-        }
-
-        _hasSave = _snapshots.Count > 0;
-        if (_hasSave)
-        {
-            _ = SaveToFileAsync();
-        }
-
-        if (_corruptionSystem != null)
-        {
-            _corruptionSystem.SaveState();
-        }
-    }
-
     // ── IO (personagens) ──────────────────────────────────────────────────
 
     private async System.Threading.Tasks.Task SaveToFileAsync()
     {
         try
         {
-            var saveData = new SnapshotSaveData
-            {
-                Snapshots       = _snapshots,
-                CorruptionValue = _savedCorruptionValue,
-            };
-            string json  = JsonUtility.ToJson(saveData, prettyPrint: true);
+            var saveData = new SnapshotSaveData { Snapshots = _snapshots };
+            string json = JsonUtility.ToJson(saveData, prettyPrint: true);
 
             var fileData = new FileData(json, _saveFileName, _saveDirectory);
             await _fileService.WriteAsync(fileData);
@@ -458,9 +278,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
             if (saveData?.Snapshots != null && saveData.Snapshots.Count > 0)
             {
-                _snapshots            = saveData.Snapshots;
-                _savedCorruptionValue = saveData.CorruptionValue;
-                _hasSave              = true;
+                _snapshots = saveData.Snapshots;
+                _hasSave = true;
 
                 LoggerService.PrintLogMessage(LogLevel.Debug,
                     $"[LOAD] {_snapshots.Count} snapshots carregados de '{fileData.FullPath}'.",
@@ -479,115 +298,13 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     private IEnumerator RestoreNextFrame()
     {
         yield return null;
-        CacheVillageSpawnPointsFromActiveScene();
         TryRestoreOnSceneReady();
     }
 
     private void TryRestoreOnSceneReady()
     {
-        TryResolveCorruptionSystemFromScene();
-        CacheVillageSpawnPointsFromActiveScene();
         if (!TryGetManager()) return;
         RestoreState();
-    }
-
-    public bool TryGetSavedPositionForCharacter(string characterName, out Vector3 position)
-    {
-        var snapshot = _snapshots.Find(savedSnapshot =>
-            string.Equals(savedSnapshot.CharacterName, characterName, StringComparison.Ordinal));
-
-        if (snapshot == null)
-        {
-            position = default;
-            return false;
-        }
-
-        position = snapshot.Position;
-        return true;
-    }
-
-    /// <summary>
-    /// Evita respawn em cima do gatilho de combate após vitória (ex.: fantasma estático da vila).
-    /// </summary>
-    public void NudgeSnapshotsAwayFromWorldPoint(Vector3 worldPoint, float minimumSeparationDistance)
-    {
-        if (minimumSeparationDistance <= 0f)
-        {
-            return;
-        }
-
-        var flatCombatEntry = new Vector3(worldPoint.x, 0f, worldPoint.z);
-        foreach (var snapshot in _snapshots)
-        {
-            var flatSnapshotPosition = new Vector3(snapshot.Position.x, 0f, snapshot.Position.z);
-            var offsetFromCombatEntry = flatSnapshotPosition - flatCombatEntry;
-            if (offsetFromCombatEntry.sqrMagnitude >= minimumSeparationDistance * minimumSeparationDistance)
-            {
-                continue;
-            }
-
-            var pushDirection = offsetFromCombatEntry.sqrMagnitude > 0.0001f
-                ? offsetFromCombatEntry.normalized
-                : Vector3.forward;
-
-            var nudgedPosition = flatCombatEntry + pushDirection * minimumSeparationDistance;
-            nudgedPosition.y = snapshot.Position.y;
-            snapshot.Position = nudgedPosition;
-        }
-    }
-
-    private void CacheVillageSpawnPointsFromActiveScene()
-    {
-        _villageSpawnByCharacterName.Clear();
-
-        var restingPointsRoot = GameObject.Find("Resting Points");
-        if (restingPointsRoot == null)
-        {
-            return;
-        }
-
-        foreach (Transform restingPointTransform in restingPointsRoot.transform)
-        {
-            _villageSpawnByCharacterName[restingPointTransform.name] = new VillageSpawnSnapshot
-            {
-                Position = restingPointTransform.position,
-                Rotation = restingPointTransform.rotation,
-            };
-        }
-    }
-
-    private void OverwriteSnapshotsForVillageReturn()
-    {
-        foreach (var snapshot in _snapshots)
-        {
-            if (_villageSpawnByCharacterName.TryGetValue(snapshot.CharacterName, out var villageSpawn))
-            {
-                snapshot.Position = villageSpawn.Position;
-                snapshot.Rotation = villageSpawn.Rotation;
-            }
-
-            snapshot.State = ResolveFallbackInitialState(snapshot.CharacterName);
-        }
-    }
-
-    private float ResolveCurrentCorruptionValue()
-    {
-        if (_corruptionSystem != null)
-        {
-            return _corruptionSystem.Corruption;
-        }
-
-        return _savedCorruptionValue;
-    }
-
-    private void TryResolveCorruptionSystemFromScene()
-    {
-        if (_corruptionSystem != null)
-        {
-            return;
-        }
-
-        _corruptionSystem = FindFirstObjectByType<ExplorationCorruptionSystem>();
     }
 
     private void ApplySnapshots()
@@ -624,16 +341,27 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
         _hasSave = false;
     }
-
-    private void ApplyDefaultSetups()
+    public void ApplySnapshotsAndSave()
     {
-        RemoveDestroyedDefaultSetups();
+        if (!TryGetManager()) return;
 
-        if (_defaultSetups.Count == 0)
+        if (_snapshots == null || _snapshots.Count == 0)
         {
-            TryBuildFallbackDefaultSetups();
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[LOAD] ApplySnapshotsAndSave chamado sem snapshots em memória.",
+                LogCategory.Player);
+            return;
         }
 
+        // Marca como tendo save para que ApplySnapshots entre no caminho correto
+        _hasSave = true;
+
+        ApplySnapshots(); // move os personagens na cena
+
+        SaveState();      // relê a cena (já com posições corretas) e grava no disco
+    }
+    private void ApplyDefaultSetups()
+    {
         if (_defaultSetups.Count == 0)
         {
             LoggerService.PrintLogMessage(LogLevel.Warning,
@@ -670,76 +398,12 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         }
     }
 
-    private void TryBuildFallbackDefaultSetups()
-    {
-        if (!TryGetManager())
-        {
-            return;
-        }
-
-        foreach (var playableCharacter in _manager.Playables)
-        {
-            if (playableCharacter == null)
-            {
-                continue;
-            }
-
-            _defaultSetups.Add(new DefaultCharacterSetup
-            {
-                Character = playableCharacter,
-                InitialState = ResolveFallbackInitialState(playableCharacter.CharacterName),
-                MaxHealth = ResolveFallbackMaxHealth(playableCharacter.CharacterName),
-                StartingHealth = 0f,
-            });
-        }
-    }
-
-    private static PlayableCharacterState ResolveFallbackInitialState(string characterName)
-    {
-        return characterName switch
-        {
-            "Wulfric" => PlayableCharacterState.Main,
-            "Girl" => PlayableCharacterState.Companion,
-            "Buck" => PlayableCharacterState.Resting,
-            _ => PlayableCharacterState.Resting,
-        };
-    }
-
-    private static float ResolveFallbackMaxHealth(string characterName)
-    {
-        return characterName switch
-        {
-            "Wulfric" => 100f,
-            "Buck" => 200f,
-            "Girl" => 30f,
-            _ => 100f,
-        };
-    }
-
     // ── Helpers ───────────────────────────────────────────────────────────
-
-    private void RemoveDestroyedDefaultSetups()
-    {
-        for (int setupIndex = _defaultSetups.Count - 1; setupIndex >= 0; setupIndex--)
-        {
-            if (_defaultSetups[setupIndex].Character == null)
-            {
-                _defaultSetups.RemoveAt(setupIndex);
-            }
-        }
-    }
 
     private bool TryGetManager()
     {
-        if (_manager != null && !_manager.gameObject.scene.isLoaded)
-        {
-            _manager = null;
-        }
-
-        if (_manager == null)
-        {
-            _manager = FindFirstObjectByType<PlayableCharactersManager>();
-        }
+        if (_manager != null) return true;
+        _manager = FindFirstObjectByType<PlayableCharactersManager>();
 
         if (_manager == null)
         {
@@ -747,7 +411,6 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 "[LOAD] PlayableCharactersManager não encontrado na cena.", LogCategory.Player);
             return false;
         }
-
         return true;
     }
 }

@@ -50,7 +50,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: c4940cdf6e4e344489fe2045a15f6b08, type: 3}
       propertyPath: m_Name
-      value: Halt_Vinicius_Base
+      value: Halt
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -86,15 +86,21 @@ MonoBehaviour:
   unitAnimator: {fileID: 0}
   idleStateName: Iddle
   attackStateName: Attack
+  hitTakenStateName: HitTaken
   deathStateName: Death
   crossFadeSeconds: 0.08
   attackClipLengthFallbackSeconds: 2
+  hitTakenClipLengthFallbackSeconds: 0.5
   deathClipLengthFallbackSeconds: 2
   deathDespawnPunchDurationSeconds: 0.12
   deathDespawnPunchScale: {x: 0.12, y: 0.18, z: 0.12}
   deathDespawnPunchVibrato: 6
   deathDespawnPunchElasticity: 0.45
   deathDespawnScaleDownDurationSeconds: 0.35
+  hitTakenVfxPrefab: {fileID: 0}
+  hitTakenVfxOffset: {x: 0, y: 0, z: 0}
+  destroySpawnedHitVfx: 1
+  destroyHitVfxAfterSeconds: 5
 --- !u!65 &4657704552372518345
 BoxCollider:
   m_ObjectHideFlags: 0

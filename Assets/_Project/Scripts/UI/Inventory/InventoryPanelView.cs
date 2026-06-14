@@ -42,7 +42,7 @@ public sealed class InventoryPanelView : MonoBehaviour
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
 
-    private void OnEnable()
+    private void Awake()
     {
         if (!ValidateDependencies()) return;
 
