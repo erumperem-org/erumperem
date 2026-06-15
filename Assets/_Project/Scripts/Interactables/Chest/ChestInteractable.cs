@@ -13,7 +13,7 @@ public sealed class ChestInteractable : Interactable
     [SerializeField] private bool _startOpened;
     [SerializeField] private Animator _animator;
 
-    private static readonly int OpenTrigger  = Animator.StringToHash("Open");
+    private static readonly int OpenTrigger  = Animator.StringToHash("OpeningChest");
     private static readonly int ResetTrigger = Animator.StringToHash("Reset");
 
     private ILootService _lootService = new LootService();
