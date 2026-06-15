@@ -8,7 +8,7 @@ using UnityEngine.InputSystem.Utilities;
 /// <summary>
 /// InputActions padrão do projeto criadas por código.
 /// Gameplay: movimento, ponteiro, cliques, skills 1-7, cheats de cena (F1-F5)
-/// e cheats de combate (F6 = matar todos os inimigos).
+/// e cheats de combate (F6 = matar todos os inimigos, F7 = matar todos os aliados).
 /// </summary>
 public sealed class DefaultInputActions : IInputActionCollection, IDisposable
 {
@@ -32,6 +32,7 @@ public sealed class DefaultInputActions : IInputActionCollection, IDisposable
     private readonly InputAction _sceneCheat4Action;
     private readonly InputAction _sceneCheat5Action;
     private readonly InputAction _combatCheatKillAllEnemiesAction;
+    private readonly InputAction _combatCheatKillAllAlliesAction;
 
     public DefaultInputActions()
     {
@@ -85,6 +86,10 @@ public sealed class DefaultInputActions : IInputActionCollection, IDisposable
         _combatCheatKillAllEnemiesAction =
             _gameplayMap.AddAction("CombatCheatKillAllEnemies", InputActionType.Button);
         _combatCheatKillAllEnemiesAction.AddBinding("<Keyboard>/f6");
+
+        _combatCheatKillAllAlliesAction =
+            _gameplayMap.AddAction("CombatCheatKillAllAllies", InputActionType.Button);
+        _combatCheatKillAllAlliesAction.AddBinding("<Keyboard>/f7");
     }
 
     public InputBinding? bindingMask
@@ -140,5 +145,6 @@ public sealed class DefaultInputActions : IInputActionCollection, IDisposable
         public InputAction SceneCheat4 => _wrapper._sceneCheat4Action;
         public InputAction SceneCheat5 => _wrapper._sceneCheat5Action;
         public InputAction CombatCheatKillAllEnemies => _wrapper._combatCheatKillAllEnemiesAction;
+        public InputAction CombatCheatKillAllAllies => _wrapper._combatCheatKillAllAlliesAction;
     }
 }
