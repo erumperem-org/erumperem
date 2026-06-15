@@ -12,10 +12,10 @@ using UnityEngine;
 /// </summary>
 public sealed class CombatExplorationBridge : MonoBehaviour
 {
-    private static readonly string[] CombatAllyCharacterNames = { "Wulfric", "Girl" };
+    private static readonly string[] CombatAllyCharacterNames = { "Wulfric", "Matsuda" };
 
-    private const float CombatReentryBlockSeconds = 2.5f;
-    private const float VictoryReturnSeparationFromCombatEntry = 4f;
+    private const float CombatReentryBlockSeconds = 5f;
+    private const float VictoryReturnSeparationFromCombatEntry = 6f;
     private const string MainExplorationCharacterName = "Wulfric";
 
     public static CombatExplorationBridge Instance { get; private set; }
@@ -23,8 +23,17 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     public static bool IsCombatReentryBlocked =>
         Instance != null && Time.time < Instance._combatReentryBlockedUntil;
 
+    /// <summary>
+    /// Após combate iniciado por contacto estático, bloqueia reentrada até o jogador sair da zona.
+    /// Persiste entre reloads de cena (DontDestroyOnLoad).
+    /// </summary>
+    public static bool RequiresCombatEntryZoneClearance =>
+        Instance != null && Instance._requiresCombatEntryZoneClearance;
+
     private bool _hasPendingCombatReturn;
     private bool _lastBattleAlliesWon;
+    private bool _lastCombatWasFromStaticContact;
+    private bool _requiresCombatEntryZoneClearance;
     private BattleState _lastBattleState;
     private float _combatReentryBlockedUntil;
     private bool _hasLastCombatEntryPosition;
@@ -70,6 +79,19 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         LoggerService.PrintLogMessage(LogLevel.Debug,
             "[COMBAT-BRIDGE] Estado de exploração salvo antes do combate.",
             LogCategory.Player);
+    }
+
+    /// <summary>Marca que o combate veio de um inimigo estático — exige sair da zona antes de reentrar.</summary>
+    public void NotifyStaticCombatContactTriggered()
+    {
+        _lastCombatWasFromStaticContact = true;
+        _requiresCombatEntryZoneClearance = true;
+    }
+
+    /// <summary>Chamado quando o jogador deixa a zona de contacto do inimigo estático.</summary>
+    public void NotifyPlayerLeftCombatEntryZone()
+    {
+        _requiresCombatEntryZoneClearance = false;
     }
 
     /// <summary>
@@ -167,21 +189,35 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             return true;
         }
 
+        var returnFromStaticSpawnContact = _lastCombatWasFromStaticContact;
+
         loadContext.ApplyCombatOutcomeToSnapshots(
             _lastBattleState,
             CombatAllyCharacterNames,
-            returnToVillage: !_lastBattleAlliesWon);
+            returnToVillage: !_lastBattleAlliesWon && !returnFromStaticSpawnContact,
+            persistToDisk: false);
 
-        if (_lastBattleAlliesWon && _hasLastCombatEntryPosition)
+        if (returnFromStaticSpawnContact)
+        {
+            loadContext.ReturnSnapshotsToResetSpawn();
+            _requiresCombatEntryZoneClearance = false;
+            _lastCombatWasFromStaticContact = false;
+        }
+        else if (_lastBattleAlliesWon && _hasLastCombatEntryPosition)
         {
             loadContext.NudgeSnapshotsAwayFromWorldPoint(
                 _lastCombatEntryWorldPosition,
                 VictoryReturnSeparationFromCombatEntry);
+            _requiresCombatEntryZoneClearance = false;
+        }
+        else if (!_lastBattleAlliesWon)
+        {
+            _requiresCombatEntryZoneClearance = false;
         }
 
         _combatReentryBlockedUntil = Time.time + CombatReentryBlockSeconds;
         ClearPendingReturn();
-        ScenesManager.Instance.LoadSceneByName(targetSceneName);
+        loadContext.FinishCombatReturnAndLoadExploration(targetSceneName);
         return true;
     }
 

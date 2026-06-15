@@ -68,7 +68,10 @@ public sealed class CharacterViewHud : MonoBehaviour
         if (_slots == null) return;
 
         foreach (var slot in _slots)
+        {
+            if (slot == null) continue;
             slot.Root?.SetActive(false);
+        }
     }
 
     private void OnEnable()
@@ -99,7 +102,10 @@ public sealed class CharacterViewHud : MonoBehaviour
         if (_slots == null) return;
 
         foreach (var slot in _slots)
+        {
+            if (slot == null) continue;
             UnbindHealth(slot);
+        }
     }
 
     private void ResolveDependencies()
@@ -146,12 +152,15 @@ public sealed class CharacterViewHud : MonoBehaviour
 
         var ordered = BuildDisplayOrder();
 
-        for (int i = 0; i < _slots.Count; i++)
+        for (int slotIndex = 0; slotIndex < _slots.Count; slotIndex++)
         {
-            if (i < ordered.Count)
-                BindSlot(_slots[i], ordered[i]);
+            var slot = _slots[slotIndex];
+            if (slot == null) continue;
+
+            if (slotIndex < ordered.Count)
+                BindSlot(slot, ordered[slotIndex]);
             else
-                HideSlot(_slots[i]);
+                HideSlot(slot);
         }
     }
 
@@ -165,9 +174,12 @@ public sealed class CharacterViewHud : MonoBehaviour
         if (_manager.Main      is PlayableCharacter main)      result.Add(main);
         if (_manager.Companion is PlayableCharacter companion)  result.Add(companion);
 
-        foreach (var pc in _manager.Playables)
-            if (pc.CurrentState == PlayableCharacterState.Resting)
-                result.Add(pc);
+        foreach (var playableCharacter in _manager.Playables)
+        {
+            if (playableCharacter == null) continue;
+            if (playableCharacter.CurrentState == PlayableCharacterState.Resting)
+                result.Add(playableCharacter);
+        }
 
         return result;
     }
@@ -176,6 +188,8 @@ public sealed class CharacterViewHud : MonoBehaviour
 
     private void BindSlot(CharacterSlot slot, PlayableCharacter character)
     {
+        if (slot == null || character == null) return;
+
         // Mesmo personagem → só atualiza HP para evitar flicker.
         if (slot.BoundCharacter == character)
         {

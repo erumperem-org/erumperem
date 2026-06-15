@@ -90,21 +90,67 @@ namespace DetectionSystem.Core
         /// </summary>
         public bool PassesFilter(Collider col)
         {
-            int  objLayer = 1 << col.gameObject.layer;
-            bool layerOk  = false;
-
-            for (int i = 0; i < layerMasks.Count; i++)
-                if ((objLayer & (int)layerMasks[i]) != 0) { layerOk = true; break; }
-
-            if (!layerOk) return false;
-            if (filterTags.Count == 0) return true;
-
-            for (int i = 0; i < filterTags.Count; i++)
+            if (MatchesConfiguredTagFilters(col))
             {
-                string filterTag = filterTags[i];
-                if (string.IsNullOrEmpty(filterTag)) continue;
-                if (HasTagInHierarchy(col.transform, filterTag)) return true;
-                if (filterTag == "Player" && col.GetComponentInParent<PlayableCharacter>() != null) return true;
+                return true;
+            }
+
+            if (filterTags.Count > 0)
+            {
+                return false;
+            }
+
+            return PassesLayerMask(col);
+        }
+
+        private bool MatchesConfiguredTagFilters(Collider col)
+        {
+            if (filterTags.Count == 0)
+            {
+                return false;
+            }
+
+            PlayableCharacter playableCharacter = col.GetComponentInParent<PlayableCharacter>();
+
+            for (int filterTagIndex = 0; filterTagIndex < filterTags.Count; filterTagIndex++)
+            {
+                string filterTag = filterTags[filterTagIndex];
+                if (string.IsNullOrEmpty(filterTag))
+                {
+                    continue;
+                }
+
+                if (HasTagInHierarchy(col.transform, filterTag))
+                {
+                    return true;
+                }
+
+                if (filterTag == "Player" && playableCharacter != null)
+                {
+                    return true;
+                }
+
+                if (filterTag == "Npc"
+                    && playableCharacter != null
+                    && playableCharacter.CurrentState != PlayableCharacterState.Main)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool PassesLayerMask(Collider col)
+        {
+            int objectLayerBit = 1 << col.gameObject.layer;
+
+            for (int layerMaskIndex = 0; layerMaskIndex < layerMasks.Count; layerMaskIndex++)
+            {
+                if ((objectLayerBit & (int)layerMasks[layerMaskIndex]) != 0)
+                {
+                    return true;
+                }
             }
 
             return false;

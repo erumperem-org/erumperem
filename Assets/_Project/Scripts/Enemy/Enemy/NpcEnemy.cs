@@ -88,6 +88,12 @@ namespace Systems.NPC.Enemy
             transform.position = spawnPoint;
             _movementController.NavMesh.EnableAgent(_adapter);
 
+            var enemyView = GetComponent<NpcEnemyView>();
+            if (enemyView != null)
+            {
+                enemyView.RefreshCorruptionTierVisuals();
+            }
+
             if (!_movementController.NavMesh.Warp(_adapter, spawnPoint))
                 _movementController.NavMesh.TeleportToNearestNavMeshPoint(_adapter, spawnPoint);
 

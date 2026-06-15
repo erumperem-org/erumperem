@@ -448,6 +448,7 @@ namespace Erumperem.Combat
             InputManager.Instance.OnLeftClickPressed += OnLeftClickPressed;
             InputManager.Instance.OnRightClickPressed += OnRightClickPressed;
             InputManager.Instance.OnCombatCheatKillAllEnemiesPressed += OnCombatCheatKillAllEnemiesPressed;
+            InputManager.Instance.OnCombatCheatKillAllAlliesPressed += OnCombatCheatKillAllAlliesPressed;
         }
 
         private void UnsubscribeFromInputEvents()
@@ -461,6 +462,7 @@ namespace Erumperem.Combat
             InputManager.Instance.OnLeftClickPressed -= OnLeftClickPressed;
             InputManager.Instance.OnRightClickPressed -= OnRightClickPressed;
             InputManager.Instance.OnCombatCheatKillAllEnemiesPressed -= OnCombatCheatKillAllEnemiesPressed;
+            InputManager.Instance.OnCombatCheatKillAllAlliesPressed -= OnCombatCheatKillAllAlliesPressed;
         }
 
         private void OnPointerPositionChanged(Vector2 pointerScreenPosition)
@@ -473,6 +475,8 @@ namespace Erumperem.Combat
         private void OnRightClickPressed() => _rightClickPressedThisFrame = true;
 
         private void OnCombatCheatKillAllEnemiesPressed() => DebugKillAllEnemiesInstantly();
+
+        private void OnCombatCheatKillAllAlliesPressed() => DebugKillAllAlliesInstantly();
 
         /// <summary>
         /// Cheat para QA / playtests: zera o HP de todos os inimigos vivos, dispara a animação de morte
@@ -517,6 +521,55 @@ namespace Erumperem.Combat
             }
 
             Debug.Log("Cheat F6 acionado: inimigos mortos instantaneamente para testar a tela de vitória.");
+            _needsPlayerInput = false;
+            _pendingPlayerActor = null;
+            ClearSkillBarSelection();
+            EndBattle();
+        }
+
+        /// <summary>
+        /// Cheat para QA / playtests: zera o HP de todos os aliados vivos, dispara animação de morte se existir
+        /// e termina o combate (mostra <see cref="defeatPanel"/> via <see cref="EndBattle"/>).
+        /// </summary>
+        public void DebugKillAllAlliesInstantly()
+        {
+            if (_state == null)
+            {
+                Debug.LogWarning("Cheat F7 ignorado: combate ainda não está pronto.");
+                return;
+            }
+
+            if (_battleEnded)
+            {
+                Debug.Log("Cheat F7 ignorado: combate já terminou.");
+                return;
+            }
+
+            var killedAtLeastOne = false;
+            foreach (var ally in _state.Allies)
+            {
+                if (ally.Health.IsDead)
+                {
+                    continue;
+                }
+
+                ally.Health.CurrentHp = 0;
+                ally.Health.IsDead = true;
+                killedAtLeastOne = true;
+
+                if (TryGetEnemyAnimationController(ally.Identity.Id, out var allyAnimationController))
+                {
+                    allyAnimationController.EnsureDeathVisualSequenceStarted(enemyDeathClipMarginSeconds);
+                }
+            }
+
+            if (!killedAtLeastOne)
+            {
+                Debug.Log("Cheat F7 ignorado: todos os aliados já estavam mortos.");
+                return;
+            }
+
+            Debug.Log("Cheat F7 acionado: aliados mortos instantaneamente para testar a tela de derrota.");
             _needsPlayerInput = false;
             _pendingPlayerActor = null;
             ClearSkillBarSelection();

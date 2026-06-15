@@ -188,6 +188,8 @@ The content is organized as follows:
   Enemy/Enemy/NpcEnemyContactHandler.cs.meta
   Enemy/Enemy/NpcEnemyDetectionHandler.cs
   Enemy/Enemy/NpcEnemyDetectionHandler.cs.meta
+  Enemy/Enemy/NpcEnemyView.cs
+  Enemy/Enemy/NpcEnemyView.cs.meta
   Enemy/Enemy/StateMachine.meta
   Enemy/Enemy/StateMachine/NpcEnemyStateMachine.cs
   Enemy/Enemy/StateMachine/NpcEnemyStateMachine.cs.meta
@@ -232,6 +234,8 @@ The content is organized as follows:
   Enemy/Spawner/PlayerAwareSpawnPointSelector.cs.meta
   Enemy/Spawner/RoundRobinSpawnPointSelector.cs
   Enemy/Spawner/RoundRobinSpawnPointSelector.cs.meta
+  Enemy/StaticExplorationEnemyContact.cs
+  Enemy/StaticExplorationEnemyContact.cs.meta
   Exploration.meta
   Exploration/CombatExplorationBridge.cs
   Exploration/CombatExplorationBridge.cs.meta
@@ -242,6 +246,13 @@ The content is organized as follows:
   Exploration/ExplorationDataManagement.cs.meta
   Exploration/ExplorationLoadContext.cs
   Exploration/ExplorationLoadContext.cs.meta
+  Exploration/ExplorationSaveRestingPointPatcher.cs
+  Exploration/ExplorationSaveRestingPointPatcher.cs.meta
+  Exploration/Scavenger.meta
+  Exploration/Scavenger/ScavengerAnimator.cs
+  Exploration/Scavenger/ScavengerAnimator.cs.meta
+  Exploration/Scavenger/ScavengerShop.cs
+  Exploration/Scavenger/ScavengerShop.cs.meta
   GrassEnviromentController.cs
   GrassEnviromentController.cs.meta
   Input.meta
@@ -311,6 +322,12 @@ The content is organized as follows:
   Itens/Contract.meta
   Itens/Contract/IItem.cs
   Itens/Contract/IItem.cs.meta
+  Itens/InventoryLootGranter.cs
+  Itens/InventoryLootGranter.cs.meta
+  Itens/ItemRegistry.asset
+  Itens/ItemRegistry.asset.meta
+  Itens/ItemRegistry.cs
+  Itens/ItemRegistry.cs.meta
   Itens/RestorativeDrink.cs
   Itens/RestorativeDrink.cs.meta
   Managers.meta
@@ -391,6 +408,8 @@ The content is organized as follows:
   Player/Input/PlayerInputReader.cs
   Player/Input/PlayerInputReader.cs.meta
   Player/Inventory.meta
+  Player/Inventory/PlayerInventorySaveSystem.cs
+  Player/Inventory/PlayerInventorySaveSystem.cs.meta
   Player/Inventory/PlayerInventorySystem.cs
   Player/Inventory/PlayerInventorySystem.cs.meta
   Player/Movement.meta
@@ -698,6 +717,10 @@ The content is organized as follows:
   UI/Hud/CursorManager.cs
   UI/Hud/CursorManager.cs.meta
   UI/Inventory.meta
+  UI/Inventory/CurrencySlot.cs
+  UI/Inventory/CurrencySlot.cs.meta
+  UI/Inventory/DeterministicInventorySlotView.cs
+  UI/Inventory/DeterministicInventorySlotView.cs.meta
   UI/Inventory/InventoryPanelView.cs
   UI/Inventory/InventoryPanelView.cs.meta
   UI/Inventory/InventorySlotView.cs
@@ -707,6 +730,8 @@ The content is organized as follows:
   UI/Market/PlayerCurrencyView.cs.meta
   UI/Market/ShopItemButton.cs
   UI/Market/ShopItemButton.cs.meta
+  UI/Market/ShopLevelUpButton.cs
+  UI/Market/ShopLevelUpButton.cs.meta
   UI/PlayerFacingText.cs
   UI/PlayerFacingText.cs.meta
   UI/PlayerGameRichText.cs
@@ -11522,6 +11547,10 @@ namespace Core.Exploration.Items.Currencies
         [SerializeField] private ArtifactRarity rarity;
         public ArtifactRarity Rarity => rarity;
         public StorageMode storageMode => StorageMode.Stackable;
+        [SerializeField] private string _itemId;
+        public string ItemId => _itemId;
+        public string Description => _description;
+        [SerializeField] private string _description;
         public Sprite Sprite;
     }
 }
@@ -11609,6 +11638,7 @@ MonoBehaviour:
   m_Name: EpicAnomalousArtifact
   m_EditorClassIdentifier: Assembly-CSharp::Core.Exploration.Items.Currencies.EpicAnomalousArtifact
   rarity: 1
+  _itemId: 001
   Sprite: {fileID: 21300000, guid: bd27700f9ff70b042934d80b655100d1, type: 3}
 </file>
 
@@ -11639,6 +11669,7 @@ MonoBehaviour:
   m_Name: LegendaryAnomalousArtifact
   m_EditorClassIdentifier: Assembly-CSharp::Core.Exploration.Items.Currencies.LegendaryAnomalousArtifact
   rarity: 2
+  _itemId: 002
   Sprite: {fileID: 21300000, guid: be6cd18eaf1b0db42a50f4b40fd17c5e, type: 3}
 </file>
 
@@ -11669,6 +11700,7 @@ MonoBehaviour:
   m_Name: RareAnomalousArtifact
   m_EditorClassIdentifier: Assembly-CSharp::Core.Exploration.Items.Currencies.RareAnomalousArtifact
   rarity: 0
+  _itemId: 003
   Sprite: {fileID: 21300000, guid: b5b7b8e457ec57143aeb668e9fe7dac6, type: 3}
 </file>
 
@@ -12072,6 +12104,7 @@ namespace Systems.NPC.Builder
         [SerializeField] private NpcEnemyPool                    _pool;
         [SerializeField] private NavMeshSpawnPositionServiceMono _spawnService;
         [SerializeField] private NpcEnemyContactHandler          _contactHandler;
+        [SerializeField] private ExplorationCorruptionSystem corruptionSystem;
 
         [Header("Comportamento")]
         [SerializeField, Min(1f)]   private float _wanderRadius    = 8f;
@@ -12726,6 +12759,9 @@ namespace Systems.NPC.Enemy
         {
             Debug.Log($"[NpcEnemyContactHandler] Contato: '{(enemy as UnityEngine.Object)?.name}' → Player.");
 
+            if (CombatExplorationBridge.IsCombatReentryBlocked)
+                return;
+
             CombatExplorationBridge.Instance?.NotifyEnteringCombat();
 
             if (HasConfiguredContactReaction())
@@ -12852,7 +12888,11 @@ namespace Systems.NPC.Enemy
                 _stateMachine.ToChase(ResolvePlayerTransform(detected));
 
             if (shapeLabel == "Contact")
+            {
                 _npcEnemy.NotifyPlayerContact();
+                //ScenesManager.Instance.LoadSceneByName("CombatScene");
+            }
+                
         }
 
         private void OnDetectorExit(Collider detected, string shapeLabel, int shapeIndex)
@@ -12890,6 +12930,72 @@ namespace Systems.NPC.Enemy
 <file path="Enemy/Enemy/NpcEnemyDetectionHandler.cs.meta">
 fileFormatVersion: 2
 guid: eecd50c93f8f3574bbff6ea5b23e69e9
+</file>
+
+<file path="Enemy/Enemy/NpcEnemyView.cs">
+using UnityEngine;
+
+public class NpcEnemyView : MonoBehaviour
+{
+    public ExplorationCorruptionSystem corruptionSystem;
+    public GameObject low, mid, high;
+
+    void Awake()
+    {
+        corruptionSystem = FindFirstObjectByType<ExplorationCorruptionSystem>();
+        SetEnemyView(corruptionSystem != null ? corruptionSystem.CurrentTier : CorruptionTier.Low);
+    }
+
+    void Start()
+    {
+        if (corruptionSystem == null)
+        {
+            return;
+        }
+
+        corruptionSystem.OnTierLow += SetEnemyAsLow;
+        corruptionSystem.OnTierMid += SetEnemyAsMid;
+        corruptionSystem.OnTierHigh += SetEnemyAsHigh;
+    }
+
+    void OnDestroy()
+    {
+        if (corruptionSystem == null)
+        {
+            return;
+        }
+
+        corruptionSystem.OnTierLow -= SetEnemyAsLow;
+        corruptionSystem.OnTierMid -= SetEnemyAsMid;
+        corruptionSystem.OnTierHigh -= SetEnemyAsHigh;
+    }
+
+    void SetEnemyAsLow() => SetEnemyView(CorruptionTier.Low);
+    void SetEnemyAsMid() => SetEnemyView(CorruptionTier.Mid);
+    void SetEnemyAsHigh() => SetEnemyView(CorruptionTier.High);
+    void SetEnemyView(CorruptionTier tier)
+    {
+        if (low != null)
+        {
+            low.SetActive(tier == CorruptionTier.Low);
+        }
+
+        if (mid != null)
+        {
+            mid.SetActive(tier == CorruptionTier.Mid);
+        }
+
+        if (high != null)
+        {
+            high.SetActive(tier == CorruptionTier.High);
+        }
+    }
+}
+</file>
+
+<file path="Enemy/Enemy/NpcEnemyView.cs.meta">
+fileFormatVersion: 2
+guid: 367f902eea014734c91958ce2764c24f
 </file>
 
 <file path="Enemy/Enemy/StateMachine.meta">
@@ -12966,21 +13072,71 @@ using UnityEngine;
 /// Gatilho de combate para inimigos estáticos colocados na cena (ex.: fantasma da vila).
 /// Os NPCs da pool usam <see cref="Systems.NPC.Enemy.NpcEnemyContactHandler"/>.
 /// </summary>
+[DisallowMultipleComponent]
 public class EnemyCollissionTrigger : MonoBehaviour
 {
     private const string CombatSceneName = "CombatScene";
+
+    private static readonly Vector3 DefaultTriggerCenter = new(0f, 1f, 0f);
+    private static readonly Vector3 DefaultTriggerSize = new(2f, 2f, 2f);
+
+    private void Awake() => EnsureTriggerPhysicsConfigured();
+
+    private void OnEnable() => EnsureTriggerPhysicsConfigured();
 
     private void OnTriggerEnter(Collider other)
     {
         if (!IsPlayerCollider(other))
             return;
 
+        if (IsCombatTriggerBlocked())
+            return;
+
+        CombatExplorationBridge.Instance?.NotifyStaticCombatContactTriggered();
         CombatExplorationBridge.Instance?.NotifyEnteringCombat();
         SceneTransitionHandler.LoadScene(CombatSceneName);
     }
 
+    private void OnTriggerExit(Collider other)
+    {
+        if (!IsPlayerCollider(other))
+            return;
+
+        CombatExplorationBridge.Instance?.NotifyPlayerLeftCombatEntryZone();
+    }
+
+    private static bool IsCombatTriggerBlocked()
+    {
+        return CombatExplorationBridge.IsCombatReentryBlocked
+            || CombatExplorationBridge.RequiresCombatEntryZoneClearance;
+    }
+
+    private void EnsureTriggerPhysicsConfigured()
+    {
+        var rigidbody = GetComponent<Rigidbody>();
+        if (rigidbody == null)
+            rigidbody = gameObject.AddComponent<Rigidbody>();
+
+        rigidbody.isKinematic = true;
+        rigidbody.useGravity = false;
+
+        var collider = GetComponent<Collider>();
+        if (collider == null)
+        {
+            var triggerCollider = gameObject.AddComponent<BoxCollider>();
+            triggerCollider.center = DefaultTriggerCenter;
+            triggerCollider.size = DefaultTriggerSize;
+            triggerCollider.isTrigger = true;
+            return;
+        }
+
+        collider.isTrigger = true;
+    }
+
     private static bool IsPlayerCollider(Collider collider)
     {
+        if (collider == null) return false;
+
         if (collider.CompareTag("Player"))
             return true;
 
@@ -14238,6 +14394,11 @@ GameObject:
   - component: {fileID: 1145103615355512539}
   - component: {fileID: 3386171543898322326}
   - component: {fileID: 4630302747134766427}
+  - component: {fileID: 371272571147602279}
+  - component: {fileID: 5829471058123456790}
+  - component: {fileID: 7290284521460130129}
+  - component: {fileID: 5829471058123456791}
+  - component: {fileID: 5829471058123456792}
   m_Layer: 0
   m_Name: Exploration Enemy
   m_TagString: Untagged
@@ -14259,6 +14420,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1782866922761570551}
+  - {fileID: 8997527098324857157}
+  - {fileID: 187266396094546976}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!195 &6948248592594450243
@@ -14338,13 +14501,13 @@ MonoBehaviour:
     offset: {x: 0, y: 1, z: 0}
     layerMasks:
     - serializedVersion: 2
-      m_Bits: 128
+      m_Bits: 129
     filterTags:
     - Player
     gizmoColor: {r: 0, g: 0.87746024, b: 1, a: 0}
     solidAlpha: 0.3
     sphere:
-      radius: 12
+      radius: 3
     box:
       halfExtents: {x: 0, y: 0, z: 0}
     cylinder:
@@ -14362,10 +14525,10 @@ MonoBehaviour:
   - label: Contact
     shapeType: 1
     enabled: 1
-    offset: {x: 0, y: 1, z: 0.6}
+    offset: {x: 0, y: 1, z: 0}
     layerMasks:
     - serializedVersion: 2
-      m_Bits: 128
+      m_Bits: 129
     filterTags:
     - Player
     gizmoColor: {r: 0.91656363, g: 0.9811321, b: 0.1064436, a: 0}
@@ -14373,7 +14536,7 @@ MonoBehaviour:
     sphere:
       radius: 0
     box:
-      halfExtents: {x: 2, y: 2, z: 0.6}
+      halfExtents: {x: 1, y: 1, z: 1}
     cylinder:
       radius: 0
       height: 0
@@ -14419,8 +14582,96 @@ MonoBehaviour:
   showLabel: 1
   labelOffset: 0.25
   center: {x: 0, y: 0, z: 0}
-  radius: 6
+  radius: 1.5
   isFixed: 0
+--- !u!114 &371272571147602279
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5458582549957236898}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 367f902eea014734c91958ce2764c24f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcEnemyView
+  corruptionSystem: {fileID: 0}
+  low: {fileID: 1438289481387938381}
+  mid: {fileID: 8617202020843711487}
+  high: {fileID: 707801157478981274}
+--- !u!114 &5829471058123456790
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5458582549957236898}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7a3c2e1d4b5486a9e0f1d2c3b4a5968, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StaticExplorationEnemyContact
+--- !u!65 &7290284521460130129
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5458582549957236898}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2, y: 2, z: 2}
+  m_Center: {x: 0, y: 1, z: 0}
+--- !u!54 &5829471058123456791
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5458582549957236898}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!114 &5829471058123456792
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5458582549957236898}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e518367f78b14b54c8c3fc40170f98ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyCollissionTrigger
 --- !u!1001 &4982759974219393947
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -14432,6 +14683,10 @@ PrefabInstance:
     - target: {fileID: 6256490964612725206, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
       propertyPath: m_Name
       value: GhostEnemy
+      objectReference: {fileID: 0}
+    - target: {fileID: 6256490964612725206, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6744234788806124396, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
       propertyPath: m_LocalPosition.x
@@ -14478,10 +14733,157 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
+--- !u!1 &1438289481387938381 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6256490964612725206, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
+  m_PrefabInstance: {fileID: 4982759974219393947}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1782866922761570551 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6744234788806124396, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
   m_PrefabInstance: {fileID: 4982759974219393947}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &5890209070716314171
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 8728546712410730901}
+    m_Modifications:
+    - target: {fileID: 2749529366722415044, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+      propertyPath: m_Name
+      value: GhostEnemyMedium
+      objectReference: {fileID: 0}
+    - target: {fileID: 2749529366722415044, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3270627941008987006, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3270627941008987006, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3270627941008987006, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3270627941008987006, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3270627941008987006, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3270627941008987006, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3270627941008987006, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3270627941008987006, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3270627941008987006, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3270627941008987006, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+--- !u!1 &8617202020843711487 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2749529366722415044, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+  m_PrefabInstance: {fileID: 5890209070716314171}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8997527098324857157 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3270627941008987006, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+  m_PrefabInstance: {fileID: 5890209070716314171}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &8388587948343126202
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 8728546712410730901}
+    m_Modifications:
+    - target: {fileID: 8571209362805632154, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8571209362805632154, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8571209362805632154, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8571209362805632154, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8571209362805632154, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8571209362805632154, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8571209362805632154, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8571209362805632154, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8571209362805632154, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8571209362805632154, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9059233832833152544, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+      propertyPath: m_Name
+      value: GhostEnemyStrong
+      objectReference: {fileID: 0}
+    - target: {fileID: 9059233832833152544, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+--- !u!4 &187266396094546976 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8571209362805632154, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+  m_PrefabInstance: {fileID: 8388587948343126202}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &707801157478981274 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9059233832833152544, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+  m_PrefabInstance: {fileID: 8388587948343126202}
   m_PrefabAsset: {fileID: 0}
 </file>
 
@@ -15341,6 +15743,133 @@ fileFormatVersion: 2
 guid: 6b8ba038a78e66147a0c1eeedee7b555
 </file>
 
+<file path="Enemy/StaticExplorationEnemyContact.cs">
+using DetectionSystem.Core;
+using UnityEngine;
+
+/// <summary>
+/// Inimigo estático colocado na cena (ex.: fantasma da vila).
+/// Faz polling do <see cref="Detector"/> local e inicia combate no contato,
+/// sem depender do ciclo de pool (<see cref="Systems.NPC.Enemy.NpcEnemy.Activate"/>).
+/// </summary>
+[DisallowMultipleComponent]
+[RequireComponent(typeof(Detector))]
+public sealed class StaticExplorationEnemyContact : MonoBehaviour
+{
+    private const string CombatSceneName = "CombatScene";
+    private const string ContactShapeLabel = "Contact";
+
+    private Detector _detector;
+    private bool _combatTriggered;
+
+    private void Awake()
+    {
+        _detector = GetComponent<Detector>();
+    }
+
+    private void OnEnable()
+    {
+        if (_detector != null)
+        {
+            _detector.OnDetectorEnter += HandleDetectorEnter;
+            _detector.OnDetectorExit += HandleDetectorExit;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (_detector != null)
+        {
+            _detector.OnDetectorEnter -= HandleDetectorEnter;
+            _detector.OnDetectorExit -= HandleDetectorExit;
+        }
+    }
+
+    private void Update()
+    {
+        if (_detector == null || IsCombatTriggerBlocked())
+        {
+            return;
+        }
+
+        _detector.Scan();
+    }
+
+    private void HandleDetectorEnter(Collider detectedCollider, string shapeLabel, int shapeIndex)
+    {
+        if (!string.Equals(shapeLabel, ContactShapeLabel, System.StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (!IsPlayerCollider(detectedCollider))
+        {
+            return;
+        }
+
+        if (_combatTriggered || IsCombatTriggerBlocked())
+        {
+            return;
+        }
+
+        _combatTriggered = true;
+        CombatExplorationBridge.Instance?.NotifyStaticCombatContactTriggered();
+        CombatExplorationBridge.Instance?.NotifyEnteringCombat();
+        SceneTransitionHandler.LoadScene(CombatSceneName);
+    }
+
+    private void HandleDetectorExit(Collider detectedCollider, string shapeLabel, int shapeIndex)
+    {
+        if (!string.Equals(shapeLabel, ContactShapeLabel, System.StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (!IsPlayerCollider(detectedCollider))
+        {
+            return;
+        }
+
+        CombatExplorationBridge.Instance?.NotifyPlayerLeftCombatEntryZone();
+    }
+
+    private static bool IsCombatTriggerBlocked()
+    {
+        return CombatExplorationBridge.IsCombatReentryBlocked
+            || CombatExplorationBridge.RequiresCombatEntryZoneClearance;
+    }
+
+    private static bool IsPlayerCollider(Collider collider)
+    {
+        if (collider == null)
+        {
+            return false;
+        }
+
+        if (collider.CompareTag("Player"))
+        {
+            return true;
+        }
+
+        return collider.GetComponentInParent<PlayableCharacter>() != null;
+    }
+}
+</file>
+
+<file path="Enemy/StaticExplorationEnemyContact.cs.meta">
+fileFormatVersion: 2
+guid: f7a3c2e1d4b5486a9e0f1d2c3b4a5968
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant:
+</file>
+
 <file path="Exploration.meta">
 fileFormatVersion: 2
 guid: 0d99c7f76672a144f9f0bbd6a68a488a
@@ -15367,13 +15896,32 @@ using UnityEngine;
 /// </summary>
 public sealed class CombatExplorationBridge : MonoBehaviour
 {
-    private static readonly string[] CombatAllyCharacterNames = { "Wulfric", "Girl" };
+    private static readonly string[] CombatAllyCharacterNames = { "Wulfric", "Matsuda" };
+
+    private const float CombatReentryBlockSeconds = 5f;
+    private const float VictoryReturnSeparationFromCombatEntry = 6f;
+    private const string MainExplorationCharacterName = "Wulfric";
 
     public static CombatExplorationBridge Instance { get; private set; }
 
+    public static bool IsCombatReentryBlocked =>
+        Instance != null && Time.time < Instance._combatReentryBlockedUntil;
+
+    /// <summary>
+    /// Após combate iniciado por contacto estático, bloqueia reentrada até o jogador sair da zona.
+    /// Persiste entre reloads de cena (DontDestroyOnLoad).
+    /// </summary>
+    public static bool RequiresCombatEntryZoneClearance =>
+        Instance != null && Instance._requiresCombatEntryZoneClearance;
+
     private bool _hasPendingCombatReturn;
     private bool _lastBattleAlliesWon;
+    private bool _lastCombatWasFromStaticContact;
+    private bool _requiresCombatEntryZoneClearance;
     private BattleState _lastBattleState;
+    private float _combatReentryBlockedUntil;
+    private bool _hasLastCombatEntryPosition;
+    private Vector3 _lastCombatEntryWorldPosition;
 
     private void Awake()
     {
@@ -15410,10 +15958,24 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         }
 
         ExplorationLoadContext.Instance.SaveState();
+        RememberCombatEntryPosition(ExplorationLoadContext.Instance);
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
             "[COMBAT-BRIDGE] Estado de exploração salvo antes do combate.",
             LogCategory.Player);
+    }
+
+    /// <summary>Marca que o combate veio de um inimigo estático — exige sair da zona antes de reentrar.</summary>
+    public void NotifyStaticCombatContactTriggered()
+    {
+        _lastCombatWasFromStaticContact = true;
+        _requiresCombatEntryZoneClearance = true;
+    }
+
+    /// <summary>Chamado quando o jogador deixa a zona de contacto do inimigo estático.</summary>
+    public void NotifyPlayerLeftCombatEntryZone()
+    {
+        _requiresCombatEntryZoneClearance = false;
     }
 
     /// <summary>
@@ -15511,14 +16073,53 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             return true;
         }
 
+        var returnFromStaticSpawnContact = _lastCombatWasFromStaticContact;
+
         loadContext.ApplyCombatOutcomeToSnapshots(
             _lastBattleState,
             CombatAllyCharacterNames,
-            returnToVillage: !_lastBattleAlliesWon);
+            returnToVillage: !_lastBattleAlliesWon && !returnFromStaticSpawnContact,
+            persistToDisk: false);
 
+        if (returnFromStaticSpawnContact)
+        {
+            loadContext.ReturnSnapshotsToResetSpawn();
+            _requiresCombatEntryZoneClearance = false;
+            _lastCombatWasFromStaticContact = false;
+        }
+        else if (_lastBattleAlliesWon && _hasLastCombatEntryPosition)
+        {
+            loadContext.NudgeSnapshotsAwayFromWorldPoint(
+                _lastCombatEntryWorldPosition,
+                VictoryReturnSeparationFromCombatEntry);
+            _requiresCombatEntryZoneClearance = false;
+        }
+        else if (!_lastBattleAlliesWon)
+        {
+            _requiresCombatEntryZoneClearance = false;
+        }
+
+        _combatReentryBlockedUntil = Time.time + CombatReentryBlockSeconds;
         ClearPendingReturn();
-        ScenesManager.Instance.LoadSceneByName(targetSceneName);
+        loadContext.FinishCombatReturnAndLoadExploration(targetSceneName);
         return true;
+    }
+
+    private static void RememberCombatEntryPosition(ExplorationLoadContext loadContext)
+    {
+        if (loadContext == null)
+        {
+            return;
+        }
+
+        if (loadContext.TryGetSavedPositionForCharacter(MainExplorationCharacterName, out var entryPosition))
+        {
+            Instance._lastCombatEntryWorldPosition = entryPosition;
+            Instance._hasLastCombatEntryPosition = true;
+            return;
+        }
+
+        Instance._hasLastCombatEntryPosition = false;
     }
 
     private void ClearPendingReturn()
@@ -15684,10 +16285,12 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     public async void SaveState() => await SaveToFileAsync();
 
     /// <summary>Zera a corrupção e apaga o arquivo em disco (novo jogo).</summary>
-    public async void ClearSave()
+    public async void ClearSave() => await ClearSaveAsync();
+
+    public async Task ClearSaveAsync()
     {
         _loadedCorruption = 0f;
-        _loadCompleted    = false;
+        _loadCompleted    = true;
         ApplyCorruption(0f, fireEvents: false);
 
         try
@@ -15850,6 +16453,8 @@ guid: ba124471b0d366c4dba616a0cadbefb1
 </file>
 
 <file path="Exploration/ExplorationDataManagement.cs">
+using System;
+using System.Threading.Tasks;
 using UnityEngine;
 
 /// <summary>
@@ -15866,13 +16471,44 @@ public sealed class ExplorationDataManagement : MonoBehaviour
     // ExplorationLoadContext é um singleton DontDestroyOnLoad — acesso via Instance.
 
     /// <summary>Persiste o estado atual dos personagens antes de trocar de cena.</summary>
-    public void Save()  => ExplorationLoadContext.Instance?.SaveState();
+    public void Save() => InvokeOnLoadContext(loadContext => loadContext.SaveState());
 
     /// <summary>Restaura o estado salvo (ou aplica o padrão configurado).</summary>
-    public void Load()  => ExplorationLoadContext.Instance?.RestoreState();
+    public void Load() => InvokeOnLoadContext(loadContext => loadContext.RestoreState());
 
     /// <summary>Apaga o save (novo jogo).</summary>
-    public void Reset() => ExplorationLoadContext.Instance?.ClearSave();
+    public void Reset() => InvokeOnLoadContext(loadContext => loadContext.ClearSave());
+
+    /// <summary>Compatibilidade com botões de UI do Overworld.</summary>
+    public void SaveExplorationState() => Save();
+
+    /// <summary>Compatibilidade com botões de UI do Overworld.</summary>
+    public void LoadExplorationContext() => Load();
+
+    /// <summary>Apaga o save e restaura o estado padrão da cena.</summary>
+    public async void ResetExplorationContext()
+    {
+        var loadContext = ExplorationLoadContext.Instance;
+        if (loadContext == null)
+        {
+            Debug.LogWarning("[ExplorationDataManagement] ExplorationLoadContext.Instance é nulo — reset ignorado.");
+            return;
+        }
+
+        await loadContext.ResetToDefaultStateAsync();
+    }
+
+    private static void InvokeOnLoadContext(Action<ExplorationLoadContext> action)
+    {
+        var loadContext = ExplorationLoadContext.Instance;
+        if (loadContext == null)
+        {
+            Debug.LogWarning("[ExplorationDataManagement] ExplorationLoadContext.Instance é nulo — operação ignorada.");
+            return;
+        }
+
+        action(loadContext);
+    }
 }
 </file>
 
@@ -15885,6 +16521,7 @@ guid: f9d7f82632511ba4ebfe39aad9227577
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Services.DebugUtilities;
 using Services.IO;
 using UnityEngine;
@@ -15988,6 +16625,10 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     [SerializeField] private string _saveFileName   = "exploration_save.json";
     [SerializeField] private string _saveFolderName = "Saves";
 
+    [Header("Reset")]
+    [Tooltip("Spawn do Wulfric ao fazer reset. Se vazio, procura 'ResetWulfricPosition' na cena.")]
+    [SerializeField] private Transform _wulfricResetSpawn;
+
     // ── Singleton ─────────────────────────────────────────────────────────
 
     public static ExplorationLoadContext Instance { get; private set; }
@@ -16000,10 +16641,21 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
     private List<PlayableCharacterSnapshot> _snapshots = new();
     private bool   _hasSave;
+    private bool   _preferInMemorySnapshotsOnNextRestore;
     private string _saveDirectory;
     private float  _savedCorruptionValue;
 
     private PlayableCharactersManager _manager;
+
+    private readonly Dictionary<string, VillageSpawnSnapshot> _villageSpawnByCharacterName =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    [Serializable]
+    private struct VillageSpawnSnapshot
+    {
+        public Vector3    Position;
+        public Quaternion Rotation;
+    }
 
     // ── Unity lifecycle ───────────────────────────────────────────────────
 
@@ -16071,6 +16723,11 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         else
         {
             TryResolveCorruptionSystemFromScene();
+        }
+
+        if (sceneInstance._wulfricResetSpawn != null)
+        {
+            _wulfricResetSpawn = sceneInstance._wulfricResetSpawn;
         }
 
         _manager = null;
@@ -16144,7 +16801,28 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     /// Aguarda explicitamente o IO da corrupção antes de aplicar, garantindo
     /// que o valor correto esteja disponível independente da ordem de Start().
     /// </summary>
-    public async void RestoreState()
+    public async void RestoreState() => await RestoreStateAsync();
+
+    /// <summary>Apaga o save e aplica posições/estado padrão da cena.</summary>
+    public async Task ResetToDefaultStateAsync()
+    {
+        if (!TryGetManager())
+        {
+            return;
+        }
+
+        await ClearSaveAsync();
+        CacheVillageSpawnPointsFromActiveScene();
+        TryResolveCorruptionSystemFromScene();
+        ApplyDefaultSetups();
+
+        if (_corruptionSystem != null)
+        {
+            _corruptionSystem.RestoreState();
+        }
+    }
+
+    public async Task RestoreStateAsync()
     {
         if (!TryGetManager()) return;
 
@@ -16153,8 +16831,17 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             await _corruptionSystem.LoadAsync();
 
         // ── Personagens ──────────────────────────────────────────────────
-        if (!_hasSave || _snapshots.Count == 0)
+        if (_preferInMemorySnapshotsOnNextRestore)
+        {
+            _preferInMemorySnapshotsOnNextRestore = false;
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                "[LOAD] Restaurando snapshots em memória (retorno de combate).",
+                LogCategory.Player);
+        }
+        else
+        {
             await LoadFromFileAsync();
+        }
 
         bool shouldApplySavedSnapshots = _hasSave && _snapshots.Count > 0;
         if (shouldApplySavedSnapshots)
@@ -16183,11 +16870,14 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     /// <summary>
     /// Limpa o save em memória, remove os arquivos em disco e zera a corrupção (novo jogo).
     /// </summary>
-    public async void ClearSave()
+    public async void ClearSave() => await ClearSaveAsync();
+
+    public async Task ClearSaveAsync()
     {
         // ── Personagens ──────────────────────────────────────────────────
         _snapshots.Clear();
         _hasSave = false;
+        _savedCorruptionValue = 0f;
 
         try
         {
@@ -16203,7 +16893,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
         // ── Corrupção ────────────────────────────────────────────────────
         if (_corruptionSystem != null)
-            _corruptionSystem.ClearSave();
+            await _corruptionSystem.ClearSaveAsync();
     }
 
     public bool HasSave() => _hasSave;
@@ -16242,7 +16932,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     public void ApplyCombatOutcomeToSnapshots(
         Game.Core.Models.BattleState battleState,
         IReadOnlyList<string> combatAllyCharacterNames,
-        bool returnToVillage)
+        bool returnToVillage,
+        bool persistToDisk = true)
     {
         if (battleState == null)
         {
@@ -16278,7 +16969,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         }
 
         _hasSave = _snapshots.Count > 0;
-        if (_hasSave)
+        if (_hasSave && persistToDisk)
         {
             _ = SaveToFileAsync();
         }
@@ -16287,6 +16978,15 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         {
             _corruptionSystem.SaveState();
         }
+    }
+
+    /// <summary>
+    /// Grava snapshots em memória e carrega a cena de exploração após retorno de combate.
+    /// Evita race: nudge pós-vitória deve ser persistido antes do reload.
+    /// </summary>
+    public void FinishCombatReturnAndLoadExploration(string sceneName)
+    {
+        StartCoroutine(FinishCombatReturnAndLoadExplorationRoutine(sceneName));
     }
 
     // ── IO (personagens) ──────────────────────────────────────────────────
@@ -16322,6 +17022,9 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             bool exists = await _fileService.ExistsAsync(_saveFileName, _saveDirectory);
             if (!exists)
             {
+                _snapshots.Clear();
+                _hasSave              = false;
+                _savedCorruptionValue = 0f;
                 LoggerService.PrintLogMessage(LogLevel.Debug,
                     "[LOAD] Nenhum arquivo de save encontrado.", LogCategory.Player);
                 return;
@@ -16340,6 +17043,12 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                     $"[LOAD] {_snapshots.Count} snapshots carregados de '{fileData.FullPath}'.",
                     LogCategory.Player);
             }
+            else
+            {
+                _snapshots.Clear();
+                _hasSave              = false;
+                _savedCorruptionValue = 0f;
+            }
         }
         catch (Exception ex)
         {
@@ -16353,63 +17062,214 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     private IEnumerator RestoreNextFrame()
     {
         yield return null;
+        CacheVillageSpawnPointsFromActiveScene();
         TryRestoreOnSceneReady();
     }
 
     private void TryRestoreOnSceneReady()
     {
         TryResolveCorruptionSystemFromScene();
+        CacheVillageSpawnPointsFromActiveScene();
         if (!TryGetManager()) return;
         RestoreState();
     }
 
-    private void OverwriteSnapshotsForVillageReturn()
+    private IEnumerator FinishCombatReturnAndLoadExplorationRoutine(string sceneName)
     {
-        RemoveDestroyedDefaultSetups();
+        _preferInMemorySnapshotsOnNextRestore = true;
+        _hasSave = _snapshots.Count > 0;
 
-        foreach (var setup in _defaultSetups)
+        var saveTask = SaveToFileAsync();
+        while (!saveTask.IsCompleted)
         {
-            if (setup.Character == null)
+            yield return null;
+        }
+
+        if (ScenesManager.Instance == null)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[LOAD] ScenesManager ausente — retorno de combate abortado.",
+                LogCategory.Player);
+            yield break;
+        }
+
+        ScenesManager.Instance.LoadSceneByName(sceneName);
+    }
+
+    public bool TryGetSavedPositionForCharacter(string characterName, out Vector3 position)
+    {
+        var snapshot = _snapshots.Find(savedSnapshot =>
+            string.Equals(savedSnapshot.CharacterName, characterName, StringComparison.Ordinal));
+
+        if (snapshot == null)
+        {
+            position = default;
+            return false;
+        }
+
+        position = snapshot.Position;
+        return true;
+    }
+
+    /// <summary>
+    /// Evita respawn em cima do gatilho de combate após vitória (ex.: fantasma estático da vila).
+    /// </summary>
+    public void NudgeSnapshotsAwayFromWorldPoint(Vector3 worldPoint, float minimumSeparationDistance)
+    {
+        if (minimumSeparationDistance <= 0f)
+        {
+            return;
+        }
+
+        var flatCombatEntry = new Vector3(worldPoint.x, 0f, worldPoint.z);
+        foreach (var snapshot in _snapshots)
+        {
+            var flatSnapshotPosition = new Vector3(snapshot.Position.x, 0f, snapshot.Position.z);
+            var offsetFromCombatEntry = flatSnapshotPosition - flatCombatEntry;
+            if (offsetFromCombatEntry.sqrMagnitude >= minimumSeparationDistance * minimumSeparationDistance)
             {
                 continue;
             }
 
-            var snapshot = _snapshots.Find(savedSnapshot =>
-                string.Equals(savedSnapshot.CharacterName, setup.Character.CharacterName, StringComparison.Ordinal));
+            var pushDirection = offsetFromCombatEntry.sqrMagnitude > 0.0001f
+                ? offsetFromCombatEntry.normalized
+                : Vector3.forward;
 
-            if (snapshot == null)
-            {
-                continue;
-            }
-
-            var villageSpawnTransform = TryFindVillageSpawnTransform(setup.Character.CharacterName);
-            if (villageSpawnTransform != null)
-            {
-                snapshot.Position = villageSpawnTransform.position;
-                snapshot.Rotation = villageSpawnTransform.rotation;
-            }
-
-            snapshot.State = setup.InitialState;
+            var nudgedPosition = flatCombatEntry + pushDirection * minimumSeparationDistance;
+            nudgedPosition.y = snapshot.Position.y;
+            snapshot.Position = nudgedPosition;
         }
     }
 
-    private static Transform TryFindVillageSpawnTransform(string characterName)
+    /// <summary>
+    /// Reposiciona o grupo após combate com inimigo estático do spawn:
+    /// Wulfric no reset da vila; restantes nos Resting Points conhecidos.
+    /// </summary>
+    public void ReturnSnapshotsToResetSpawn()
     {
+        var wulfricResetSpawnTransform = ResolveWulfricResetSpawnTransform();
+
+        foreach (var snapshot in _snapshots)
+        {
+            if (string.Equals(snapshot.CharacterName, "Wulfric", StringComparison.Ordinal)
+                && wulfricResetSpawnTransform != null)
+            {
+                snapshot.Position = wulfricResetSpawnTransform.position;
+                snapshot.Rotation = wulfricResetSpawnTransform.rotation;
+            }
+            else if (_villageSpawnByCharacterName.TryGetValue(snapshot.CharacterName, out var villageSpawn))
+            {
+                snapshot.Position = villageSpawn.Position;
+                snapshot.Rotation = villageSpawn.Rotation;
+            }
+
+            snapshot.State = ResolveFallbackInitialState(snapshot.CharacterName);
+        }
+    }
+
+    /// <summary>Snapshots em memória (elementos mutáveis).</summary>
+    public IReadOnlyList<PlayableCharacterSnapshot> Snapshots => _snapshots;
+
+    /// <summary>
+    /// Atualiza posição/rotação de cada snapshot para o RestingPoint do personagem na cena.
+    /// </summary>
+    /// <returns>Número de snapshots actualizados.</returns>
+    public int MoveSnapshotsToCharacterRestingPoints()
+    {
+        if (!TryGetManager())
+        {
+            return 0;
+        }
+
+        var patchedSnapshotCount = 0;
+
+        foreach (var snapshot in _snapshots)
+        {
+            var playableCharacter = FindPlayableCharacterByName(snapshot.CharacterName);
+            if (playableCharacter == null)
+            {
+                continue;
+            }
+
+            var restingPointTransform = playableCharacter.RestingPoint;
+            if (restingPointTransform == null)
+            {
+                continue;
+            }
+
+            var previousPosition = snapshot.Position;
+            snapshot.Position = restingPointTransform.position;
+            snapshot.Rotation = restingPointTransform.rotation;
+            patchedSnapshotCount++;
+
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"[RestingPointPatcher] '{snapshot.CharacterName}' {previousPosition} → {snapshot.Position} (RestingPoint)",
+                LogCategory.Player);
+        }
+
+        return patchedSnapshotCount;
+    }
+
+    /// <summary>
+    /// Aplica snapshots já em memória na cena e grava em disco, sem reler o arquivo.
+    /// </summary>
+    public async void ApplySnapshotsAndSave()
+    {
+        if (!TryGetManager())
+        {
+            return;
+        }
+
+        _hasSave = _snapshots.Count > 0;
+        if (!_hasSave)
+        {
+            return;
+        }
+
+        ApplySnapshots();
+
+        _savedCorruptionValue = ResolveCurrentCorruptionValue();
+        await SaveToFileAsync();
+
+        if (_corruptionSystem != null)
+        {
+            _corruptionSystem.Corruption = _savedCorruptionValue;
+            _corruptionSystem.SaveState();
+        }
+    }
+
+    private void CacheVillageSpawnPointsFromActiveScene()
+    {
+        _villageSpawnByCharacterName.Clear();
+
         var restingPointsRoot = GameObject.Find("Resting Points");
         if (restingPointsRoot == null)
         {
-            return null;
+            return;
         }
 
-        foreach (Transform childTransform in restingPointsRoot.transform)
+        foreach (Transform restingPointTransform in restingPointsRoot.transform)
         {
-            if (string.Equals(childTransform.name, characterName, StringComparison.OrdinalIgnoreCase))
+            _villageSpawnByCharacterName[restingPointTransform.name] = new VillageSpawnSnapshot
             {
-                return childTransform;
-            }
+                Position = restingPointTransform.position,
+                Rotation = restingPointTransform.rotation,
+            };
         }
+    }
 
-        return null;
+    private void OverwriteSnapshotsForVillageReturn()
+    {
+        foreach (var snapshot in _snapshots)
+        {
+            if (_villageSpawnByCharacterName.TryGetValue(snapshot.CharacterName, out var villageSpawn))
+            {
+                snapshot.Position = villageSpawn.Position;
+                snapshot.Rotation = villageSpawn.Rotation;
+            }
+
+            snapshot.State = ResolveFallbackInitialState(snapshot.CharacterName);
+        }
     }
 
     private float ResolveCurrentCorruptionValue()
@@ -16463,8 +17323,6 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 $"[LOAD] '{character.CharacterName}' → {snap.State} @ {snap.Position}",
                 LogCategory.Player);
         }
-
-        _hasSave = false;
     }
 
     private void ApplyDefaultSetups()
@@ -16483,26 +17341,33 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             return;
         }
 
-        foreach (var setup in _defaultSetups)
+        ApplyDefaultSpawnPositions();
+
+        var orderedDefaultSetups = new List<DefaultCharacterSetup>(_defaultSetups);
+        orderedDefaultSetups.Sort((leftSetup, rightSetup) =>
+            GetDefaultSetupApplyOrder(leftSetup.InitialState)
+                .CompareTo(GetDefaultSetupApplyOrder(rightSetup.InitialState)));
+
+        foreach (var setup in orderedDefaultSetups)
         {
             if (setup.Character == null) continue;
 
             _manager.SetState(setup.InitialState, setup.Character);
 
-            var hp = setup.Character.HealthBar;
-            if (hp != null && setup.MaxHealth > 0f)
+            var healthBar = setup.Character.HealthBar;
+            if (healthBar != null && setup.MaxHealth > 0f)
             {
-                hp.SetMaxHealth(setup.MaxHealth, keepRatio: false);
+                healthBar.SetMaxHealth(setup.MaxHealth, keepRatio: false);
 
-                float startHp = setup.StartingHealth > 0f
+                float startingHealth = setup.StartingHealth > 0f
                     ? Mathf.Clamp(setup.StartingHealth, 0f, setup.MaxHealth)
                     : setup.MaxHealth;
 
-                hp.Kill();
-                hp.Heal(startHp);
+                healthBar.Kill();
+                healthBar.Heal(startingHealth);
 
                 LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"[LOAD] '{setup.Character.CharacterName}' HP padrão → {startHp}/{setup.MaxHealth}",
+                    $"[LOAD] '{setup.Character.CharacterName}' HP padrão → {startingHealth}/{setup.MaxHealth}",
                     LogCategory.Player);
             }
 
@@ -16510,6 +17375,58 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 $"[LOAD] '{setup.Character.CharacterName}' (padrão) → {setup.InitialState}",
                 LogCategory.Player);
         }
+    }
+
+    private void ApplyDefaultSpawnPositions()
+    {
+        var wulfricResetSpawnTransform = ResolveWulfricResetSpawnTransform();
+
+        foreach (var setup in _defaultSetups)
+        {
+            if (setup.Character == null)
+            {
+                continue;
+            }
+
+            if (string.Equals(setup.Character.CharacterName, "Wulfric", StringComparison.Ordinal)
+                && wulfricResetSpawnTransform != null)
+            {
+                setup.Character.Transform.SetPositionAndRotation(
+                    wulfricResetSpawnTransform.position,
+                    wulfricResetSpawnTransform.rotation);
+                continue;
+            }
+
+            var restingPoint = setup.Character.RestingPoint;
+            if (restingPoint != null)
+            {
+                setup.Character.Transform.SetPositionAndRotation(
+                    restingPoint.position,
+                    restingPoint.rotation);
+            }
+        }
+    }
+
+    private Transform ResolveWulfricResetSpawnTransform()
+    {
+        if (_wulfricResetSpawn != null)
+        {
+            return _wulfricResetSpawn;
+        }
+
+        var resetSpawnObject = GameObject.Find("ResetWulfricPosition");
+        return resetSpawnObject != null ? resetSpawnObject.transform : null;
+    }
+
+    private static int GetDefaultSetupApplyOrder(PlayableCharacterState initialState)
+    {
+        return initialState switch
+        {
+            PlayableCharacterState.Main      => 0,
+            PlayableCharacterState.Companion => 1,
+            PlayableCharacterState.Resting   => 2,
+            _                                => 3,
+        };
     }
 
     private void TryBuildFallbackDefaultSetups()
@@ -16541,7 +17458,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         return characterName switch
         {
             "Wulfric" => PlayableCharacterState.Main,
-            "Girl" => PlayableCharacterState.Companion,
+            "Matsuda" => PlayableCharacterState.Companion,
             "Buck" => PlayableCharacterState.Resting,
             _ => PlayableCharacterState.Resting,
         };
@@ -16553,7 +17470,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         {
             "Wulfric" => 100f,
             "Buck" => 200f,
-            "Girl" => 30f,
+            "Matsuda" => 30f,
             _ => 100f,
         };
     }
@@ -16569,6 +17486,24 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 _defaultSetups.RemoveAt(setupIndex);
             }
         }
+    }
+
+    private PlayableCharacter FindPlayableCharacterByName(string characterName)
+    {
+        foreach (var candidate in _manager.Playables)
+        {
+            if (candidate == null)
+            {
+                continue;
+            }
+
+            if (string.Equals(candidate.CharacterName, characterName, StringComparison.Ordinal))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     private bool TryGetManager()
@@ -16598,6 +17533,152 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 <file path="Exploration/ExplorationLoadContext.cs.meta">
 fileFormatVersion: 2
 guid: 9b764f35c0e4c924fa76dda608a6c833
+</file>
+
+<file path="Exploration/ExplorationSaveRestingPointPatcher.cs">
+using Services.DebugUtilities;
+using UnityEngine;
+
+/// <summary>
+/// Substitui <c>Position</c>/<c>Rotation</c> de cada snapshot pelo
+/// <c>RestingPoint</c> do personagem na cena e reposiciona os personagens.
+///
+/// O fluxo correcto não passa pelo <c>RestoreState</c> público pois ele
+/// relê o disco quando <c>_hasSave</c> está false (resetado após cada apply).
+/// Em vez disso, chama <c>ApplySnapshotsAndSave</c> que aplica directamente
+/// os snapshots já modificados em memória e persiste em seguida.
+/// </summary>
+public sealed class ExplorationSaveRestingPointPatcher : MonoBehaviour
+{
+    [Tooltip("Se verdadeiro, o patch é aplicado automaticamente ao OnEnable.")]
+    [SerializeField] private bool _patchOnEnable = true;
+
+    private void OnEnable()
+    {
+        if (_patchOnEnable)
+            Patch();
+    }
+
+    public void Patch()
+    {
+        var ctx = ExplorationLoadContext.Instance;
+
+        if (ctx == null)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Error,
+                "[RestingPointPatcher] ExplorationLoadContext.Instance é nulo.",
+                LogCategory.Player);
+            return;
+        }
+
+        var snapshots = ctx.Snapshots;
+
+        if (snapshots == null || snapshots.Count == 0)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[RestingPointPatcher] Nenhum snapshot disponível.",
+                LogCategory.Player);
+            return;
+        }
+
+        var patchedSnapshotCount = ctx.MoveSnapshotsToCharacterRestingPoints();
+        if (patchedSnapshotCount == 0)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[RestingPointPatcher] Nenhum snapshot foi actualizado (RestingPoint em falta?).",
+                LogCategory.Player);
+            return;
+        }
+
+        // Aplica directo sem passar pelo LoadFromFileAsync
+        ctx.ApplySnapshotsAndSave();
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[RestingPointPatcher] Patch aplicado em {patchedSnapshotCount} snapshot(s).",
+            LogCategory.Player);
+    }
+}
+</file>
+
+<file path="Exploration/ExplorationSaveRestingPointPatcher.cs.meta">
+fileFormatVersion: 2
+guid: 797a8a62a8e7d0348bf28f17adbc08db
+</file>
+
+<file path="Exploration/Scavenger.meta">
+fileFormatVersion: 2
+guid: af64c6ca53de47a4488a92f5d78530f1
+folderAsset: yes
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant:
+</file>
+
+<file path="Exploration/Scavenger/ScavengerAnimator.cs">
+using UnityEditor.Animations;
+using UnityEngine;
+
+public class ScavengerAnimator : MonoBehaviour
+{
+    public Animator animator;
+    public System.Random random = new System.Random();
+    
+    void Update()
+    {
+        if(random.Next(0,100) > 50)
+        {
+            SetWave();
+        }
+    }
+    void SetWave()
+    {
+        animator.SetTrigger("Wave");
+    }
+
+    void OnDestroy()
+    {
+        animator.ResetTrigger("Wave");
+    }
+    void OnEnable()
+    {
+        animator.ResetTrigger("Wave");
+    }
+}
+</file>
+
+<file path="Exploration/Scavenger/ScavengerAnimator.cs.meta">
+fileFormatVersion: 2
+guid: a5e658a2da8b7b744b87756e26839b6d
+</file>
+
+<file path="Exploration/Scavenger/ScavengerShop.cs">
+using UnityEngine;
+
+public class ScavengerShop : MonoBehaviour
+{
+    public GameObject skillTreePanel;
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            skillTreePanel.SetActive(true);
+        }
+    }
+    void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            skillTreePanel.SetActive(false);
+        }
+    }
+}
+</file>
+
+<file path="Exploration/Scavenger/ScavengerShop.cs.meta">
+fileFormatVersion: 2
+guid: c383aab70cf2d5f4eb3be2fcf7ae4d4c
 </file>
 
 <file path="GrassEnviromentController.cs">
@@ -18042,25 +19123,25 @@ MonoBehaviour:
   entries:
   - item: {fileID: 11400000, guid: 6d20f39a3f0ade346968a782dce8c5d0, type: 2}
     weight: 30
-    minQuantity: 2
-    maxQuantity: 9
+    minQuantity: 200
+    maxQuantity: 200
   - item: {fileID: 11400000, guid: 12e9945c56226b4428bdec55bd1e8b57, type: 2}
     weight: 20
-    minQuantity: 1
-    maxQuantity: 10
+    minQuantity: 200
+    maxQuantity: 200
   - item: {fileID: 11400000, guid: 884280a021f87d244b02bdb7a691edc6, type: 2}
     weight: 10
-    minQuantity: 0
-    maxQuantity: 4
+    minQuantity: 200
+    maxQuantity: 200
   - item: {fileID: 11400000, guid: 29968b57e9864f74685525f6c4c3cbae, type: 2}
     weight: 10
-    minQuantity: 1
-    maxQuantity: 4
+    minQuantity: 200
+    maxQuantity: 200
   - item: {fileID: 11400000, guid: 7d74a3ca6acc49c4ea0144f2d64e567a, type: 2}
     weight: 10
     minQuantity: 2
     maxQuantity: 4
-  maxChestCapacity: 20
+  maxChestCapacity: 2000
 </file>
 
 <file path="Interactables/Chest/Loot/Scriptables/LootTable.asset.meta">
@@ -19570,6 +20651,11 @@ namespace Core.Exploration.Items.Usables
 
         public Sprite Sprite => spriteExposed;
 
+        [SerializeField] private string _itemId;
+        public string ItemId => _itemId;
+        public string Description => _description;
+        [SerializeField] private string _description;
+
         public Sprite spriteExposed;
 
         // ── IItem ─────────────────────────────────────────────────────────
@@ -19605,7 +20691,7 @@ namespace Core.Exploration.Items.Usables
                 return;
             }
 
-            bool resetMain      = _resetScope is ResetScope.MainOnly or ResetScope.Both;
+            bool resetMain = _resetScope is ResetScope.MainOnly or ResetScope.Both;
             bool resetCompanion = _resetScope is ResetScope.CompanionOnly or ResetScope.Both;
 
             if (resetMain && manager.Main is PlayableCharacter main)
@@ -19663,6 +20749,212 @@ fileFormatVersion: 2
 guid: 870a419cb38278d40a034f43ac77f3a1
 </file>
 
+<file path="Itens/InventoryLootGranter.cs">
+using System.Collections.Generic;
+using System;
+using Core.Exploration.Interactables.Chest;
+using Services.DebugUtilities;
+using Services.Loot;
+using UnityEngine;
+
+/// <summary>
+/// Realiza o sorteio via <see cref="LootTable"/>, adiciona os itens ao
+/// <see cref="PlayerInventorySystem"/> e persiste imediatamente em disco
+/// via <see cref="PlayerInventorySaveSystem"/>.
+///
+/// Expõe apenas <see cref="RollLoot"/> como ponto de entrada.
+/// Dispara <see cref="OnLootGranted"/> com os itens sorteados antes de salvar.
+///
+/// Uso:
+/// <code>
+///     granter.RollLoot();
+/// </code>
+/// </summary>
+public sealed class InventoryLootGranter : MonoBehaviour
+{
+    // ── Inspector ─────────────────────────────────────────────────────────
+
+    [Header("Referências")]
+    [SerializeField] private PlayerInventorySystem     _inventory;
+    [SerializeField] private PlayerInventorySaveSystem _saveSystem;
+
+    [Tooltip("LootTable que define os itens, pesos e capacidade do sorteio.")]
+    [SerializeField] private LootTable _lootTable;
+
+    // ── Eventos ───────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Disparado após o sorteio, antes de salvar.
+    /// Recebe o dicionário de IStorageable → quantidade sorteada.
+    /// </summary>
+    public event Action<IReadOnlyDictionary<IStorageable, int>> OnLootGranted;
+
+    // ── Serviço de loot ───────────────────────────────────────────────────
+
+    private readonly ILootService _lootService = new LootService();
+
+    // ── API pública ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Sorteia itens da <see cref="LootTable"/>, adiciona ao inventário,
+    /// dispara <see cref="OnLootGranted"/> e salva em disco.
+    /// </summary>
+    public void RollLoot()
+    {
+        if (!Validate()) return;
+
+        var context = new LootRequestContext(gameObject.name, transform.position);
+        IReadOnlyDictionary<IStorageable, int> loot = _lootService.GenerateLoot(_lootTable, context);
+
+        if (loot == null || loot.Count == 0)
+        {
+            Log(LogLevel.Warning, "Sorteio não gerou nenhum item.");
+            return;
+        }
+
+        // Converte para Dictionary mutável que AddItems espera
+        var toAdd = new Dictionary<IStorageable, int>(loot);
+        _inventory.AddItems(toAdd);
+
+        // Notifica ouvintes com o resultado antes de persistir
+        OnLootGranted?.Invoke(loot);
+
+        // Persiste imediatamente
+        _saveSystem.SaveAsync();
+
+        Log(LogLevel.Debug, $"Sorteio concluído: {loot.Count} tipo(s) adicionado(s) e save gravado.");
+    }
+
+    // ── Validação ─────────────────────────────────────────────────────────
+
+    private bool Validate()
+    {
+        if (_inventory == null)
+        {
+            Log(LogLevel.Error, "PlayerInventorySystem não atribuído.");
+            return false;
+        }
+
+        if (_saveSystem == null)
+        {
+            Log(LogLevel.Error, "PlayerInventorySaveSystem não atribuído.");
+            return false;
+        }
+
+        if (_lootTable == null)
+        {
+            Log(LogLevel.Error, "LootTable não atribuída.");
+            return false;
+        }
+
+        return true;
+    }
+
+    // ── Helper ────────────────────────────────────────────────────────────
+
+    private void Log(LogLevel level, string msg) =>
+        LoggerService.PrintLogMessage(level, $"[InventoryLootGranter:{gameObject.name}] {msg}", LogCategory.Inventory);
+}
+</file>
+
+<file path="Itens/InventoryLootGranter.cs.meta">
+fileFormatVersion: 2
+guid: 780a7ac4a626850458a494a2a31064b4
+</file>
+
+<file path="Itens/ItemRegistry.asset">
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3558bed28a688748be29de647b8b6a4, type: 3}
+  m_Name: ItemRegistry
+  m_EditorClassIdentifier: Assembly-CSharp::ItemRegistry
+  _items:
+  - {fileID: 11400000, guid: 6d20f39a3f0ade346968a782dce8c5d0, type: 2}
+  - {fileID: 11400000, guid: 12e9945c56226b4428bdec55bd1e8b57, type: 2}
+  - {fileID: 11400000, guid: 884280a021f87d244b02bdb7a691edc6, type: 2}
+  - {fileID: 11400000, guid: 7d74a3ca6acc49c4ea0144f2d64e567a, type: 2}
+  - {fileID: 11400000, guid: 29968b57e9864f74685525f6c4c3cbae, type: 2}
+</file>
+
+<file path="Itens/ItemRegistry.asset.meta">
+fileFormatVersion: 2
+guid: 092721bb0f9989146877349a90431d1c
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant:
+</file>
+
+<file path="Itens/ItemRegistry.cs">
+using System.Collections.Generic;
+using Services.DebugUtilities;
+using UnityEngine;
+using Core.Exploration.Items;
+/// <summary>
+/// ScriptableObject que mapeia <c>ItemId</c> → <c>IStorageable</c>.
+/// Necessário para o <see cref="PlayerInventorySaveSystem"/> resolver os
+/// ids persistidos de volta aos objetos em runtime.
+///
+/// Crie via: Assets → Create → Inventory → Item Registry
+/// Arraste todos os IItem do projeto para a lista <c>Items</c>.
+/// </summary>
+[CreateAssetMenu(menuName = "Inventory/Item Registry", fileName = "ItemRegistry")]
+public sealed class ItemRegistry : ScriptableObject
+{
+    [Tooltip("Todos os itens do projeto. O ItemId de cada um deve ser único.")]
+    [SerializeField] private List<ScriptableObject> _items = new();
+
+    private Dictionary<string, IStorageable> _lookup;
+
+    private void OnEnable() => BuildLookup();
+
+    /// <summary>Resolve um <c>ItemId</c> para o <see cref="IStorageable"/> correspondente.</summary>
+    public IStorageable Resolve(string itemId)
+    {
+        if (_lookup == null) BuildLookup();
+        return _lookup.TryGetValue(itemId, out var item) ? item : null;
+    }
+
+    private void BuildLookup()
+    {
+        _lookup = new Dictionary<string, IStorageable>(_items.Count);
+        foreach (var item in _items)
+        {
+            if (item is IItem item1)
+            {
+                if (item == null) continue;
+
+                if (_lookup.ContainsKey(item1.ItemId))
+                {
+                    LoggerService.PrintLogMessage(LogLevel.Warning,
+                        $"[ItemRegistry] ItemId duplicado detectado: '{item1.ItemId}' — entrada ignorada.",
+                        LogCategory.Inventory);
+                    continue;
+                }
+
+                _lookup[item1.ItemId] = item1;
+            }
+        }
+    }
+}
+</file>
+
+<file path="Itens/ItemRegistry.cs.meta">
+fileFormatVersion: 2
+guid: b3558bed28a688748be29de647b8b6a4
+</file>
+
 <file path="Itens/RestorativeDrink.cs">
 // ============================================================
 // RestorativeDrink.cs
@@ -19694,10 +20986,15 @@ namespace Core.Exploration.Items.Usables
         // ── IStorageable ──────────────────────────────────────────────────
 
         public StorageMode storageMode => StorageMode.Stackable;
+        [SerializeField] private string _itemId;
+        public string ItemId => _itemId;
+                public string Description => _description;
+        [SerializeField] private string _description;
 
         // ── IItem ─────────────────────────────────────────────────────────
 
         public Sprite Sprite => spriteExposed;
+
         public Sprite spriteExposed;
 
         public void ExecuteItemEffect()
@@ -22165,7 +23462,16 @@ public sealed class PlayableCharactersManager : MonoBehaviour
     [SerializeField] private PlayerInputReader _inputReader;
 
     /// <summary>Lista somente-leitura de todos os personagens gerenciados.</summary>
-    public IReadOnlyList<PlayableCharacter> Playables => _playables;
+    public IReadOnlyList<PlayableCharacter> Playables
+    {
+        get
+        {
+            EnsureSceneReferencesResolved();
+            return _playables != null
+                ? _playables
+                : Array.Empty<PlayableCharacter>();
+        }
+    }
 
     public IPlayableCharacter Main      { get; private set; }
     public IPlayableCharacter Companion { get; private set; }
@@ -22192,6 +23498,19 @@ public sealed class PlayableCharactersManager : MonoBehaviour
         if (_inputReader == null)
         {
             _inputReader = FindFirstObjectByType<PlayerInputReader>();
+        }
+
+        RemoveNullPlayableEntries();
+    }
+
+    private void RemoveNullPlayableEntries()
+    {
+        if (_playables == null) return;
+
+        for (int index = _playables.Count - 1; index >= 0; index--)
+        {
+            if (_playables[index] == null)
+                _playables.RemoveAt(index);
         }
     }
 
@@ -23089,6 +24408,175 @@ DefaultImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant:
+</file>
+
+<file path="Player/Inventory/PlayerInventorySaveSystem.cs">
+using System;
+using System.Collections.Generic;
+using Services.DebugUtilities;
+using Services.IO;
+using UnityEngine;
+
+// ── DTO de serialização ───────────────────────────────────────────────────────
+
+[Serializable]
+internal sealed class InventoryEntry
+{
+    public string ItemId;
+    public int    Amount;
+
+    public InventoryEntry(string itemId, int amount)
+    {
+        ItemId = itemId;
+        Amount = amount;
+    }
+}
+
+[Serializable]
+internal sealed class InventorySaveData
+{
+    public List<InventoryEntry> Entries = new();
+}
+
+// ── PlayerInventorySaveSystem ─────────────────────────────────────────────────
+
+/// <summary>
+/// Persiste e restaura o <see cref="PlayerInventorySystem"/> em disco (JSON).
+///
+/// • <c>Awake</c>  → tenta carregar; se o arquivo não existir, mantém inventário vazio.
+/// • <c>SaveAsync</c>  → serializa o inventário atual e grava em disco.
+/// • <c>LoadAsync</c>  → lê o arquivo e reaplica os itens no inventário.
+/// • <c>ClearSave</c>  → apaga o arquivo e limpa o inventário em memória.
+///
+/// Requer que cada <see cref="IStorageable"/> implemente <c>ItemId</c> (string única)
+/// e que um <see cref="ItemRegistry"/> possa resolver o id de volta ao objeto.
+/// </summary>
+public sealed class PlayerInventorySaveSystem : MonoBehaviour
+{
+    // ── Inspector ─────────────────────────────────────────────────────────
+
+    [Header("Referências")]
+    [SerializeField] private PlayerInventorySystem _inventory;
+
+    [Tooltip("Registro de todos os IStorageable do projeto, usado para resolver ItemId → objeto.")]
+    [SerializeField] private ItemRegistry _registry;
+
+    [Header("IO")]
+    [SerializeField] private string _saveFileName   = "inventory_save.json";
+    [SerializeField] private string _saveFolderName = "Saves";
+
+    // ── Serviço de IO ─────────────────────────────────────────────────────
+
+    private readonly IFileService _fileService = new FileService();
+    private string _saveDirectory;
+
+    // ── Unity lifecycle ───────────────────────────────────────────────────
+
+    private void Awake()
+    {
+        _saveDirectory = System.IO.Path.Combine(Application.persistentDataPath, _saveFolderName);
+        _ = LoadAsync(); // fire-and-forget; inventário começa vazio se arquivo não existir
+    }
+
+    // ── API pública ───────────────────────────────────────────────────────
+
+    /// <summary>Serializa o inventário atual e grava em disco.</summary>
+    public async void SaveAsync()
+    {
+        var saveData = new InventorySaveData();
+
+        foreach (var kvp in _inventory.GetAll())
+        {
+            if (kvp.Key == null) continue;
+            saveData.Entries.Add(new InventoryEntry(kvp.Key.ItemId, kvp.Value));
+        }
+
+        try
+        {
+            string json     = JsonUtility.ToJson(saveData, prettyPrint: true);
+            var    fileData = new FileData(json, _saveFileName, _saveDirectory);
+            await _fileService.WriteAsync(fileData);
+
+            Log(LogLevel.Debug, $"Save gravado em: {fileData.FullPath} ({saveData.Entries.Count} entradas)");
+        }
+        catch (Exception ex)
+        {
+            Log(LogLevel.Error, $"Falha ao gravar save: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Lê o arquivo de save e reaplica os itens no inventário.
+    /// Se o arquivo não existir, mantém o inventário vazio sem erro.
+    /// </summary>
+    public async System.Threading.Tasks.Task LoadAsync()
+    {
+        try
+        {
+            bool exists = await _fileService.ExistsAsync(_saveFileName, _saveDirectory);
+            if (!exists)
+            {
+                Log(LogLevel.Debug, "Nenhum arquivo de save encontrado — inventário iniciado vazio.");
+                return;
+            }
+
+            FileData fileData = await _fileService.ReadAsync(_saveFileName, _saveDirectory);
+            var saveData = JsonUtility.FromJson<InventorySaveData>(fileData._fileContent);
+
+            if (saveData?.Entries == null || saveData.Entries.Count == 0)
+            {
+                Log(LogLevel.Debug, "Arquivo de save vazio — inventário iniciado vazio.");
+                return;
+            }
+
+            // Reconstrói o dicionário a partir dos ids
+            var toAdd = new Dictionary<IStorageable, int>();
+            foreach (var entry in saveData.Entries)
+            {
+                IStorageable item = _registry.Resolve(entry.ItemId);
+                if (item == null)
+                {
+                    Log(LogLevel.Warning, $"ItemId '{entry.ItemId}' não encontrado no registry — ignorado.");
+                    continue;
+                }
+                toAdd[item] = entry.Amount;
+            }
+
+            if (toAdd.Count > 0)
+                _inventory.AddItems(toAdd);
+
+            Log(LogLevel.Debug, $"{toAdd.Count} item(s) restaurados do save.");
+        }
+        catch (Exception ex)
+        {
+            Log(LogLevel.Error, $"Falha ao ler save: {ex.Message}");
+        }
+    }
+
+    /// <summary>Apaga o arquivo de save e limpa o inventário em memória.</summary>
+    public async void ClearSave()
+    {
+        try
+        {
+            await _fileService.DeleteAsync(_saveFileName, _saveDirectory);
+            Log(LogLevel.Debug, "Arquivo de save deletado.");
+        }
+        catch (Exception ex)
+        {
+            Log(LogLevel.Warning, $"Falha ao deletar save: {ex.Message}");
+        }
+    }
+
+    // ── Helper ────────────────────────────────────────────────────────────
+
+    private static void Log(LogLevel level, string msg) =>
+        LoggerService.PrintLogMessage(level, $"[InventorySave] {msg}", LogCategory.Inventory);
+}
+</file>
+
+<file path="Player/Inventory/PlayerInventorySaveSystem.cs.meta">
+fileFormatVersion: 2
+guid: 790a3cc0ef8a427499ab81703b5f7359
 </file>
 
 <file path="Player/Inventory/PlayerInventorySystem.cs">
@@ -25604,7 +27092,9 @@ DefaultImporter:
 <file path="Storageable/Contract/IStorageable.cs">
 public interface IStorageable
 {
-   public StorageMode storageMode {get;}
+   public StorageMode storageMode { get; }
+   string ItemId { get; }
+   string Description { get; }
 }
 </file>
 
@@ -31206,7 +32696,10 @@ public sealed class CharacterViewHud : MonoBehaviour
         if (_slots == null) return;
 
         foreach (var slot in _slots)
+        {
+            if (slot == null) continue;
             slot.Root?.SetActive(false);
+        }
     }
 
     private void OnEnable()
@@ -31237,7 +32730,10 @@ public sealed class CharacterViewHud : MonoBehaviour
         if (_slots == null) return;
 
         foreach (var slot in _slots)
+        {
+            if (slot == null) continue;
             UnbindHealth(slot);
+        }
     }
 
     private void ResolveDependencies()
@@ -31284,12 +32780,15 @@ public sealed class CharacterViewHud : MonoBehaviour
 
         var ordered = BuildDisplayOrder();
 
-        for (int i = 0; i < _slots.Count; i++)
+        for (int slotIndex = 0; slotIndex < _slots.Count; slotIndex++)
         {
-            if (i < ordered.Count)
-                BindSlot(_slots[i], ordered[i]);
+            var slot = _slots[slotIndex];
+            if (slot == null) continue;
+
+            if (slotIndex < ordered.Count)
+                BindSlot(slot, ordered[slotIndex]);
             else
-                HideSlot(_slots[i]);
+                HideSlot(slot);
         }
     }
 
@@ -31303,9 +32802,12 @@ public sealed class CharacterViewHud : MonoBehaviour
         if (_manager.Main      is PlayableCharacter main)      result.Add(main);
         if (_manager.Companion is PlayableCharacter companion)  result.Add(companion);
 
-        foreach (var pc in _manager.Playables)
-            if (pc.CurrentState == PlayableCharacterState.Resting)
-                result.Add(pc);
+        foreach (var playableCharacter in _manager.Playables)
+        {
+            if (playableCharacter == null) continue;
+            if (playableCharacter.CurrentState == PlayableCharacterState.Resting)
+                result.Add(playableCharacter);
+        }
 
         return result;
     }
@@ -31314,6 +32816,8 @@ public sealed class CharacterViewHud : MonoBehaviour
 
     private void BindSlot(CharacterSlot slot, PlayableCharacter character)
     {
+        if (slot == null || character == null) return;
+
         // Mesmo personagem → só atualiza HP para evitar flicker.
         if (slot.BoundCharacter == character)
         {
@@ -31423,16 +32927,19 @@ public class CursorManager : MonoBehaviour
     private Dictionary<CursorType, CursorState> stateLookup;
 
     private Coroutine animationRoutine;
+    private Coroutine clickFeedbackRoutine;
 
     private CursorType currentState;
-
-    private bool isHoveringUI;
 
     private readonly List<RaycastResult> raycastResults = new();
 
     private PointerEventData pointerEventData;
 
-    #region Unity Methods
+    [Header("Click Settings")]
+    [SerializeField]
+    private float clickDuration = 0.15f;
+
+    #region Unity
 
     private void Awake()
     {
@@ -31467,8 +32974,7 @@ public class CursorManager : MonoBehaviour
         if (Mouse.current == null)
             return;
 
-        HandleUIHover();
-        HandleUIClick();
+        UpdateCursorState();
     }
 
     private void OnEnable()
@@ -31483,54 +32989,72 @@ public class CursorManager : MonoBehaviour
 
     #endregion
 
-    #region Scene Management
+    #region Scene
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        StopAllCoroutines();
+
+        animationRoutine = null;
+        clickFeedbackRoutine = null;
+
         SetState(CursorType.Normal);
     }
 
     #endregion
 
-    #region UI Detection
+    #region Cursor Logic
 
-    private void HandleUIHover()
+    private void UpdateCursorState()
     {
-        bool hoveringNow = IsHoveringInteractableUI();
-
-        if (hoveringNow && !isHoveringUI)
-        {
-            isHoveringUI = true;
-
-            if (!Mouse.current.leftButton.isPressed)
-            {
-                SetState(CursorType.Hover);
-            }
-        }
-        else if (!hoveringNow && isHoveringUI)
-        {
-            isHoveringUI = false;
-
-            if (!Mouse.current.leftButton.isPressed)
-            {
-                SetState(CursorType.Normal);
-            }
-        }
-    }
-
-    private void HandleUIClick()
-    {
-        if (!isHoveringUI)
-            return;
+        bool hoveringInteractable = IsHoveringInteractableUI();
 
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
-            SetState(CursorType.Click);
+            if (hoveringInteractable)
+            {
+                SetState(CursorType.Click);
+
+                if (clickFeedbackRoutine != null)
+                {
+                    StopCoroutine(clickFeedbackRoutine);
+                }
+
+                clickFeedbackRoutine =
+                    StartCoroutine(ClickFeedbackRoutine());
+            }
+
+            return;
         }
 
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
+        if (clickFeedbackRoutine != null)
+            return;
+
+        if (hoveringInteractable)
         {
             SetState(CursorType.Hover);
+        }
+        else
+        {
+            SetState(CursorType.Normal);
+        }
+    }
+
+    private IEnumerator ClickFeedbackRoutine()
+    {
+        yield return new WaitForSeconds(clickDuration);
+
+        clickFeedbackRoutine = null;
+
+        bool hoveringInteractable = IsHoveringInteractableUI();
+
+        if (hoveringInteractable)
+        {
+            SetState(CursorType.Hover);
+        }
+        else
+        {
+            SetState(CursorType.Normal);
         }
     }
 
@@ -31540,7 +33064,8 @@ public class CursorManager : MonoBehaviour
             return false;
 
         pointerEventData = new PointerEventData(EventSystem.current);
-        pointerEventData.position = Mouse.current.position.ReadValue();
+        pointerEventData.position =
+            Mouse.current.position.ReadValue();
 
         raycastResults.Clear();
 
@@ -31570,12 +33095,17 @@ public class CursorManager : MonoBehaviour
 
     public void SetState(CursorType stateType)
     {
-        if (currentState == stateType)
+        if (currentState == stateType &&
+            stateType != CursorType.Click)
+        {
             return;
+        }
 
         if (!stateLookup.TryGetValue(stateType, out CursorState state))
         {
-            Debug.LogWarning($"Cursor State '{stateType}' não encontrado.");
+            Debug.LogWarning(
+                $"Cursor State '{stateType}' não encontrado."
+            );
             return;
         }
 
@@ -31678,6 +33208,93 @@ DefaultImporter:
   assetBundleVariant:
 </file>
 
+<file path="UI/Inventory/CurrencySlot.cs">
+using Core.Exploration.Items;
+using Core.Exploration.Items.Currencies;
+using Microsoft.Unity.VisualStudio.Editor;
+using Services.DebugUtilities;
+using UnityEngine;
+
+public class DeterministicInventorySlotView : MonoBehaviour
+{
+    public ScriptableObject item;
+    public PlayerInventorySystem inventorySystem;
+    public UnityEngine.UI.Image icon;
+    public TMPro.TMP_Text quantity;
+
+    void Awake()
+    {
+        if (item is AnomalousArtifact item1)
+        {
+            inventorySystem.OnItemAdded += HandleItemView;
+            inventorySystem.OnItemRemoved += HandleItemView;
+            icon.sprite = item1.Sprite;
+            quantity.text = "0";
+        }
+    }
+
+    void OnDisable()
+    {
+        if (item is AnomalousArtifact item1)
+        {
+            inventorySystem.OnItemAdded -= HandleItemView;
+            inventorySystem.OnItemRemoved -= HandleItemView;
+        }
+    }
+
+    private void HandleItemView(IStorageable storageable, int amount)
+    {
+        if (storageable is not IItem item) return;
+        int total = inventorySystem.GetAmount(item);
+        quantity.text = total.ToString();
+    }
+}
+</file>
+
+<file path="UI/Inventory/CurrencySlot.cs.meta">
+fileFormatVersion: 2
+guid: 2b23cfac82b52bb4890ca7666d9a053c
+</file>
+
+<file path="UI/Inventory/DeterministicInventorySlotView.cs">
+using Core.Exploration.Items;
+using Core.Exploration.Items.Currencies;
+using Microsoft.Unity.VisualStudio.Editor;
+using Services.DebugUtilities;
+using UnityEngine;
+
+public class CurrencySlot : MonoBehaviour
+{
+    public ScriptableObject item;
+    public PlayerInventorySystem inventorySystem;
+    public UnityEngine.UI.Image icon;
+    public TMPro.TMP_Text quantity;
+
+    void Awake()
+    {
+        if (item is AnomalousArtifact item1)
+        {
+            inventorySystem.OnItemAdded += HandleItemView;
+            inventorySystem.OnItemRemoved += HandleItemView;
+            icon.sprite = item1.Sprite;
+            quantity.text = "0";
+        }
+    }
+
+    private void HandleItemView(IStorageable storageable, int amount)
+    {
+        if (storageable is not IItem item) return;
+        int total = inventorySystem.GetAmount(item);
+        quantity.text = total.ToString();
+    }
+}
+</file>
+
+<file path="UI/Inventory/DeterministicInventorySlotView.cs.meta">
+fileFormatVersion: 2
+guid: e73a5fb2f8463b142b49385dad551fca
+</file>
+
 <file path="UI/Inventory/InventoryPanelView.cs">
 // ============================================================
 // InventoryPanelView.cs
@@ -31723,7 +33340,7 @@ public sealed class InventoryPanelView : MonoBehaviour
 
     // ── Lifecycle ─────────────────────────────────────────────────────────
 
-    private void OnEnable()
+    private void Awake()
     {
         if (!ValidateDependencies()) return;
 
@@ -32069,12 +33686,20 @@ public sealed class ShopItemButton : MonoBehaviour
 
     private void Awake()
     {
-        if (_item is IItem item)
+        if (_item is IStorageable item)
         {
             _button.onClick.AddListener(OnClick);
             _quanity.text = _price.ToString();
             _name.text = item.GetType().Name.ToString();
-            _spriteItem.sprite = item.Sprite;
+            if (item is IItem item1)
+            {
+                _spriteItem.sprite = item1.Sprite;
+            }
+            if (item is AnomalousArtifact anomalousArtifact)
+            {
+                _spriteItem.sprite = anomalousArtifact.Sprite;
+            }
+            _description.text = item.Description.ToString();
             _spriteCurrency.sprite = _currency.Sprite;
             RefreshInteractable();
         }
@@ -32132,6 +33757,157 @@ public sealed class ShopItemButton : MonoBehaviour
 <file path="UI/Market/ShopItemButton.cs.meta">
 fileFormatVersion: 2
 guid: e9d0d7dd820e3eb44b7a880852cde84c
+</file>
+
+<file path="UI/Market/ShopLevelUpButton.cs">
+using System;
+using Erumperem.Progression;
+using Services.IO;
+using UnityEngine;
+using UnityEngine.UI;
+
+public sealed class ShopLevelUpButton : MonoBehaviour
+{
+    // ── Visualização ──────────────────────────────────────────────────────
+
+    [Header("Visualização")]
+    [SerializeField] private TMPro.TMP_Text _priceText;
+    [SerializeField] private TMPro.TMP_Text _levelText;
+    [SerializeField] private Button         _button;
+
+    [Header("Persistência")]
+    [SerializeField] private string _saveId = "shop_levelup_default";
+
+    private IFileService _fileService;
+    private string SaveDirectory => Application.persistentDataPath + "/ShopState";
+
+    // ── Estado ────────────────────────────────────────────────────────────
+
+    /// <summary>Nível atual (0 = nenhum nível comprado ainda).</summary>
+    private int _currentLevel;
+
+    private const int MaxLevel  = 12;
+    private const int TierSize  = 4;
+    private static readonly int[] TierPrices = { 5, 10, 15, 20 };
+
+    private enum Tier { Rare, Epic, Legendary }
+
+    // ── Unity lifecycle ───────────────────────────────────────────────────
+
+    private void Awake()
+    {
+        _fileService = new FileService();
+        _button.onClick.AddListener(OnClick);
+    }
+
+    private async void Start()
+    {
+        await LoadStateAsync();
+        RefreshUI();
+    }
+
+    private void OnDestroy()
+    {
+        _button.onClick.RemoveListener(OnClick);
+    }
+
+    private void OnEnable()  => RefreshUI();
+
+    // ── Click ─────────────────────────────────────────────────────────────
+
+    private async void OnClick()
+    {
+        if (_currentLevel >= MaxLevel) return;
+
+        OnLevelUp(_currentLevel, GetCurrentTier(), GetCurrentPrice());
+
+        _currentLevel++;
+
+        await SaveStateAsync();
+        RefreshUI();
+    }
+
+    // ── Ponto de extensão ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// Chamado ao confirmar um nível. Implemente aqui a lógica de negócio
+    /// (debitar moeda, conceder recompensa, etc.).
+    /// </summary>
+    /// <param name="level">Nível que está sendo comprado (0-based).</param>
+    /// <param name="tier">Tier atual (Rare / Epic / Legendary).</param>
+    /// <param name="price">Preço cobrado neste nível.</param>
+    private void OnLevelUp(int level, Tier tier, int price)
+    {
+    }
+
+    // ── Progressão ────────────────────────────────────────────────────────
+
+    private Tier GetCurrentTier() => (_currentLevel / TierSize) switch
+    {
+        0 => Tier.Rare,
+        1 => Tier.Epic,
+        _ => Tier.Legendary
+    };
+
+    private int GetCurrentPrice() => TierPrices[_currentLevel % TierSize];
+
+    // ── UI ────────────────────────────────────────────────────────────────
+
+    private void RefreshUI()
+    {
+        if (_currentLevel >= MaxLevel)
+        {
+            _button.interactable = false;
+            if (_priceText) _priceText.text = "MAX";
+            if (_levelText) _levelText.text = $"Nível {MaxLevel}/{MaxLevel}";
+            return;
+        }
+
+        if (_priceText) _priceText.text = GetCurrentPrice().ToString();
+        if (_levelText) _levelText.text = $"Nível {_currentLevel + 1}/{MaxLevel}";
+        _button.interactable = true;
+    }
+
+    // ── Persistência ──────────────────────────────────────────────────────
+
+    private async System.Threading.Tasks.Task SaveStateAsync()
+    {
+        try
+        {
+            await _fileService.WriteAsync(new FileData(
+                fileContent: _currentLevel.ToString(),
+                fileName:    _saveId + ".sav",
+                filePath:    SaveDirectory
+            ));
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[ShopLevelUpButton] Falha ao salvar '{_saveId}': {e.Message}");
+        }
+    }
+
+    private async System.Threading.Tasks.Task LoadStateAsync()
+    {
+        try
+        {
+            if (!await _fileService.ExistsAsync(_saveId + ".sav", SaveDirectory)) return;
+
+            FileData data = await _fileService.ReadAsync(_saveId + ".sav", SaveDirectory);
+
+            if (int.TryParse(data._fileContent, out int saved))
+                _currentLevel = Mathf.Clamp(saved, 0, MaxLevel);
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[ShopLevelUpButton] Falha ao carregar '{_saveId}': {e.Message}");
+        }
+    }
+}
+</file>
+
+<file path="UI/Market/ShopLevelUpButton.cs.meta">
+fileFormatVersion: 2
+guid: 5ba08f97135f3eb4995137c418a69028
 </file>
 
 <file path="UI/PlayerFacingText.cs">

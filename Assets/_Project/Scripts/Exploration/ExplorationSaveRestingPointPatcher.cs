@@ -2,12 +2,12 @@ using Services.DebugUtilities;
 using UnityEngine;
 
 /// <summary>
-/// Substitui <c>Position</c> pelo <c>RestingPoint</c> de cada snapshot
-/// e reposiciona os personagens na cena.
+/// Substitui <c>Position</c>/<c>Rotation</c> de cada snapshot pelo
+/// <c>RestingPoint</c> do personagem na cena e reposiciona os personagens.
 ///
-/// O fluxo correto não passa pelo <c>RestoreState</c> público pois ele
+/// O fluxo correcto não passa pelo <c>RestoreState</c> público pois ele
 /// relê o disco quando <c>_hasSave</c> está false (resetado após cada apply).
-/// Em vez disso, chama <c>ApplySnapshotsAndSave</c> que aplica diretamente
+/// Em vez disso, chama <c>ApplySnapshotsAndSave</c> que aplica directamente
 /// os snapshots já modificados em memória e persiste em seguida.
 /// </summary>
 public sealed class ExplorationSaveRestingPointPatcher : MonoBehaviour
@@ -43,21 +43,20 @@ public sealed class ExplorationSaveRestingPointPatcher : MonoBehaviour
             return;
         }
 
-        foreach (var snap in snapshots)
+        var patchedSnapshotCount = ctx.MoveSnapshotsToCharacterRestingPoints();
+        if (patchedSnapshotCount == 0)
         {
-            Vector3 oldPos = snap.Position;
-            snap.Position  = snap.RestingPoint;
-
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[RestingPointPatcher] '{snap.CharacterName}' {oldPos} → {snap.Position} (RestingPoint)",
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[RestingPointPatcher] Nenhum snapshot foi actualizado (RestingPoint em falta?).",
                 LogCategory.Player);
+            return;
         }
 
-        // Aplica direto sem passar pelo LoadFromFileAsync
+        // Aplica directo sem passar pelo LoadFromFileAsync
         ctx.ApplySnapshotsAndSave();
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
-            $"[RestingPointPatcher] Patch aplicado em {snapshots.Count} snapshot(s).",
+            $"[RestingPointPatcher] Patch aplicado em {patchedSnapshotCount} snapshot(s).",
             LogCategory.Player);
     }
 }

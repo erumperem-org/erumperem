@@ -1,7 +1,5 @@
 using Core.Exploration.Items;
 using Core.Exploration.Items.Currencies;
-using Microsoft.Unity.VisualStudio.Editor;
-using Services.DebugUtilities;
 using UnityEngine;
 
 public class CurrencySlot : MonoBehaviour

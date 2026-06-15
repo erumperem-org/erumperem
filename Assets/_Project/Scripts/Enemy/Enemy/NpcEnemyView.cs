@@ -2,43 +2,105 @@ using UnityEngine;
 
 public class NpcEnemyView : MonoBehaviour
 {
-    public ExplorationCorruptionSystem corruptionSystem;
-    public GameObject low, mid, high;
+    [SerializeField] private ExplorationCorruptionSystem corruptionSystem;
+    [SerializeField] private GameObject lowTierVisual;
+    [SerializeField] private GameObject midTierVisual;
+    [SerializeField] private GameObject highTierVisual;
 
-    void Awake()
+    private bool _isSubscribedToCorruptionEvents;
+
+    private void Awake()
     {
-        corruptionSystem = FindFirstObjectByType<ExplorationCorruptionSystem>();
-        SetEnemyView(corruptionSystem.CurrentTier);
-    }
-    void Start()
-    {
-        corruptionSystem.OnTierLow += SetEnemyAsLow;
-        corruptionSystem.OnTierMid += SetEnemyAsMid;
-        corruptionSystem.OnTierHigh += SetEnemyAsHigh;
+        TryResolveCorruptionSystem();
+        ApplyCorruptionTierVisuals(ResolveCurrentCorruptionTier());
     }
 
-    void SetEnemyAsLow() => SetEnemyView(CorruptionTier.Low);
-    void SetEnemyAsMid() => SetEnemyView(CorruptionTier.Mid);
-    void SetEnemyAsHigh() => SetEnemyView(CorruptionTier.High);
-    void SetEnemyView(CorruptionTier tier)
+    private void OnEnable()
     {
-        switch (tier)
+        TryResolveCorruptionSystem();
+        TrySubscribeToCorruptionEvents();
+        ApplyCorruptionTierVisuals(ResolveCurrentCorruptionTier());
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeFromCorruptionEvents();
+    }
+
+    private void OnDestroy()
+    {
+        UnsubscribeFromCorruptionEvents();
+    }
+
+    /// <summary>Chamado ao sair da pool / spawnar no mapa.</summary>
+    public void RefreshCorruptionTierVisuals()
+    {
+        TryResolveCorruptionSystem();
+        ApplyCorruptionTierVisuals(ResolveCurrentCorruptionTier());
+    }
+
+    private void TryResolveCorruptionSystem()
+    {
+        if (corruptionSystem != null)
         {
-            case CorruptionTier.Low:
-                low.SetActive(true);
-                mid.SetActive(false);
-                high.SetActive(false);
-                break;
-            case CorruptionTier.Mid:
-                low.SetActive(false);
-                mid.SetActive(true);
-                high.SetActive(false);
-                break;
-            case CorruptionTier.High:
-                low.SetActive(false);
-                mid.SetActive(false);
-                high.SetActive(true);
-                break;
+            return;
+        }
+
+        corruptionSystem = FindFirstObjectByType<ExplorationCorruptionSystem>();
+    }
+
+    private CorruptionTier ResolveCurrentCorruptionTier()
+    {
+        return corruptionSystem != null
+            ? corruptionSystem.CurrentTier
+            : CorruptionTier.Low;
+    }
+
+    private void TrySubscribeToCorruptionEvents()
+    {
+        if (_isSubscribedToCorruptionEvents || corruptionSystem == null)
+        {
+            return;
+        }
+
+        corruptionSystem.OnTierLow += HandleCorruptionTierLow;
+        corruptionSystem.OnTierMid += HandleCorruptionTierMid;
+        corruptionSystem.OnTierHigh += HandleCorruptionTierHigh;
+        _isSubscribedToCorruptionEvents = true;
+    }
+
+    private void UnsubscribeFromCorruptionEvents()
+    {
+        if (!_isSubscribedToCorruptionEvents || corruptionSystem == null)
+        {
+            return;
+        }
+
+        corruptionSystem.OnTierLow -= HandleCorruptionTierLow;
+        corruptionSystem.OnTierMid -= HandleCorruptionTierMid;
+        corruptionSystem.OnTierHigh -= HandleCorruptionTierHigh;
+        _isSubscribedToCorruptionEvents = false;
+    }
+
+    private void HandleCorruptionTierLow() => ApplyCorruptionTierVisuals(CorruptionTier.Low);
+    private void HandleCorruptionTierMid() => ApplyCorruptionTierVisuals(CorruptionTier.Mid);
+    private void HandleCorruptionTierHigh() => ApplyCorruptionTierVisuals(CorruptionTier.High);
+
+    private void ApplyCorruptionTierVisuals(CorruptionTier tier)
+    {
+        if (lowTierVisual != null)
+        {
+            lowTierVisual.SetActive(tier == CorruptionTier.Low);
+        }
+
+        if (midTierVisual != null)
+        {
+            midTierVisual.SetActive(tier == CorruptionTier.Mid);
+        }
+
+        if (highTierVisual != null)
+        {
+            highTierVisual.SetActive(tier == CorruptionTier.High);
         }
     }
 }

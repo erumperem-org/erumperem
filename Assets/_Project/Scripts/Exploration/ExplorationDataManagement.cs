@@ -1,3 +1,5 @@
+using System;
+using System.Threading.Tasks;
 using UnityEngine;
 
 /// <summary>
@@ -14,24 +16,42 @@ public sealed class ExplorationDataManagement : MonoBehaviour
     // ExplorationLoadContext é um singleton DontDestroyOnLoad — acesso via Instance.
 
     /// <summary>Persiste o estado atual dos personagens antes de trocar de cena.</summary>
-    public void Save()  => ExplorationLoadContext.Instance?.SaveState();
+    public void Save() => InvokeOnLoadContext(loadContext => loadContext.SaveState());
 
     /// <summary>Restaura o estado salvo (ou aplica o padrão configurado).</summary>
-    public void Load()  => ExplorationLoadContext.Instance?.RestoreState();
+    public void Load() => InvokeOnLoadContext(loadContext => loadContext.RestoreState());
 
     /// <summary>Apaga o save (novo jogo).</summary>
-    public void Reset() => ExplorationLoadContext.Instance?.ClearSave();
+    public void Reset() => InvokeOnLoadContext(loadContext => loadContext.ClearSave());
 
-    /// <summary>Compatibilidade com botões de UI antigos.</summary>
+    /// <summary>Compatibilidade com botões de UI do Overworld.</summary>
     public void SaveExplorationState() => Save();
 
-    /// <summary>Compatibilidade com botões de UI antigos.</summary>
-    public void LoadExplorationState() => Load();
+    /// <summary>Compatibilidade com botões de UI do Overworld.</summary>
+    public void LoadExplorationContext() => Load();
 
-    /// <summary>Compatibilidade com botões de UI antigos.</summary>
-    public void ResetExplorationState()
+    /// <summary>Apaga o save e restaura o estado padrão da cena.</summary>
+    public async void ResetExplorationContext()
     {
-        Reset();
-        Load();
+        var loadContext = ExplorationLoadContext.Instance;
+        if (loadContext == null)
+        {
+            Debug.LogWarning("[ExplorationDataManagement] ExplorationLoadContext.Instance é nulo — reset ignorado.");
+            return;
+        }
+
+        await loadContext.ResetToDefaultStateAsync();
+    }
+
+    private static void InvokeOnLoadContext(Action<ExplorationLoadContext> action)
+    {
+        var loadContext = ExplorationLoadContext.Instance;
+        if (loadContext == null)
+        {
+            Debug.LogWarning("[ExplorationDataManagement] ExplorationLoadContext.Instance é nulo — operação ignorada.");
+            return;
+        }
+
+        action(loadContext);
     }
 }

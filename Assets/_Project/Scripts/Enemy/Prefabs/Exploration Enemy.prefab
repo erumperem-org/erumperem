@@ -17,6 +17,10 @@ GameObject:
   - component: {fileID: 3386171543898322326}
   - component: {fileID: 4630302747134766427}
   - component: {fileID: 371272571147602279}
+  - component: {fileID: 5829471058123456790}
+  - component: {fileID: 7290284521460130129}
+  - component: {fileID: 5829471058123456791}
+  - component: {fileID: 5829471058123456792}
   m_Layer: 0
   m_Name: Exploration Enemy
   m_TagString: Untagged
@@ -119,7 +123,7 @@ MonoBehaviour:
     offset: {x: 0, y: 1, z: 0}
     layerMasks:
     - serializedVersion: 2
-      m_Bits: 1
+      m_Bits: 129
     filterTags:
     - Player
     gizmoColor: {r: 0, g: 0.87746024, b: 1, a: 0}
@@ -146,7 +150,7 @@ MonoBehaviour:
     offset: {x: 0, y: 1, z: 0}
     layerMasks:
     - serializedVersion: 2
-      m_Bits: 1
+      m_Bits: 129
     filterTags:
     - Player
     gizmoColor: {r: 0.91656363, g: 0.9811321, b: 0.1064436, a: 0}
@@ -215,9 +219,81 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NpcEnemyView
   corruptionSystem: {fileID: 0}
-  low: {fileID: 1438289481387938381}
-  mid: {fileID: 8617202020843711487}
-  high: {fileID: 707801157478981274}
+  lowTierVisual: {fileID: 1438289481387938381}
+  midTierVisual: {fileID: 8617202020843711487}
+  highTierVisual: {fileID: 707801157478981274}
+--- !u!114 &5829471058123456790
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5458582549957236898}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7a3c2e1d4b5486a9e0f1d2c3b4a5968, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StaticExplorationEnemyContact
+--- !u!65 &7290284521460130129
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5458582549957236898}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2, y: 2, z: 2}
+  m_Center: {x: 0, y: 1, z: 0}
+--- !u!54 &5829471058123456791
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5458582549957236898}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!114 &5829471058123456792
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5458582549957236898}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e518367f78b14b54c8c3fc40170f98ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyCollissionTrigger
 --- !u!1001 &4982759974219393947
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -232,7 +308,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6256490964612725206, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6744234788806124396, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
       propertyPath: m_LocalPosition.x
