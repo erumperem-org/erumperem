@@ -120,8 +120,11 @@ public class DetectionPromptToggle : MonoBehaviour
 
     private void HandleColliderEntered(Collider otherCollider, string shapeLabel, int shapeIndex)
     {
-        _collidersInsideCount++;
-        SetPromptActive(true);
+        if (this.tag != "Player")
+        {
+            _collidersInsideCount++;
+            SetPromptActive(true);
+        }
     }
 
     private void HandleColliderExited(Collider otherCollider, string shapeLabel, int shapeIndex)
