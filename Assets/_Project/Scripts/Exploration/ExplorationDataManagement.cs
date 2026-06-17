@@ -30,8 +30,13 @@ public sealed class ExplorationDataManagement : MonoBehaviour
     /// <summary>Compatibilidade com botões de UI do Overworld.</summary>
     public void LoadExplorationContext() => Load();
 
-    /// <summary>Apaga o save e restaura o estado padrão da cena.</summary>
-    public async void ResetExplorationContext()
+    /// <summary>Apaga o save e restaura o estado padrão da cena (botão de UI e cheat F5).</summary>
+    public async void ResetExplorationContext() => await ResetExplorationSaveAsync();
+
+    /// <summary>Mesma lógica que <see cref="ResetExplorationContext"/>; usável sem instância na cena.</summary>
+    public static async void ResetExplorationSave() => await ResetExplorationSaveAsync();
+
+    private static async Task ResetExplorationSaveAsync()
     {
         var loadContext = ExplorationLoadContext.Instance;
         if (loadContext == null)

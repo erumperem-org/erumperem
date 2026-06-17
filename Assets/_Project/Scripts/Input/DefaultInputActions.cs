@@ -7,8 +7,8 @@ using UnityEngine.InputSystem.Utilities;
 
 /// <summary>
 /// InputActions padrão do projeto criadas por código.
-/// Gameplay: movimento, ponteiro, cliques, skills 1-7, cheats de cena (F1-F5)
-/// e cheats de combate (F6 = matar todos os inimigos, F7 = matar todos os aliados).
+/// Gameplay: movimento, ponteiro, cliques, skills 1-7, cheats de cena (F1-F4),
+/// F5 = reset do save de exploração, F6/F7 = cheats de combate.
 /// </summary>
 public sealed class DefaultInputActions : IInputActionCollection, IDisposable
 {
@@ -30,7 +30,7 @@ public sealed class DefaultInputActions : IInputActionCollection, IDisposable
     private readonly InputAction _sceneCheat2Action;
     private readonly InputAction _sceneCheat3Action;
     private readonly InputAction _sceneCheat4Action;
-    private readonly InputAction _sceneCheat5Action;
+    private readonly InputAction _explorationCheatResetSaveAction;
     private readonly InputAction _combatCheatKillAllEnemiesAction;
     private readonly InputAction _combatCheatKillAllAlliesAction;
 
@@ -80,8 +80,9 @@ public sealed class DefaultInputActions : IInputActionCollection, IDisposable
         _sceneCheat3Action.AddBinding("<Keyboard>/f3");
         _sceneCheat4Action = _gameplayMap.AddAction("SceneCheat4", InputActionType.Button);
         _sceneCheat4Action.AddBinding("<Keyboard>/f4");
-        _sceneCheat5Action = _gameplayMap.AddAction("SceneCheat5", InputActionType.Button);
-        _sceneCheat5Action.AddBinding("<Keyboard>/f5");
+        _explorationCheatResetSaveAction =
+            _gameplayMap.AddAction("ExplorationCheatResetSave", InputActionType.Button);
+        _explorationCheatResetSaveAction.AddBinding("<Keyboard>/f5");
 
         _combatCheatKillAllEnemiesAction =
             _gameplayMap.AddAction("CombatCheatKillAllEnemies", InputActionType.Button);
@@ -143,7 +144,7 @@ public sealed class DefaultInputActions : IInputActionCollection, IDisposable
         public InputAction SceneCheat2 => _wrapper._sceneCheat2Action;
         public InputAction SceneCheat3 => _wrapper._sceneCheat3Action;
         public InputAction SceneCheat4 => _wrapper._sceneCheat4Action;
-        public InputAction SceneCheat5 => _wrapper._sceneCheat5Action;
+        public InputAction ExplorationCheatResetSave => _wrapper._explorationCheatResetSaveAction;
         public InputAction CombatCheatKillAllEnemies => _wrapper._combatCheatKillAllEnemiesAction;
         public InputAction CombatCheatKillAllAllies => _wrapper._combatCheatKillAllAlliesAction;
     }

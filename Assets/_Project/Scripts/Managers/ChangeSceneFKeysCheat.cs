@@ -9,8 +9,6 @@ public sealed class ChangeSceneFKeysCheat : MonoBehaviour
     private const int F2BuildIndex = 1;
     private const int F3BuildIndex = 2;
     private const int F4BuildIndex = 3;
-    private const int F5BuildIndex = 4;
-
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -54,9 +52,6 @@ public sealed class ChangeSceneFKeysCheat : MonoBehaviour
                 break; 
             case 3:
                 TryLoadSceneByBuildIndex(F4BuildIndex);
-                break;
-            case 4:
-                TryLoadSceneByBuildIndex(F5BuildIndex);
                 break;
         }
     }
