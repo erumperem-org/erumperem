@@ -38,6 +38,18 @@ public sealed class PlayableCharactersManager : MonoBehaviour
 
     private readonly PlayableStateTransitioner _transitioner = new();
 
+    /// <summary>
+    /// Re-notifica ouvintes do Main actual (ex.: após load quando <see cref="SetState"/>
+    /// não alterou o estado e <see cref="OnMainChanged"/> não foi invocado).
+    /// </summary>
+    public void NotifyCurrentMainIfAny()
+    {
+        if (Main != null)
+        {
+            OnMainChanged?.Invoke(Main);
+        }
+    }
+
     private void Awake()
     {
         EnsureSceneReferencesResolved();
