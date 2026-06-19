@@ -1,20 +1,85 @@
 using UnityEngine;
-
-public class ScavengerShop : MonoBehaviour
+public sealed class ScavengerShop : Interactable
 {
-    public GameObject skillTreePanel;
-    void OnTriggerEnter(Collider other)
+    [Header("Shop Panel")]
+    [SerializeField] private GameObject shopPanelRoot;
+    [SerializeField] private GameObject HUD;
+
+    [Header("Objetos para desativar enquanto o shop estiver aberto")]
+    [SerializeField] private GameObject[] objectsToDisableWhileOpen;
+
+    public override bool CanInteract => true;
+
+    private bool _isShopOpen;
+
+    protected override void Awake()
     {
-        if (other.CompareTag("Player"))
+        base.Awake();
+
+        if (shopPanelRoot != null)
         {
-            skillTreePanel.SetActive(true);
+            shopPanelRoot.SetActive(false);
         }
     }
-    void OnTriggerExit(Collider other)
+
+    public override void ExecuteInteraction(InteractionContext context)
+    {
+        if (shopPanelRoot == null)
+        {
+            return;
+        }
+
+        ToggleShop();
+    }
+
+    private void ToggleShop()
+    {
+        SetShopOpen(!_isShopOpen);
+    }
+
+    public void OpenShop()
+    {
+        SetShopOpen(true);
+    }
+
+    public void CloseShop()
+    {
+        SetShopOpen(false);
+    }
+
+    private void SetShopOpen(bool isOpen)
+    {
+        _isShopOpen = isOpen;
+
+        shopPanelRoot.SetActive(isOpen);
+        SetOtherObjectsActive(!isOpen);
+    }
+
+    private void SetOtherObjectsActive(bool isActive)
+    {
+        if (objectsToDisableWhileOpen == null)
+        {
+            return;
+        }
+
+        foreach (var obj in objectsToDisableWhileOpen)
+        {
+            if (obj == null)
+            {
+                continue;
+            }
+
+            obj.SetActive(isActive);
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            skillTreePanel.SetActive(false);
+            SetOtherObjectsActive(false);
+            shopPanelRoot.SetActive(false);
+            HUD.SetActive(true);
         }
     }
 }

@@ -129,6 +129,11 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
 
         var interactable = ResolveInteractable(col);
         if (interactable != null) _available.Remove(interactable);
+        var characterSelectionNpc = interactable.GetComponent<CharacterSelectionNpc>();
+        if(characterSelectionNpc != null)
+        {
+            characterSelectionNpc._canvas._panel.SetActive(false);
+        }
 
         LoggerService.PrintLogMessage(LogLevel.Debug, $"Interactable [{col.gameObject.name}] lost");
     }

@@ -6,7 +6,15 @@
 // (Wander, Chase, ChaseMonitor, WanderLifetime) em resposta às
 // transições de estado notificadas pela StateMachine.
 //
-// Não sabe nada de detecção, pool ou transição de cena.
+// CORREÇÕES:
+//   [4] ChaseRadiusMonitorCoroutine agora mede a distância entre
+//       o inimigo e o PursuitTarget (player), não o SpawnPoint.
+//       Isso garante que o chase só termine quando o player
+//       realmente escapou do alcance, não quando o inimigo se
+//       afastou do seu ponto de origem.
+//   [8] StopAll() é chamado preventivamente em Initialize (via
+//       NpcEnemy) para evitar vazamento de coroutines entre
+//       ciclos de reutilização da pool.
 // ============================================================
 
 using System.Collections;
@@ -30,7 +38,7 @@ namespace Systems.NPC.Enemy
 
         // ── Intervalos ────────────────────────────────────────────────────
 
-        private const float ChaseMonitorInterval  = 0.2f;
+        private const float ChaseMonitorInterval = 0.2f;
 
         // ── Coroutines ────────────────────────────────────────────────────
 
@@ -117,6 +125,7 @@ namespace Systems.NPC.Enemy
         {
             yield return new WaitForSeconds(_config.WanderLifetime);
 
+            // [8] Verifica estado antes de notificar — evita disparo após retorno à pool.
             if (_stateMachine.Is(NpcEnemyState.Wander))
             {
                 Debug.Log($"[NpcEnemyBehaviorRunner] '{_owner.name}' expirou WanderLifetime ({_config.WanderLifetime}s).");
@@ -147,15 +156,28 @@ namespace Systems.NPC.Enemy
             _ = behavior.ExecuteBehavior(context);
         }
 
+        // [4] Mede distância até o PursuitTarget (player), não até o SpawnPoint.
         private IEnumerator ChaseRadiusMonitorCoroutine()
         {
             var wait = new WaitForSeconds(ChaseMonitorInterval);
 
             while (_stateMachine.Is(NpcEnemyState.Chase))
             {
-                float dist = Vector3.Distance(_owner.transform.position, _config.SpawnPoint);
+                // [4] Se o alvo foi perdido (ex.: player morreu / retornou à pool),
+                //     considera como saída do raio.
+                if (_config.PursuitTarget == null)
+                {
+                    OnShouldReturnToPool?.Invoke();
+                    yield break;
+                }
+
+                float dist = Vector3.Distance(
+                    _owner.transform.position,
+                    _config.PursuitTarget.position); // [4] Distância ao player, não ao spawn.
+
                 if (dist > _config.ChaseRadius)
                 {
+                    Debug.Log($"[NpcEnemyBehaviorRunner] '{_owner.name}' saiu do raio de chase ({dist:F1} > {_config.ChaseRadius:F1}). Retornando à pool.");
                     OnShouldReturnToPool?.Invoke();
                     yield break;
                 }
