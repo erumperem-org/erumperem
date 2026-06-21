@@ -25,10 +25,10 @@ namespace Erumperem.Combat
                  "Para variantes (ex.: CorruptedMiner Ametista), inclua a skill especial dessa variante.")]
         public string[] enemySkillIds = Array.Empty<string>();
 
-        [Tooltip("ID no CharacterStatCatalog (ex.: BeaconOfHope). Vazio = deriva do nome do asset.")]
+        [Tooltip("ID no EnemyCharacterStatCatalog (ex.: BeaconOfHope). Vazio = deriva do nome do asset.")]
         public string characterStatId;
 
-        /// <summary>Resolve o ID usado para procurar stats no <see cref="CharacterStatCatalog"/>.</summary>
+        /// <summary>Resolve o ID usado para procurar stats no <see cref="EnemyCharacterStatCatalog"/>.</summary>
         public string ResolveCharacterStatId()
         {
             if (!string.IsNullOrWhiteSpace(characterStatId))

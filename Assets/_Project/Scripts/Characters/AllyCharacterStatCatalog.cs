@@ -4,22 +4,18 @@ using UnityEngine;
 
 namespace Erumperem.Characters
 {
-    /// <summary>
-    /// Catálogo central de stats por personagem. Substitui valores hardcoded no código.
-    /// </summary>
     [CreateAssetMenu(
-        menuName = "Erumperem/Characters/Character Stat Catalog",
-        fileName = "CharacterStatCatalog")]
-    public sealed class CharacterStatCatalog : ScriptableObject
+        menuName = "Erumperem/Characters/Ally Character Stat Catalog",
+        fileName = "AllyCharacterStatCatalog")]
+    public sealed class AllyCharacterStatCatalog : ScriptableObject
     {
-        private const float DefaultExplorationMaxHealth = 100f;
         private const PlayableCharacterState DefaultExplorationState = PlayableCharacterState.Resting;
 
-        [SerializeField] private List<CharacterStatDefinition> definitions = new();
+        [SerializeField] private List<AllyCharacterStatDefinition> definitions = new();
 
-        public IReadOnlyList<CharacterStatDefinition> Definitions => definitions;
+        public IReadOnlyList<AllyCharacterStatDefinition> Definitions => definitions;
 
-        public bool TryGetDefinition(string characterId, out CharacterStatDefinition definition)
+        public bool TryGetDefinition(string characterId, out AllyCharacterStatDefinition definition)
         {
             definition = null;
             if (string.IsNullOrWhiteSpace(characterId) || definitions == null)
@@ -53,26 +49,6 @@ namespace Erumperem.Characters
             }
 
             return DefaultExplorationState;
-        }
-
-        public float GetExplorationMaxHealth(string characterName)
-        {
-            if (TryGetDefinition(characterName, out var definition))
-            {
-                return definition.ExplorationMaxHealth;
-            }
-
-            return DefaultExplorationMaxHealth;
-        }
-
-        public float GetDefaultStartingHealth(string characterName)
-        {
-            if (TryGetDefinition(characterName, out var definition))
-            {
-                return definition.ResolveStartingHealth();
-            }
-
-            return DefaultExplorationMaxHealth;
         }
     }
 }

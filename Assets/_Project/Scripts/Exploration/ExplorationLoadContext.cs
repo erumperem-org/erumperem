@@ -97,8 +97,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     [Tooltip("Estado padrão de cada personagem quando não há save.")]
     [SerializeField] private List<DefaultCharacterSetup> _defaultSetups = new();
 
-    [Tooltip("Stats base por personagem (substitui valores hardcoded).")]
-    [SerializeField] private CharacterStatCatalog _characterStatCatalog;
+    [Tooltip("Estado inicial de exploração por aliado (fallback quando não há DefaultCharacterSetup).")]
+    [SerializeField] private AllyCharacterStatCatalog _allyCharacterStatCatalog;
 
     [Header("Sistemas")]
     [Tooltip("Referência ao ExplorationCorruptionSystem da cena. " +
@@ -200,9 +200,9 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             _defaultSetups = new List<DefaultCharacterSetup>(sceneInstance._defaultSetups);
         }
 
-        if (sceneInstance._characterStatCatalog != null)
+        if (sceneInstance._allyCharacterStatCatalog != null)
         {
-            _characterStatCatalog = sceneInstance._characterStatCatalog;
+            _allyCharacterStatCatalog = sceneInstance._allyCharacterStatCatalog;
         }
 
         if (sceneInstance._corruptionSystem != null)
@@ -948,32 +948,38 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
     private PlayableCharacterState ResolveDefaultExplorationState(string characterName)
     {
-        if (_characterStatCatalog != null)
+        if (_allyCharacterStatCatalog != null)
         {
-            return _characterStatCatalog.GetDefaultExplorationState(characterName);
+            return _allyCharacterStatCatalog.GetDefaultExplorationState(characterName);
         }
 
-        return PlayableCharacterState.Resting;
+        return characterName switch
+        {
+            "Wulfric" => PlayableCharacterState.Main,
+            "Matsuda" => PlayableCharacterState.Companion,
+            "Buck" => PlayableCharacterState.Resting,
+            _ => PlayableCharacterState.Resting,
+        };
     }
 
-    private float ResolveExplorationMaxHealth(string characterName)
+    private static float ResolveExplorationMaxHealth(string characterName)
     {
-        if (_characterStatCatalog != null)
+        return characterName switch
         {
-            return _characterStatCatalog.GetExplorationMaxHealth(characterName);
-        }
-
-        return 100f;
+            "Wulfric" => 100f,
+            "Buck" => 200f,
+            "Matsuda" => 100f,
+            _ => 100f,
+        };
     }
 
-    private float ResolveDefaultStartingHealth(string characterName)
+    private static float ResolveDefaultStartingHealth(string characterName)
     {
-        if (_characterStatCatalog != null)
+        return characterName switch
         {
-            return _characterStatCatalog.GetDefaultStartingHealth(characterName);
-        }
-
-        return ResolveExplorationMaxHealth(characterName);
+            "Matsuda" => 30f,
+            _ => 0f,
+        };
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

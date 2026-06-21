@@ -45,8 +45,11 @@ namespace Erumperem.Combat
 
         [SerializeField] private EnemyVisualSpawnCatalog enemyVisualSpawnCatalog;
 
-        [Tooltip("Stats base por personagem (aliados e inimigos).")]
-        [SerializeField] private CharacterStatCatalog characterStatCatalog;
+        [Tooltip("Stats de combate dos aliados (Wulfric, Matsuda, etc.).")]
+        [SerializeField] private AllyCharacterStatCatalog allyCharacterStatCatalog;
+
+        [Tooltip("Stats de combate dos inimigos (BeaconOfHope, CorruptedMiner, etc.).")]
+        [SerializeField] private EnemyCharacterStatCatalog enemyCharacterStatCatalog;
 
         [Tooltip("Legado: escala Y do root pela % de HP (cápsulas antigas). " +
                  "Se estás a usar CombatHealthBarsBinder + HealthBarHudView (UI diegética), deixa DESLIGADO. " +
@@ -1301,7 +1304,7 @@ namespace Erumperem.Combat
         /// </summary>
         private void ApplyCharacterStatsFromCatalog()
         {
-            if (characterStatCatalog == null || _state == null)
+            if (allyCharacterStatCatalog == null || _state == null)
             {
                 return;
             }
@@ -1310,12 +1313,12 @@ namespace Erumperem.Combat
             for (var allyIndex = 0; allyIndex < _state.Allies.Count && allyIndex < combatAllyCharacterNames.Length; allyIndex++)
             {
                 var characterName = combatAllyCharacterNames[allyIndex];
-                if (!characterStatCatalog.TryGetDefinition(characterName, out var characterStatDefinition))
+                if (!allyCharacterStatCatalog.TryGetDefinition(characterName, out var allyCharacterStatDefinition))
                 {
                     continue;
                 }
 
-                characterStatDefinition.ApplyToCombatant(_state.Allies[allyIndex]);
+                allyCharacterStatDefinition.ApplyToCombatant(_state.Allies[allyIndex]);
             }
         }
 
@@ -1323,7 +1326,7 @@ namespace Erumperem.Combat
             Combatant enemy,
             EnemyVisualDefinition enemyVisualDefinition)
         {
-            if (characterStatCatalog == null || enemy == null || enemyVisualDefinition == null)
+            if (enemyCharacterStatCatalog == null || enemy == null || enemyVisualDefinition == null)
             {
                 return;
             }
@@ -1334,12 +1337,12 @@ namespace Erumperem.Combat
                 return;
             }
 
-            if (!characterStatCatalog.TryGetDefinition(characterStatId, out var characterStatDefinition))
+            if (!enemyCharacterStatCatalog.TryGetDefinition(characterStatId, out var enemyCharacterStatDefinition))
             {
                 return;
             }
 
-            characterStatDefinition.ApplyToCombatant(enemy);
+            enemyCharacterStatDefinition.ApplyToCombatant(enemy);
         }
 
         private void OverrideEnemySkillLoadoutFromVisualDefinition(
