@@ -17,6 +17,9 @@ public sealed class InputManager : MonoBehaviour
     public event Action<int> OnSkillSlotPressed;
     public event Action<int> OnSceneCheatPressed;
 
+    /// <summary>F5: apaga o save de exploração e restaura o estado padrão (mesmo que o botão Reset Save).</summary>
+    public event Action OnExplorationCheatResetSavePressed;
+
     /// <summary>F6: cheat de combate para matar instantaneamente todos os inimigos (testes de UI de vitória).</summary>
     public event Action OnCombatCheatKillAllEnemiesPressed;
 
@@ -115,7 +118,7 @@ public sealed class InputManager : MonoBehaviour
         gameplay.SceneCheat2.performed += OnSceneCheat2Performed;
         gameplay.SceneCheat3.performed += OnSceneCheat3Performed;
         gameplay.SceneCheat4.performed += OnSceneCheat4Performed;
-        gameplay.SceneCheat5.performed += OnSceneCheat5Performed;
+        gameplay.ExplorationCheatResetSave.performed += OnExplorationCheatResetSavePerformed;
         gameplay.CombatCheatKillAllEnemies.performed += OnCombatCheatKillAllEnemiesPerformed;
         gameplay.CombatCheatKillAllAllies.performed += OnCombatCheatKillAllAlliesPerformed;
     }
@@ -140,7 +143,7 @@ public sealed class InputManager : MonoBehaviour
         gameplay.SceneCheat2.performed -= OnSceneCheat2Performed;
         gameplay.SceneCheat3.performed -= OnSceneCheat3Performed;
         gameplay.SceneCheat4.performed -= OnSceneCheat4Performed;
-        gameplay.SceneCheat5.performed -= OnSceneCheat5Performed;
+        gameplay.ExplorationCheatResetSave.performed -= OnExplorationCheatResetSavePerformed;
         gameplay.CombatCheatKillAllEnemies.performed -= OnCombatCheatKillAllEnemiesPerformed;
         gameplay.CombatCheatKillAllAllies.performed -= OnCombatCheatKillAllAlliesPerformed;
     }
@@ -172,7 +175,8 @@ public sealed class InputManager : MonoBehaviour
     private void OnSceneCheat2Performed(InputAction.CallbackContext callbackContext) => OnSceneCheatPressed?.Invoke(1);
     private void OnSceneCheat3Performed(InputAction.CallbackContext callbackContext) => OnSceneCheatPressed?.Invoke(2);
     private void OnSceneCheat4Performed(InputAction.CallbackContext callbackContext) => OnSceneCheatPressed?.Invoke(3);
-    private void OnSceneCheat5Performed(InputAction.CallbackContext callbackContext) => OnSceneCheatPressed?.Invoke(4);
+    private void OnExplorationCheatResetSavePerformed(InputAction.CallbackContext callbackContext) =>
+        OnExplorationCheatResetSavePressed?.Invoke();
 
     private void OnCombatCheatKillAllEnemiesPerformed(InputAction.CallbackContext callbackContext) =>
         OnCombatCheatKillAllEnemiesPressed?.Invoke();

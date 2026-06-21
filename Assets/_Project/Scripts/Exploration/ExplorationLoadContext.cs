@@ -803,6 +803,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 $"[LOAD] '{character.CharacterName}' → {snap.State} @ {snap.Position}",
                 LogCategory.Player);
         }
+
+        _manager.NotifyCurrentMainIfAny();
     }
 
     private void ApplyDefaultSetups()
@@ -855,6 +857,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 $"[LOAD] '{setup.Character.CharacterName}' (padrão) → {setup.InitialState}",
                 LogCategory.Player);
         }
+
+        _manager.NotifyCurrentMainIfAny();
     }
 
     private void ApplyDefaultSpawnPositions()
