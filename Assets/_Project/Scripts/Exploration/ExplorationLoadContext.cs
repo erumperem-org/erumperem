@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Erumperem.Characters;
 using Services.DebugUtilities;
 using Services.IO;
 using UnityEngine;
@@ -95,6 +96,9 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
     [Tooltip("Estado padrão de cada personagem quando não há save.")]
     [SerializeField] private List<DefaultCharacterSetup> _defaultSetups = new();
+
+    [Tooltip("Stats base por personagem (substitui valores hardcoded).")]
+    [SerializeField] private CharacterStatCatalog _characterStatCatalog;
 
     [Header("Sistemas")]
     [Tooltip("Referência ao ExplorationCorruptionSystem da cena. " +
@@ -194,6 +198,11 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         if (sceneInstance._defaultSetups != null && sceneInstance._defaultSetups.Count > 0)
         {
             _defaultSetups = new List<DefaultCharacterSetup>(sceneInstance._defaultSetups);
+        }
+
+        if (sceneInstance._characterStatCatalog != null)
+        {
+            _characterStatCatalog = sceneInstance._characterStatCatalog;
         }
 
         if (sceneInstance._corruptionSystem != null)
@@ -643,7 +652,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 snapshot.Rotation = villageSpawn.Rotation;
             }
 
-            snapshot.State = ResolveFallbackInitialState(snapshot.CharacterName);
+            snapshot.State = ResolveDefaultExplorationState(snapshot.CharacterName);
         }
     }
 
@@ -748,7 +757,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 snapshot.Rotation = villageSpawn.Rotation;
             }
 
-            snapshot.State = ResolveFallbackInitialState(snapshot.CharacterName);
+            snapshot.State = ResolveDefaultExplorationState(snapshot.CharacterName);
         }
     }
 
@@ -930,33 +939,41 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             _defaultSetups.Add(new DefaultCharacterSetup
             {
                 Character = playableCharacter,
-                InitialState = ResolveFallbackInitialState(playableCharacter.CharacterName),
-                MaxHealth = ResolveFallbackMaxHealth(playableCharacter.CharacterName),
-                StartingHealth = 0f,
+                InitialState = ResolveDefaultExplorationState(playableCharacter.CharacterName),
+                MaxHealth = ResolveExplorationMaxHealth(playableCharacter.CharacterName),
+                StartingHealth = ResolveDefaultStartingHealth(playableCharacter.CharacterName),
             });
         }
     }
 
-    private static PlayableCharacterState ResolveFallbackInitialState(string characterName)
+    private PlayableCharacterState ResolveDefaultExplorationState(string characterName)
     {
-        return characterName switch
+        if (_characterStatCatalog != null)
         {
-            "Wulfric" => PlayableCharacterState.Main,
-            "Matsuda" => PlayableCharacterState.Companion,
-            "Buck" => PlayableCharacterState.Resting,
-            _ => PlayableCharacterState.Resting,
-        };
+            return _characterStatCatalog.GetDefaultExplorationState(characterName);
+        }
+
+        return PlayableCharacterState.Resting;
     }
 
-    private static float ResolveFallbackMaxHealth(string characterName)
+    private float ResolveExplorationMaxHealth(string characterName)
     {
-        return characterName switch
+        if (_characterStatCatalog != null)
         {
-            "Wulfric" => 100f,
-            "Buck" => 200f,
-            "Matsuda" => 30f,
-            _ => 100f,
-        };
+            return _characterStatCatalog.GetExplorationMaxHealth(characterName);
+        }
+
+        return 100f;
+    }
+
+    private float ResolveDefaultStartingHealth(string characterName)
+    {
+        if (_characterStatCatalog != null)
+        {
+            return _characterStatCatalog.GetDefaultStartingHealth(characterName);
+        }
+
+        return ResolveExplorationMaxHealth(characterName);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

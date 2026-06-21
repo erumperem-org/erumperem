@@ -11,6 +11,7 @@ using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
 using Game.Core.Progression;
+using Erumperem.Characters;
 using Erumperem.Progression;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -43,6 +44,9 @@ namespace Erumperem.Combat
         [SerializeField] private bool spawnEnemyModelsFromCatalog = false;
 
         [SerializeField] private EnemyVisualSpawnCatalog enemyVisualSpawnCatalog;
+
+        [Tooltip("Stats base por personagem (aliados e inimigos).")]
+        [SerializeField] private CharacterStatCatalog characterStatCatalog;
 
         [Tooltip("Legado: escala Y do root pela % de HP (cápsulas antigas). " +
                  "Se estás a usar CombatHealthBarsBinder + HealthBarHudView (UI diegética), deixa DESLIGADO. " +
@@ -388,6 +392,8 @@ namespace Erumperem.Combat
                 allySkillIds: allySkillIds,
                 passivesById: passives,
                 unlockAllPassiveNodesForAllies: false);
+
+            ApplyCharacterStatsFromCatalog();
 
             CombatExplorationBridge.Instance?.SeedBattleFromExploration(_state);
 
@@ -1278,6 +1284,7 @@ namespace Erumperem.Combat
                     }
 
                     OverrideEnemySkillLoadoutFromVisualDefinition(enemy, enemyVisualDefinition);
+                    ApplyEnemyCharacterStatsFromCatalog(enemy, enemyVisualDefinition);
                 }
 
                 EnsureCombatCapsuleTagOnUnit(enemyViewRoot, enemy.Identity.Id);
@@ -1292,6 +1299,49 @@ namespace Erumperem.Combat
         /// <see cref="EnemyVisualDefinition.enemySkillIds"/>. Skills desconhecidas são ignoradas com warning.
         /// Se a lista estiver vazia, mantém o loadout default do <c>BattleFactory</c>.
         /// </summary>
+        private void ApplyCharacterStatsFromCatalog()
+        {
+            if (characterStatCatalog == null || _state == null)
+            {
+                return;
+            }
+
+            var combatAllyCharacterNames = new[] { "Wulfric", "Matsuda" };
+            for (var allyIndex = 0; allyIndex < _state.Allies.Count && allyIndex < combatAllyCharacterNames.Length; allyIndex++)
+            {
+                var characterName = combatAllyCharacterNames[allyIndex];
+                if (!characterStatCatalog.TryGetDefinition(characterName, out var characterStatDefinition))
+                {
+                    continue;
+                }
+
+                characterStatDefinition.ApplyToCombatant(_state.Allies[allyIndex]);
+            }
+        }
+
+        private void ApplyEnemyCharacterStatsFromCatalog(
+            Combatant enemy,
+            EnemyVisualDefinition enemyVisualDefinition)
+        {
+            if (characterStatCatalog == null || enemy == null || enemyVisualDefinition == null)
+            {
+                return;
+            }
+
+            var characterStatId = enemyVisualDefinition.ResolveCharacterStatId();
+            if (string.IsNullOrWhiteSpace(characterStatId))
+            {
+                return;
+            }
+
+            if (!characterStatCatalog.TryGetDefinition(characterStatId, out var characterStatDefinition))
+            {
+                return;
+            }
+
+            characterStatDefinition.ApplyToCombatant(enemy);
+        }
+
         private void OverrideEnemySkillLoadoutFromVisualDefinition(
             Game.Core.Models.Combatant enemy,
             EnemyVisualDefinition enemyVisualDefinition)
