@@ -146,6 +146,7 @@ public sealed class PlayableCharactersManager : MonoBehaviour
 
         _transitioner.ApplyMain(next, _inputReader);
         next.CurrentState = PlayableCharacterState.Main;
+        next.GetComponent<Collider>().isTrigger = true;
         next.UpdateStateExposed();
         next.DetectionSystem.ClearAvailable();
         Main = next;
@@ -168,6 +169,7 @@ public sealed class PlayableCharactersManager : MonoBehaviour
 
         _transitioner.ApplyCompanion(next);
         next.CurrentState = PlayableCharacterState.Companion;
+        next.GetComponent<Collider>().isTrigger = false;
         next.UpdateStateExposed();
         Companion = next;
         OnCompanionChanged?.Invoke(Companion);
@@ -178,6 +180,7 @@ public sealed class PlayableCharactersManager : MonoBehaviour
         if (character == null) return;
         _transitioner.ApplyResting(character);
         character.CurrentState = PlayableCharacterState.Resting;
+        character.GetComponent<Collider>().isTrigger = true;
         character.UpdateStateExposed();
     }
 }
