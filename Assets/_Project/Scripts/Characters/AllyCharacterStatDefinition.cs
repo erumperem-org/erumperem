@@ -43,11 +43,21 @@ namespace Erumperem.Characters
         [Tooltip("ID em skill_trees.json (ex.: wulfric).")]
         [SerializeField] private string progressionCharacterId;
 
+        [Header("Visual de combate")]
+        [Tooltip("Prefab instanciado no slot ally_1/ally_2 (Animator + collider no root).")]
+        [SerializeField] private GameObject battlePrefab;
+
+        [Tooltip("1 = frente (Main), 2 = atrás (Companion).")]
+        [Min(1)]
+        [SerializeField] private int battleFormationRank = 1;
+
         public string CharacterId => characterId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? characterId : displayName;
         public PlayableCharacterState DefaultExplorationState => defaultExplorationState;
         public int CombatMaxHitPoints => combatMaxHitPoints;
         public string ProgressionCharacterId => progressionCharacterId;
+        public GameObject BattlePrefab => battlePrefab;
+        public int BattleFormationRank => battleFormationRank;
 
         public void ApplyToCombatant(Combatant combatant, bool preserveCurrentHitPoints = false)
         {

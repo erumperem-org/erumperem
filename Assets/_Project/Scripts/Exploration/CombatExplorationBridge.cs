@@ -12,12 +12,8 @@ using UnityEngine;
 /// </summary>
 public sealed class CombatExplorationBridge : MonoBehaviour
 {
-    private static readonly string[] CombatAllyCharacterNames = { "Wulfric", "Matsuda" };
-
     private const float CombatReentryBlockSeconds = 5f;
     private const float VictoryReturnSeparationFromCombatEntry = 6f;
-    private const string MainExplorationCharacterName = "Wulfric";
-
     public static CombatExplorationBridge Instance { get; private set; }
 
     public static bool IsCombatReentryBlocked =>
@@ -38,6 +34,7 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     private float _combatReentryBlockedUntil;
     private bool _hasLastCombatEntryPosition;
     private Vector3 _lastCombatEntryWorldPosition;
+    private IReadOnlyList<string> _pendingCombatAllyCharacterNames;
 
     private void Awake()
     {
@@ -59,6 +56,9 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         }
     }
 
+    /// <summary>Party [Main, Companion] capturada ao entrar em combate (autoritativa na cena de combate).</summary>
+    public IReadOnlyList<string> TryGetPendingCombatAllyCharacterNames() => _pendingCombatAllyCharacterNames;
+
     /// <summary>Chamado imediatamente antes de carregar a cena de combate.</summary>
     public void NotifyEnteringCombat()
     {
@@ -70,10 +70,18 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             LoggerService.PrintLogMessage(LogLevel.Warning,
                 "[COMBAT-BRIDGE] ExplorationLoadContext ausente — estado de exploração não salvo.",
                 LogCategory.Player);
+            _pendingCombatAllyCharacterNames = CombatPartyResolver.NormalizeCombatParty(null);
             return;
         }
 
         ExplorationLoadContext.Instance.SaveState();
+        var partyFromSnapshots = ExplorationLoadContext.Instance.GetCombatAllyCharacterNamesFromSnapshots();
+        _pendingCombatAllyCharacterNames = CombatPartyResolver.NormalizeCombatParty(partyFromSnapshots);
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[COMBAT-BRIDGE] Party de combate: {string.Join(", ", _pendingCombatAllyCharacterNames)}.",
+            LogCategory.Player);
+
         RememberCombatEntryPosition(ExplorationLoadContext.Instance);
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
@@ -112,16 +120,23 @@ public sealed class CombatExplorationBridge : MonoBehaviour
 
         var explorationHealthByCharacter = loadContext.GetSavedHealthByCharacterName();
         var allies = battleState.Allies;
-        for (int allyIndex = 0; allyIndex < allies.Count && allyIndex < CombatAllyCharacterNames.Length; allyIndex++)
+        var combatAllyCharacterNames = CombatPartyResolver.GetCombatAllyCharacterNames();
+        for (int allyIndex = 0; allyIndex < allies.Count && allyIndex < combatAllyCharacterNames.Count; allyIndex++)
         {
-            var characterName = CombatAllyCharacterNames[allyIndex];
+            var characterName = combatAllyCharacterNames[allyIndex];
             if (!explorationHealthByCharacter.TryGetValue(characterName, out var healthSnapshot))
             {
+                LoggerService.PrintLogMessage(LogLevel.Warning,
+                    $"[COMBAT-BRIDGE] Snapshot de HP ausente para '{characterName}'.",
+                    LogCategory.Player);
                 continue;
             }
 
             if (healthSnapshot.MaxHealth <= 0f)
             {
+                LoggerService.PrintLogMessage(LogLevel.Warning,
+                    $"[COMBAT-BRIDGE] HP máximo inválido para '{characterName}'.",
+                    LogCategory.Player);
                 continue;
             }
 
@@ -139,6 +154,10 @@ public sealed class CombatExplorationBridge : MonoBehaviour
                 IsDead = currentHitPoints <= 0,
                 IsDeathblowPending = false,
             };
+
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"[COMBAT-BRIDGE] '{characterName}' HP de exploração → {currentHitPoints}/{maxHitPoints}.",
+                LogCategory.Player);
         }
 
         var explorationCorruption = loadContext.GetSavedCorruptionValue();
@@ -193,7 +212,7 @@ public sealed class CombatExplorationBridge : MonoBehaviour
 
         loadContext.ApplyCombatOutcomeToSnapshots(
             _lastBattleState,
-            CombatAllyCharacterNames,
+            CombatPartyResolver.GetCombatAllyCharacterNames(),
             returnToVillage: !_lastBattleAlliesWon && !returnFromStaticSpawnContact,
             persistToDisk: false);
 
@@ -228,7 +247,13 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             return;
         }
 
-        if (loadContext.TryGetSavedPositionForCharacter(MainExplorationCharacterName, out var entryPosition))
+        var combatAllyCharacterNames = CombatPartyResolver.GetCombatAllyCharacterNames();
+        var mainCharacterName = combatAllyCharacterNames.Count > 0
+            ? combatAllyCharacterNames[0]
+            : null;
+
+        if (!string.IsNullOrWhiteSpace(mainCharacterName) &&
+            loadContext.TryGetSavedPositionForCharacter(mainCharacterName, out var entryPosition))
         {
             Instance._lastCombatEntryWorldPosition = entryPosition;
             Instance._hasLastCombatEntryPosition = true;
@@ -242,5 +267,6 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     {
         _hasPendingCombatReturn = false;
         _lastBattleState = null;
+        _pendingCombatAllyCharacterNames = null;
     }
 }

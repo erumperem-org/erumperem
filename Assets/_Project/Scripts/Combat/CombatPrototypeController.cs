@@ -66,8 +66,6 @@ namespace Erumperem.Combat
         [Tooltip("Opcional na cena; se vazio usa PlayerProgressionService.Instance (DontDestroyOnLoad).")]
         [SerializeField] private PlayerProgressionService _progressionService;
 
-        [SerializeField] private string _progressionCharacterId = "wulfric";
-
         [Tooltip("Desbloqueia todas as passivas do JSON para aliados (teste). Skills activas vêm do save via árvore.")]
         [SerializeField] private bool _devUnlockAllPassives;
 
@@ -349,14 +347,10 @@ namespace Erumperem.Combat
             MergePassiveDefinitionsFromAuthoringAssets(passives);
 
             var skillTreesList = CombatDataLoader.LoadSkillTrees(skillTreesPath);
-            var characterTrees = SkillTreeLookup.FindCharacterTrees(skillTreesList, _progressionCharacterId);
-            if (characterTrees == null)
-            {
-                Debug.LogError(
-                    $"CombatPrototypeController: não há árvore para characterId '{_progressionCharacterId}' em skill_trees.json.");
-                enabled = false;
-                return;
-            }
+            var partyCharacterNames = CombatPartyResolver.GetCombatAllyCharacterNames();
+            Debug.Log(
+                $"CombatPrototypeController: party de combate = [{string.Join(", ", partyCharacterNames)}].",
+                this);
 
             var progression = _progressionService != null
                 ? _progressionService
@@ -365,22 +359,6 @@ namespace Erumperem.Combat
             {
                 var autoRoot = new GameObject(nameof(PlayerProgressionService));
                 progression = autoRoot.AddComponent<PlayerProgressionService>();
-            }
-
-            IReadOnlyDictionary<string, bool> unlockedForBattle;
-            List<string> allySkillIds;
-            if (progression != null)
-            {
-                unlockedForBattle = progression.GetUnlockedNodesForCharacter(_progressionCharacterId);
-                allySkillIds = SkillTreeLookup.BuildPlayerSkillLoadout(
-                    characterTrees,
-                    unlockedForBattle,
-                    BattleFactory.WulfricInnateSkillIds);
-            }
-            else
-            {
-                unlockedForBattle = new Dictionary<string, bool>(StringComparer.Ordinal);
-                allySkillIds = BattleFactory.WulfricFullSkillLoadout.ToList();
             }
 
             _random = new SeededRandomSource(UnityEngine.Random.Range(int.MinValue / 2, int.MaxValue / 2));
@@ -392,32 +370,18 @@ namespace Erumperem.Combat
                 allyCount: 2,
                 enemyCount: 4,
                 corruptionValue: 0,
-                allySkillIds: allySkillIds,
+                allySkillIds: BattleFactory.DefaultAllySkillIds,
                 passivesById: passives,
                 unlockAllPassiveNodesForAllies: false);
 
-            ApplyCharacterStatsFromCatalog();
+            ApplyCharacterStatsFromCatalog(partyCharacterNames);
+            ApplyPerAllyLoadoutsAndProgression(
+                partyCharacterNames,
+                skillTreesList,
+                progression,
+                passives);
 
             CombatExplorationBridge.Instance?.SeedBattleFromExploration(_state);
-
-            if (progression != null)
-            {
-                var pointsSpent = SkillTreeLookup.SumUnlockedNodeCosts(characterTrees, unlockedForBattle);
-                foreach (var ally in _state.Allies)
-                {
-                    foreach (var nodeIdAndUnlocked in unlockedForBattle)
-                    {
-                        ally.Progression.UnlockedNodes[nodeIdAndUnlocked.Key] = nodeIdAndUnlocked.Value;
-                    }
-
-                    ally.Progression.SpentPoints = pointsSpent;
-                }
-            }
-
-            if (_devUnlockAllPassives)
-            {
-                BattleFactory.UnlockAllPassivesFromCatalog(_state, passives);
-            }
 
             if (!TryBindSceneViewsToBattle())
             {
@@ -1249,16 +1213,73 @@ namespace Erumperem.Combat
 
             for (var allyIndex = 0; allyIndex < allyCount; allyIndex++)
             {
-                var root = allyVisualRoots[allyIndex];
-                if (root == null)
+                var slotRoot = allyVisualRoots[allyIndex];
+                if (slotRoot == null)
                 {
                     Debug.LogError($"CombatPrototypeController: Ally Visual Roots[{allyIndex}] está vazio.");
                     return false;
                 }
 
                 var ally = _state.Allies[allyIndex];
-                EnsureCombatCapsuleTagOnUnit(root, ally.Identity.Id);
-                _views[ally.Identity.Id] = root;
+                var partyCharacterNames = CombatPartyResolver.GetCombatAllyCharacterNames();
+                var characterName = allyIndex < partyCharacterNames.Count
+                    ? partyCharacterNames[allyIndex]
+                    : null;
+                var allyViewRoot = slotRoot;
+
+                if (allyCharacterStatCatalog != null &&
+                    !string.IsNullOrWhiteSpace(characterName) &&
+                    allyCharacterStatCatalog.TryGetDefinition(characterName, out var allyCharacterStatDefinition))
+                {
+                    if (allyCharacterStatDefinition.BattlePrefab != null)
+                    {
+                        var instantiatedAllyRoot = BattleVisualInstaller.InstantiateUnderSlot(
+                            slotRoot,
+                            allyCharacterStatDefinition.BattlePrefab);
+                        if (instantiatedAllyRoot != null)
+                        {
+                            allyViewRoot = instantiatedAllyRoot;
+                            Debug.Log(
+                                $"CombatPrototypeController: modelo '{characterName}' instanciado em {slotRoot.name}.",
+                                allyCharacterStatDefinition.BattlePrefab);
+                        }
+                        else
+                        {
+                            Debug.LogError(
+                                $"CombatPrototypeController: falha ao instanciar battlePrefab de '{characterName}' em {slotRoot.name}.",
+                                allyCharacterStatDefinition.BattlePrefab);
+                        }
+                    }
+                    else
+                    {
+                        BattleVisualInstaller.ClearSlotForBattlePrefab(slotRoot);
+                        Debug.LogWarning(
+                            $"CombatPrototypeController: '{characterName}' não tem battlePrefab no catálogo; " +
+                            $"slot {slotRoot.name} sem modelo visual.",
+                            allyCharacterStatCatalog);
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(characterName))
+                {
+                    Debug.LogError(
+                        $"CombatPrototypeController: definição de aliado '{characterName}' não encontrada no catálogo.",
+                        allyCharacterStatCatalog);
+                }
+
+                if (!string.IsNullOrWhiteSpace(characterName))
+                {
+                    var existingIdentity = ally.Identity;
+                    ally.Identity = new IdentityComponent
+                    {
+                        Id = existingIdentity.Id,
+                        DisplayName = characterName,
+                        Faction = existingIdentity.Faction,
+                        Tags = existingIdentity.Tags,
+                    };
+                }
+
+                EnsureCombatCapsuleTagOnUnit(allyViewRoot, ally.Identity.Id);
+                _views[ally.Identity.Id] = allyViewRoot;
             }
 
             for (var enemyIndex = 0; enemyIndex < enemyCount; enemyIndex++)
@@ -1277,7 +1298,6 @@ namespace Erumperem.Combat
                     enemyVisualSpawnCatalog.TryPickDefinition(_random, out var enemyVisualDefinition) &&
                     enemyVisualDefinition.battlePrefab != null)
                 {
-                    EnemyVisualBattleInstaller.ClearSlotForEnemyVisualPrefab(root);
                     var instantiatedEnemyRoot = EnemyVisualBattleInstaller.InstantiateEnemyUnderSlot(
                         root,
                         enemyVisualDefinition.battlePrefab);
@@ -1302,24 +1322,141 @@ namespace Erumperem.Combat
         /// <see cref="EnemyVisualDefinition.enemySkillIds"/>. Skills desconhecidas são ignoradas com warning.
         /// Se a lista estiver vazia, mantém o loadout default do <c>BattleFactory</c>.
         /// </summary>
-        private void ApplyCharacterStatsFromCatalog()
+        private void ApplyCharacterStatsFromCatalog(IReadOnlyList<string> partyCharacterNames)
         {
             if (allyCharacterStatCatalog == null || _state == null)
             {
                 return;
             }
 
-            var combatAllyCharacterNames = new[] { "Wulfric", "Matsuda" };
-            for (var allyIndex = 0; allyIndex < _state.Allies.Count && allyIndex < combatAllyCharacterNames.Length; allyIndex++)
+            partyCharacterNames ??= CombatPartyResolver.GetCombatAllyCharacterNames();
+
+            for (var allyIndex = 0; allyIndex < _state.Allies.Count && allyIndex < partyCharacterNames.Count; allyIndex++)
             {
-                var characterName = combatAllyCharacterNames[allyIndex];
+                var characterName = partyCharacterNames[allyIndex];
                 if (!allyCharacterStatCatalog.TryGetDefinition(characterName, out var allyCharacterStatDefinition))
                 {
                     continue;
                 }
 
-                allyCharacterStatDefinition.ApplyToCombatant(_state.Allies[allyIndex]);
+                var ally = _state.Allies[allyIndex];
+                allyCharacterStatDefinition.ApplyToCombatant(ally, preserveCurrentHitPoints: false);
+
+                if (ally.Position != null)
+                {
+                    ally.Position.FrontRank = Mathf.Max(1, allyCharacterStatDefinition.BattleFormationRank);
+                }
             }
+        }
+
+        private void ApplyPerAllyLoadoutsAndProgression(
+            IReadOnlyList<string> partyCharacterNames,
+            IReadOnlyList<CharacterSkillTreesDefinition> skillTreesList,
+            PlayerProgressionService progression,
+            IReadOnlyDictionary<string, PassiveDefinition> passivesById)
+        {
+            if (_state == null || partyCharacterNames == null)
+            {
+                return;
+            }
+
+            for (var allyIndex = 0; allyIndex < _state.Allies.Count && allyIndex < partyCharacterNames.Count; allyIndex++)
+            {
+                var characterName = partyCharacterNames[allyIndex];
+                var ally = _state.Allies[allyIndex];
+                var progressionCharacterId = ResolveProgressionCharacterId(characterName);
+                var innateSkillIds = ResolveInnateSkillIds(progressionCharacterId);
+                List<string> allySkillIds;
+
+                IReadOnlyDictionary<string, bool> unlockedForBattle =
+                    new Dictionary<string, bool>(StringComparer.Ordinal);
+
+                if (!string.IsNullOrWhiteSpace(progressionCharacterId))
+                {
+                    var characterTrees = SkillTreeLookup.FindCharacterTrees(skillTreesList, progressionCharacterId);
+                    if (characterTrees != null && progression != null)
+                    {
+                        unlockedForBattle = progression.GetUnlockedNodesForCharacter(progressionCharacterId);
+                        allySkillIds = SkillTreeLookup.BuildPlayerSkillLoadout(
+                            characterTrees,
+                            unlockedForBattle,
+                            innateSkillIds);
+                        var pointsSpent = SkillTreeLookup.SumUnlockedNodeCosts(characterTrees, unlockedForBattle);
+                        ApplyLoadoutAndProgressionToAlly(ally, allySkillIds, unlockedForBattle, pointsSpent);
+                        continue;
+                    }
+
+                    if (characterTrees != null)
+                    {
+                        allySkillIds = SkillTreeLookup.BuildPlayerSkillLoadout(
+                            characterTrees,
+                            unlockedForBattle,
+                            innateSkillIds);
+                        ApplyLoadoutAndProgressionToAlly(ally, allySkillIds, unlockedForBattle, pointsSpent: 0);
+                        continue;
+                    }
+                }
+
+                allySkillIds = innateSkillIds.Count > 0
+                    ? innateSkillIds.ToList()
+                    : BattleFactory.DefaultAllySkillIds.ToList();
+                ApplyLoadoutAndProgressionToAlly(ally, allySkillIds, unlockedForBattle, pointsSpent: 0);
+            }
+
+            if (_devUnlockAllPassives && passivesById != null)
+            {
+                BattleFactory.UnlockAllPassivesFromCatalog(_state, passivesById);
+            }
+        }
+
+        private static void ApplyLoadoutAndProgressionToAlly(
+            Combatant ally,
+            IReadOnlyList<string> allySkillIds,
+            IReadOnlyDictionary<string, bool> unlockedForBattle,
+            int pointsSpent)
+        {
+            ally.SkillLoadout.Skills.Clear();
+            if (allySkillIds != null)
+            {
+                foreach (var skillId in allySkillIds)
+                {
+                    if (!string.IsNullOrWhiteSpace(skillId))
+                    {
+                        ally.SkillLoadout.Skills.Add(skillId);
+                    }
+                }
+            }
+
+            ally.Progression.UnlockedNodes.Clear();
+            foreach (var nodeIdAndUnlocked in unlockedForBattle)
+            {
+                ally.Progression.UnlockedNodes[nodeIdAndUnlocked.Key] = nodeIdAndUnlocked.Value;
+            }
+
+            ally.Progression.SpentPoints = pointsSpent;
+        }
+
+        private string ResolveProgressionCharacterId(string characterName)
+        {
+            if (allyCharacterStatCatalog != null &&
+                allyCharacterStatCatalog.TryGetDefinition(characterName, out var allyCharacterStatDefinition) &&
+                !string.IsNullOrWhiteSpace(allyCharacterStatDefinition.ProgressionCharacterId))
+            {
+                return allyCharacterStatDefinition.ProgressionCharacterId;
+            }
+
+            return null;
+        }
+
+        private static IReadOnlyList<string> ResolveInnateSkillIds(string progressionCharacterId)
+        {
+            if (string.Equals(progressionCharacterId, "wulfric", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(progressionCharacterId, "buck", StringComparison.OrdinalIgnoreCase))
+            {
+                return BattleFactory.WulfricInnateSkillIds;
+            }
+
+            return BattleFactory.DefaultAllySkillIds;
         }
 
         private void ApplyEnemyCharacterStatsFromCatalog(

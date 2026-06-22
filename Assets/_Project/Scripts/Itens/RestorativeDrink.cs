@@ -41,52 +41,9 @@ namespace Core.Exploration.Items.Usables
 
         public void ExecuteItemEffect()
         {
-            var manager = FindManager();
-            if (manager == null) return;
-
-            int healed = 0;
-
-            // ── Main ──────────────────────────────────────────────────────
-            if (manager.Main is PlayableCharacter main && main.HealthBar != null)
-            {
-                main.HealthBar.Heal(_healAmount);
-                healed++;
-                LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"[RestorativeDrink] '{main.CharacterName}' curado em {_healAmount} HP " +
-                    $"(atual: {main.HealthBar.CurrentHealth}/{main.HealthBar.MaxHealth}).",
-                    LogCategory.Interaction);
-            }
-
-            // ── Companion ─────────────────────────────────────────────────
-            if (manager.Companion is PlayableCharacter companion && companion.HealthBar != null)
-            {
-                companion.HealthBar.Heal(_healAmount);
-                healed++;
-                LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"[RestorativeDrink] '{companion.CharacterName}' curado em {_healAmount} HP " +
-                    $"(atual: {companion.HealthBar.CurrentHealth}/{companion.HealthBar.MaxHealth}).",
-                    LogCategory.Interaction);
-            }
-
-            if (healed == 0)
-            {
-                LoggerService.PrintLogMessage(LogLevel.Warning,
-                    "[RestorativeDrink] Nenhum personagem ativo encontrado para curar.",
-                    LogCategory.Interaction);
-            }
-        }
-
-        // ── Helpers ───────────────────────────────────────────────────────
-
-        private static PlayableCharactersManager FindManager()
-        {
-            var manager = Object.FindFirstObjectByType<PlayableCharactersManager>();
-            if (manager != null) return manager;
-
-            LoggerService.PrintLogMessage(LogLevel.Error,
-                "[RestorativeDrink] PlayableCharactersManager não encontrado na cena.",
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                "[RestorativeDrink] Cura desativada — volte à vila para recuperar HP.",
                 LogCategory.Interaction);
-            return null;
         }
     }
 }

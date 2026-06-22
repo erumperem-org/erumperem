@@ -117,6 +117,9 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
     public static ExplorationLoadContext Instance { get; private set; }
 
+    /// <summary>Disparado após snapshots ou defaults serem aplicados aos personagens da cena.</summary>
+    public static event Action OnExplorationStateApplied;
+
     // ── Serviço de IO ─────────────────────────────────────────────────────
 
     private readonly IFileService _fileService = new FileService();
@@ -389,7 +392,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
     public IReadOnlyDictionary<string, ExplorationHealthSnapshot> GetSavedHealthByCharacterName()
     {
-        var healthByCharacterName = new Dictionary<string, ExplorationHealthSnapshot>(StringComparer.Ordinal);
+        var healthByCharacterName = new Dictionary<string, ExplorationHealthSnapshot>(StringComparer.OrdinalIgnoreCase);
         foreach (var snapshot in _snapshots)
         {
             if (string.IsNullOrWhiteSpace(snapshot.CharacterName))
@@ -415,6 +418,14 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     }
 
     /// <summary>
+    /// Party de combate [Main, Companion] a partir dos snapshots em memória (útil na cena de combate).
+    /// </summary>
+    public IReadOnlyList<string> GetCombatAllyCharacterNamesFromSnapshots()
+    {
+        return CombatPartyResolver.BuildPartyNamesFromSnapshots(_snapshots);
+    }
+
+    /// <summary>
     /// Atualiza snapshots em memória com HP/corrupção pós-combate e,
     /// em derrota, reposiciona o grupo na aldeia.
     /// </summary>
@@ -434,7 +445,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         {
             var characterName = combatAllyCharacterNames[allyIndex];
             var snapshot = _snapshots.Find(savedSnapshot =>
-                string.Equals(savedSnapshot.CharacterName, characterName, StringComparison.Ordinal));
+                string.Equals(savedSnapshot.CharacterName, characterName, StringComparison.OrdinalIgnoreCase));
 
             if (snapshot == null)
             {
@@ -785,7 +796,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     {
         foreach (var character in _manager.Playables)
         {
-            var snap = _snapshots.Find(s => s.CharacterName == character.CharacterName);
+            var snap = _snapshots.Find(snapshot =>
+                string.Equals(snapshot.CharacterName, character.CharacterName, StringComparison.OrdinalIgnoreCase));
             if (snap == null)
             {
                 LoggerService.PrintLogMessage(LogLevel.Warning,
@@ -793,9 +805,6 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                     LogCategory.Player);
                 continue;
             }
-
-            character.Transform.SetPositionAndRotation(snap.Position, snap.Rotation);
-            _manager.SetState(snap.State, character);
 
             if (character.HealthBar != null && snap.MaxHealth > 0f)
             {
@@ -808,12 +817,21 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                     LogCategory.Player);
             }
 
+            character.Transform.SetPositionAndRotation(snap.Position, snap.Rotation);
+            _manager.SetState(snap.State, character);
+
             LoggerService.PrintLogMessage(LogLevel.Debug,
                 $"[LOAD] '{character.CharacterName}' → {snap.State} @ {snap.Position}",
                 LogCategory.Player);
         }
 
+        if (_corruptionSystem != null)
+        {
+            _corruptionSystem.Corruption = Mathf.Clamp(_savedCorruptionValue, 0f, 100f);
+        }
+
         _manager.NotifyCurrentMainIfAny();
+        NotifyExplorationStateApplied();
     }
 
     private void ApplyDefaultSetups()
@@ -868,7 +886,10 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         }
 
         _manager.NotifyCurrentMainIfAny();
+        NotifyExplorationStateApplied();
     }
+
+    private static void NotifyExplorationStateApplied() => OnExplorationStateApplied?.Invoke();
 
     private void ApplyDefaultSpawnPositions()
     {
@@ -956,8 +977,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         return characterName switch
         {
             "Wulfric" => PlayableCharacterState.Main,
-            "Matsuda" => PlayableCharacterState.Companion,
-            "Buck" => PlayableCharacterState.Resting,
+            "Buck" => PlayableCharacterState.Companion,
+            "Matsuda" => PlayableCharacterState.Resting,
             _ => PlayableCharacterState.Resting,
         };
     }
@@ -977,7 +998,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     {
         return characterName switch
         {
-            "Matsuda" => 30f,
+            "Matsuda" => 0f,
             _ => 0f,
         };
     }
