@@ -23,7 +23,7 @@ using TMPro;
 public sealed class CharacterSelectionCanvas : MonoBehaviour
 {
     [Header("Referências de UI")]
-    [SerializeField] public GameObject            _panel;
+    [SerializeField] private GameObject            _panel;
     [SerializeField] private TextMeshProUGUI       _txtCharacterName;
     [SerializeField] private TextMeshProUGUI       _txtCurrentState;
     [SerializeField] private Button                _btnSetMain;

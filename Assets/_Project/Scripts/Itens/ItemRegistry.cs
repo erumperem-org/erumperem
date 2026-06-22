@@ -30,29 +30,22 @@ public sealed class ItemRegistry : ScriptableObject
     private void BuildLookup()
     {
         _lookup = new Dictionary<string, IStorageable>(_items.Count);
-        foreach (var obj in _items)
+        foreach (var item in _items)
         {
-            if (obj is not IStorageable storageable) continue;  // era: IItem
-
-            string id = storageable.ItemId;
-
-            if (string.IsNullOrEmpty(id))
+            if (item is IItem item1)
             {
-                LoggerService.PrintLogMessage(LogLevel.Warning,
-                    $"[ItemRegistry] '{obj.name}' tem ItemId vazio — ignorado.",
-                    LogCategory.Inventory);
-                continue;
-            }
+                if (item == null) continue;
 
-            if (_lookup.ContainsKey(id))
-            {
-                LoggerService.PrintLogMessage(LogLevel.Warning,
-                    $"[ItemRegistry] ItemId duplicado: '{id}' ({obj.name}) — ignorado.",
-                    LogCategory.Inventory);
-                continue;
-            }
+                if (_lookup.ContainsKey(item1.ItemId))
+                {
+                    LoggerService.PrintLogMessage(LogLevel.Warning,
+                        $"[ItemRegistry] ItemId duplicado detectado: '{item1.ItemId}' — entrada ignorada.",
+                        LogCategory.Inventory);
+                    continue;
+                }
 
-            _lookup[id] = storageable;
+                _lookup[item1.ItemId] = item1;
+            }
         }
     }
 }

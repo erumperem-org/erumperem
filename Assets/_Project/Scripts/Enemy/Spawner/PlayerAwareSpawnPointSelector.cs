@@ -3,16 +3,10 @@
 // Namespace : Systems.NPC.Spawner
 // ============================================================
 // Responsabilidade única: selecionar spawn points fora do
-// raio mínimo de visão do Player e dentro do raio máximo,
-// ordenados por proximidade ao player.
+// raio de visão do Player, ordenados por proximidade.
 //
-// CORREÇÕES:
-//   [5] Adicionado _maxRadiusSq: pontos muito distantes do player
-//       são descartados, garantindo que o player possa encontrar
-//       os inimigos. maxSpawnRadius = 0 desativa o limite máximo.
-//   [1] O construtor agora recebe o Transform por referência —
-//       como Transform é um objeto Unity, a posição sempre
-//       reflete o Main atual após RebuildSelector no Spawner.
+// Extraído de NpcEnemySpawner onde era uma responsabilidade
+// secundária embutida nos métodos SpawnOne/ExecuteSpawnBatch.
 // ============================================================
 
 using UnityEngine;
@@ -23,32 +17,20 @@ namespace Systems.NPC.Spawner
     {
         private readonly Transform[] _points;
         private readonly Transform   _player;
-        private readonly float       _minRadiusSq;
+        private readonly float       _visionRadiusSq;
 
-        // [5] 0 = sem limite máximo.
-        private readonly float _maxRadiusSq;
-
-        private Transform[] _sorted = new Transform[0];
+        private Transform[] _sorted   = new Transform[0];
         private int         _index;
-        private bool        _dirty  = true;
+        private bool        _dirty    = true;
 
-        /// <param name="minSpawnRadius">
-        ///   Distância mínima do player para spawnar (raio de visão).
-        /// </param>
-        /// <param name="maxSpawnRadius">
-        ///   Distância máxima do player para spawnar.
-        ///   Use 0 para sem limite.
-        /// </param>
         public PlayerAwareSpawnPointSelector(
             Transform[] points,
             Transform   player,
-            float       minSpawnRadius,
-            float       maxSpawnRadius = 0f)
+            float       visionRadius)
         {
-            _points      = points;
-            _player      = player;
-            _minRadiusSq = minSpawnRadius * minSpawnRadius;
-            _maxRadiusSq = maxSpawnRadius > 0f ? maxSpawnRadius * maxSpawnRadius : float.MaxValue;
+            _points         = points;
+            _player         = player;
+            _visionRadiusSq = visionRadius * visionRadius;
         }
 
         public bool HasAny
@@ -67,7 +49,7 @@ namespace Systems.NPC.Spawner
 
             var point = _sorted[_index % _sorted.Length];
             _index++;
-            _dirty = true; // recalcula na próxima chamada (posição do player pode ter mudado)
+            _dirty = true; // recalcula no próximo chamado
             return point;
         }
 
@@ -86,17 +68,11 @@ namespace Systems.NPC.Spawner
             foreach (var p in _points)
             {
                 if (p == null) continue;
-
-                float distSq = (p.position - playerPos).sqrMagnitude;
-
-                // [5] Descarta pontos dentro do raio mínimo (visão) OU além do raio máximo.
-                if (distSq < _minRadiusSq) continue;
-                if (distSq > _maxRadiusSq) continue;
-
+                if ((p.position - playerPos).sqrMagnitude < _visionRadiusSq) continue;
                 temp[validCount++] = p;
             }
 
-            // Insertion sort por distância ao player (crescente — spawn no mais próximo válido).
+            // Insertion sort por distância ao player (crescente)
             for (int i = 1; i < validCount; i++)
             {
                 var   key     = temp[i];

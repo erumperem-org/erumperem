@@ -7,7 +7,7 @@ using UnityEngine;
 public sealed class CharacterSelectionNpc : Interactable
 {
     [SerializeField] private PlayableCharacter      _character;
-    [SerializeField] public CharacterSelectionCanvas _canvas;
+    [SerializeField] private CharacterSelectionCanvas _canvas;
 
     public override bool CanInteract => true;
 

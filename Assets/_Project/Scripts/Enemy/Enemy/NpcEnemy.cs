@@ -4,12 +4,13 @@
 // ============================================================
 // Responsabilidade única: orquestrar os colaboradores.
 //
-// CORREÇÃO:
-//   [8] Initialize chama StopAll() nos colaboradores existentes
-//       antes de recriá-los, garantindo que coroutines de um
-//       ciclo anterior de pool sejam canceladas antes do novo
-//       ciclo começar (evita vazamento de WanderLifetimeCoroutine
-//       e ChaseRadiusMonitorCoroutine entre reutilizações).
+// NpcEnemy agora é um MonoBehaviour enxuto que:
+//   1. Cria e conecta StateMachine, DetectionHandler e BehaviorRunner.
+//   2. Implementa o ciclo de vida (Initialize / Activate / ReturnToPool).
+//   3. Expõe OnPlayerContact como evento — sem saber o que acontece depois.
+//
+// Quem decide o que fazer no contato com o Player é o ouvinte
+// externo (ex: NpcEnemyContactHandler), não este script.
 // ============================================================
 
 using System;
@@ -42,9 +43,9 @@ namespace Systems.NPC.Enemy
 
         // ── Colaboradores (criados em Initialize) ─────────────────────────
 
-        private NpcEnemyStateMachine     _stateMachine;
+        private NpcEnemyStateMachine    _stateMachine;
         private NpcEnemyDetectionHandler _detectionHandler;
-        private NpcEnemyBehaviorRunner   _behaviorRunner;
+        private NpcEnemyBehaviorRunner  _behaviorRunner;
 
         private NpcEnemyConfig _config;
 
@@ -63,10 +64,6 @@ namespace Systems.NPC.Enemy
 
         public void Initialize(NpcEnemyConfig config)
         {
-            // [8] Cancela coroutines do ciclo anterior antes de recriar colaboradores.
-            _detectionHandler?.StopPolling();
-            _behaviorRunner?.StopAll();
-
             _config = config;
 
             _stateMachine = new NpcEnemyStateMachine();
@@ -93,7 +90,9 @@ namespace Systems.NPC.Enemy
 
             var enemyView = GetComponent<NpcEnemyView>();
             if (enemyView != null)
+            {
                 enemyView.RefreshCorruptionTierVisuals();
+            }
 
             if (!_movementController.NavMesh.Warp(_adapter, spawnPoint))
                 _movementController.NavMesh.TeleportToNearestNavMeshPoint(_adapter, spawnPoint);
@@ -131,6 +130,7 @@ namespace Systems.NPC.Enemy
 
         /// <summary>
         /// Chamado pelo NpcEnemyDetectionHandler quando a shape "Contact" detecta o Player.
+        /// Dispara o evento — a decisão do que fazer fica fora desta classe.
         /// </summary>
         internal void NotifyPlayerContact()
         {
