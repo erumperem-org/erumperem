@@ -72,6 +72,32 @@ namespace Erumperem.Combat
             return instantiatedTransform;
         }
 
+        /// <summary>
+        /// Remove scripts de exploração (WASD, física, passos) dos modelos instanciados para combate.
+        /// </summary>
+        public static void PrepareAllyVisualForCombat(Transform visualRoot)
+        {
+            if (visualRoot == null)
+            {
+                return;
+            }
+
+            foreach (var movementComponent in visualRoot.GetComponentsInChildren<MovimentoXZ>(true))
+            {
+                UnityEngine.Object.Destroy(movementComponent);
+            }
+
+            foreach (var rigidbody in visualRoot.GetComponentsInChildren<Rigidbody>(true))
+            {
+                UnityEngine.Object.Destroy(rigidbody);
+            }
+
+            foreach (var animationSoundEmitter in visualRoot.GetComponentsInChildren<AnimationSoundEmitter>(true))
+            {
+                UnityEngine.Object.Destroy(animationSoundEmitter);
+            }
+        }
+
         private static void RemoveMeshAndColliderComponentsFromSlotRoot(Transform slotRoot)
         {
             foreach (var meshFilter in slotRoot.GetComponents<MeshFilter>())

@@ -1279,6 +1279,7 @@ namespace Erumperem.Combat
                 }
 
                 EnsureCombatCapsuleTagOnUnit(allyViewRoot, ally.Identity.Id);
+                BattleVisualInstaller.PrepareAllyVisualForCombat(allyViewRoot);
                 _views[ally.Identity.Id] = allyViewRoot;
             }
 
