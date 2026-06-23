@@ -843,10 +843,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c383aab70cf2d5f4eb3be2fcf7ae4d4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScavengerShop
-  _reenableDelay: 9
-  shopPanelRoot: {fileID: 0}
-  HUD: {fileID: 0}
-  objectsToDisableWhileOpen: []
+  skillTreePanel: {fileID: 0}
 --- !u!4 &166052072
 Transform:
   m_ObjectHideFlags: 0
@@ -10673,13 +10670,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1263911524}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3c4d5e6f708192a3b4c5d6e7f8091a2b, type: 3}
+  m_Script: {fileID: 11500000, guid: d82766eb596c3f74db8f24793bd45ecd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VillageEnemySanctuaryHandler
-  _enemySpawners: []
-  _enemyPool: {fileID: 0}
-  _staticEnemyContacts: []
-  _staticEnemyCollisionTriggers: []
 --- !u!1 &1803372898 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4016659781743702863, guid: ad16307581b12244ab60d96f05737038, type: 3}
@@ -11501,15 +11494,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6718293847561029483, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6718293847561029483, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6718293847561029483, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6718293847561029483, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
       propertyPath: m_ConstrainProportionsScale

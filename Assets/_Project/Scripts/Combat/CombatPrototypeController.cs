@@ -374,14 +374,21 @@ namespace Erumperem.Combat
                 passivesById: passives,
                 unlockAllPassiveNodesForAllies: false);
 
-            ApplyCharacterStatsFromCatalog(partyCharacterNames);
+            var loadContext = ExplorationLoadContext.Instance;
+
+            if (loadContext != null)
+            {
+                CombatExplorationBridge.Instance?.SeedBattleFromExploration(_state);
+            }
+
+            ApplyCharacterStatsFromCatalog(
+                partyCharacterNames,
+                applyHealth: loadContext == null);
             ApplyPerAllyLoadoutsAndProgression(
                 partyCharacterNames,
                 skillTreesList,
                 progression,
                 passives);
-
-            CombatExplorationBridge.Instance?.SeedBattleFromExploration(_state);
 
             if (!TryBindSceneViewsToBattle())
             {
@@ -880,13 +887,11 @@ namespace Erumperem.Combat
                 return;
             }
 
-            _sessionHub?.RaiseCombatSessionClosed();
             _battleEnded = true;
             _needsPlayerInput = false;
             ClearSkillBarSelection();
             _sim.EmitBattleEnded(_state);
             LogLastEvents();
-            //Debug.Log($"Batalha terminou. Vencedor: {_state.Winner}");
 
             if (_state.Winner == Side.Allies)
             {
@@ -904,6 +909,8 @@ namespace Erumperem.Combat
             CombatExplorationBridge.Instance?.NotifyCombatEnded(
                 _state,
                 alliesWon: _state.Winner == Side.Allies);
+
+            _sessionHub?.RaiseCombatSessionClosed();
         }
 
         private void LogLastEvents()
@@ -1326,7 +1333,9 @@ namespace Erumperem.Combat
         /// <see cref="EnemyVisualDefinition.enemySkillIds"/>. Skills desconhecidas são ignoradas com warning.
         /// Se a lista estiver vazia, mantém o loadout default do <c>BattleFactory</c>.
         /// </summary>
-        private void ApplyCharacterStatsFromCatalog(IReadOnlyList<string> partyCharacterNames)
+        private void ApplyCharacterStatsFromCatalog(
+            IReadOnlyList<string> partyCharacterNames,
+            bool applyHealth = true)
         {
             if (allyCharacterStatCatalog == null || _state == null)
             {
@@ -1344,7 +1353,10 @@ namespace Erumperem.Combat
                 }
 
                 var ally = _state.Allies[allyIndex];
-                allyCharacterStatDefinition.ApplyToCombatant(ally, preserveCurrentHitPoints: false);
+                allyCharacterStatDefinition.ApplyToCombatant(
+                    ally,
+                    preserveCurrentHitPoints: false,
+                    applyHealth: applyHealth);
 
                 if (ally.Position != null)
                 {
