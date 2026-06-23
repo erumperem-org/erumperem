@@ -1233,7 +1233,7 @@ namespace Erumperem.Combat
                 {
                     if (allyCharacterStatDefinition.BattlePrefab != null)
                     {
-                        var instantiatedAllyRoot = BattleVisualInstaller.InstantiateUnderSlot(
+                        var instantiatedAllyRoot = BattleVisualInstaller.InstantiateAllyUnderSlot(
                             slotRoot,
                             allyCharacterStatDefinition.BattlePrefab);
                         if (instantiatedAllyRoot != null)
@@ -1280,6 +1280,7 @@ namespace Erumperem.Combat
 
                 EnsureCombatCapsuleTagOnUnit(allyViewRoot, ally.Identity.Id);
                 BattleVisualInstaller.PrepareAllyVisualForCombat(allyViewRoot);
+                BattleVisualInstaller.EnsureCombatSelectionCollider(allyViewRoot, characterName);
                 _views[ally.Identity.Id] = allyViewRoot;
             }
 
@@ -1299,9 +1300,11 @@ namespace Erumperem.Combat
                     enemyVisualSpawnCatalog.TryPickDefinition(_random, out var enemyVisualDefinition) &&
                     enemyVisualDefinition.battlePrefab != null)
                 {
+                    var alliesFacingReference = ResolveAlliesFacingReference();
                     var instantiatedEnemyRoot = EnemyVisualBattleInstaller.InstantiateEnemyUnderSlot(
                         root,
-                        enemyVisualDefinition.battlePrefab);
+                        enemyVisualDefinition.battlePrefab,
+                        alliesFacingReference);
                     if (instantiatedEnemyRoot != null)
                     {
                         enemyViewRoot = instantiatedEnemyRoot;
@@ -1531,6 +1534,25 @@ namespace Erumperem.Combat
             enemyAnimationController = unitRoot.GetComponent<EnemyAnimationController>() ??
                                        unitRoot.GetComponentInChildren<EnemyAnimationController>(true);
             return enemyAnimationController != null;
+        }
+
+        private Transform ResolveAlliesFacingReference()
+        {
+            if (allyVisualRoots == null || allyVisualRoots.Length == 0)
+            {
+                return null;
+            }
+
+            for (var allyIndex = 0; allyIndex < allyVisualRoots.Length; allyIndex++)
+            {
+                var allyVisualRoot = allyVisualRoots[allyIndex];
+                if (allyVisualRoot != null)
+                {
+                    return allyVisualRoot;
+                }
+            }
+
+            return null;
         }
 
         private static void EnsureCombatCapsuleTagOnUnit(Transform unitRoot, string combatantId)

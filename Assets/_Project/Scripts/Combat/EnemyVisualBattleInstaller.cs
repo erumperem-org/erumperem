@@ -10,7 +10,18 @@ namespace Erumperem.Combat
         public static void ClearSlotForEnemyVisualPrefab(Transform slotRoot) =>
             BattleVisualInstaller.ClearSlotForBattlePrefab(slotRoot);
 
-        public static Transform InstantiateEnemyUnderSlot(Transform slotRoot, GameObject battlePrefab) =>
-            BattleVisualInstaller.InstantiateUnderSlot(slotRoot, battlePrefab);
+        public static Transform InstantiateEnemyUnderSlot(
+            Transform slotRoot,
+            GameObject battlePrefab,
+            Transform alliesFacingReference)
+        {
+            var instantiatedEnemyRoot = BattleVisualInstaller.InstantiateUnderSlot(slotRoot, battlePrefab);
+            if (instantiatedEnemyRoot != null)
+            {
+                BattleVisualInstaller.OrientEnemyVisualTowardAllies(instantiatedEnemyRoot, alliesFacingReference);
+            }
+
+            return instantiatedEnemyRoot;
+        }
     }
 }

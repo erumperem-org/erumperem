@@ -44,7 +44,7 @@ namespace Erumperem.Characters
         [SerializeField] private string progressionCharacterId;
 
         [Header("Visual de combate")]
-        [Tooltip("Prefab instanciado no slot ally_1/ally_2 (Animator + collider no root).")]
+        [Tooltip("Prefab instanciado no slot ally_1/ally_2. Use o root do prefab com CapsuleCollider para seleção.")]
         [SerializeField] private GameObject battlePrefab;
 
         [Tooltip("1 = frente (Main), 2 = atrás (Companion).")]
