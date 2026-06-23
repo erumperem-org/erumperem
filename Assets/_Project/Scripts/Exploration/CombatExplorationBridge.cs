@@ -13,7 +13,7 @@ using UnityEngine;
 public sealed class CombatExplorationBridge : MonoBehaviour
 {
     private const float CombatReentryBlockSeconds = 5f;
-    private const float PostCombatMonsterSpawnBlockSeconds = 10f;
+    private const float PostCombatMonsterSpawnBlockSeconds = 5f;
     private const float VictoryReturnSeparationFromCombatEntry = 6f;
     public static CombatExplorationBridge Instance { get; private set; }
 

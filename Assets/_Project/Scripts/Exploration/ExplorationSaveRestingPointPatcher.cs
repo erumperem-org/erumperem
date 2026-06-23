@@ -17,8 +17,21 @@ public sealed class ExplorationSaveRestingPointPatcher : MonoBehaviour
 
     private void OnEnable()
     {
-        if (_patchOnEnable)
-            Patch();
+        if (!_patchOnEnable)
+        {
+            return;
+        }
+
+        var loadContext = ExplorationLoadContext.Instance;
+        if (loadContext != null && loadContext.HasSave())
+        {
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                "[RestingPointPatcher] Save existente — patch ignorado (posições vêm do save ou retorno de combate).",
+                LogCategory.Player);
+            return;
+        }
+
+        Patch();
     }
 
     public void Patch()
