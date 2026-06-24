@@ -13,11 +13,16 @@ using UnityEngine;
 public sealed class CombatExplorationBridge : MonoBehaviour
 {
     private const float CombatReentryBlockSeconds = 5f;
+    private const float PostCombatMonsterSpawnBlockSeconds = 5f;
     private const float VictoryReturnSeparationFromCombatEntry = 6f;
     public static CombatExplorationBridge Instance { get; private set; }
 
     public static bool IsCombatReentryBlocked =>
         Instance != null && Time.time < Instance._combatReentryBlockedUntil;
+
+    /// <summary>Bloqueia spawn de inimigos no overworld durante alguns segundos após o combate.</summary>
+    public static bool IsMonsterSpawnBlocked =>
+        Instance != null && Time.time < Instance._monsterSpawnBlockedUntil;
 
     /// <summary>
     /// Após combate iniciado por contacto estático, bloqueia reentrada até o jogador sair da zona.
@@ -32,6 +37,7 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     private bool _requiresCombatEntryZoneClearance;
     private BattleState _lastBattleState;
     private float _combatReentryBlockedUntil;
+    private float _monsterSpawnBlockedUntil;
     private bool _hasLastCombatEntryPosition;
     private Vector3 _lastCombatEntryWorldPosition;
     private IReadOnlyList<string> _pendingCombatAllyCharacterNames;
@@ -104,6 +110,7 @@ public sealed class CombatExplorationBridge : MonoBehaviour
 
     /// <summary>
     /// Aplica HP e corrupção da exploração ao estado de combate recém-criado.
+    /// Não cura — copia valores actuais do save de exploração.
     /// </summary>
     public void SeedBattleFromExploration(BattleState battleState)
     {
@@ -141,9 +148,14 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             }
 
             var ally = allies[allyIndex];
-            var maxHitPoints = Math.Max(1, Mathf.RoundToInt(healthSnapshot.MaxHealth));
+            var explorationHealth = loadContext.ResolveExplorationHealthForCombatSeed(
+                characterName,
+                healthSnapshot.CurrentHealth,
+                healthSnapshot.MaxHealth);
+
+            var maxHitPoints = Math.Max(1, Mathf.RoundToInt(explorationHealth.MaxHealth));
             var currentHitPoints = Mathf.Clamp(
-                Mathf.RoundToInt(healthSnapshot.CurrentHealth),
+                Mathf.RoundToInt(explorationHealth.CurrentHealth),
                 0,
                 maxHitPoints);
 
@@ -173,12 +185,33 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             LogCategory.Player);
     }
 
-    /// <summary>Regista o resultado do combate para o retorno à exploração.</summary>
+    /// <summary>Regista o resultado do combate, persiste HP/corrupção e bloqueia spawn temporário.</summary>
     public void NotifyCombatEnded(BattleState battleState, bool alliesWon)
     {
         _hasPendingCombatReturn = true;
         _lastBattleAlliesWon = alliesWon;
         _lastBattleState = battleState;
+        _combatReentryBlockedUntil = Time.time + CombatReentryBlockSeconds;
+        _monsterSpawnBlockedUntil = Time.time + PostCombatMonsterSpawnBlockSeconds;
+
+        var loadContext = ExplorationLoadContext.Instance;
+        if (loadContext == null)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[COMBAT-BRIDGE] ExplorationLoadContext ausente — HP/corrupção pós-combate não persistidos.",
+                LogCategory.Player);
+            return;
+        }
+
+        loadContext.ApplyCombatHealthAndCorruptionToSnapshots(
+            battleState,
+            CombatPartyResolver.GetCombatAllyCharacterNames(),
+            ResolvePostCombatCorruptionValue(battleState),
+            persistToDisk: true);
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            "[COMBAT-BRIDGE] HP e corrupção pós-combate persistidos.",
+            LogCategory.Player);
     }
 
     /// <summary>
@@ -210,12 +243,6 @@ public sealed class CombatExplorationBridge : MonoBehaviour
 
         var returnFromStaticSpawnContact = _lastCombatWasFromStaticContact;
 
-        loadContext.ApplyCombatOutcomeToSnapshots(
-            _lastBattleState,
-            CombatPartyResolver.GetCombatAllyCharacterNames(),
-            returnToVillage: !_lastBattleAlliesWon && !returnFromStaticSpawnContact,
-            persistToDisk: false);
-
         if (returnFromStaticSpawnContact)
         {
             loadContext.ReturnSnapshotsToResetSpawn();
@@ -231,10 +258,10 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         }
         else if (!_lastBattleAlliesWon)
         {
+            loadContext.ApplyCombatDefeatReturnToVillage();
             _requiresCombatEntryZoneClearance = false;
         }
 
-        _combatReentryBlockedUntil = Time.time + CombatReentryBlockSeconds;
         ClearPendingReturn();
         loadContext.FinishCombatReturnAndLoadExploration(targetSceneName);
         return true;
@@ -261,6 +288,16 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         }
 
         Instance._hasLastCombatEntryPosition = false;
+    }
+
+    private static double ResolvePostCombatCorruptionValue(BattleState battleState)
+    {
+        if (CorruptionManager.Instance != null)
+        {
+            return CorruptionManager.Instance.GetCorruptionValue();
+        }
+
+        return battleState?.CorruptionValue ?? 0d;
     }
 
     private void ClearPendingReturn()

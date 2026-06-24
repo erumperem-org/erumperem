@@ -50,5 +50,21 @@ namespace Erumperem.Characters
 
             return DefaultExplorationState;
         }
+
+        public float GetExplorationMaxHealth(string characterName)
+        {
+            if (TryGetDefinition(characterName, out var definition))
+            {
+                return definition.ExplorationMaxHitPoints;
+            }
+
+            return characterName switch
+            {
+                "Wulfric" => 100f,
+                "Buck" => 200f,
+                "Matsuda" => 100f,
+                _ => 100f,
+            };
+        }
     }
 }

@@ -21,6 +21,11 @@ namespace Erumperem.Characters
         [Header("Exploração")]
         [SerializeField] private PlayableCharacterState defaultExplorationState = PlayableCharacterState.Resting;
 
+        [Header("Exploração — vida")]
+        [Min(1)]
+        [Tooltip("HP máximo no overworld. Combate pode usar combatMaxHitPoints diferente.")]
+        [SerializeField] private int explorationMaxHitPoints = 100;
+
         [Header("Combate")]
         [Min(1)]
         [SerializeField] private int combatMaxHitPoints = 40;
@@ -54,12 +59,18 @@ namespace Erumperem.Characters
         public string CharacterId => characterId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? characterId : displayName;
         public PlayableCharacterState DefaultExplorationState => defaultExplorationState;
+        public int ExplorationMaxHitPoints =>
+            explorationMaxHitPoints > 0 ? explorationMaxHitPoints : combatMaxHitPoints;
+
         public int CombatMaxHitPoints => combatMaxHitPoints;
         public string ProgressionCharacterId => progressionCharacterId;
         public GameObject BattlePrefab => battlePrefab;
         public int BattleFormationRank => battleFormationRank;
 
-        public void ApplyToCombatant(Combatant combatant, bool preserveCurrentHitPoints = false)
+        public void ApplyToCombatant(
+            Combatant combatant,
+            bool preserveCurrentHitPoints = false,
+            bool applyHealth = true)
         {
             CharacterCombatStatApplicator.Apply(
                 combatant,
@@ -72,7 +83,8 @@ namespace Erumperem.Characters
                 blightResistance,
                 stunResistance,
                 elementType,
-                preserveCurrentHitPoints);
+                preserveCurrentHitPoints,
+                applyHealth);
         }
     }
 }

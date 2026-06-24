@@ -17,25 +17,29 @@ namespace Erumperem.Characters
             double blightResistance,
             double stunResistance,
             ElementType elementType,
-            bool preserveCurrentHitPoints = false)
+            bool preserveCurrentHitPoints = false,
+            bool applyHealth = true)
         {
             if (combatant == null)
             {
                 return;
             }
 
-            var maxHitPoints = Mathf.Max(1, combatMaxHitPoints);
-            var currentHitPoints = preserveCurrentHitPoints
-                ? Mathf.Clamp(combatant.Health.CurrentHp, 0, maxHitPoints)
-                : maxHitPoints;
-
-            combatant.Health = new HealthComponent
+            if (applyHealth)
             {
-                MaxHp = maxHitPoints,
-                CurrentHp = currentHitPoints,
-                IsDead = currentHitPoints <= 0,
-                IsDeathblowPending = false,
-            };
+                var maxHitPoints = Mathf.Max(1, combatMaxHitPoints);
+                var currentHitPoints = preserveCurrentHitPoints
+                    ? Mathf.Clamp(combatant.Health.CurrentHp, 0, maxHitPoints)
+                    : maxHitPoints;
+
+                combatant.Health = new HealthComponent
+                {
+                    MaxHp = maxHitPoints,
+                    CurrentHp = currentHitPoints,
+                    IsDead = currentHitPoints <= 0,
+                    IsDeathblowPending = false,
+                };
+            }
 
             combatant.Stats = new StatsComponent
             {

@@ -37,7 +37,6 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     [Header("Taxas")]
     [SerializeField, Min(0f)] private float _baseGainPerSecond = 2f;
     [SerializeField, Min(0f)] private float _gainPerMeterBeyondRadius = 0.5f;
-    [SerializeField, Min(0f)] private float _decayPerSecond = 3f;
 
     [Header("UI")]
     [SerializeField] private Slider _corruptionSlider;
@@ -54,9 +53,41 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     public event Action OnTierMid;
     public event Action OnTierHigh;
 
+    /// <summary>Disparado sempre que o valor de corrupção muda (0–100). A UI reage a este evento.</summary>
+    public event Action<float> OnCorruptionChanged;
+
     // ── Estado interno ────────────────────────────────────────────────────
 
-    public float          Corruption ;
+    private float _corruption;
+
+    /// <summary>
+    /// Valor atual de corrupção (0–100). O setter faz clamp e dispara
+    /// <see cref="OnCorruptionChanged"/> apenas quando o valor muda.
+    /// </summary>
+    public float Corruption
+    {
+        get => _corruption;
+        set
+        {
+            float clampedCorruption = Mathf.Clamp(value, 0f, 100f);
+            if (Mathf.Approximately(_corruption, clampedCorruption))
+            {
+                return;
+            }
+
+            if (clampedCorruption < _corruption)
+            {
+                LoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"[HEAL-DEBUG] [CORRUPTION] Corrupção reduzida {_corruption:F1} → {clampedCorruption:F1}. " +
+                    $"Origem: {ResolveCorruptionCallSiteDescription()}",
+                    LogCategory.Player);
+            }
+
+            _corruption = clampedCorruption;
+            OnCorruptionChanged?.Invoke(_corruption);
+        }
+    }
+
     public CorruptionTier CurrentTier { get; private set; } = CorruptionTier.Low;
 
     private IPlayableCharacter _main;
@@ -80,12 +111,16 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     {
         if (_manager != null)
             _manager.OnMainChanged += HandleMainChanged;
+
+        OnCorruptionChanged += HandleCorruptionChanged;
     }
 
     private void OnDisable()
     {
         if (_manager != null)
             _manager.OnMainChanged -= HandleMainChanged;
+
+        OnCorruptionChanged -= HandleCorruptionChanged;
     }
 
     private void Start()
@@ -101,7 +136,6 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
         if (_main == null || _safeAreaCenter == null) return;
 
         UpdateCorruption();
-        UpdateSlider();
         CheckTierTransition();
     }
 
@@ -157,20 +191,46 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Identifica o primeiro frame da pilha de chamadas fora desta classe,
+    /// para que os logs de redução de corrupção revelem QUEM disparou a alteração.
+    /// </summary>
+    private static string ResolveCorruptionCallSiteDescription()
+    {
+        var stackTrace = new System.Diagnostics.StackTrace(false);
+        for (int frameIndex = 0; frameIndex < stackTrace.FrameCount; frameIndex++)
+        {
+            var callingMethod = stackTrace.GetFrame(frameIndex)?.GetMethod();
+            var declaringType = callingMethod?.DeclaringType;
+            if (declaringType != null && declaringType != typeof(ExplorationCorruptionSystem))
+            {
+                return $"{declaringType.Name}.{callingMethod.Name}";
+            }
+        }
+
+        return "desconhecido";
+    }
+
     // ── Handlers ─────────────────────────────────────────────────────────
 
     private void HandleMainChanged(IPlayableCharacter newMain) => _main = newMain;
+
+    private void HandleCorruptionChanged(float corruptionValue) => UpdateSlider();
 
     // ── Lógica de corrupção ───────────────────────────────────────────────
 
     private void UpdateCorruption()
     {
-        float beyond = DistanceBeyondRadius();
-        float delta  = beyond <= 0f
-            ? -_decayPerSecond * Time.deltaTime
-            : (_baseGainPerSecond + _gainPerMeterBeyondRadius * beyond) * Time.deltaTime;
+        float beyondRadius = DistanceBeyondRadius();
 
-        Corruption = Mathf.Clamp(Corruption + delta, 0f, 100f);
+        // Dentro da área segura não há decaimento: corrupção só é zerada ao entrar na vila.
+        if (beyondRadius <= 0f)
+        {
+            return;
+        }
+
+        float gainPerSecond = _baseGainPerSecond + _gainPerMeterBeyondRadius * beyondRadius;
+        Corruption += gainPerSecond * Time.deltaTime;
     }
 
     private float DistanceBeyondRadius()
@@ -202,7 +262,7 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
 
     private void ApplyCorruption(float value, bool fireEvents)
     {
-        Corruption = Mathf.Clamp(value, 0f, 100f);
+        Corruption = value;
         var tier   = TierFor(Corruption);
         _lastTier  = CurrentTier = tier;
 

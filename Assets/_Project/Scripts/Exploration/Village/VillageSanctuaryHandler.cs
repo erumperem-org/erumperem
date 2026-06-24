@@ -34,10 +34,19 @@ public sealed class VillageSanctuaryHandler : MonoBehaviour
 
     private void HandlePlayerEnteredVillage()
     {
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            "[HEAL-DEBUG] [VILLAGE] HandlePlayerEnteredVillage: iniciando reset de santuário (cura total + corrupção 0).",
+            LogCategory.Player);
+
         if (_corruptionSystem != null)
         {
+            float corruptionBeforeReset = _corruptionSystem.Corruption;
             _corruptionSystem.Corruption = 0f;
             _corruptionSystem.SaveState();
+
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"[HEAL-DEBUG] [VILLAGE] Corrupção zerada {corruptionBeforeReset:F1} → {_corruptionSystem.Corruption:F1}.",
+                LogCategory.Player);
         }
 
         HealPlayableIfPresent(_playableCharactersManager?.Main);
@@ -50,7 +59,7 @@ public sealed class VillageSanctuaryHandler : MonoBehaviour
         }
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
-            "[VILLAGE] Santuário: corrupção zerada e party curada.",
+            "[HEAL-DEBUG] [VILLAGE] Santuário aplicado: corrupção zerada e party curada.",
             LogCategory.Player);
     }
 
@@ -61,6 +70,18 @@ public sealed class VillageSanctuaryHandler : MonoBehaviour
             return;
         }
 
-        concretePlayableCharacter.HealthBar?.HealFull();
+        var healthBar = concretePlayableCharacter.HealthBar;
+        if (healthBar == null)
+        {
+            return;
+        }
+
+        float healthBeforeHeal = healthBar.CurrentHealth;
+        healthBar.HealFull();
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[HEAL-DEBUG] [VILLAGE] '{concretePlayableCharacter.CharacterName}' curado " +
+            $"{healthBeforeHeal} → {healthBar.CurrentHealth}/{healthBar.MaxHealth}.",
+            LogCategory.Player);
     }
 }

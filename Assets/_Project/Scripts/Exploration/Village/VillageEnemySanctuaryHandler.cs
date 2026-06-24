@@ -1,3 +1,4 @@
+using System.Collections;
 using Systems.NPC.Pool;
 using Systems.NPC.Spawner;
 using UnityEngine;
@@ -8,12 +9,15 @@ using UnityEngine;
 /// </summary>
 public sealed class VillageEnemySanctuaryHandler : MonoBehaviour
 {
+    private const float ExitVillageSpawnCooldownSeconds = 3f;
+
     [SerializeField] private NpcEnemySpawner[] _enemySpawners;
     [SerializeField] private NpcEnemyPool _enemyPool;
     [SerializeField] private StaticExplorationEnemyContact[] _staticEnemyContacts;
     [SerializeField] private EnemyCollissionTrigger[] _staticEnemyCollisionTriggers;
 
     private bool _sanctuaryActive;
+    private Coroutine _exitVillageSpawnCooldownCoroutine;
 
     private void Awake()
     {
@@ -35,6 +39,8 @@ public sealed class VillageEnemySanctuaryHandler : MonoBehaviour
     {
         ExplorationVillageEvents.OnPlayerEnteredVillage -= ActivateVillageSanctuary;
         ExplorationVillageEvents.OnPlayerExitedVillage -= DeactivateVillageSanctuary;
+
+        CancelPendingExitVillageSpawnCooldown();
     }
 
     private void ResolveDependencies()
@@ -72,6 +78,7 @@ public sealed class VillageEnemySanctuaryHandler : MonoBehaviour
         }
 
         _sanctuaryActive = true;
+        CancelPendingExitVillageSpawnCooldown();
         ResolveDependencies();
 
         if (_enemySpawners != null)
@@ -105,6 +112,22 @@ public sealed class VillageEnemySanctuaryHandler : MonoBehaviour
             return;
         }
 
+        // Atrasa o respawn ao sair da vila; cancelado se o jogador reentrar antes do cooldown.
+        CancelPendingExitVillageSpawnCooldown();
+        _exitVillageSpawnCooldownCoroutine = StartCoroutine(StartSpawningAfterExitVillageCooldown());
+    }
+
+    private IEnumerator StartSpawningAfterExitVillageCooldown()
+    {
+        yield return new WaitForSeconds(ExitVillageSpawnCooldownSeconds);
+
+        _exitVillageSpawnCooldownCoroutine = null;
+
+        if (_sanctuaryActive || _enemySpawners == null)
+        {
+            yield break;
+        }
+
         for (var spawnerIndex = 0; spawnerIndex < _enemySpawners.Length; spawnerIndex++)
         {
             var enemySpawner = _enemySpawners[spawnerIndex];
@@ -113,6 +136,17 @@ public sealed class VillageEnemySanctuaryHandler : MonoBehaviour
                 enemySpawner.StartSpawning();
             }
         }
+    }
+
+    private void CancelPendingExitVillageSpawnCooldown()
+    {
+        if (_exitVillageSpawnCooldownCoroutine == null)
+        {
+            return;
+        }
+
+        StopCoroutine(_exitVillageSpawnCooldownCoroutine);
+        _exitVillageSpawnCooldownCoroutine = null;
     }
 
     private void SetStaticEnemyContactsEnabled(bool areContactsEnabled)
