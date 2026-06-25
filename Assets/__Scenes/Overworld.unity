@@ -1176,16 +1176,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExplorationCorruptionSystem
   _manager: {fileID: 783874771}
-  _safeAreaCenter: {fileID: 0}
-  _safeAreaRadius: 10
-  _baseGainPerSecond: 2
+  _safeAreaCenter: {fileID: 198571124}
+  _safeAreaRadius: 20
+  _baseGainPerSecond: 0.5
   _gainPerMeterBeyondRadius: 0.5
-  _decayPerSecond: 3
   _corruptionSlider: {fileID: 1119371129}
   _corruptionNumber: {fileID: 1948169271}
   _saveFolderName: Saves
   _saveFileName: corruption_save.json
-  Corruption: 0
 --- !u!1001 &220584351
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10673,6 +10671,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d82766eb596c3f74db8f24793bd45ecd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VillageEnemySanctuaryHandler
+  _enemySpawners: []
+  _enemyPool: {fileID: 0}
+  _staticEnemyContacts: []
+  _staticEnemyCollisionTriggers: []
 --- !u!1 &1803372898 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4016659781743702863, guid: ad16307581b12244ab60d96f05737038, type: 3}
