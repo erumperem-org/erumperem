@@ -1,3 +1,4 @@
+using Game.Core.Diagnostics;
 using Game.Core.Domain;
 using Game.Core.Models;
 
@@ -263,21 +264,10 @@ public static class PassiveRuleApplier
                 case PassiveEffectKind.ExtraHealPercentOnSelfSkill:
                     if (skill.TargetKind != SkillTargetKind.Self || def.SkillId != skill.Id) break;
                     if (def.Additive <= 0) break;
-                    var heal = (int)Math.Round(actor.Health.MaxHp * def.Additive / 100.0);
-                    var beforeHeal = actor.Health.CurrentHp;
-                    actor.Health.CurrentHp = Math.Min(actor.Health.MaxHp, actor.Health.CurrentHp + heal);
-                    var appliedHeal = actor.Health.CurrentHp - beforeHeal;
-                    narrativeNotes?.Add(
-                        new PassiveCombatNote(
-                            def.Id,
-                            def.EffectKind,
-                            def.Additive,
-                            def.SkillId,
-                            null,
-                            null,
-                            0,
-                            appliedHeal,
-                            0));
+                    HealDebugTrace.Log(
+                        $"[FORBIDDEN] [COMBAT] Passiva ExtraHealPercentOnSelfSkill ignorada passive='{def.Id}' " +
+                        $"skill='{skill.Id}' ally='{actor.Identity.Id}' percent={def.Additive}. " +
+                        "Cura de HP só é permitida pelo Main após 3s na vila.");
                     break;
             }
         }

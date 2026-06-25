@@ -1,5 +1,6 @@
 using Game.Core.Domain;
 using Game.Core.Models;
+using Services.DebugUtilities;
 using UnityEngine;
 
 namespace Erumperem.Characters
@@ -28,6 +29,8 @@ namespace Erumperem.Characters
             if (applyHealth)
             {
                 var maxHitPoints = Mathf.Max(1, combatMaxHitPoints);
+                var previousHitPoints = combatant.Health.CurrentHp;
+                var previousMaxHitPoints = combatant.Health.MaxHp;
                 var currentHitPoints = preserveCurrentHitPoints
                     ? Mathf.Clamp(combatant.Health.CurrentHp, 0, maxHitPoints)
                     : maxHitPoints;
@@ -39,6 +42,15 @@ namespace Erumperem.Characters
                     IsDead = currentHitPoints <= 0,
                     IsDeathblowPending = false,
                 };
+
+                if (combatant.Identity.Faction == Faction.Player && currentHitPoints > previousHitPoints)
+                {
+                    LoggerService.PrintLogMessage(LogLevel.Debug,
+                        $"[HEAL-DEBUG] [COMBAT-STATS] '{displayName}' HP aumentou " +
+                        $"{previousHitPoints}/{previousMaxHitPoints} → {currentHitPoints}/{maxHitPoints} " +
+                        $"(preserveCurrent={preserveCurrentHitPoints}, applyHealth={applyHealth}).",
+                        LogCategory.Player);
+                }
             }
 
             combatant.Stats = new StatsComponent

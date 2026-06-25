@@ -136,10 +136,10 @@ namespace Erumperem.Combat
                         bits.Add($"{effectOnHit.Token.Value} x{effectOnHit.Stacks}");
                         break;
                     case EffectType.HealHp:
-                        bits.Add($"cura {effectOnHit.Potency} HP");
+                        bits.Add($"cura bloqueada fora da vila ({effectOnHit.Potency} HP)");
                         break;
                     case EffectType.HealHpPercent:
-                        bits.Add($"cura {effectOnHit.Potency}% HP");
+                        bits.Add($"cura bloqueada fora da vila ({effectOnHit.Potency}% HP)");
                         break;
                     case EffectType.ApplyStun:
                         bits.Add("stun");

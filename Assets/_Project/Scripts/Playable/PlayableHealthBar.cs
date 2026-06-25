@@ -59,18 +59,26 @@ public sealed class PlayableHealthBar
     {
         if (amount <= 0f) return;
 
-        LoggerService.PrintLogMessage(LogLevel.Debug,
-            $"[HEAL-DEBUG] Heal({amount}) chamado. HP atual {CurrentHealth}/{MaxHealth}. Origem: {ResolveCallSiteDescription()}",
+        LoggerService.PrintLogMessage(LogLevel.Warning,
+            $"[HEAL-DEBUG] [FORBIDDEN] Heal({amount}) bloqueado. HP atual {CurrentHealth}/{MaxHealth}. " +
+            $"Cura de gameplay só é permitida pelo Main após 3s na vila. Origem: {ResolveCallSiteDescription()}",
             LogCategory.Player);
-
-        SetHealth(CurrentHealth + amount);
     }
 
     /// <summary>Cura até o HP máximo.</summary>
     public void HealFull()
     {
+        LoggerService.PrintLogMessage(LogLevel.Warning,
+            $"[HEAL-DEBUG] [FORBIDDEN] HealFull() bloqueado. HP atual {CurrentHealth}/{MaxHealth}. " +
+            $"Cura de gameplay só é permitida pelo Main após 3s na vila. Origem: {ResolveCallSiteDescription()}",
+            LogCategory.Player);
+    }
+
+    /// <summary>Cura autorizada pelo santuário: Main permaneceu tempo suficiente dentro da vila.</summary>
+    public void HealFullFromVillageSanctuary()
+    {
         LoggerService.PrintLogMessage(LogLevel.Debug,
-            $"[HEAL-DEBUG] HealFull() chamado. HP atual {CurrentHealth}/{MaxHealth} → cheio. Origem: {ResolveCallSiteDescription()}",
+            $"[HEAL-DEBUG] [VILLAGE] HealFullFromVillageSanctuary() {CurrentHealth}/{MaxHealth} → cheio.",
             LogCategory.Player);
 
         SetHealth(MaxHealth);
@@ -96,6 +104,31 @@ public sealed class PlayableHealthBar
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
             $"[HEAL-DEBUG] RestoreFromSnapshot {previousHealth} → {CurrentHealth}/{MaxHealth}. " +
+            $"Origem: {ResolveCallSiteDescription()}",
+            LogCategory.Player);
+
+        OnHealthChanged?.Invoke(previousHealth, CurrentHealth, MaxHealth);
+
+        if (CurrentHealth <= 0f)
+        {
+            OnHealthEmpty?.Invoke();
+        }
+    }
+
+    /// <summary>Aplica HP inicial/default sem passar pela API de cura de gameplay.</summary>
+    public void RestoreForInitialization(float initialCurrentHealth)
+    {
+        float previousHealth = CurrentHealth;
+        float clampedHealth = Mathf.Clamp(initialCurrentHealth, 0f, MaxHealth);
+        CurrentHealth = clampedHealth;
+
+        if (Mathf.Approximately(previousHealth, CurrentHealth))
+        {
+            return;
+        }
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[HEAL-DEBUG] RestoreForInitialization {previousHealth} → {CurrentHealth}/{MaxHealth}. " +
             $"Origem: {ResolveCallSiteDescription()}",
             LogCategory.Player);
 
