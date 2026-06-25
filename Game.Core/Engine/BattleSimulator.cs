@@ -1,6 +1,7 @@
 using Game.Core.Abstractions;
 using Game.Core.Analytics;
 using Game.Core.Config;
+using Game.Core.Diagnostics;
 using Game.Core.Domain;
 using Game.Core.Models;
 using Game.Core.Passives;
@@ -677,15 +678,28 @@ public sealed class BattleSimulator
                     break;
                 case EffectType.HealHp:
                 {
-                    var whom = skill.TargetKind == SkillTargetKind.Enemy ? actor : target;
-                    whom.Health.CurrentHp = Math.Min(whom.Health.MaxHp, whom.Health.CurrentHp + Math.Max(0, effect.Potency));
+                    var blockedHealTarget = skill.TargetKind == SkillTargetKind.Enemy ? actor : target;
+                    var healPotency = Math.Max(0, effect.Potency);
+                    if (healPotency > 0)
+                    {
+                        HealDebugTrace.Log(
+                            $"[FORBIDDEN] [COMBAT] HealHp ignorado skill='{skill.Id}' actor='{actor.Identity.Id}' " +
+                            $"target='{blockedHealTarget.Identity.Id}' potency={healPotency}. " +
+                            "Cura de HP só é permitida pelo Main após 3s na vila.");
+                    }
                     break;
                 }
                 case EffectType.HealHpPercent:
                 {
-                    var whom = skill.TargetKind == SkillTargetKind.Enemy ? actor : target;
-                    var healAmt = (int)Math.Round(whom.Health.MaxHp * Math.Max(0, effect.Potency) / 100.0);
-                    whom.Health.CurrentHp = Math.Min(whom.Health.MaxHp, whom.Health.CurrentHp + healAmt);
+                    var blockedHealTarget = skill.TargetKind == SkillTargetKind.Enemy ? actor : target;
+                    var healPercent = Math.Max(0, effect.Potency);
+                    if (healPercent > 0)
+                    {
+                        HealDebugTrace.Log(
+                            $"[FORBIDDEN] [COMBAT] HealHpPercent ignorado skill='{skill.Id}' actor='{actor.Identity.Id}' " +
+                            $"target='{blockedHealTarget.Identity.Id}' percent={healPercent}. " +
+                            "Cura de HP só é permitida pelo Main após 3s na vila.");
+                    }
                     break;
                 }
                 case EffectType.ApplyStun:
@@ -901,8 +915,17 @@ public sealed class BattleSimulator
             return;
         }
 
-        var tierBeforeAdjustment = CorruptionTierCalculator.GetTier(state.CorruptionValue);
-        state.CorruptionValue = Math.Max(CorruptionRules.MinCorruptionValue, state.CorruptionValue + delta);
+        if (delta < 0)
+        {
+            HealDebugTrace.Log(
+                $"[FORBIDDEN] [COMBAT] Redução de corrupção ignorada actor='{actorId}' skill='{skillId}' " +
+                $"Δ{delta:F2}. Corrupção só zera pelo Main após 3s na vila.");
+            return;
+        }
+
+        var corruptionBeforeDelta = state.CorruptionValue;
+        var tierBeforeAdjustment = CorruptionTierCalculator.GetTier(corruptionBeforeDelta);
+        state.CorruptionValue = Math.Max(CorruptionRules.MinCorruptionValue, corruptionBeforeDelta + delta);
 
         Emit(
             state,

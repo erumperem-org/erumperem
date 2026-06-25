@@ -2,6 +2,7 @@ using System;
 using Game.Core.Analytics;
 using Game.Core.Config;
 using Game.Core.Domain;
+using Services.DebugUtilities;
 using UnityEngine;
 
 namespace Erumperem.Combat
@@ -45,8 +46,18 @@ namespace Erumperem.Combat
 
         public void SetCorruptionValue(double value)
         {
-            var tierBefore = CorruptionTierCalculator.GetTier(mirrorCorruptionValue);
+            var corruptionBefore = mirrorCorruptionValue;
+            var tierBefore = CorruptionTierCalculator.GetTier(corruptionBefore);
             mirrorCorruptionValue = Math.Max(CorruptionRules.MinCorruptionValue, value);
+
+            if (mirrorCorruptionValue < corruptionBefore - 1e-6)
+            {
+                LoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"[HEAL-DEBUG] [CORRUPTION-MIRROR] Corrupção reduzida {corruptionBefore:F2} → {mirrorCorruptionValue:F2}. " +
+                    $"Origem: {ResolveCorruptionCallSiteDescription()}",
+                    LogCategory.Player);
+            }
+
             OnMirrorCorruptionValueChanged?.Invoke(mirrorCorruptionValue);
             var tierAfter = CorruptionTierCalculator.GetTier(mirrorCorruptionValue);
             if (tierBefore != tierAfter)
@@ -65,7 +76,17 @@ namespace Erumperem.Combat
                 return;
             }
 
+            var corruptionBefore = mirrorCorruptionValue;
             mirrorCorruptionValue = combatEvent.CorruptionValue;
+
+            if (mirrorCorruptionValue < corruptionBefore - 1e-6)
+            {
+                LoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"[HEAL-DEBUG] [CORRUPTION-MIRROR] Corrupção reduzida em combate {corruptionBefore:F2} → {mirrorCorruptionValue:F2} " +
+                    $"(Δ{combatEvent.CorruptionDelta:F2}, skill='{combatEvent.SkillId}', actor='{combatEvent.ActorId}').",
+                    LogCategory.Player);
+            }
+
             OnMirrorCorruptionValueChanged?.Invoke(mirrorCorruptionValue);
 
             if (combatEvent.PreviousCorruptionTier.HasValue &&
@@ -73,6 +94,22 @@ namespace Erumperem.Combat
             {
                 OnCorruptionTierChanged?.Invoke(combatEvent.PreviousCorruptionTier.Value, combatEvent.CorruptionTier);
             }
+        }
+
+        private static string ResolveCorruptionCallSiteDescription()
+        {
+            var stackTrace = new System.Diagnostics.StackTrace(false);
+            for (int frameIndex = 0; frameIndex < stackTrace.FrameCount; frameIndex++)
+            {
+                var callingMethod = stackTrace.GetFrame(frameIndex)?.GetMethod();
+                var declaringType = callingMethod?.DeclaringType;
+                if (declaringType != null && declaringType != typeof(CorruptionManager))
+                {
+                    return $"{declaringType.Name}.{callingMethod.Name}";
+                }
+            }
+
+            return "desconhecido";
         }
     }
 }

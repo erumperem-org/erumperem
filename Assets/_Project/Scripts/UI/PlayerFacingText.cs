@@ -182,7 +182,8 @@ namespace Erumperem.UI
                     $"{(def.TokenType.HasValue ? FormatTokenTypeDisplayName(def.TokenType.Value) : "ficha")}.",
 
                 PassiveEffectKind.ExtraHealPercentOnSelfSkill =>
-                    $"Ao usar {skillRef} em si mesmo, recupera {FormatPlainPercent(def.Additive)} do HP máximo.",
+                    $"Ao usar {skillRef} em si mesmo, tentaria recuperar {FormatPlainPercent(def.Additive)} do HP máximo, " +
+                    "mas cura é bloqueada fora da vila.",
 
                 PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot =>
                     FormatApplyExtraDot(def, skillRef, dotName),
@@ -341,7 +342,7 @@ namespace Erumperem.UI
                 PassiveEffectKind.ExtraTokenOnSelfSkill =>
                     "Ganha tokens extras ao usar certas habilidades em si mesmo.",
                 PassiveEffectKind.ExtraHealPercentOnSelfSkill =>
-                    "Cura uma porcentagem do seu HP máximo ao usar certas habilidades em si mesmo.",
+                    "Cura bloqueada fora da vila; HP só é recuperado pelo Main após 3 segundos na área da vila.",
                 PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot =>
                     "Aplica dano contínuo extra quando o alvo já sofre de um DoT.",
                 PassiveEffectKind.DotTickDamageBonusWhenTargetHpBelow =>
@@ -401,9 +402,9 @@ namespace Erumperem.UI
                 PassiveEffectKind.IncomingDamageMultiplierWhenHpBelow =>
                     $"Passiva «{passiveLabel}»: dano recebido ×{FormatMultiplier(combatEvent.PassiveMagnitude)} (HP baixo).",
                 PassiveEffectKind.ExtraHealPercentOnSelfSkill when combatEvent.PassiveAuxInt > 0 =>
-                    $"Passiva «{passiveLabel}»: +{combatEvent.PassiveAuxInt} PV ({bonusPct} do máximo).",
+                    $"Passiva «{passiveLabel}»: cura bloqueada fora da vila ({combatEvent.PassiveAuxInt} PV, {bonusPct} do máximo).",
                 PassiveEffectKind.ExtraHealPercentOnSelfSkill =>
-                    $"Passiva «{passiveLabel}»: cura extra ({bonusPct} do máximo).",
+                    $"Passiva «{passiveLabel}»: cura bloqueada fora da vila ({bonusPct} do máximo).",
                 _ =>
                     $"Passiva «{passiveLabel}»: {DescribePassiveEffectKind(kind)}",
             };

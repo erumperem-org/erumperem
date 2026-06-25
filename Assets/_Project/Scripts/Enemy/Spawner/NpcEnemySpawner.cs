@@ -114,9 +114,14 @@ namespace Systems.NPC.Spawner
                 yield return new WaitForSeconds(_respawnDelay);
 
             if (!_isRunning || !isActiveAndEnabled) yield break;
+            if (IsMonsterSpawnBlocked()) yield break;
             if (_pool != null && _pool.HasAvailable)
                 SpawnOne();
         }
+
+        private static bool IsMonsterSpawnBlocked() =>
+            CombatExplorationBridge.IsMonsterSpawnBlocked ||
+            CombatExplorationBridge.AreExplorationCombatContactsBlocked;
 
         // ── Loop periódico ────────────────────────────────────────────────
 
@@ -129,6 +134,16 @@ namespace Systems.NPC.Spawner
 
             if (!s_hasCompletedInitialSpawnFill)
             {
+                while (_isRunning && IsMonsterSpawnBlocked())
+                {
+                    yield return null;
+                }
+
+                if (!_isRunning)
+                {
+                    yield break;
+                }
+
                 SpawnOneAtEachSpawnPoint();
                 s_hasCompletedInitialSpawnFill = true;
             }
@@ -145,6 +160,7 @@ namespace Systems.NPC.Spawner
         /// </summary>
         private void SpawnOneAtEachSpawnPoint()
         {
+            if (IsMonsterSpawnBlocked()) return;
             if (!_isRunning || !isActiveAndEnabled) return;
             if (_builder == null || _pool == null) return;
 
@@ -161,6 +177,7 @@ namespace Systems.NPC.Spawner
 
         private void SpawnOne()
         {
+            if (IsMonsterSpawnBlocked()) return;
             if (_builder == null || _pool == null || !_pool.HasAvailable) return;
 
             var point = _selector?.Next();
@@ -177,6 +194,7 @@ namespace Systems.NPC.Spawner
 
         private void ExecuteSpawnBatch()
         {
+            if (IsMonsterSpawnBlocked()) return;
             if (!_isRunning || !isActiveAndEnabled) return;
             if (_builder == null || _pool == null) return;
 

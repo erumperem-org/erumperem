@@ -18052,6 +18052,7 @@ GameObject:
   - component: {fileID: 8100000000000000002}
   - component: {fileID: 8100000000000000003}
   - component: {fileID: 267978060972295176}
+  - component: {fileID: 1800000010}
   m_Layer: 0
   m_Name: CombatLogic
   m_TagString: Untagged
@@ -18097,11 +18098,12 @@ MonoBehaviour:
   - {fileID: 2892356657232757551}
   spawnEnemyModelsFromCatalog: 1
   enemyVisualSpawnCatalog: {fileID: 11400000, guid: 9d1aa7118ab4b2f449f1ff49ea6461cb, type: 2}
+  allyCharacterStatCatalog: {fileID: 11400000, guid: aabbcc11dd22ee33ff44556677889900, type: 2}
+  enemyCharacterStatCatalog: {fileID: 11400000, guid: bbcc11dd22ee33ff4455667788990011, type: 2}
   syncHpAsVerticalScale: 0
   logEventsToConsole: 1
   forceAlliesInitiativeFirst: 0
   _progressionService: {fileID: 267978060972295176}
-  _progressionCharacterId: wulfric
   _devUnlockAllPassives: 0
   _skillTreeAuthoringAssets:
   - {fileID: 11400000, guid: bcf74d0508471f74890676505eeeb9c3, type: 2}
@@ -18218,6 +18220,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Progression.PlayerProgressionService
   _skillTreesResourceRelativePath: Data/skill_trees.json
   _maxSkillPoints: 12
+--- !u!114 &1800000010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6656784344468029839}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71e9f7b34f0d86d46bc30a5250607b5c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CorruptionManager
+  mirrorCorruptionValue: 0
 --- !u!1 &6731093102713405720
 GameObject:
   m_ObjectHideFlags: 0

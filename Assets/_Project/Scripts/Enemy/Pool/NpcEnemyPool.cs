@@ -118,6 +118,19 @@ namespace Systems.NPC.Pool
             OnNpcReturned?.Invoke();
         }
 
+        public void ReturnAllActive()
+        {
+            var activeEnemies = new List<NpcEnemy>(_active);
+            for (var activeEnemyIndex = 0; activeEnemyIndex < activeEnemies.Count; activeEnemyIndex++)
+            {
+                var activeEnemy = activeEnemies[activeEnemyIndex];
+                if (activeEnemy != null)
+                {
+                    activeEnemy.ReturnToPool();
+                }
+            }
+        }
+
         // ── PreWarm ───────────────────────────────────────────────────────
 
         private void PrewarmPool()

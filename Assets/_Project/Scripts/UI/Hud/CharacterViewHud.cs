@@ -58,6 +58,7 @@ public sealed class CharacterViewHud : MonoBehaviour
 
     private Action<IPlayableCharacter> _onMainChangedHandler;
     private Action<IPlayableCharacter> _onCompanionChangedHandler;
+    private Action _onExplorationStateAppliedHandler;
 
     // ── Unity lifecycle ───────────────────────────────────────────────────
 
@@ -81,9 +82,11 @@ public sealed class CharacterViewHud : MonoBehaviour
 
         _onMainChangedHandler      ??= _ => RefreshAll();
         _onCompanionChangedHandler ??= _ => RefreshAll();
+        _onExplorationStateAppliedHandler ??= RefreshAll;
 
         _manager.OnMainChanged      += _onMainChangedHandler;
         _manager.OnCompanionChanged += _onCompanionChangedHandler;
+        ExplorationLoadContext.OnExplorationStateApplied += _onExplorationStateAppliedHandler;
         RefreshAll();
     }
 
@@ -97,6 +100,11 @@ public sealed class CharacterViewHud : MonoBehaviour
                 _manager.OnMainChanged -= _onMainChangedHandler;
             if (_onCompanionChangedHandler != null)
                 _manager.OnCompanionChanged -= _onCompanionChangedHandler;
+        }
+
+        if (_onExplorationStateAppliedHandler != null)
+        {
+            ExplorationLoadContext.OnExplorationStateApplied -= _onExplorationStateAppliedHandler;
         }
 
         if (_slots == null) return;

@@ -843,7 +843,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c383aab70cf2d5f4eb3be2fcf7ae4d4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScavengerShop
-  skillTreePanel: {fileID: 100687787}
+  skillTreePanel: {fileID: 0}
 --- !u!4 &166052072
 Transform:
   m_ObjectHideFlags: 0
@@ -8186,6 +8186,8 @@ GameObject:
   - component: {fileID: 1263911525}
   - component: {fileID: 1263911527}
   - component: {fileID: 1263911526}
+  - component: {fileID: 1800000005}
+  - component: {fileID: 1800000006}
   m_Layer: 0
   m_Name: Exploration
   m_TagString: Untagged
@@ -8223,17 +8225,18 @@ MonoBehaviour:
   _explorationSceneName: Overworld
   _defaultSetups:
   - Character: {fileID: 1927338037}
-    InitialState: 3
+    InitialState: 1
     MaxHealth: 100
     StartingHealth: 100
   - Character: {fileID: 2094760528}
-    InitialState: 3
+    InitialState: 2
     MaxHealth: 200
     StartingHealth: 200
   - Character: {fileID: 631275790}
-    InitialState: 1
+    InitialState: 3
     MaxHealth: 100
-    StartingHealth: 30
+    StartingHealth: 100
+  _allyCharacterStatCatalog: {fileID: 11400000, guid: aabbcc11dd22ee33ff44556677889900, type: 2}
   _corruptionSystem: {fileID: 198571126}
   _saveFileName: exploration_save.json
   _saveFolderName: Saves
@@ -8371,6 +8374,7 @@ Transform:
   - {fileID: 1153160289}
   - {fileID: 1293477789}
   - {fileID: 1900462684}
+  - {fileID: 1800000002}
   m_Father: {fileID: 1145353128}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1327613204 stripped
@@ -10576,6 +10580,99 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1782132722}
   m_CullTransparentMesh: 1
+--- !u!1 &1800000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1800000002}
+  - component: {fileID: 1800000003}
+  - component: {fileID: 1800000004}
+  m_Layer: 0
+  m_Name: VillageArea
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1800000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1800000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.7, y: 0, z: -3}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1315741654}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!135 &1800000003
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1800000001}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 20
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1800000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1800000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a2b3c4d5e6f708192a3b4c5d6e7f809, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VillageArea
+  _playableCharactersManager: {fileID: 783874771}
+--- !u!114 &1800000005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1263911524}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b3c4d5e6f708192a3b4c5d6e7f8091a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VillageSanctuaryHandler
+  _playableCharactersManager: {fileID: 783874771}
+  _corruptionSystem: {fileID: 198571126}
+--- !u!114 &1800000006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1263911524}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d82766eb596c3f74db8f24793bd45ecd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VillageEnemySanctuaryHandler
 --- !u!1 &1803372898 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4016659781743702863, guid: ad16307581b12244ab60d96f05737038, type: 3}
@@ -11397,15 +11494,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6718293847561029483, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6718293847561029483, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6718293847561029483, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.5
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6718293847561029483, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
       propertyPath: m_ConstrainProportionsScale
@@ -11790,6 +11887,10 @@ PrefabInstance:
     - target: {fileID: 6470360370982801196, guid: ae08eb99b18dc624a8dace5cd3813983, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6479019863842214678, guid: ae08eb99b18dc624a8dace5cd3813983, type: 3}
+      propertyPath: m_Name
+      value: CorruptionSlider
       objectReference: {fileID: 0}
     - target: {fileID: 6831031777870826537, guid: ae08eb99b18dc624a8dace5cd3813983, type: 3}
       propertyPath: m_AnchorMax.y
