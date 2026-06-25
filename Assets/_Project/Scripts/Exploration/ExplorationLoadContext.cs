@@ -13,12 +13,12 @@ using UnityEngine.SceneManagement;
 [Serializable]
 public sealed class PlayableCharacterSnapshot
 {
-    public string                 CharacterName;
-    public Vector3                Position;
-    public Quaternion             Rotation;
+    public string CharacterName;
+    public Vector3 Position;
+    public Quaternion Rotation;
     public PlayableCharacterState State;
-    public float                  CurrentHealth;
-    public float                  MaxHealth;
+    public float CurrentHealth;
+    public float MaxHealth;
 
     public PlayableCharacterSnapshot(
         string name, Vector3 pos, Quaternion rot,
@@ -26,11 +26,11 @@ public sealed class PlayableCharacterSnapshot
         float currentHealth, float maxHealth)
     {
         CharacterName = name;
-        Position      = pos;
-        Rotation      = rot;
-        State         = state;
+        Position = pos;
+        Rotation = rot;
+        State = state;
         CurrentHealth = currentHealth;
-        MaxHealth     = maxHealth;
+        MaxHealth = maxHealth;
     }
 }
 
@@ -52,7 +52,7 @@ public readonly struct ExplorationHealthSnapshot
     public ExplorationHealthSnapshot(float currentHealth, float maxHealth)
     {
         CurrentHealth = currentHealth;
-        MaxHealth     = maxHealth;
+        MaxHealth = maxHealth;
     }
 }
 
@@ -61,7 +61,7 @@ public readonly struct ExplorationHealthSnapshot
 [Serializable]
 public struct DefaultCharacterSetup
 {
-    public PlayableCharacter      Character;
+    public PlayableCharacter Character;
     public PlayableCharacterState InitialState;
 
     [Tooltip("HP máximo inicial do personagem.")]
@@ -106,7 +106,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     [SerializeField] private ExplorationCorruptionSystem _corruptionSystem;
 
     [Header("IO Settings")]
-    [SerializeField] private string _saveFileName   = "exploration_save.json";
+    [SerializeField] private string _saveFileName = "exploration_save.json";
     [SerializeField] private string _saveFolderName = "Saves";
 
     [Header("Reset")]
@@ -133,12 +133,12 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     // ── Estado interno ────────────────────────────────────────────────────
 
     private List<PlayableCharacterSnapshot> _snapshots = new();
-    private bool   _hasSave;
-    private bool   _preferInMemorySnapshotsOnNextRestore;
-    private bool   _restoreStateInProgress;
+    private bool _hasSave;
+    private bool _preferInMemorySnapshotsOnNextRestore;
+    private bool _restoreStateInProgress;
     private string _saveDirectory;
-    private float  _savedCorruptionValue;
-    private float  _corruptionAtCombatEntry;
+    private float _savedCorruptionValue;
+    private float _corruptionAtCombatEntry;
     private readonly Dictionary<string, ExplorationHealthSnapshot> _healthSnapshotAtCombatEntry =
         new(StringComparer.OrdinalIgnoreCase);
 
@@ -150,7 +150,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     [Serializable]
     private struct VillageSpawnSnapshot
     {
-        public Vector3    Position;
+        public Vector3 Position;
         public Quaternion Rotation;
     }
 
@@ -176,7 +176,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         }
     }
 
-    private void OnEnable()  => SceneManager.sceneLoaded += OnSceneLoaded;
+    private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
     private void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
 
     private void Start()
@@ -719,10 +719,10 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         {
             var saveData = new SnapshotSaveData
             {
-                Snapshots       = _snapshots,
+                Snapshots = _snapshots,
                 CorruptionValue = _savedCorruptionValue,
             };
-            string json  = JsonUtility.ToJson(saveData, prettyPrint: true);
+            string json = JsonUtility.ToJson(saveData, prettyPrint: true);
 
             var fileData = new FileData(json, _saveFileName, _saveDirectory);
             await _fileService.WriteAsync(fileData);
@@ -745,7 +745,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             if (!exists)
             {
                 _snapshots.Clear();
-                _hasSave              = false;
+                _hasSave = false;
                 _savedCorruptionValue = 0f;
                 LoggerService.PrintLogMessage(LogLevel.Debug,
                     "[LOAD] Nenhum arquivo de save encontrado.", LogCategory.Player);
@@ -757,9 +757,9 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
             if (saveData?.Snapshots != null && saveData.Snapshots.Count > 0)
             {
-                _snapshots            = saveData.Snapshots;
+                _snapshots = saveData.Snapshots;
                 _savedCorruptionValue = saveData.CorruptionValue;
-                _hasSave              = true;
+                _hasSave = true;
 
                 LoggerService.PrintLogMessage(LogLevel.Debug,
                     $"[LOAD] {_snapshots.Count} snapshots carregados de '{fileData.FullPath}'.",
@@ -768,7 +768,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             else
             {
                 _snapshots.Clear();
-                _hasSave              = false;
+                _hasSave = false;
                 _savedCorruptionValue = 0f;
             }
         }
@@ -1181,10 +1181,10 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     {
         return initialState switch
         {
-            PlayableCharacterState.Main      => 0,
+            PlayableCharacterState.Main => 0,
             PlayableCharacterState.Companion => 1,
-            PlayableCharacterState.Resting   => 2,
-            _                                => 3,
+            PlayableCharacterState.Resting => 2,
+            _ => 3,
         };
     }
 
@@ -1287,4 +1287,73 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
         return true;
     }
+
+    /// <summary>
+    /// Atualiza apenas o valor de vida a partir do SO: lê definition.currentHitPoints
+    /// e persiste esse valor no snapshot/arquivo de save correspondente ao CharacterId,
+    /// sem depender de cena, manager ou HealthBar. Usado em cena separada (ex.: menu/loja).
+    /// </summary>
+    public async Task SaveLifeFromDefinitionAsync(AllyCharacterStatDefinition definition)
+    {
+        if (definition == null)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[SAVE-LIFE] Definition nula — nada a salvar.", LogCategory.Player);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(definition.CharacterId))
+        {
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[SAVE-LIFE] Definition sem CharacterId — nada a salvar.", LogCategory.Player);
+            return;
+        }
+
+        // Garante que existe save em memória para editar (carrega do disco se ainda não há).
+        if (!_hasSave)
+        {
+            await LoadFromFileAsync();
+        }
+
+        var currentHealth = (float)definition.currentHitPoints;
+        var maxHealth = (float)definition.MaxHitPoints;
+
+        var explorationHealth = ResolveExplorationHealthForSnapshot(
+            definition.CharacterId,
+            currentHealth,
+            maxHealth);
+
+        var snapshot = _snapshots.Find(s =>
+            string.Equals(s.CharacterName, definition.CharacterId, StringComparison.OrdinalIgnoreCase));
+
+        if (snapshot != null)
+        {
+            snapshot.CurrentHealth = explorationHealth.CurrentHealth;
+            snapshot.MaxHealth = explorationHealth.MaxHealth;
+        }
+        else
+        {
+            // Sem posição/rotação/estado conhecidos nesta cena — usa valores neutros.
+            _snapshots.Add(new PlayableCharacterSnapshot(
+                definition.CharacterId,
+                Vector3.zero,
+                Quaternion.identity,
+                ResolveDefaultExplorationState(definition.CharacterId),
+                explorationHealth.CurrentHealth,
+                explorationHealth.MaxHealth));
+        }
+
+        _hasSave = _snapshots.Count > 0;
+
+        await SaveToFileAsync();
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[SAVE-LIFE] '{definition.CharacterId}' vida sincronizada do SO → " +
+            $"{explorationHealth.CurrentHealth}/{explorationHealth.MaxHealth}.",
+            LogCategory.Player);
+    }
+
+    /// <summary>Wrapper síncrono (fire-and-forget) para chamar de UI/eventos sem await.</summary>
+    public async void SaveLifeFromDefinition(AllyCharacterStatDefinition definition) =>
+        await SaveLifeFromDefinitionAsync(definition);
 }
