@@ -66,11 +66,11 @@ public struct DefaultCharacterSetup
 
     [Tooltip("HP máximo inicial do personagem.")]
     [Min(1f)]
-    public float MaxHealth;
+    public int MaxHealth => Character.definition.ExplorationMaxHitPoints;
 
     [Tooltip("HP corrente inicial. Se zero, iniciará com HP cheio.")]
     [Min(0f)]
-    public float StartingHealth;
+    public float StartingHealth => Character.definition.explorationCurrentHitPoints;
 }
 
 // ── ExplorationLoadContext ────────────────────────────────────────────────────
@@ -265,7 +265,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         foreach (var character in _manager.Playables)
         {
             if (character == null) continue;
-
+            character.definition.explorationCurrentHitPoints = (int)character.HealthBar.CurrentHealth;
             var hp = character.HealthBar;
             if (hp == null)
                 LoggerService.PrintLogMessage(LogLevel.Warning,
@@ -1206,8 +1206,6 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             {
                 Character = playableCharacter,
                 InitialState = ResolveDefaultExplorationState(playableCharacter.CharacterName),
-                MaxHealth = ResolveExplorationMaxHealth(playableCharacter.CharacterName),
-                StartingHealth = ResolveDefaultStartingHealth(playableCharacter.CharacterName),
             });
         }
     }

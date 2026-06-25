@@ -41,7 +41,7 @@ public sealed class PlayableHealthBar
         if (maxHealth <= 0f)
             throw new ArgumentOutOfRangeException(nameof(maxHealth), "HP máximo deve ser maior que zero.");
 
-        MaxHealth     = maxHealth;
+        MaxHealth = maxHealth;
         CurrentHealth = startFull ? maxHealth : 0f;
     }
 
@@ -57,12 +57,10 @@ public sealed class PlayableHealthBar
     /// <summary>Aplica cura (valor positivo aumenta HP, limitado ao máximo).</summary>
     public void Heal(float amount)
     {
-        if (amount <= 0f) return;
+        if (amount <= 0f)
+            return;
 
-        LoggerService.PrintLogMessage(LogLevel.Warning,
-            $"[HEAL-DEBUG] [FORBIDDEN] Heal({amount}) bloqueado. HP atual {CurrentHealth}/{MaxHealth}. " +
-            $"Cura de gameplay só é permitida pelo Main após 3s na vila. Origem: {ResolveCallSiteDescription()}",
-            LogCategory.Player);
+        CurrentHealth = Mathf.Clamp(CurrentHealth + amount, 0f, MaxHealth);
     }
 
     /// <summary>Cura até o HP máximo.</summary>
@@ -162,7 +160,7 @@ public sealed class PlayableHealthBar
     private void SetHealth(float value)
     {
         float previous = CurrentHealth;
-        CurrentHealth  = Mathf.Clamp(value, 0f, MaxHealth);
+        CurrentHealth = Mathf.Clamp(value, 0f, MaxHealth);
 
         // Só dispara evento se houve mudança real.
         if (Mathf.Approximately(previous, CurrentHealth)) return;
