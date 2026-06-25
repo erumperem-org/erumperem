@@ -62,6 +62,9 @@ namespace Systems.NPC.Enemy
             if (CombatExplorationBridge.IsCombatReentryBlocked)
                 return;
 
+            if (CombatExplorationBridge.AreExplorationCombatContactsBlocked)
+                return;
+
             if (ExplorationVillageEvents.IsPlayerInsideVillage)
                 return;
 

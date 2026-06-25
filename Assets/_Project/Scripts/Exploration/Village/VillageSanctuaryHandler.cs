@@ -1,13 +1,19 @@
+using System.Collections;
 using Services.DebugUtilities;
 using UnityEngine;
 
 /// <summary>
-/// Ao entrar na vila: zera corrupção, cura Main e Companion e persiste o save de exploração.
+/// Cura o Main e zera corrupção apenas se ele permanecer na vila por tempo suficiente.
 /// </summary>
 public sealed class VillageSanctuaryHandler : MonoBehaviour
 {
+    private const float RequiredMainStaySeconds = 3f;
+
     [SerializeField] private PlayableCharactersManager _playableCharactersManager;
     [SerializeField] private ExplorationCorruptionSystem _corruptionSystem;
+
+    private Coroutine _pendingVillageHealCoroutine;
+    private PlayableCharacter _pendingMainPlayableCharacter;
 
     private void Awake()
     {
@@ -25,19 +31,77 @@ public sealed class VillageSanctuaryHandler : MonoBehaviour
     private void OnEnable()
     {
         ExplorationVillageEvents.OnPlayerEnteredVillage += HandlePlayerEnteredVillage;
+        ExplorationVillageEvents.OnPlayerExitedVillage += HandlePlayerExitedVillage;
     }
 
     private void OnDisable()
     {
         ExplorationVillageEvents.OnPlayerEnteredVillage -= HandlePlayerEnteredVillage;
+        ExplorationVillageEvents.OnPlayerExitedVillage -= HandlePlayerExitedVillage;
+        CancelPendingVillageHeal("handler desativado");
     }
 
     private void HandlePlayerEnteredVillage()
     {
-        LoggerService.PrintLogMessage(LogLevel.Debug,
-            "[HEAL-DEBUG] [VILLAGE] HandlePlayerEnteredVillage: iniciando reset de santuário (cura total + corrupção 0).",
-            LogCategory.Player);
+        if (_pendingVillageHealCoroutine != null)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                "[HEAL-DEBUG] [VILLAGE] Main já aguarda cura do santuário; evento duplicado ignorado.",
+                LogCategory.Player);
+            return;
+        }
 
+        if (_playableCharactersManager?.Main is not PlayableCharacter mainPlayableCharacter)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[HEAL-DEBUG] [VILLAGE] Entrada na vila ignorada: Main não encontrado.",
+                LogCategory.Player);
+            return;
+        }
+
+        _pendingMainPlayableCharacter = mainPlayableCharacter;
+        _pendingVillageHealCoroutine = StartCoroutine(ApplyVillageHealAfterRequiredStay(mainPlayableCharacter));
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[HEAL-DEBUG] [VILLAGE] Main '{mainPlayableCharacter.CharacterName}' entrou na vila; " +
+            $"cura/corrupção aguardando {RequiredMainStaySeconds:F1}s.",
+            LogCategory.Player);
+    }
+
+    private void HandlePlayerExitedVillage()
+    {
+        CancelPendingVillageHeal("Main saiu da vila antes do tempo");
+    }
+
+    private IEnumerator ApplyVillageHealAfterRequiredStay(PlayableCharacter mainPlayableCharacter)
+    {
+        yield return new WaitForSeconds(RequiredMainStaySeconds);
+
+        _pendingVillageHealCoroutine = null;
+        _pendingMainPlayableCharacter = null;
+
+        if (!ExplorationVillageEvents.IsPlayerInsideVillage)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                "[HEAL-DEBUG] [VILLAGE] Cura cancelada: Main não está mais dentro da vila.",
+                LogCategory.Player);
+            yield break;
+        }
+
+        if (mainPlayableCharacter == null ||
+            !ReferenceEquals(_playableCharactersManager?.Main, mainPlayableCharacter))
+        {
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                "[HEAL-DEBUG] [VILLAGE] Cura cancelada: Main mudou durante a espera.",
+                LogCategory.Player);
+            yield break;
+        }
+
+        ApplyVillageSanctuaryToMain(mainPlayableCharacter);
+    }
+
+    private void ApplyVillageSanctuaryToMain(PlayableCharacter mainPlayableCharacter)
+    {
         if (_corruptionSystem != null)
         {
             float corruptionBeforeReset = _corruptionSystem.Corruption;
@@ -49,8 +113,7 @@ public sealed class VillageSanctuaryHandler : MonoBehaviour
                 LogCategory.Player);
         }
 
-        HealPlayableIfPresent(_playableCharactersManager?.Main);
-        HealPlayableIfPresent(_playableCharactersManager?.Companion);
+        HealMainIfPresent(mainPlayableCharacter);
 
         var loadContext = ExplorationLoadContext.Instance;
         if (loadContext != null)
@@ -59,28 +122,48 @@ public sealed class VillageSanctuaryHandler : MonoBehaviour
         }
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
-            "[HEAL-DEBUG] [VILLAGE] Santuário aplicado: corrupção zerada e party curada.",
+            "[HEAL-DEBUG] [VILLAGE] Santuário aplicado: corrupção zerada e Main curado.",
             LogCategory.Player);
     }
 
-    private static void HealPlayableIfPresent(IPlayableCharacter playableCharacter)
+    private void CancelPendingVillageHeal(string reason)
     {
-        if (playableCharacter is not PlayableCharacter concretePlayableCharacter)
+        if (_pendingVillageHealCoroutine == null)
         {
             return;
         }
 
-        var healthBar = concretePlayableCharacter.HealthBar;
+        StopCoroutine(_pendingVillageHealCoroutine);
+        _pendingVillageHealCoroutine = null;
+
+        var pendingCharacterName = _pendingMainPlayableCharacter != null
+            ? _pendingMainPlayableCharacter.CharacterName
+            : "desconhecido";
+        _pendingMainPlayableCharacter = null;
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[HEAL-DEBUG] [VILLAGE] Cura pendente de '{pendingCharacterName}' cancelada: {reason}.",
+            LogCategory.Player);
+    }
+
+    private static void HealMainIfPresent(PlayableCharacter mainPlayableCharacter)
+    {
+        if (mainPlayableCharacter == null)
+        {
+            return;
+        }
+
+        var healthBar = mainPlayableCharacter.HealthBar;
         if (healthBar == null)
         {
             return;
         }
 
         float healthBeforeHeal = healthBar.CurrentHealth;
-        healthBar.HealFull();
+        healthBar.HealFullFromVillageSanctuary();
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
-            $"[HEAL-DEBUG] [VILLAGE] '{concretePlayableCharacter.CharacterName}' curado " +
+            $"[HEAL-DEBUG] [VILLAGE] Main '{mainPlayableCharacter.CharacterName}' curado " +
             $"{healthBeforeHeal} → {healthBar.CurrentHealth}/{healthBar.MaxHealth}.",
             LogCategory.Player);
     }

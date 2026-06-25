@@ -14,6 +14,7 @@ public sealed class CombatExplorationBridge : MonoBehaviour
 {
     private const float CombatReentryBlockSeconds = 5f;
     private const float PostCombatMonsterSpawnBlockSeconds = 5f;
+    private const float ExplorationSceneCombatContactActivationDelaySeconds = 5f;
     private const float VictoryReturnSeparationFromCombatEntry = 6f;
     public static CombatExplorationBridge Instance { get; private set; }
 
@@ -23,6 +24,10 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     /// <summary>Bloqueia spawn de inimigos no overworld durante alguns segundos após o combate.</summary>
     public static bool IsMonsterSpawnBlocked =>
         Instance != null && Time.time < Instance._monsterSpawnBlockedUntil;
+
+    /// <summary>Bloqueia contatos de combate logo após carregar o overworld.</summary>
+    public static bool AreExplorationCombatContactsBlocked =>
+        Instance != null && Time.time < Instance._explorationCombatContactsBlockedUntil;
 
     /// <summary>
     /// Após combate iniciado por contacto estático, bloqueia reentrada até o jogador sair da zona.
@@ -38,6 +43,7 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     private BattleState _lastBattleState;
     private float _combatReentryBlockedUntil;
     private float _monsterSpawnBlockedUntil;
+    private float _explorationCombatContactsBlockedUntil;
     private bool _hasLastCombatEntryPosition;
     private Vector3 _lastCombatEntryWorldPosition;
     private IReadOnlyList<string> _pendingCombatAllyCharacterNames;
@@ -65,6 +71,18 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     /// <summary>Party [Main, Companion] capturada ao entrar em combate (autoritativa na cena de combate).</summary>
     public IReadOnlyList<string> TryGetPendingCombatAllyCharacterNames() => _pendingCombatAllyCharacterNames;
 
+    public void BlockExplorationCombatContactsAfterSceneLoad()
+    {
+        _explorationCombatContactsBlockedUntil = Mathf.Max(
+            _explorationCombatContactsBlockedUntil,
+            Time.time + ExplorationSceneCombatContactActivationDelaySeconds);
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[COMBAT-BRIDGE] Contatos de combate bloqueados por " +
+            $"{ExplorationSceneCombatContactActivationDelaySeconds:F1}s após load do overworld.",
+            LogCategory.Player);
+    }
+
     /// <summary>Chamado imediatamente antes de carregar a cena de combate.</summary>
     public void NotifyEnteringCombat()
     {
@@ -81,6 +99,7 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         }
 
         ExplorationLoadContext.Instance.SaveState();
+        ExplorationLoadContext.Instance.RememberExplorationStateAtCombatEntry();
         var partyFromSnapshots = ExplorationLoadContext.Instance.GetCombatAllyCharacterNamesFromSnapshots();
         _pendingCombatAllyCharacterNames = CombatPartyResolver.NormalizeCombatParty(partyFromSnapshots);
 
@@ -148,14 +167,18 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             }
 
             var ally = allies[allyIndex];
+            var hitPointsBeforeSeed = ally.Health.CurrentHp;
+            var maxHitPointsBeforeSeed = ally.Health.MaxHp;
             var explorationHealth = loadContext.ResolveExplorationHealthForCombatSeed(
                 characterName,
                 healthSnapshot.CurrentHealth,
                 healthSnapshot.MaxHealth);
 
-            var maxHitPoints = Math.Max(1, Mathf.RoundToInt(explorationHealth.MaxHealth));
+            var maxHitPoints = Math.Max(1, ally.Health.MaxHp);
+            var explorationMaxHealth = Math.Max(1f, explorationHealth.MaxHealth);
+            var savedHealthRatio = Mathf.Clamp01(explorationHealth.CurrentHealth / explorationMaxHealth);
             var currentHitPoints = Mathf.Clamp(
-                Mathf.RoundToInt(explorationHealth.CurrentHealth),
+                Mathf.RoundToInt(maxHitPoints * savedHealthRatio),
                 0,
                 maxHitPoints);
 
@@ -167,9 +190,23 @@ public sealed class CombatExplorationBridge : MonoBehaviour
                 IsDeathblowPending = false,
             };
 
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[COMBAT-BRIDGE] '{characterName}' HP de exploração → {currentHitPoints}/{maxHitPoints}.",
-                LogCategory.Player);
+            if (currentHitPoints > hitPointsBeforeSeed)
+            {
+                LoggerService.PrintLogMessage(LogLevel.Warning,
+                    $"[HEAL-DEBUG] [COMBAT-SEED] '{characterName}' HP SUBIU no seed " +
+                    $"{hitPointsBeforeSeed}/{maxHitPointsBeforeSeed} → {currentHitPoints}/{maxHitPoints} " +
+                    $"(exploração salva: {healthSnapshot.CurrentHealth}/{healthSnapshot.MaxHealth}, " +
+                    $"ratio {savedHealthRatio:P0}).",
+                    LogCategory.Player);
+            }
+            else
+            {
+                LoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"[HEAL-DEBUG] [COMBAT-SEED] '{characterName}' HP seed " +
+                    $"{hitPointsBeforeSeed}/{maxHitPointsBeforeSeed} → {currentHitPoints}/{maxHitPoints} " +
+                    $"(exploração: {healthSnapshot.CurrentHealth}/{healthSnapshot.MaxHealth}, ratio {savedHealthRatio:P0}).",
+                    LogCategory.Player);
+            }
         }
 
         var explorationCorruption = loadContext.GetSavedCorruptionValue();

@@ -199,9 +199,9 @@ public static class SkillPlayerDescriptionBuilder
             EffectType.ApplyDot when effect.Dot.HasValue =>
                 $"{chancePrefix}{FormatDotGrantPhrase(effect, skill, context)}",
             EffectType.HealHpPercent =>
-                $"{chancePrefix}cura {FormatPlainNumber(Math.Max(0, effect.Potency))}% HP",
+                $"{chancePrefix}cura bloqueada fora da vila ({FormatPlainNumber(Math.Max(0, effect.Potency))}% HP)",
             EffectType.HealHp =>
-                $"{chancePrefix}cura {Math.Max(0, effect.Potency)} HP",
+                $"{chancePrefix}cura bloqueada fora da vila ({Math.Max(0, effect.Potency)} HP)",
             EffectType.Push =>
                 $"{chancePrefix}empurra {Math.Max(1, Math.Abs(effect.Steps))} posição",
             EffectType.Pull =>
@@ -311,7 +311,7 @@ public static class SkillPlayerDescriptionBuilder
                 when skill.TargetKind == SkillTargetKind.Self &&
                      string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
                      passiveDefinition.Additive > 0 =>
-                $"passiva: cura +{FormatPlainNumber(passiveDefinition.Additive)}% HP",
+                $"passiva: cura bloqueada fora da vila (+{FormatPlainNumber(passiveDefinition.Additive)}% HP)",
 
             PassiveEffectKind.OutgoingDamageVsSkillId
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&

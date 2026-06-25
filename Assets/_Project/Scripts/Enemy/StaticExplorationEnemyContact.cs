@@ -90,6 +90,7 @@ public sealed class StaticExplorationEnemyContact : MonoBehaviour
     private static bool IsCombatTriggerBlocked()
     {
         return CombatExplorationBridge.IsCombatReentryBlocked
+            || CombatExplorationBridge.AreExplorationCombatContactsBlocked
             || CombatExplorationBridge.RequiresCombatEntryZoneClearance
             || ExplorationVillageEvents.IsPlayerInsideVillage;
     }

@@ -7,6 +7,7 @@ using DG.Tweening;
 using Game.Core.Abstractions;
 using Game.Core.Analytics;
 using Game.Core.Data;
+using Game.Core.Diagnostics;
 using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
@@ -287,6 +288,7 @@ namespace Erumperem.Combat
 
         private void Awake()
         {
+            HealDebugTrace.OnLog = static message => Debug.Log(message);
             _camera = Camera.main;
             if (_camera == null)
             {
@@ -374,6 +376,10 @@ namespace Erumperem.Combat
                 passivesById: passives,
                 unlockAllPassiveNodesForAllies: false);
 
+            ApplyCharacterStatsFromCatalog(
+                partyCharacterNames,
+                applyHealth: true);
+
             var loadContext = ExplorationLoadContext.Instance;
 
             if (loadContext != null)
@@ -381,9 +387,6 @@ namespace Erumperem.Combat
                 CombatExplorationBridge.Instance?.SeedBattleFromExploration(_state);
             }
 
-            ApplyCharacterStatsFromCatalog(
-                partyCharacterNames,
-                applyHealth: loadContext == null);
             ApplyPerAllyLoadoutsAndProgression(
                 partyCharacterNames,
                 skillTreesList,
@@ -408,6 +411,7 @@ namespace Erumperem.Combat
 
         private void OnDisable()
         {
+            HealDebugTrace.OnLog = null;
             UnsubscribeFromInputEvents();
             StopActorActionRock();
             DOTween.Kill(CorruptionPulseTweenId, false);
