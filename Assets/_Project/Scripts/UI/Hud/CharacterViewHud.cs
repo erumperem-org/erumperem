@@ -18,14 +18,14 @@ public sealed class CharacterViewHud : MonoBehaviour
 {
     // ── Tipos ─────────────────────────────────────────────────────────────
 
-    private enum CharacterType { Main, Companion, Resting }
+    public enum CharacterType { Main, Companion, Resting }
 
     /// <summary>
     /// Conjunto de componentes que formam um slot de HUD na cena.
     /// Todos os campos são arrastados pelo inspetor.
     /// </summary>
     [Serializable]
-    private sealed class CharacterSlot
+    public sealed class CharacterSlot
     {
         [Tooltip("Raiz do slot — é ativada/desativada conforme necessário.")]
         public GameObject Root;
@@ -51,18 +51,18 @@ public sealed class CharacterViewHud : MonoBehaviour
     // ── Inspetor ──────────────────────────────────────────────────────────
 
     [Header("Dependências")]
-    [SerializeField] private PlayableCharactersManager _manager;
+    [SerializeField] public PlayableCharactersManager _manager;
 
     [Header("Slots (ordem: Main, Companion, Resting…)")]
-    [SerializeField] private List<CharacterSlot> _slots;
+    [SerializeField] public List<CharacterSlot> _slots;
 
-    private Action<IPlayableCharacter> _onMainChangedHandler;
-    private Action<IPlayableCharacter> _onCompanionChangedHandler;
-    private Action _onExplorationStateAppliedHandler;
+    public Action<IPlayableCharacter> _onMainChangedHandler;
+    public Action<IPlayableCharacter> _onCompanionChangedHandler;
+    public Action _onExplorationStateAppliedHandler;
 
     // ── Unity lifecycle ───────────────────────────────────────────────────
 
-    private void Awake()
+    public void Awake()
     {
         ResolveDependencies();
 
@@ -75,7 +75,7 @@ public sealed class CharacterViewHud : MonoBehaviour
         }
     }
 
-    private void OnEnable()
+    public void OnEnable()
     {
         ResolveDependencies();
         if (_manager == null || _slots == null || _slots.Count == 0) return;
@@ -90,9 +90,9 @@ public sealed class CharacterViewHud : MonoBehaviour
         RefreshAll();
     }
 
-    private void Start() => RefreshAll();
+    public void Start() => RefreshAll();
 
-    private void OnDisable()
+    public void OnDisable()
     {
         if (_manager != null)
         {
@@ -116,7 +116,7 @@ public sealed class CharacterViewHud : MonoBehaviour
         }
     }
 
-    private void ResolveDependencies()
+    public void ResolveDependencies()
     {
         if (_manager == null)
             _manager = FindFirstObjectByType<PlayableCharactersManager>();
@@ -126,7 +126,7 @@ public sealed class CharacterViewHud : MonoBehaviour
         _slots = BuildSlotsFromChildren();
     }
 
-    private List<CharacterSlot> BuildSlotsFromChildren()
+    public List<CharacterSlot> BuildSlotsFromChildren()
     {
         var discoveredSlots = new List<CharacterSlot>();
         var charactersContainer = transform.Find("Characters");
@@ -154,7 +154,7 @@ public sealed class CharacterViewHud : MonoBehaviour
 
     // ── Refresh ───────────────────────────────────────────────────────────
 
-    private void RefreshAll()
+    public void RefreshAll()
     {
         if (_manager == null || _slots == null || _slots.Count == 0) return;
 
@@ -175,7 +175,7 @@ public sealed class CharacterViewHud : MonoBehaviour
     /// <summary>
     /// Ordem: Main → Companion → Resting (sequência original de Playables).
     /// </summary>
-    private List<PlayableCharacter> BuildDisplayOrder()
+    public List<PlayableCharacter> BuildDisplayOrder()
     {
         var result = new List<PlayableCharacter>();
 
@@ -194,7 +194,7 @@ public sealed class CharacterViewHud : MonoBehaviour
 
     // ── Bind / Unbind ─────────────────────────────────────────────────────
 
-    private void BindSlot(CharacterSlot slot, PlayableCharacter character)
+    public void BindSlot(CharacterSlot slot, PlayableCharacter character)
     {
         if (slot == null || character == null) return;
 
@@ -227,14 +227,14 @@ public sealed class CharacterViewHud : MonoBehaviour
         }
     }
 
-    private void HideSlot(CharacterSlot slot)
+    public void HideSlot(CharacterSlot slot)
     {
         UnbindHealth(slot);
         slot.BoundCharacter = null;
         slot.Root?.SetActive(false);
     }
 
-    private void UnbindHealth(CharacterSlot slot)
+    public void UnbindHealth(CharacterSlot slot)
     {
         if (slot.BoundCharacter?.HealthBar != null && slot.HealthHandler != null)
         {
@@ -243,7 +243,7 @@ public sealed class CharacterViewHud : MonoBehaviour
         }
     }
 
-    private static void RefreshHealth(CharacterSlot slot)
+    public static void RefreshHealth(CharacterSlot slot)
     {
         if (slot.HealthBar == null || slot.BoundCharacter?.HealthBar == null) return;
         slot.HealthBar.maxValue = slot.BoundCharacter.HealthBar.MaxHealth;

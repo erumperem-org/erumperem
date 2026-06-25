@@ -30,7 +30,7 @@ public sealed class PlayableCharactersManager : MonoBehaviour
         }
     }
 
-    public IPlayableCharacter Main      { get; private set; }
+    public IPlayableCharacter Main { get; private set; }
     public IPlayableCharacter Companion { get; private set; }
 
     public event Action<IPlayableCharacter> OnMainChanged;
@@ -99,9 +99,9 @@ public sealed class PlayableCharactersManager : MonoBehaviour
         {
             switch (newState)
             {
-                case PlayableCharacterState.Main:      PromoteToMain(character);      break;
+                case PlayableCharacterState.Main: PromoteToMain(character); break;
                 case PlayableCharacterState.Companion: PromoteToCompanion(character); break;
-                case PlayableCharacterState.Resting:   PromoteToResting(character);   break;
+                case PlayableCharacterState.Resting: PromoteToResting(character); break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
             }
@@ -148,6 +148,7 @@ public sealed class PlayableCharactersManager : MonoBehaviour
         next.CurrentState = PlayableCharacterState.Main;
         next.UpdateStateExposed();
         next.DetectionSystem.ClearAvailable();
+        next.definition.battleFormationRank = 1;
         Main = next;
         OnMainChanged?.Invoke(Main);
 
@@ -170,6 +171,7 @@ public sealed class PlayableCharactersManager : MonoBehaviour
         next.CurrentState = PlayableCharacterState.Companion;
         next.UpdateStateExposed();
         Companion = next;
+        next.definition.battleFormationRank = 2;
         OnCompanionChanged?.Invoke(Companion);
     }
 

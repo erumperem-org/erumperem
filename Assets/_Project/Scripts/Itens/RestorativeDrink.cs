@@ -23,14 +23,14 @@ namespace Core.Exploration.Items.Usables
 
         [Tooltip("Quantidade de HP restaurada em cada personagem ativo (Main e Companion).")]
         [Min(1f)]
-        [SerializeField] private float _healAmount = 30f;
+        [SerializeField] private int _healAmount = 30;
 
         // ── IStorageable ──────────────────────────────────────────────────
 
         public StorageMode storageMode => StorageMode.Stackable;
         [SerializeField] private string _itemId;
         public string ItemId => _itemId;
-                public string Description => _description;
+        public string Description => _description;
         [SerializeField] private string _description;
 
         // ── IItem ─────────────────────────────────────────────────────────
@@ -41,9 +41,18 @@ namespace Core.Exploration.Items.Usables
 
         public void ExecuteItemEffect()
         {
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                "[RestorativeDrink] Cura desativada — volte à vila para recuperar HP.",
-                LogCategory.Interaction);
+            var manager = GameObject.FindFirstObjectByType<PlayableCharactersManager>();
+            if (manager.Main is PlayableCharacter main)
+            {
+                main.HealthBar.Heal(_healAmount);
+                main.definition.currentHitPoints = Mathf.Clamp(main.definition.currentHitPoints += _healAmount, 0, main.definition.MaxHitPoints);
+            }
+            if (manager.Companion is PlayableCharacter companion)
+            {
+                companion.HealthBar.Heal(_healAmount);
+                companion.definition.currentHitPoints = Mathf.Clamp(companion.definition.currentHitPoints += _healAmount, 0, companion.definition.MaxHitPoints);
+            }
+            FindAnyObjectByType<CharacterViewHud>().RefreshAll();
         }
     }
 }

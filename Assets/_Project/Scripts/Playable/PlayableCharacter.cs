@@ -1,7 +1,7 @@
 using Player;
 using UnityEngine;
 using UnityEngine.Serialization;
-
+using Erumperem.Characters;
 /// <summary>
 /// Dados e referências de um personagem jogável. Data-holder puro.
 ///
@@ -16,6 +16,7 @@ public sealed class PlayableCharacter : MonoBehaviour, IPlayableCharacter
     [Header("Identificação")]
     [SerializeField] private string _characterName;
     [SerializeField] private Sprite _icon;
+    public AllyCharacterStatDefinition definition;
 
     [Header("Sub-systems")]
     [SerializeField] private PlayerMovementController    _movementController;

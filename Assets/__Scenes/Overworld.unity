@@ -1176,16 +1176,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExplorationCorruptionSystem
   _manager: {fileID: 783874771}
-  _safeAreaCenter: {fileID: 0}
-  _safeAreaRadius: 10
-  _baseGainPerSecond: 2
+  _safeAreaCenter: {fileID: 198571124}
+  _safeAreaRadius: 20
+  _baseGainPerSecond: 0.5
   _gainPerMeterBeyondRadius: 0.5
-  _decayPerSecond: 3
   _corruptionSlider: {fileID: 1119371129}
   _corruptionNumber: {fileID: 1948169271}
   _saveFolderName: Saves
   _saveFileName: corruption_save.json
-  Corruption: 0
 --- !u!1001 &220584351
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8025,6 +8023,63 @@ Transform:
   - {fileID: 932217035}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1197751190
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.11429
+      objectReference: {fileID: 0}
+    - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -1.48137
+      objectReference: {fileID: 0}
+    - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9094609322646104423, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
+      propertyPath: m_Name
+      value: Chest
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
 --- !u!1 &1229410749
 GameObject:
   m_ObjectHideFlags: 0
@@ -8226,16 +8281,10 @@ MonoBehaviour:
   _defaultSetups:
   - Character: {fileID: 1927338037}
     InitialState: 1
-    MaxHealth: 100
-    StartingHealth: 100
   - Character: {fileID: 2094760528}
     InitialState: 2
-    MaxHealth: 200
-    StartingHealth: 200
   - Character: {fileID: 631275790}
     InitialState: 3
-    MaxHealth: 100
-    StartingHealth: 100
   _allyCharacterStatCatalog: {fileID: 11400000, guid: aabbcc11dd22ee33ff44556677889900, type: 2}
   _corruptionSystem: {fileID: 198571126}
   _saveFileName: exploration_save.json
@@ -10673,6 +10722,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d82766eb596c3f74db8f24793bd45ecd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VillageEnemySanctuaryHandler
+  _enemySpawners: []
+  _enemyPool: {fileID: 0}
+  _staticEnemyContacts: []
+  _staticEnemyCollisionTriggers: []
 --- !u!1 &1803372898 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4016659781743702863, guid: ad16307581b12244ab60d96f05737038, type: 3}
@@ -11513,6 +11566,10 @@ PrefabInstance:
       value: Buck Variant
       objectReference: {fileID: 0}
     - target: {fileID: 8311972132244377540, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
+      propertyPath: definition
+      value: 
+      objectReference: {fileID: 11400000, guid: e2f3a4b5c6478990123456789abcdef0, type: 2}
+    - target: {fileID: 8311972132244377540, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
       propertyPath: _restingPoint
       value: 
       objectReference: {fileID: 1293477789}
@@ -12273,3 +12330,4 @@ SceneRoots:
   - {fileID: 565408967}
   - {fileID: 166052072}
   - {fileID: 1370957658}
+  - {fileID: 1197751190}
