@@ -25,6 +25,7 @@ namespace Erumperem.Characters
         [Min(1)]
         [Tooltip("HP máximo no overworld. Combate pode usar combatMaxHitPoints diferente.")]
         [SerializeField] private int explorationMaxHitPoints = 100;
+        [SerializeField] public int explorationCurrentHitPoints = 100;
 
         [Header("Combate")]
         [Min(1)]
@@ -54,7 +55,7 @@ namespace Erumperem.Characters
 
         [Tooltip("1 = frente (Main), 2 = atrás (Companion).")]
         [Min(1)]
-        [SerializeField] private int battleFormationRank = 1;
+        [SerializeField] public int battleFormationRank = 1;
 
         public string CharacterId => characterId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? characterId : displayName;
