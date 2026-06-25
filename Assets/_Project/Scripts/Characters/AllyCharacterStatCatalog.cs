@@ -55,7 +55,7 @@ namespace Erumperem.Characters
         {
             if (TryGetDefinition(characterName, out var definition))
             {
-                return definition.ExplorationMaxHitPoints;
+                return definition.MaxHitPoints;
             }
 
             return characterName switch
