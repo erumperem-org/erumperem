@@ -285,8 +285,9 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             _requiresCombatEntryZoneClearance = false;
         }
 
+        var isVillageReturnAfterCombat = !_lastBattleAlliesWon;
         ClearPendingReturn();
-        loadContext.FinishCombatReturnAndLoadExploration(targetSceneName);
+        loadContext.FinishCombatReturnAndLoadExploration(targetSceneName, isVillageReturnAfterCombat);
         return true;
     }
 

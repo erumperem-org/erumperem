@@ -1,3 +1,4 @@
+using System.Collections;
 using Services.DebugUtilities;
 using UnityEngine;
 
@@ -80,6 +81,26 @@ public sealed class VillageArea : MonoBehaviour
                 $"[HEAL-DEBUG] [VILLAGE-AREA] Main dentro da esfera após load — flag sincronizado, " +
                 "sem evento de cura (cura apenas em OnTriggerEnter).",
                 LogCategory.Player);
+        }
+
+        if (_isPlayerInside)
+        {
+            StartCoroutine(ResetSaveIfPartyWipedAtVillageAfterLoadRoutine());
+        }
+    }
+
+    private IEnumerator ResetSaveIfPartyWipedAtVillageAfterLoadRoutine()
+    {
+        var loadContext = ExplorationLoadContext.Instance;
+        if (loadContext == null)
+        {
+            yield break;
+        }
+
+        var resetTask = loadContext.TryResetSaveAndApplyDefaultsIfMainAndCompanionAreDefeatedAsync();
+        while (!resetTask.IsCompleted)
+        {
+            yield return null;
         }
     }
 
