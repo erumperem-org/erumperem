@@ -56,15 +56,11 @@ MonoBehaviour:
   - name: ExplorationMusic
     clips:
     - {fileID: 8300000, guid: 3b02bb255ee0cf84d8efab8a3353502c, type: 3}
-    - {fileID: 8300000, guid: e5477304f2d6d6f499662385ea52a027, type: 3}
     - {fileID: 8300000, guid: a044b0ee88735084f8e20a2d593af20f, type: 3}
     volume: 0.45
     pitch: 1
   - name: CombatTracks
     clips:
-    - {fileID: 8300000, guid: 0a69c1d19a4ae4143a00bf5e40dda4e3, type: 3}
-    - {fileID: 8300000, guid: 9c764c91eb09a8d43bae09e368641f78, type: 3}
-    - {fileID: 8300000, guid: a11b87aa056521f45b2934a0cc5aa9f8, type: 3}
     - {fileID: 8300000, guid: b634e5116e251d549ac5b66e5ef1d6ca, type: 3}
     volume: 0.25
     pitch: 1
@@ -87,6 +83,12 @@ MonoBehaviour:
     volume: 0.25
     pitch: 1
     lastPlayedIndex: -1
+  - name: SkillSelect
+    clips:
+    - {fileID: 8300000, guid: 0e64165b79203614d88cc90fa59e9967, type: 3}
+    volume: 0.15
+    pitch: 1
+    lastPlayedIndex: -1
   - name: CharacterHover
     clips:
     - {fileID: 8300000, guid: f7e8d02983048584cb3983830bfc28a8, type: 3}
@@ -102,12 +104,27 @@ MonoBehaviour:
     volume: 0.05
     pitch: 1
     lastPlayedIndex: -1
+  - name: FootstepBuck
+    clips:
+    - {fileID: 8300000, guid: d2ba54cfcd2bb5047ae614db4b6ad533, type: 3}
+    - {fileID: 8300000, guid: ea9b8f39e5a869846837744520adc22d, type: 3}
+    - {fileID: 8300000, guid: d2ba54cfcd2bb5047ae614db4b6ad533, type: 3}
+    - {fileID: 8300000, guid: ea9b8f39e5a869846837744520adc22d, type: 3}
+    volume: 0.05
+    pitch: 1
+    lastPlayedIndex: -1
   - name: ShieldBashingIdle
     clips:
     - {fileID: 8300000, guid: 860e3821e36ec0345b2ede0dc38d9c49, type: 3}
     - {fileID: 8300000, guid: 9b6498c35d2a8b847bb88813b54926ad, type: 3}
     volume: 0.25
     pitch: 0.8
+    lastPlayedIndex: -1
+  - name: EnemySpot
+    clips:
+    - {fileID: 8300000, guid: 5bcd19b98e3ec8647b334ee6ba8d94bc, type: 3}
+    volume: 0.05
+    pitch: 1
     lastPlayedIndex: -1
   ambientLoops:
   - name: ExplorationAmbience
