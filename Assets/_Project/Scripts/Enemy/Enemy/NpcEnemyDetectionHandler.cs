@@ -90,6 +90,7 @@ namespace Systems.NPC.Enemy
 
             if (shapeLabel == "Perception" && _stateMachine.Is(NpcEnemyState.Wander))
                 _stateMachine.ToChase(ResolvePlayerTransform(detected));
+                AudioManager.instance?.PlaySFX("EnemySpot");
 
             if (shapeLabel == "Contact")
             {
