@@ -6,6 +6,54 @@ using Game.Core.Models;
 using Game.Simulations;
 
 var parsed = ArgsParser.Parse(args);
+if (parsed.CloneBuckSkillData)
+{
+    var simulationsData = ResolveSimulationsDataDirectory();
+    var streamingData = ResolveStreamingAssetsDataDirectory();
+    BuckSkillDataCloner.Run(simulationsData, streamingData);
+    return;
+}
+
+static string ResolveSimulationsDataDirectory()
+{
+    var candidates = new[]
+    {
+        Path.Combine(Directory.GetCurrentDirectory(), "Game.Simulations", "Data"),
+        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Data")),
+        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Game.Simulations", "Data")),
+    };
+
+    foreach (var candidate in candidates)
+    {
+        if (File.Exists(Path.Combine(candidate, "skill_trees.json")))
+        {
+            return candidate;
+        }
+    }
+
+    throw new DirectoryNotFoundException("Could not locate Game.Simulations/Data (skill_trees.json).");
+}
+
+static string ResolveStreamingAssetsDataDirectory()
+{
+    var candidates = new[]
+    {
+        Path.Combine(Directory.GetCurrentDirectory(), "Assets", "StreamingAssets", "Data"),
+        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Assets", "StreamingAssets", "Data")),
+        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "Assets", "StreamingAssets", "Data")),
+    };
+
+    foreach (var candidate in candidates)
+    {
+        if (Directory.Exists(candidate))
+        {
+            return candidate;
+        }
+    }
+
+    throw new DirectoryNotFoundException("Could not locate Assets/StreamingAssets/Data.");
+}
+
 if (parsed.ShowHelp)
 {
     PrintHelp();
@@ -216,6 +264,7 @@ internal sealed class ParsedArgs
     public int? TierCap { get; init; }
     public int? AllTreesTierCap { get; init; }
     public bool ShowHelp { get; init; }
+    public bool CloneBuckSkillData { get; init; }
 }
 
 internal static class ArgsParser
@@ -238,6 +287,7 @@ internal static class ArgsParser
         int? tierCap = null;
         int? allTreesTier = null;
         var showHelp = args.Any(commandLineArg => commandLineArg is "-h" or "-?" or "--help");
+        var cloneBuckSkillData = args.Any(commandLineArg => commandLineArg == "--clone-buck-skills");
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -365,6 +415,7 @@ internal static class ArgsParser
             TierCap = tierCap,
             AllTreesTierCap = allTreesTier,
             ShowHelp = showHelp,
+            CloneBuckSkillData = cloneBuckSkillData,
         };
     }
 

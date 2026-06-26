@@ -16,6 +16,29 @@ public static class BattleFactory
         "wulfric_innate_guard",
     ];
 
+    /// <summary>Placeholder innates for Buck (cloned from Wulfric).</summary>
+    public static readonly string[] BuckInnateSkillIds =
+    [
+        "buck_innate_cleave",
+        "buck_innate_shove",
+        "buck_innate_guard",
+    ];
+
+    public static IReadOnlyList<string> ResolveInnateSkillIds(string progressionCharacterId)
+    {
+        if (string.Equals(progressionCharacterId, "buck", StringComparison.OrdinalIgnoreCase))
+        {
+            return BuckInnateSkillIds;
+        }
+
+        if (string.Equals(progressionCharacterId, "wulfric", StringComparison.OrdinalIgnoreCase))
+        {
+            return WulfricInnateSkillIds;
+        }
+
+        return DefaultAllySkillIds;
+    }
+
     public static readonly string[] WulfricFullSkillLoadout =
     [
         "wulfric_innate_cleave", "wulfric_innate_shove", "wulfric_innate_guard",

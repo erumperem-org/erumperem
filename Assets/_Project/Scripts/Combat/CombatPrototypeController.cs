@@ -1491,16 +1491,8 @@ namespace Erumperem.Combat
             return null;
         }
 
-        private static IReadOnlyList<string> ResolveInnateSkillIds(string progressionCharacterId)
-        {
-            if (string.Equals(progressionCharacterId, "wulfric", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(progressionCharacterId, "buck", StringComparison.OrdinalIgnoreCase))
-            {
-                return BattleFactory.WulfricInnateSkillIds;
-            }
-
-            return BattleFactory.DefaultAllySkillIds;
-        }
+        private static IReadOnlyList<string> ResolveInnateSkillIds(string progressionCharacterId) =>
+            BattleFactory.ResolveInnateSkillIds(progressionCharacterId);
 
         private void ApplyEnemyCharacterStatsFromCatalog(
             Combatant enemy,
