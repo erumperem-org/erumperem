@@ -192,6 +192,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
+--- !u!1 &61372049 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 544961728963025383, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
+  m_PrefabInstance: {fileID: 2094760513}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &66442509
 GameObject:
   m_ObjectHideFlags: 0
@@ -3088,11 +3093,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 481569462}
   m_CullTransparentMesh: 1
---- !u!1 &497971397 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 9063482067622149182, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
-  m_PrefabInstance: {fileID: 672961481}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &497971398 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8542242480946275972, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
@@ -7904,7 +7904,7 @@ Transform:
   m_Children:
   - {fileID: 1927338034}
   - {fileID: 631275776}
-  - {fileID: 2094760514}
+  - {fileID: 2094760529}
   - {fileID: 1315741654}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -8281,10 +8281,13 @@ MonoBehaviour:
   _defaultSetups:
   - Character: {fileID: 1927338037}
     InitialState: 1
+    StartingCurrentHealth: 0
   - Character: {fileID: 2094760528}
     InitialState: 2
+    StartingCurrentHealth: 0
   - Character: {fileID: 631275790}
     InitialState: 3
+    StartingCurrentHealth: 0
   _allyCharacterStatCatalog: {fileID: 11400000, guid: aabbcc11dd22ee33ff44556677889900, type: 2}
   _corruptionSystem: {fileID: 198571126}
   _saveFileName: exploration_save.json
@@ -11528,7 +11531,7 @@ PrefabInstance:
     - target: {fileID: 1745792301797281543, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
       propertyPath: _torchObject
       value: 
-      objectReference: {fileID: 497971397}
+      objectReference: {fileID: 61372049}
     - target: {fileID: 3727963054009997272, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
       propertyPath: _canvas
       value: 
@@ -11621,11 +11624,6 @@ PrefabInstance:
       addedObject: {fileID: 497971398}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
---- !u!4 &2094760514 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 8847265910384726198, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
-  m_PrefabInstance: {fileID: 2094760513}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &2094760528 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8311972132244377540, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
@@ -11637,6 +11635,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16ed37e7ea558fb469c1d350b12cdecd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayableCharacter
+--- !u!4 &2094760529 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7686727007853403525, guid: c2eaea0fd3636534681042c9f2ba6ce0, type: 3}
+  m_PrefabInstance: {fileID: 2094760513}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &2122725727
 PrefabInstance:
   m_ObjectHideFlags: 0
