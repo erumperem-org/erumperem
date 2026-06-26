@@ -21,15 +21,12 @@ namespace Erumperem.Characters
         [Header("Exploração")]
         [SerializeField] private PlayableCharacterState defaultExplorationState = PlayableCharacterState.Resting;
 
-        [Header("Exploração — vida")]
+        [Header("Vida")]
         [Min(1)]
-        [Tooltip("HP máximo no overworld. Combate pode usar combatMaxHitPoints diferente.")]
-        [SerializeField] private int explorationMaxHitPoints = 100;
-        [SerializeField] public int explorationCurrentHitPoints = 100;
+        [Tooltip("HP máximo do aliado (exploração e combate). O HP atual vive no save de exploração.")]
+        [SerializeField] private int maxHitPoints = 100;
 
         [Header("Combate")]
-        [Min(1)]
-        [SerializeField] private int combatMaxHitPoints = 40;
 
         [Min(0)]
         [SerializeField] private int speed = 6;
@@ -60,10 +57,7 @@ namespace Erumperem.Characters
         public string CharacterId => characterId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? characterId : displayName;
         public PlayableCharacterState DefaultExplorationState => defaultExplorationState;
-        public int ExplorationMaxHitPoints =>
-            explorationMaxHitPoints > 0 ? explorationMaxHitPoints : combatMaxHitPoints;
-
-        public int CombatMaxHitPoints => combatMaxHitPoints;
+        public int MaxHitPoints => maxHitPoints;
         public string ProgressionCharacterId => progressionCharacterId;
         public GameObject BattlePrefab => battlePrefab;
         public int BattleFormationRank => battleFormationRank;
@@ -76,7 +70,7 @@ namespace Erumperem.Characters
             CharacterCombatStatApplicator.Apply(
                 combatant,
                 DisplayName,
-                combatMaxHitPoints,
+                MaxHitPoints,
                 speed,
                 accuracy,
                 critChance,

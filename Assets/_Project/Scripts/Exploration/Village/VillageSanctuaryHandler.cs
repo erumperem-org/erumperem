@@ -59,6 +59,13 @@ public sealed class VillageSanctuaryHandler : MonoBehaviour
             return;
         }
 
+        var loadContext = ExplorationLoadContext.Instance;
+        if (loadContext != null && loadContext.AreMainAndCompanionBelowOneHealth())
+        {
+            StartCoroutine(ResetSaveIfPartyWipedAtVillageOnEnterRoutine());
+            return;
+        }
+
         _pendingMainPlayableCharacter = mainPlayableCharacter;
         _pendingVillageHealCoroutine = StartCoroutine(ApplyVillageHealAfterRequiredStay(mainPlayableCharacter));
 
@@ -71,6 +78,21 @@ public sealed class VillageSanctuaryHandler : MonoBehaviour
     private void HandlePlayerExitedVillage()
     {
         CancelPendingVillageHeal("Main saiu da vila antes do tempo");
+    }
+
+    private IEnumerator ResetSaveIfPartyWipedAtVillageOnEnterRoutine()
+    {
+        var loadContext = ExplorationLoadContext.Instance;
+        if (loadContext == null)
+        {
+            yield break;
+        }
+
+        var resetTask = loadContext.TryResetSaveAndApplyDefaultsIfMainAndCompanionAreDefeatedAsync();
+        while (!resetTask.IsCompleted)
+        {
+            yield return null;
+        }
     }
 
     private IEnumerator ApplyVillageHealAfterRequiredStay(PlayableCharacter mainPlayableCharacter)

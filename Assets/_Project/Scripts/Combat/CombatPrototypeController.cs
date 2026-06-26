@@ -380,12 +380,35 @@ namespace Erumperem.Combat
                 partyCharacterNames,
                 applyHealth: true);
 
-            var loadContext = ExplorationLoadContext.Instance;
+            StartCoroutine(ApplySaveToBattleStateAndStartCombatRoutine(
+                partyCharacterNames,
+                skillTreesList,
+                progression,
+                passives));
+        }
 
-            if (loadContext != null)
+        private IEnumerator ApplySaveToBattleStateAndStartCombatRoutine(
+            IReadOnlyList<string> partyCharacterNames,
+            IReadOnlyList<CharacterSkillTreesDefinition> skillTreesList,
+            PlayerProgressionService progression,
+            IReadOnlyDictionary<string, PassiveDefinition> passives)
+        {
+            var loadContext = ExplorationLoadContext.EnsureRuntimeInstance(allyCharacterStatCatalog);
+            var loadSaveTask = loadContext.EnsureSaveLoadedFromDiskAsync();
+
+            while (!loadSaveTask.IsCompleted)
             {
-                CombatExplorationBridge.Instance?.SeedBattleFromExploration(_state);
+                yield return null;
             }
+
+            if (loadSaveTask.IsFaulted)
+            {
+                Debug.LogError(
+                    $"[Save] Falha ao carregar exploration_save.json: " +
+                    $"{loadSaveTask.Exception?.GetBaseException().Message}");
+            }
+
+            CombatExplorationBridge.Instance?.SeedBattleFromExploration(_state);
 
             ApplyPerAllyLoadoutsAndProgression(
                 partyCharacterNames,
@@ -396,7 +419,7 @@ namespace Erumperem.Combat
             if (!TryBindSceneViewsToBattle())
             {
                 enabled = false;
-                return;
+                yield break;
             }
 
             _sim.EmitBattleStarted(_state);
