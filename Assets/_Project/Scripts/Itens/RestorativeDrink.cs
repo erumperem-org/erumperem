@@ -45,13 +45,14 @@ namespace Core.Exploration.Items.Usables
             if (manager.Main is PlayableCharacter main)
             {
                 main.HealthBar.Heal(_healAmount);
-                main.definition.currentHitPoints = Mathf.Clamp(main.definition.currentHitPoints += _healAmount, 0, main.definition.MaxHitPoints);
             }
+
             if (manager.Companion is PlayableCharacter companion)
             {
                 companion.HealthBar.Heal(_healAmount);
-                companion.definition.currentHitPoints = Mathf.Clamp(companion.definition.currentHitPoints += _healAmount, 0, companion.definition.MaxHitPoints);
             }
+
+            ExplorationLoadContext.Instance?.SaveState();
             FindAnyObjectByType<CharacterViewHud>().RefreshAll();
         }
     }

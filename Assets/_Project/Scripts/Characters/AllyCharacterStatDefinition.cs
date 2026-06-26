@@ -21,11 +21,10 @@ namespace Erumperem.Characters
         [Header("Exploração")]
         [SerializeField] private PlayableCharacterState defaultExplorationState = PlayableCharacterState.Resting;
 
-        [Header("Exploração — vida")]
+        [Header("Vida")]
         [Min(1)]
-        [Tooltip("HP máximo no overworld. Combate pode usar combatMaxHitPoints diferente.")]
+        [Tooltip("HP máximo do aliado (exploração e combate). O HP atual vive no save de exploração.")]
         [SerializeField] private int maxHitPoints = 100;
-        [SerializeField] public int currentHitPoints = 100;
 
         [Header("Combate")]
 

@@ -18,19 +18,17 @@ public sealed class PlayableCharacterSnapshot
     public Quaternion Rotation;
     public PlayableCharacterState State;
     public float CurrentHealth;
-    public float MaxHealth;
 
     public PlayableCharacterSnapshot(
         string name, Vector3 pos, Quaternion rot,
         PlayableCharacterState state,
-        float currentHealth, float maxHealth)
+        float currentHealth)
     {
         CharacterName = name;
         Position = pos;
         Rotation = rot;
         State = state;
         CurrentHealth = currentHealth;
-        MaxHealth = maxHealth;
     }
 }
 
@@ -43,13 +41,13 @@ internal sealed class SnapshotSaveData
     public float CorruptionValue;
 }
 
-[Serializable]
-public readonly struct ExplorationHealthSnapshot
+/// <summary>HP de um aliado: atual vem do save; máximo vem do catálogo de stats.</summary>
+public readonly struct AllyHealthState
 {
     public readonly float CurrentHealth;
     public readonly float MaxHealth;
 
-    public ExplorationHealthSnapshot(float currentHealth, float maxHealth)
+    public AllyHealthState(float currentHealth, float maxHealth)
     {
         CurrentHealth = currentHealth;
         MaxHealth = maxHealth;
@@ -68,9 +66,9 @@ public struct DefaultCharacterSetup
     [Min(1f)]
     public int MaxHealth => Character.definition.MaxHitPoints;
 
-    [Tooltip("HP corrente inicial. Se zero, iniciará com HP cheio.")]
+    [Tooltip("HP corrente inicial no reset. Zero = começa com vida cheia.")]
     [Min(0f)]
-    public float StartingHealth => Character.definition.currentHitPoints;
+    public float StartingCurrentHealth;
 }
 
 // ── ExplorationLoadContext ────────────────────────────────────────────────────
@@ -79,14 +77,6 @@ public struct DefaultCharacterSetup
 /// Ponto central de save/load da exploração.
 /// Orquestra personagens (<see cref="PlayableCharactersManager"/>) e
 /// corrupção (<see cref="ExplorationCorruptionSystem"/>) num único ciclo.
-///
-/// MUDANÇAS vs versão anterior:
-///   - Recebe referência opcional a <see cref="ExplorationCorruptionSystem"/>.
-///   - <c>SaveState</c>   → também chama <c>corruptionSystem.SaveState()</c>.
-///   - <c>RestoreState</c>→ também chama <c>corruptionSystem.RestoreState()</c>.
-///   - <c>ClearSave</c>   → também chama <c>corruptionSystem.ClearSave()</c>.
-///   - Corrupção é carregada/zerada de forma independente pelo próprio sistema;
-///     o LoadContext apenas coordena o momento da chamada.
 /// </summary>
 public sealed class ExplorationLoadContext : MonoBehaviour
 {
@@ -139,7 +129,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     private string _saveDirectory;
     private float _savedCorruptionValue;
     private float _corruptionAtCombatEntry;
-    private readonly Dictionary<string, ExplorationHealthSnapshot> _healthSnapshotAtCombatEntry =
+    private readonly Dictionary<string, float> _allyCurrentHealthAtCombatEntry =
         new(StringComparer.OrdinalIgnoreCase);
 
     private PlayableCharactersManager _manager;
@@ -264,26 +254,30 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         _snapshots.Clear();
         foreach (var character in _manager.Playables)
         {
-            if (character == null) continue;
-            character.definition.currentHitPoints = (int)character.HealthBar.CurrentHealth;
-            var hp = character.HealthBar;
-            if (hp == null)
+            if (character == null)
+            {
+                continue;
+            }
+
+            var healthBar = character.HealthBar;
+            if (healthBar == null)
+            {
                 LoggerService.PrintLogMessage(LogLevel.Warning,
                     $"[SAVE] '{character.CharacterName}' não possui HealthBar — HP ignorado.",
                     LogCategory.Player);
+            }
 
-            var explorationHealth = ResolveExplorationHealthForSnapshot(
-                character.CharacterName,
-                hp?.CurrentHealth ?? 0f,
-                hp?.MaxHealth ?? 0f);
+            var maxHealth = ResolveAllyMaxHealth(character.CharacterName);
+            var currentHealth = healthBar != null
+                ? Mathf.Clamp(healthBar.CurrentHealth, 0f, maxHealth)
+                : maxHealth;
 
             _snapshots.Add(new PlayableCharacterSnapshot(
                 character.CharacterName,
                 character.Transform.position,
                 character.Transform.rotation,
                 character.CurrentState,
-                explorationHealth.CurrentHealth,
-                explorationHealth.MaxHealth));
+                currentHealth));
         }
 
         _savedCorruptionValue = ResolveCurrentCorruptionValue();
@@ -312,7 +306,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     /// </summary>
     public void RememberExplorationStateAtCombatEntry()
     {
-        _healthSnapshotAtCombatEntry.Clear();
+        _allyCurrentHealthAtCombatEntry.Clear();
         foreach (var snapshot in _snapshots)
         {
             if (string.IsNullOrWhiteSpace(snapshot.CharacterName))
@@ -320,15 +314,14 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 continue;
             }
 
-            _healthSnapshotAtCombatEntry[snapshot.CharacterName] =
-                new ExplorationHealthSnapshot(snapshot.CurrentHealth, snapshot.MaxHealth);
+            _allyCurrentHealthAtCombatEntry[snapshot.CharacterName] = snapshot.CurrentHealth;
         }
 
         _corruptionAtCombatEntry = _savedCorruptionValue;
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
             $"[HEAL-DEBUG] [COMBAT-ENTRY] Baseline HP/corrupção memorizado " +
-            $"({_healthSnapshotAtCombatEntry.Count} personagens, corrupção {_corruptionAtCombatEntry:F1}).",
+            $"({_allyCurrentHealthAtCombatEntry.Count} personagens, corrupção {_corruptionAtCombatEntry:F1}).",
             LogCategory.Player);
     }
 
@@ -444,9 +437,65 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
     public bool HasSave() => _hasSave;
 
-    public IReadOnlyDictionary<string, ExplorationHealthSnapshot> GetSavedHealthByCharacterName()
+    /// <summary>
+    /// Garante um <see cref="Instance"/> (cria em runtime se necessário).
+    /// Usado pela CombatScene ao dar play directo, sem passar pelo Overworld.
+    /// </summary>
+    public static ExplorationLoadContext EnsureRuntimeInstance(
+        AllyCharacterStatCatalog allyCharacterStatCatalog = null)
     {
-        var healthByCharacterName = new Dictionary<string, ExplorationHealthSnapshot>(StringComparer.OrdinalIgnoreCase);
+        if (Instance != null)
+        {
+            if (allyCharacterStatCatalog != null)
+            {
+                Instance.AssignAllyCharacterStatCatalog(allyCharacterStatCatalog);
+            }
+
+            return Instance;
+        }
+
+        var runtimeHost = new GameObject("[Runtime] ExplorationLoadContext");
+        var runtimeContext = runtimeHost.AddComponent<ExplorationLoadContext>();
+
+        if (allyCharacterStatCatalog != null)
+        {
+            runtimeContext.AssignAllyCharacterStatCatalog(allyCharacterStatCatalog);
+        }
+
+        Debug.Log("[Save] ExplorationLoadContext criado em runtime (play directo na CombatScene).");
+        return Instance ?? runtimeContext;
+    }
+
+    public void AssignAllyCharacterStatCatalog(AllyCharacterStatCatalog allyCharacterStatCatalog)
+    {
+        if (allyCharacterStatCatalog != null)
+        {
+            _allyCharacterStatCatalog = allyCharacterStatCatalog;
+        }
+    }
+
+    /// <summary>Carrega sempre o ficheiro de save do disco para memória (HP + corrupção).</summary>
+    public async Task EnsureSaveLoadedFromDiskAsync()
+    {
+        EnsureSaveDirectoryInitialized();
+        await LoadFromFileAsync();
+
+        Debug.Log(
+            $"[Save] Save lido do disco: {_snapshots.Count} snapshots, corrupção {_savedCorruptionValue:F1}, " +
+            $"path={_saveDirectory}/{_saveFileName}");
+    }
+
+    private void EnsureSaveDirectoryInitialized()
+    {
+        if (string.IsNullOrEmpty(_saveDirectory))
+        {
+            _saveDirectory = System.IO.Path.Combine(Application.persistentDataPath, _saveFolderName);
+        }
+    }
+
+    public IReadOnlyDictionary<string, AllyHealthState> GetSavedHealthByCharacterName()
+    {
+        var healthByCharacterName = new Dictionary<string, AllyHealthState>(StringComparer.OrdinalIgnoreCase);
         foreach (var snapshot in _snapshots)
         {
             if (string.IsNullOrWhiteSpace(snapshot.CharacterName))
@@ -454,8 +503,9 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 continue;
             }
 
-            healthByCharacterName[snapshot.CharacterName] =
-                new ExplorationHealthSnapshot(snapshot.CurrentHealth, snapshot.MaxHealth);
+            healthByCharacterName[snapshot.CharacterName] = BuildAllyHealthState(
+                snapshot.CharacterName,
+                snapshot.CurrentHealth);
         }
 
         return healthByCharacterName;
@@ -511,60 +561,16 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             }
 
             var ally = allies[allyIndex];
-            var snapshotHealthBefore = snapshot.CurrentHealth;
-            var explorationHealth = ResolveExplorationHealthFromCombatHealth(
-                characterName,
-                ally.Health.CurrentHp,
-                ally.Health.MaxHp);
+            var maxHealth = ResolveAllyMaxHealth(characterName);
+            snapshot.CurrentHealth = Mathf.Clamp(ally.Health.CurrentHp, 0f, maxHealth);
 
-            var preCombatCurrentHealth = snapshotHealthBefore;
-            if (_healthSnapshotAtCombatEntry.TryGetValue(characterName, out var preCombatHealthSnapshot))
-            {
-                preCombatCurrentHealth = preCombatHealthSnapshot.CurrentHealth;
-            }
-
-            var resolvedCurrentHealth = Mathf.Min(explorationHealth.CurrentHealth, preCombatCurrentHealth);
-            snapshot.MaxHealth = explorationHealth.MaxHealth;
-            snapshot.CurrentHealth = resolvedCurrentHealth;
-
-            if (explorationHealth.CurrentHealth > preCombatCurrentHealth + 0.01f)
-            {
-                LoggerService.PrintLogMessage(LogLevel.Warning,
-                    $"[HEAL-DEBUG] [COMBAT-SAVE] '{characterName}' cura bloqueada ao sair do combate: " +
-                    $"motor sugeriu {explorationHealth.CurrentHealth:F1}/{explorationHealth.MaxHealth:F1} " +
-                    $"(combate {ally.Health.CurrentHp}/{ally.Health.MaxHp}), " +
-                    $"mantido {resolvedCurrentHealth:F1}/{snapshot.MaxHealth:F1} " +
-                    $"(pré-combate {preCombatCurrentHealth:F1}).",
-                    LogCategory.Player);
-            }
-            else if (resolvedCurrentHealth > snapshotHealthBefore + 0.01f)
-            {
-                LoggerService.PrintLogMessage(LogLevel.Warning,
-                    $"[HEAL-DEBUG] [COMBAT-SAVE] '{characterName}' HP SUBIU no snapshot " +
-                    $"{snapshotHealthBefore}/{snapshot.MaxHealth} → {resolvedCurrentHealth}/{snapshot.MaxHealth} " +
-                    $"(combate: {ally.Health.CurrentHp}/{ally.Health.MaxHp}).",
-                    LogCategory.Player);
-            }
-            else
-            {
-                LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"[HEAL-DEBUG] [COMBAT-SAVE] '{characterName}' HP pós-combate → " +
-                    $"{resolvedCurrentHealth}/{snapshot.MaxHealth} (combate: {ally.Health.CurrentHp}/{ally.Health.MaxHp}).",
-                    LogCategory.Player);
-            }
-        }
-
-        var resolvedCorruptionValue = Math.Max(_corruptionAtCombatEntry, corruptionValue);
-
-        if (corruptionValue < _corruptionAtCombatEntry - 0.01f)
-        {
-            LoggerService.PrintLogMessage(LogLevel.Warning,
-                $"[HEAL-DEBUG] [COMBAT-SAVE] Redução de corrupção bloqueada: " +
-                $"motor {corruptionValue:F1}, mantido {_corruptionAtCombatEntry:F1}.",
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"[HEAL-DEBUG] [COMBAT-SAVE] '{characterName}' HP pós-combate salvo → " +
+                $"{snapshot.CurrentHealth}/{maxHealth}.",
                 LogCategory.Player);
         }
 
-        ApplySavedCorruptionValue(resolvedCorruptionValue);
+        ApplySavedCorruptionValue(corruptionValue);
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
             $"[HEAL-DEBUG] [COMBAT-SAVE] Corrupção pós-combate → {_savedCorruptionValue:F1}.",
@@ -609,7 +615,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         }
     }
 
-    public float ResolveExplorationMaxHealth(string characterName)
+    public float ResolveAllyMaxHealth(string characterName)
     {
         if (_allyCharacterStatCatalog != null)
         {
@@ -625,50 +631,10 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         };
     }
 
-    public ExplorationHealthSnapshot ResolveExplorationHealthForCombatSeed(
-        string characterName,
-        float savedCurrentHealth,
-        float savedMaxHealth)
+    private AllyHealthState BuildAllyHealthState(string characterName, float currentHealth)
     {
-        return ResolveExplorationHealthForSnapshot(characterName, savedCurrentHealth, savedMaxHealth);
-    }
-
-    public ExplorationHealthSnapshot ResolveExplorationHealthForSnapshot(
-        string characterName,
-        float currentHealth,
-        float maxHealth)
-    {
-        var explorationMaxHealth = ResolveExplorationMaxHealth(characterName);
-        if (explorationMaxHealth <= 0f)
-        {
-            return new ExplorationHealthSnapshot(currentHealth, maxHealth);
-        }
-
-        var healthRatio = maxHealth > 0f
-            ? Mathf.Clamp01(currentHealth / maxHealth)
-            : 0f;
-        var resolvedCurrentHealth = explorationMaxHealth * healthRatio;
-
-        return new ExplorationHealthSnapshot(resolvedCurrentHealth, explorationMaxHealth);
-    }
-
-    public ExplorationHealthSnapshot ResolveExplorationHealthFromCombatHealth(
-        string characterName,
-        float combatCurrentHealth,
-        float combatMaxHealth)
-    {
-        var explorationMaxHealth = ResolveExplorationMaxHealth(characterName);
-        if (explorationMaxHealth <= 0f)
-        {
-            return new ExplorationHealthSnapshot(combatCurrentHealth, combatMaxHealth);
-        }
-
-        var combatHealthRatio = combatMaxHealth > 0f
-            ? Mathf.Clamp01(combatCurrentHealth / combatMaxHealth)
-            : 0f;
-        var resolvedCurrentHealth = explorationMaxHealth * combatHealthRatio;
-
-        return new ExplorationHealthSnapshot(resolvedCurrentHealth, explorationMaxHealth);
+        var maxHealth = ResolveAllyMaxHealth(characterName);
+        return new AllyHealthState(Mathf.Clamp(currentHealth, 0f, maxHealth), maxHealth);
     }
 
     public void ApplySavedCorruptionValue(double corruptionValue)
@@ -1038,13 +1004,15 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                     continue;
                 }
 
-                if (character.HealthBar != null && snap.MaxHealth > 0f)
+                if (character.HealthBar != null)
                 {
-                    character.HealthBar.SetMaxHealth(snap.MaxHealth, keepRatio: false);
-                    character.HealthBar.RestoreForInitialization(snap.CurrentHealth);
+                    var maxHealth = ResolveAllyMaxHealth(character.CharacterName);
+                    character.HealthBar.SetMaxHealth(maxHealth, keepRatio: false);
+                    character.HealthBar.RestoreForInitialization(
+                        Mathf.Clamp(snap.CurrentHealth, 0f, maxHealth));
 
                     LoggerService.PrintLogMessage(LogLevel.Debug,
-                        $"[HEAL-DEBUG] [LOAD] '{character.CharacterName}' HP → {snap.CurrentHealth}/{snap.MaxHealth}",
+                        $"[HEAL-DEBUG] [LOAD] '{character.CharacterName}' HP → {snap.CurrentHealth}/{maxHealth}",
                         LogCategory.Player);
                 }
 
@@ -1109,8 +1077,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 {
                     healthBar.SetMaxHealth(setup.MaxHealth, keepRatio: false);
 
-                    float startingHealth = setup.StartingHealth > 0f
-                        ? Mathf.Clamp(setup.StartingHealth, 0f, setup.MaxHealth)
+                    float startingHealth = setup.StartingCurrentHealth > 0f
+                        ? Mathf.Clamp(setup.StartingCurrentHealth, 0f, setup.MaxHealth)
                         : setup.MaxHealth;
 
                     healthBar.RestoreForInitialization(startingHealth);
@@ -1289,58 +1257,40 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     }
 
     /// <summary>
-    /// Atualiza apenas o valor de vida a partir do SO: lê definition.currentHitPoints
-    /// e persiste esse valor no snapshot/arquivo de save correspondente ao CharacterId,
-    /// sem depender de cena, manager ou HealthBar. Usado em cena separada (ex.: menu/loja).
+    /// Atualiza o HP atual de um aliado no save central (exploration_save.json).
+    /// Usado em cenas sem PlayableCharactersManager (ex.: menu/loja).
     /// </summary>
-    public async Task SaveLifeFromDefinitionAsync(AllyCharacterStatDefinition definition)
+    public async Task SaveAllyCurrentHealthAsync(string characterId, float currentHealth)
     {
-        if (definition == null)
+        if (string.IsNullOrWhiteSpace(characterId))
         {
             LoggerService.PrintLogMessage(LogLevel.Warning,
-                "[SAVE-LIFE] Definition nula — nada a salvar.", LogCategory.Player);
+                "[SAVE-LIFE] CharacterId vazio — nada a salvar.", LogCategory.Player);
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(definition.CharacterId))
-        {
-            LoggerService.PrintLogMessage(LogLevel.Warning,
-                "[SAVE-LIFE] Definition sem CharacterId — nada a salvar.", LogCategory.Player);
-            return;
-        }
-
-        // Garante que existe save em memória para editar (carrega do disco se ainda não há).
         if (!_hasSave)
         {
             await LoadFromFileAsync();
         }
 
-        var currentHealth = (float)definition.currentHitPoints;
-        var maxHealth = (float)definition.MaxHitPoints;
+        var allyHealth = BuildAllyHealthState(characterId, currentHealth);
 
-        var explorationHealth = ResolveExplorationHealthForSnapshot(
-            definition.CharacterId,
-            currentHealth,
-            maxHealth);
-
-        var snapshot = _snapshots.Find(s =>
-            string.Equals(s.CharacterName, definition.CharacterId, StringComparison.OrdinalIgnoreCase));
+        var snapshot = _snapshots.Find(savedSnapshot =>
+            string.Equals(savedSnapshot.CharacterName, characterId, StringComparison.OrdinalIgnoreCase));
 
         if (snapshot != null)
         {
-            snapshot.CurrentHealth = explorationHealth.CurrentHealth;
-            snapshot.MaxHealth = explorationHealth.MaxHealth;
+            snapshot.CurrentHealth = allyHealth.CurrentHealth;
         }
         else
         {
-            // Sem posição/rotação/estado conhecidos nesta cena — usa valores neutros.
             _snapshots.Add(new PlayableCharacterSnapshot(
-                definition.CharacterId,
+                characterId,
                 Vector3.zero,
                 Quaternion.identity,
-                ResolveDefaultExplorationState(definition.CharacterId),
-                explorationHealth.CurrentHealth,
-                explorationHealth.MaxHealth));
+                ResolveDefaultExplorationState(characterId),
+                allyHealth.CurrentHealth));
         }
 
         _hasSave = _snapshots.Count > 0;
@@ -1348,12 +1298,11 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         await SaveToFileAsync();
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
-            $"[SAVE-LIFE] '{definition.CharacterId}' vida sincronizada do SO → " +
-            $"{explorationHealth.CurrentHealth}/{explorationHealth.MaxHealth}.",
+            $"[SAVE-LIFE] '{characterId}' HP atual → {allyHealth.CurrentHealth}/{allyHealth.MaxHealth}.",
             LogCategory.Player);
     }
 
     /// <summary>Wrapper síncrono (fire-and-forget) para chamar de UI/eventos sem await.</summary>
-    public async void SaveLifeFromDefinition(AllyCharacterStatDefinition definition) =>
-        await SaveLifeFromDefinitionAsync(definition);
+    public async void SaveAllyCurrentHealth(string characterId, float currentHealth) =>
+        await SaveAllyCurrentHealthAsync(characterId, currentHealth);
 }
