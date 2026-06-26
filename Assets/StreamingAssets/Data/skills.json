@@ -919,5 +919,106 @@
       }
     ],
     "comboBonus": []
+  },
+  {
+    "id": "horse_boss_sharp_claws",
+    "name": "Garras afiadas",
+    "corruptionCost": 0,
+    "element": "Metal",
+    "type": "Active",
+    "targetKind": "Enemy",
+    "baseDamage": {
+      "min": 5,
+      "max": 9
+    },
+    "baseCritChance": 0.08,
+    "accuracy": 0.9,
+    "chanceToUse": 1.0,
+    "selfHpPercentBelow": 1.0,
+    "effectsOnHit": [
+      {
+        "type": "ApplyDot",
+        "dot": "Bleed",
+        "potency": 2,
+        "duration": 3,
+        "chance": 1.0
+      }
+    ],
+    "comboBonus": []
+  },
+  {
+    "id": "horse_boss_painful_bite",
+    "name": "Mordida dilacerante",
+    "corruptionCost": 0,
+    "element": "Fire",
+    "type": "Active",
+    "targetKind": "Enemy",
+    "baseDamage": {
+      "min": 16,
+      "max": 24
+    },
+    "baseCritChance": 0.12,
+    "accuracy": 0.85,
+    "chanceToUse": 0.4,
+    "selfHpPercentBelow": 0.5,
+    "effectsOnHit": [],
+    "comboBonus": []
+  },
+  {
+    "id": "horse_boss_chilling_howl",
+    "name": "Uivo gelado",
+    "corruptionCost": 0,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "Enemy",
+    "baseDamage": {
+      "min": 0,
+      "max": 2
+    },
+    "baseCritChance": 0.05,
+    "accuracy": 0.88,
+    "chanceToUse": 0.55,
+    "selfHpPercentBelow": 1.0,
+    "effectsOnHit": [
+      {
+        "type": "ApplyRandomDot",
+        "potency": 2,
+        "duration": 3,
+        "chance": 1.0
+      }
+    ],
+    "comboBonus": []
+  },
+  {
+    "id": "horse_boss_blinding_vomit",
+    "name": "Vómito cegante",
+    "corruptionCost": 0,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "Enemy",
+    "baseDamage": {
+      "min": 3,
+      "max": 7
+    },
+    "baseCritChance": 0.06,
+    "accuracy": 0.82,
+    "chanceToUse": 0.45,
+    "selfHpPercentBelow": 1.0,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Blind",
+        "stacks": 1,
+        "chance": 1.0
+      },
+      {
+        "type": "ApplyDot",
+        "dot": "Blight",
+        "potency": 3,
+        "duration": 3,
+        "chance": 1.0
+      }
+    ],
+    "comboBonus": []
   }
 ]

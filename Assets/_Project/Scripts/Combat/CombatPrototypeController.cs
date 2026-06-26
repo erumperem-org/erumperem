@@ -14,6 +14,7 @@ using Game.Core.Models;
 using Game.Core.Progression;
 using Erumperem.Characters;
 using Erumperem.Progression;
+using Erumperem.UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -122,6 +123,8 @@ namespace Erumperem.Combat
         private Combatant _pendingPlayerActor;
 
         private readonly Dictionary<string, Transform> _views = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, EnemyVisualDefinition> _enemyVisualByCombatantId =
+            new(StringComparer.Ordinal);
         private readonly HashSet<string> _damageFeedbackBusy = new(StringComparer.Ordinal);
         private bool _presentationBusy;
         private string _ongoingPresentationActorCombatantId = string.Empty;
@@ -307,6 +310,7 @@ namespace Erumperem.Combat
             var skillsPath = Path.Combine(dataDir, "skills.json");
             var skillTreesPath = Path.Combine(dataDir, "skill_trees.json");
             var passivesPath = Path.Combine(dataDir, "passives.json");
+            var enemiesPath = Path.Combine(dataDir, "enemies.json");
 
             var hasAnyPassiveAuthoring = _skillTreeAuthoringAssets != null &&
                                          _skillTreeAuthoringAssets.Any(asset =>
@@ -348,6 +352,14 @@ namespace Erumperem.Combat
 
             MergePassiveDefinitionsFromAuthoringAssets(passives);
 
+            IReadOnlyDictionary<string, EnemyDefinition> enemyDefinitionsById =
+                new Dictionary<string, EnemyDefinition>(StringComparer.OrdinalIgnoreCase);
+            if (File.Exists(enemiesPath))
+            {
+                enemyDefinitionsById = CombatDataLoader.BuildEnemyDefinitionIndex(
+                    CombatDataLoader.LoadEnemies(enemiesPath));
+            }
+
             var skillTreesList = CombatDataLoader.LoadSkillTrees(skillTreesPath);
             var partyCharacterNames = CombatPartyResolver.GetCombatAllyCharacterNames();
             Debug.Log(
@@ -374,7 +386,8 @@ namespace Erumperem.Combat
                 corruptionValue: 0,
                 allySkillIds: BattleFactory.DefaultAllySkillIds,
                 passivesById: passives,
-                unlockAllPassiveNodesForAllies: false);
+                unlockAllPassiveNodesForAllies: false,
+                enemyDefinitionsById: enemyDefinitionsById);
 
             ApplyCharacterStatsFromCatalog(
                 partyCharacterNames,
@@ -863,6 +876,7 @@ namespace Erumperem.Combat
 
             if (!_preparedThisStep)
             {
+                var turnEventStartIndex = _collector.Events.Count;
                 if (!_sim.TryPrepareActorTurn(_state, actor))
                 {
                     _actorIndex++;
@@ -870,6 +884,7 @@ namespace Erumperem.Combat
                     return true;
                 }
 
+                ProcessTurnStartCombatEvents(turnEventStartIndex);
                 _preparedThisStep = true;
                 _sessionHub?.RaiseTurnStarted();
             }
@@ -1346,6 +1361,8 @@ namespace Erumperem.Combat
 
                     OverrideEnemySkillLoadoutFromVisualDefinition(enemy, enemyVisualDefinition);
                     ApplyEnemyCharacterStatsFromCatalog(enemy, enemyVisualDefinition);
+                    ApplyEnemyPassiveIdsFromVisualDefinition(enemy, enemyVisualDefinition);
+                    _enemyVisualByCombatantId[enemy.Identity.Id] = enemyVisualDefinition;
                 }
 
                 EnsureCombatCapsuleTagOnUnit(enemyViewRoot, enemy.Identity.Id);
@@ -1552,6 +1569,151 @@ namespace Erumperem.Combat
 
             enemy.SkillLoadout.Skills.Clear();
             enemy.SkillLoadout.Skills.AddRange(validSkillIds);
+        }
+
+        private void ApplyEnemyPassiveIdsFromVisualDefinition(
+            Combatant enemy,
+            EnemyVisualDefinition enemyVisualDefinition)
+        {
+            if (enemy == null || enemyVisualDefinition?.enemyPassiveIds == null)
+            {
+                return;
+            }
+
+            foreach (var passiveId in enemyVisualDefinition.enemyPassiveIds)
+            {
+                if (string.IsNullOrWhiteSpace(passiveId))
+                {
+                    continue;
+                }
+
+                enemy.Progression.UnlockedNodes[passiveId] = true;
+            }
+        }
+
+        private void ProcessTurnStartCombatEvents(int turnEventStartIndex)
+        {
+            if (_collector == null || _state == null || turnEventStartIndex >= _collector.Events.Count)
+            {
+                return;
+            }
+
+            var turnEvents = _collector.Events.GetRange(
+                turnEventStartIndex,
+                _collector.Events.Count - turnEventStartIndex);
+            var narrativeLines = new List<string>();
+            foreach (var combatEvent in turnEvents)
+            {
+                if (combatEvent.EventType == BattleEventType.CombatantSpawned)
+                {
+                    TrySpawnSummonedEnemyVisual(combatEvent);
+                    var summonLine = PlayerFacingText.FormatCombatantSpawnedLine(_state, combatEvent);
+                    if (!string.IsNullOrEmpty(summonLine))
+                    {
+                        narrativeLines.Add(summonLine);
+                    }
+                }
+            }
+
+            if (narrativeLines.Count > 0)
+            {
+                _sessionHub?.RaiseNarrativeLines(narrativeLines);
+            }
+
+            if (logEventsToConsole)
+            {
+                LogLastEvents();
+            }
+        }
+
+        private void TrySpawnSummonedEnemyVisual(CombatEvent combatEvent)
+        {
+            if (combatEvent.EventType != BattleEventType.CombatantSpawned ||
+                string.IsNullOrEmpty(combatEvent.TargetId))
+            {
+                return;
+            }
+
+            var spawnedCombatant = FindCombatantById(combatEvent.TargetId);
+            if (spawnedCombatant == null)
+            {
+                return;
+            }
+
+            var archetypeId = combatEvent.SkillId;
+            if (!TryResolveEnemyVisualDefinitionByArchetypeId(archetypeId, out var enemyVisualDefinition) ||
+                enemyVisualDefinition.battlePrefab == null)
+            {
+                Debug.LogWarning(
+                    $"CombatPrototypeController: sem visual para arquétipo invocado '{archetypeId}'.",
+                    this);
+                return;
+            }
+
+            var rankIndex = combatEvent.PassiveAuxInt - 1;
+            if (enemyVisualRoots == null || rankIndex < 0 || rankIndex >= enemyVisualRoots.Length)
+            {
+                Debug.LogWarning(
+                    $"CombatPrototypeController: rank inválido {combatEvent.PassiveAuxInt} para spawn de '{archetypeId}'.",
+                    this);
+                return;
+            }
+
+            var slotRoot = enemyVisualRoots[rankIndex];
+            if (slotRoot == null)
+            {
+                return;
+            }
+
+            EnemyVisualBattleInstaller.ClearSlotForEnemyVisualPrefab(slotRoot);
+            var alliesFacingReference = ResolveAlliesFacingReference();
+            var instantiatedEnemyRoot = EnemyVisualBattleInstaller.InstantiateEnemyUnderSlot(
+                slotRoot,
+                enemyVisualDefinition.battlePrefab,
+                alliesFacingReference);
+            if (instantiatedEnemyRoot == null)
+            {
+                Debug.LogError(
+                    $"CombatPrototypeController: falha ao instanciar prefab de '{archetypeId}' no rank {combatEvent.PassiveAuxInt}.",
+                    enemyVisualDefinition);
+                return;
+            }
+
+            OverrideEnemySkillLoadoutFromVisualDefinition(spawnedCombatant, enemyVisualDefinition);
+            ApplyEnemyCharacterStatsFromCatalog(spawnedCombatant, enemyVisualDefinition);
+            EnsureCombatCapsuleTagOnUnit(instantiatedEnemyRoot, spawnedCombatant.Identity.Id);
+            _views[spawnedCombatant.Identity.Id] = instantiatedEnemyRoot;
+            _enemyVisualByCombatantId[spawnedCombatant.Identity.Id] = enemyVisualDefinition;
+        }
+
+        private bool TryResolveEnemyVisualDefinitionByArchetypeId(
+            string archetypeId,
+            out EnemyVisualDefinition enemyVisualDefinition)
+        {
+            enemyVisualDefinition = null;
+            if (string.IsNullOrWhiteSpace(archetypeId) || enemyVisualSpawnCatalog?.Definitions == null)
+            {
+                return false;
+            }
+
+            foreach (var candidateDefinition in enemyVisualSpawnCatalog.Definitions)
+            {
+                if (candidateDefinition == null)
+                {
+                    continue;
+                }
+
+                if (string.Equals(
+                        candidateDefinition.ResolveCharacterStatId(),
+                        archetypeId,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    enemyVisualDefinition = candidateDefinition;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private bool TryGetEnemyAnimationController(string combatantId, out EnemyAnimationController enemyAnimationController)

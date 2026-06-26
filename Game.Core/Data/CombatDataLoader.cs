@@ -44,6 +44,23 @@ public static class CombatDataLoader
         throw new FileNotFoundException("passives.json not found. Tried: " + string.Join("; ", candidates));
     }
 
+    /// <summary>Localiza <c>Game.Simulations/Data/enemies.json</c>.</summary>
+    public static string ResolveDefaultEnemiesPath()
+    {
+        var candidates = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "Data", "enemies.json"),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Data", "enemies.json")),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Game.Simulations", "Data", "enemies.json")),
+        };
+        foreach (var candidatePath in candidates)
+        {
+            if (File.Exists(candidatePath)) return candidatePath;
+        }
+
+        throw new FileNotFoundException("enemies.json not found. Tried: " + string.Join("; ", candidates));
+    }
+
     /// <summary>Localiza <c>Game.Simulations/Data/skill_trees.json</c>.</summary>
     public static string ResolveDefaultSkillTreesPath()
     {
@@ -102,6 +119,27 @@ public static class CombatDataLoader
         var passives = JsonSerializer.Deserialize<List<PassiveDefinition>>(json, JsonOptions) ?? [];
         ValidatePassives(passives);
         return passives;
+    }
+
+    public static IReadOnlyDictionary<string, EnemyDefinition> BuildEnemyDefinitionIndex(
+        IEnumerable<EnemyDefinition> enemyDefinitions)
+    {
+        var index = new Dictionary<string, EnemyDefinition>(StringComparer.OrdinalIgnoreCase);
+        foreach (var enemyDefinition in enemyDefinitions)
+        {
+            index[enemyDefinition.Id] = enemyDefinition;
+            if (string.Equals(enemyDefinition.Id, "corrupted_fairy", StringComparison.OrdinalIgnoreCase))
+            {
+                index["CorruptedFairy"] = enemyDefinition;
+            }
+
+            if (string.Equals(enemyDefinition.Id, "horse_boss", StringComparison.OrdinalIgnoreCase))
+            {
+                index["HorseBoss"] = enemyDefinition;
+            }
+        }
+
+        return index;
     }
 
     private static void ValidateSkills(IEnumerable<SkillDefinition> skills)

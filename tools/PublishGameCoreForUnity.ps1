@@ -19,7 +19,7 @@ if (Test-Path $dataSrc) {
     if (-not (Test-Path $dataDst)) {
         New-Item -ItemType Directory -Path $dataDst -Force | Out-Null
     }
-    foreach ($name in @("skill_trees.json", "skills.json", "passives.json")) {
+    foreach ($name in @("skill_trees.json", "skills.json", "passives.json", "enemies.json")) {
         $srcFile = Join-Path $dataSrc $name
         if (Test-Path $srcFile) {
             Copy-Item $srcFile $dataDst -Force

@@ -14,6 +14,10 @@ public sealed class BattleState
     public IReadOnlyDictionary<string, PassiveDefinition> PassivesById { get; init; } =
         new Dictionary<string, PassiveDefinition>();
 
+    /// <summary>Templates para invocação mid-battle (chave = characterStatId, ex. CorruptedFairy).</summary>
+    public IReadOnlyDictionary<string, EnemyDefinition> EnemyDefinitionsById { get; init; } =
+        new Dictionary<string, EnemyDefinition>(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Observer hub for passive hooks; raise events from <see cref="Game.Core.Engine.BattleSimulator"/>.</summary>
     public CombatPassiveEventBus PassiveBus { get; init; } = new();
 

@@ -1091,6 +1091,105 @@ public class UnitTest1
         Assert.Equal([3, 4, 2, 5], battle.Enemies.Select(enemy => initiative.RollsByCombatantId[enemy.Identity.Id]));
     }
 
+    [Fact]
+    public void HorseBoss_PainfulBite_RequiresBelowHalfHp()
+    {
+        var skills = SampleCombatData.CreateSkills();
+        var painfulBite = skills.First(skill => skill.Id == "horse_boss_painful_bite");
+        var simulator = new BattleSimulator(new SeededRandomSource(1), new CombatEventCollector());
+        var battle = BattleFactory.CreateSampleBattle(skills, allyCount: 1, enemyCount: 1);
+        var horseBoss = battle.Enemies[0];
+        horseBoss.Health.CurrentHp = 10;
+        Assert.False(simulator.IsSkillUsable(horseBoss, painfulBite));
+        horseBoss.Health.CurrentHp = 9;
+        Assert.True(simulator.IsSkillUsable(horseBoss, painfulBite));
+    }
+
+    [Fact]
+    public void ChillingHowl_ApplyRandomDot_CanInflictBurnBlightOrBleed()
+    {
+        var skillsById = SampleCombatData.CreateSkills().ToDictionary(skill => skill.Id);
+        var chillingHowl = skillsById["horse_boss_chilling_howl"];
+        var seenDotTypes = new HashSet<DotType>();
+        for (var seed = 0; seed < 300 && seenDotTypes.Count < 3; seed++)
+        {
+            var eventCollector = new CombatEventCollector();
+            var simulator = new BattleSimulator(new SeededRandomSource(seed), eventCollector);
+            var battle = BattleFactory.CreateSampleBattle(skillsById.Values.ToList(), allyCount: 1, enemyCount: 1);
+            var enemy = battle.Enemies[0];
+            enemy.SkillLoadout.Skills.Clear();
+            enemy.SkillLoadout.Skills.Add(chillingHowl.Id);
+            enemy.Stats = new StatsComponent { Speed = 4, Accuracy = 1.0, CritChance = 0.03 };
+            var action = new ChosenAction
+            {
+                Actor = enemy,
+                Target = battle.Allies[0],
+                Skill = chillingHowl,
+                ActionType = ActionType.Skill,
+            };
+            simulator.ResolveChosenAction(battle, action);
+            foreach (var combatEvent in eventCollector.Events)
+            {
+                if (combatEvent.EventType != BattleEventType.DotInflicted)
+                {
+                    continue;
+                }
+
+                if (Enum.TryParse<DotType>(combatEvent.DotType, out var dotType))
+                {
+                    seenDotTypes.Add(dotType);
+                }
+            }
+        }
+
+        Assert.Equal(3, seenDotTypes.Count);
+    }
+
+    [Fact]
+    public void HorseBoss_SummonPassive_SpawnsCorruptedFairyOncePerHpTier()
+    {
+        var skills = SampleCombatData.CreateSkills();
+        var passives = SampleCombatData.CreatePassives().ToDictionary(passive => passive.Id);
+        var enemyDefinitions = CombatDataLoader.BuildEnemyDefinitionIndex(
+            CombatDataLoader.LoadEnemies(CombatDataLoader.ResolveDefaultEnemiesPath()));
+        var eventCollector = new CombatEventCollector();
+        var simulator = new BattleSimulator(new SeededRandomSource(42), eventCollector);
+        var battle = BattleFactory.CreateSampleBattle(
+            skills,
+            allyCount: 1,
+            enemyCount: 4,
+            passivesById: passives,
+            enemyDefinitionsById: enemyDefinitions);
+
+        var horseBoss = battle.Enemies[0];
+        horseBoss.Progression.UnlockedNodes["horse_boss_summon_fairy_on_hp_tier"] = true;
+        horseBoss.Health.CurrentHp = 14;
+        for (var enemyIndex = 1; enemyIndex < battle.Enemies.Count; enemyIndex++)
+        {
+            battle.Enemies[enemyIndex].Health.IsDead = true;
+        }
+
+        Assert.True(simulator.TryPrepareActorTurn(battle, horseBoss));
+        var spawnedAtSeventyFive = battle.Enemies.Count(enemy =>
+            !enemy.Health.IsDead && enemy.Identity.DisplayName == "CorruptedFairy");
+        Assert.Equal(1, spawnedAtSeventyFive);
+        Assert.Contains(
+            eventCollector.Events,
+            combatEvent => combatEvent.EventType == BattleEventType.CombatantSpawned);
+
+        eventCollector.Events.Clear();
+        Assert.True(simulator.TryPrepareActorTurn(battle, horseBoss));
+        var spawnedAfterSecondTurn = battle.Enemies.Count(enemy =>
+            !enemy.Health.IsDead && enemy.Identity.DisplayName == "CorruptedFairy");
+        Assert.Equal(1, spawnedAfterSecondTurn);
+
+        horseBoss.Health.CurrentHp = 9;
+        Assert.True(simulator.TryPrepareActorTurn(battle, horseBoss));
+        var spawnedAfterFifty = battle.Enemies.Count(enemy =>
+            !enemy.Health.IsDead && enemy.Identity.DisplayName == "CorruptedFairy");
+        Assert.Equal(2, spawnedAfterFifty);
+    }
+
     private sealed class FixedRollRandomSource : IRandomSource
     {
         private readonly int[] _rolls;

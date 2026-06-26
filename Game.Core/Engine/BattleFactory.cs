@@ -57,7 +57,8 @@ public static class BattleFactory
         IReadOnlyList<string>? allySkillIds = null,
         IReadOnlyList<string>? enemySkillIds = null,
         IReadOnlyDictionary<string, PassiveDefinition>? passivesById = null,
-        bool unlockAllPassiveNodesForAllies = false)
+        bool unlockAllPassiveNodesForAllies = false,
+        IReadOnlyDictionary<string, EnemyDefinition>? enemyDefinitionsById = null)
     {
         var skillsById = skills.ToDictionary(skill => skill.Id, skill => skill);
         var passiveCatalog = passivesById ?? new Dictionary<string, PassiveDefinition>();
@@ -94,6 +95,8 @@ public static class BattleFactory
             Enemies = enemies,
             SkillsById = skillsById,
             PassivesById = passiveCatalog,
+            EnemyDefinitionsById = enemyDefinitionsById ??
+                                   new Dictionary<string, EnemyDefinition>(StringComparer.OrdinalIgnoreCase),
             CorruptionValue = Math.Max(CorruptionRules.MinCorruptionValue, corruptionValue),
             BalanceConfig = CombatBalanceConfig.CreateDefault(),
             TurnNumber = 0,

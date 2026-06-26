@@ -85,6 +85,25 @@ public sealed class BattleSimulator
                 tokenType: tokenType.ToString(),
                 tokenDelta: stackDelta,
                 battleResult: string.Empty));
+        if (PassiveRuleApplier.TryApplyTurnStartSummonPassives(
+                state,
+                actor,
+                _random,
+                out var spawnedCombatant,
+                out var spawnRankUsed,
+                out var summonPassiveDefinition))
+        {
+            Emit(
+                state,
+                BattleEventType.CombatantSpawned,
+                actorId: actor.Identity.Id,
+                targetId: spawnedCombatant.Identity.Id,
+                skillId: summonPassiveDefinition.SkillId ?? string.Empty,
+                passiveId: summonPassiveDefinition.Id,
+                passiveEffectKindName: summonPassiveDefinition.EffectKind.ToString(),
+                passiveAuxInt: spawnRankUsed);
+        }
+
         ResolveDotTick(state, actor);
         if (actor.Health.IsDead || state.IsFinished)
         {
@@ -670,6 +689,41 @@ public sealed class BattleSimulator
                     }
 
                     break;
+                case EffectType.ApplyRandomDot:
+                {
+                    if (_random.NextDouble() > effect.Chance)
+                    {
+                        break;
+                    }
+
+                    var randomDotCandidates = new[] { DotType.Burn, DotType.Blight, DotType.Bleed };
+                    var chosenDotType = randomDotCandidates[_random.Next(0, randomDotCandidates.Length)];
+                    if (EffectPassesResistance(target, chosenDotType, state))
+                    {
+                        var elementalMultiplier = GetElementalMultiplier(state, actor, target, skill);
+                        var potency = (int)Math.Round(Math.Max(1, effect.Potency) * elementalMultiplier);
+                        var baseDuration = Math.Max(1, effect.Duration);
+                        var duration = state.PassiveBus.AdjustDotDuration(state, actor, chosenDotType, baseDuration);
+                        target.Dots.ActiveDots.Add(new DotInstance
+                        {
+                            Type = chosenDotType,
+                            Potency = potency,
+                            RemainingTurns = duration,
+                            AppliedById = actor.Identity.Id,
+                        });
+                        Emit(
+                            state,
+                            BattleEventType.DotInflicted,
+                            actorId: actor.Identity.Id,
+                            targetId: target.Identity.Id,
+                            skillId: skill.Id,
+                            dotType: chosenDotType.ToString(),
+                            dotAmount: potency,
+                            dotDurationTurns: duration);
+                    }
+
+                    break;
+                }
                 case EffectType.Push:
                     MoveTarget(state, target, +Math.Abs(effect.Steps));
                     break;

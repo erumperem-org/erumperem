@@ -119,6 +119,10 @@ namespace Erumperem.UI
             {
                 line = FormatDotInflictedLine(state, combatEvent);
             }
+            else if (combatEvent.EventType == BattleEventType.CombatantSpawned)
+            {
+                line = FormatCombatantSpawnedLine(state, combatEvent);
+            }
             else
             {
                 return string.Empty;
@@ -417,7 +421,45 @@ namespace Erumperem.UI
             var source = string.IsNullOrEmpty(combatEvent.PassiveId)
                 ? string.Empty
                 : $" (passiva «{NodeOrSkillDisplayName(combatEvent.PassiveId)}»)";
+
+            if (!string.IsNullOrEmpty(combatEvent.SkillId) &&
+                string.Equals(combatEvent.SkillId, "horse_boss_chilling_howl", StringComparison.Ordinal))
+            {
+                var skillName = ResolveSkillDisplayName(state, combatEvent.SkillId);
+                return $"{skillName} aplica {dotName} em {targetName} " +
+                       $"({combatEvent.DotAmount}/turno, {combatEvent.DotDurationTurns} turnos).";
+            }
+
             return $"{targetName} sofre {dotName} ({combatEvent.DotAmount}/turno, {combatEvent.DotDurationTurns} turnos){source}.";
+        }
+
+        public static string FormatCombatantSpawnedLine(BattleState state, CombatEvent combatEvent)
+        {
+            if (combatEvent.EventType != BattleEventType.CombatantSpawned)
+            {
+                return string.Empty;
+            }
+
+            var summonerName = DisplayCombatantName(state, combatEvent.ActorId);
+            var summonedName = DisplayCombatantName(state, combatEvent.TargetId);
+            if (string.IsNullOrEmpty(summonedName))
+            {
+                summonedName = "uma fada corrompida";
+            }
+
+            return $"{summonerName} invoca {summonedName}!";
+        }
+
+        private static string ResolveSkillDisplayName(BattleState state, string skillId)
+        {
+            if (state?.SkillsById != null &&
+                state.SkillsById.TryGetValue(skillId, out var skillDefinition) &&
+                !string.IsNullOrWhiteSpace(skillDefinition.Name))
+            {
+                return skillDefinition.Name;
+            }
+
+            return NodeOrSkillDisplayName(skillId);
         }
 
         private static string DisplayCombatantName(BattleState state, string combatantId)
