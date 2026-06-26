@@ -637,6 +637,183 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         return new AllyHealthState(Mathf.Clamp(currentHealth, 0f, maxHealth), maxHealth);
     }
 
+    private const float PartyWipeHealthThreshold = 1f;
+
+    /// <summary>
+    /// Verdadeiro quando Main e Companion têm HP estritamente abaixo de 1.
+    /// </summary>
+    public bool AreMainAndCompanionBelowOneHealth()
+    {
+        if (TryResolveMainAndCompanionCurrentHealthFromScene(
+                out var mainCurrentHealth,
+                out var companionCurrentHealth))
+        {
+            return mainCurrentHealth < PartyWipeHealthThreshold
+                && companionCurrentHealth < PartyWipeHealthThreshold;
+        }
+
+        if (!TryResolveMainAndCompanionCurrentHealthFromSnapshots(
+                out mainCurrentHealth,
+                out companionCurrentHealth))
+        {
+            return false;
+        }
+
+        return mainCurrentHealth < PartyWipeHealthThreshold
+            && companionCurrentHealth < PartyWipeHealthThreshold;
+    }
+
+    /// <summary>
+    /// Se Main e Companion estão abaixo de 1 HP, apaga o save (retorno à vila / wipe).
+    /// </summary>
+    public async Task<bool> TryResetSaveIfMainAndCompanionAreDefeatedAsync()
+    {
+        if (!AreMainAndCompanionBelowOneHealth())
+        {
+            return false;
+        }
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            "[SAVE] Main e Companion com HP < 1 — save resetado (retorno à vila).",
+            LogCategory.Player);
+
+        await ClearSaveAsync();
+        _snapshots.Clear();
+        _hasSave = false;
+        _savedCorruptionValue = 0f;
+        return true;
+    }
+
+    /// <summary>
+    /// Na vila, com manager disponível: reset completo + defaults se a party estiver derrotada.
+    /// </summary>
+    public async Task<bool> TryResetSaveAndApplyDefaultsIfMainAndCompanionAreDefeatedAsync()
+    {
+        if (!AreMainAndCompanionBelowOneHealth())
+        {
+            return false;
+        }
+
+        if (!TryGetManager())
+        {
+            return await TryResetSaveIfMainAndCompanionAreDefeatedAsync();
+        }
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            "[SAVE] Main e Companion com HP < 1 na vila — reset ao estado padrão.",
+            LogCategory.Player);
+
+        await ResetToDefaultStateAsync();
+        return true;
+    }
+
+    private bool TryResolveMainAndCompanionCurrentHealthFromScene(
+        out float mainCurrentHealth,
+        out float companionCurrentHealth)
+    {
+        mainCurrentHealth = 0f;
+        companionCurrentHealth = 0f;
+
+        if (!TryGetManager())
+        {
+            return false;
+        }
+
+        if (_manager.Main is not PlayableCharacter mainPlayableCharacter
+            || _manager.Companion is not PlayableCharacter companionPlayableCharacter)
+        {
+            return false;
+        }
+
+        if (mainPlayableCharacter.HealthBar == null || companionPlayableCharacter.HealthBar == null)
+        {
+            return false;
+        }
+
+        mainCurrentHealth = mainPlayableCharacter.HealthBar.CurrentHealth;
+        companionCurrentHealth = companionPlayableCharacter.HealthBar.CurrentHealth;
+        return true;
+    }
+
+    private bool TryResolveMainAndCompanionCurrentHealthFromSnapshots(
+        out float mainCurrentHealth,
+        out float companionCurrentHealth)
+    {
+        mainCurrentHealth = 0f;
+        companionCurrentHealth = 0f;
+
+        string mainCharacterName = null;
+        string companionCharacterName = null;
+        var hasMainHealthFromState = false;
+        var hasCompanionHealthFromState = false;
+
+        foreach (var snapshot in _snapshots)
+        {
+            if (snapshot == null || string.IsNullOrWhiteSpace(snapshot.CharacterName))
+            {
+                continue;
+            }
+
+            if (snapshot.State == PlayableCharacterState.Main)
+            {
+                mainCharacterName = snapshot.CharacterName;
+                mainCurrentHealth = snapshot.CurrentHealth;
+                hasMainHealthFromState = true;
+            }
+            else if (snapshot.State == PlayableCharacterState.Companion)
+            {
+                companionCharacterName = snapshot.CharacterName;
+                companionCurrentHealth = snapshot.CurrentHealth;
+                hasCompanionHealthFromState = true;
+            }
+        }
+
+        var partyFromSnapshots = CombatPartyResolver.BuildPartyNamesFromSnapshots(_snapshots);
+        if (partyFromSnapshots.Count > 0)
+        {
+            mainCharacterName ??= partyFromSnapshots[0];
+        }
+
+        if (partyFromSnapshots.Count > 1)
+        {
+            companionCharacterName ??= partyFromSnapshots[1];
+        }
+
+        if (string.IsNullOrWhiteSpace(mainCharacterName) || string.IsNullOrWhiteSpace(companionCharacterName))
+        {
+            return false;
+        }
+
+        if (!hasMainHealthFromState
+            && !TryGetSnapshotCurrentHealth(mainCharacterName, out mainCurrentHealth))
+        {
+            return false;
+        }
+
+        if (!hasCompanionHealthFromState
+            && !TryGetSnapshotCurrentHealth(companionCharacterName, out companionCurrentHealth))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool TryGetSnapshotCurrentHealth(string characterName, out float currentHealth)
+    {
+        currentHealth = 0f;
+        var snapshot = _snapshots.Find(savedSnapshot =>
+            string.Equals(savedSnapshot.CharacterName, characterName, StringComparison.OrdinalIgnoreCase));
+
+        if (snapshot == null)
+        {
+            return false;
+        }
+
+        currentHealth = snapshot.CurrentHealth;
+        return true;
+    }
+
     public void ApplySavedCorruptionValue(double corruptionValue)
     {
         var corruptionBefore = _savedCorruptionValue;
@@ -672,9 +849,11 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     /// Grava snapshots em memória e carrega a cena de exploração após retorno de combate.
     /// Evita race: nudge pós-vitória deve ser persistido antes do reload.
     /// </summary>
-    public void FinishCombatReturnAndLoadExploration(string sceneName)
+    public void FinishCombatReturnAndLoadExploration(
+        string sceneName,
+        bool checkPartyWipeSaveResetAtVillage = false)
     {
-        StartCoroutine(FinishCombatReturnAndLoadExplorationRoutine(sceneName));
+        StartCoroutine(FinishCombatReturnAndLoadExplorationRoutine(sceneName, checkPartyWipeSaveResetAtVillage));
     }
 
     // ── IO (personagens) ──────────────────────────────────────────────────
@@ -762,17 +941,31 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         RestoreState();
     }
 
-    private IEnumerator FinishCombatReturnAndLoadExplorationRoutine(string sceneName)
+    private IEnumerator FinishCombatReturnAndLoadExplorationRoutine(
+        string sceneName,
+        bool checkPartyWipeSaveResetAtVillage)
     {
-        _preferInMemorySnapshotsOnNextRestore = true;
+        if (checkPartyWipeSaveResetAtVillage)
+        {
+            var resetSaveTask = TryResetSaveIfMainAndCompanionAreDefeatedAsync();
+            while (!resetSaveTask.IsCompleted)
+            {
+                yield return null;
+            }
+        }
+
+        _preferInMemorySnapshotsOnNextRestore = _hasSave;
         _hasSave = _snapshots.Count > 0;
 
         PersistCorruptionToDedicatedSaveFile();
 
-        var saveTask = SaveToFileAsync();
-        while (!saveTask.IsCompleted)
+        if (_hasSave)
         {
-            yield return null;
+            var saveTask = SaveToFileAsync();
+            while (!saveTask.IsCompleted)
+            {
+                yield return null;
+            }
         }
 
         if (ScenesManager.Instance == null)

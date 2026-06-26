@@ -1178,8 +1178,8 @@ MonoBehaviour:
   _manager: {fileID: 783874771}
   _safeAreaCenter: {fileID: 198571124}
   _safeAreaRadius: 20
-  _baseGainPerSecond: 0.5
-  _gainPerMeterBeyondRadius: 0.5
+  _baseGainPerSecond: 0.1
+  _gainPerMeterBeyondRadius: 0
   _corruptionSlider: {fileID: 1119371129}
   _corruptionNumber: {fileID: 1948169271}
   _saveFolderName: Saves
@@ -8281,10 +8281,13 @@ MonoBehaviour:
   _defaultSetups:
   - Character: {fileID: 1927338037}
     InitialState: 1
+    StartingCurrentHealth: 0
   - Character: {fileID: 2094760528}
     InitialState: 2
+    StartingCurrentHealth: 0
   - Character: {fileID: 631275790}
     InitialState: 3
+    StartingCurrentHealth: 0
   _allyCharacterStatCatalog: {fileID: 11400000, guid: aabbcc11dd22ee33ff44556677889900, type: 2}
   _corruptionSystem: {fileID: 198571126}
   _saveFileName: exploration_save.json
