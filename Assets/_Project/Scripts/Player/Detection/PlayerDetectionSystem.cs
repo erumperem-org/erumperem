@@ -6,6 +6,7 @@ using Services.DebugUtilities;
 using UnityEngine;
 
 [RequireComponent(typeof(Detector))]
+[DefaultExecutionOrder(-200)]
 public sealed class PlayerDetectionSystem : MonoBehaviour
 {
     [SerializeField] private PlayableAnimationController _animationController;
@@ -41,6 +42,13 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
 
     // ── API pública ───────────────────────────────────────────────────────
 
+    public void Update()
+    {
+        if(this.tag == "Player")
+        {
+             _detector.Scan();
+        }
+    }
     public void StartScan()
     {
         StopScan();
@@ -129,6 +137,11 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
 
         var interactable = ResolveInteractable(col);
         if (interactable != null) _available.Remove(interactable);
+        var characterSelectionNpc = interactable.GetComponent<CharacterSelectionNpc>();
+        if(characterSelectionNpc != null)
+        {
+            characterSelectionNpc._canvas._panel.SetActive(false);
+        }
 
         LoggerService.PrintLogMessage(LogLevel.Debug, $"Interactable [{col.gameObject.name}] lost");
     }
