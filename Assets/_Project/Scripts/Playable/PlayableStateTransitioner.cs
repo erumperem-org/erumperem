@@ -16,7 +16,7 @@ public sealed class PlayableStateTransitioner
 
         character.MovementController.SetInputReader(inputReader);
         character.MovementController.EnableMovement();
-        SetPhysicsLayerRecursively(character.gameObject, LayerMask.NameToLayer("Player"));
+        SetPhysicsLayerRecursively(character.gameObject, LayerMask.NameToLayer("Default"));
         character.DetectionSystem.SetTag("Player");
         character.DetectionSystem.StartScan();
         character.GetComponent<Collider>().isTrigger = false;
