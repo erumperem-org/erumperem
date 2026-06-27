@@ -395,6 +395,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 16195be7763875f4da10eb3be1aae843, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1015374687464395171}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 16195be7763875f4da10eb3be1aae843, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8332501410721585808}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 16195be7763875f4da10eb3be1aae843, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -255727886326640083}
   m_SourcePrefab: {fileID: 100100000, guid: 16195be7763875f4da10eb3be1aae843, type: 3}
 --- !u!1 &9097648146937081809 stripped
 GameObject:
@@ -452,7 +458,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9097648146937081809}
   m_Enabled: 1
-  m_Avatar: {fileID: 0}
+  m_Avatar: {fileID: 9000000, guid: 839594803a0f16f478beae155fda1349, type: 3}
   m_Controller: {fileID: 9100000, guid: e277f6967642bdd4a8f064aba9e68b70, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
@@ -500,3 +506,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8d8a6a5e6d0fab41b9d7bac5329a3c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FootstepEmitter
+--- !u!114 &8332501410721585808
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9097648146937081809}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fec0989ba484cc4797cfce475a2bd56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatCapsuleTag
+  combatantId: 
+--- !u!114 &-255727886326640083
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9097648146937081809}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6cbc71808506d944bb9dd305e49c5d7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatCapsuleAnimatorBridge
+  combatSessionHub: {fileID: 0}
