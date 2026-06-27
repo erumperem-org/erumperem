@@ -19,6 +19,7 @@ public sealed class PlayableStateTransitioner
         SetPhysicsLayerRecursively(character.gameObject, LayerMask.NameToLayer("Player"));
         character.DetectionSystem.SetTag("Player");
         character.DetectionSystem.StartScan();
+        character.GetComponent<Collider>().isTrigger = false;
 
         inputReader?.BindDetectionSystem(character.DetectionSystem);
     }
@@ -28,7 +29,7 @@ public sealed class PlayableStateTransitioner
         SetPhysicsLayerRecursively(character.gameObject, LayerMask.NameToLayer("Default"));
         character.DetectionSystem.SetTag("Npc");
         character.DetectionSystem.StopScan();
-
+        character.GetComponent<Collider>().isTrigger = true;
         if (MainTransform != null)
             character.MovementController.EnableFollow(MainTransform);
         else
