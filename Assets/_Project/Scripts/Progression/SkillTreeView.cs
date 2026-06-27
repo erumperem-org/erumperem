@@ -1,19 +1,29 @@
 using System;
 using System.Collections.Generic;
-using Game.Core.Models;
-using Game.Core.Progression;
 using Erumperem.UI;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
+using Game.Core.Models;
+using Game.Core.Progression;
 
 namespace Erumperem.Progression
 {
     /// <summary>
-    /// Drop on any GameObject in the skill tree scene. Discovers every <see cref="SkillTreeNodePresenter"/>
-    /// in the scene (active or inactive) and syncs interactability + tint with <see cref="PlayerProgressionService"/>.
+    /// Skill tree UI for Wulfric and Buck with shared skill-point budget and arrow navigation.
     /// </summary>
     public sealed class SkillTreeView : MonoBehaviour
     {
+        [Serializable]
+        public struct SkillTreeCharacterUiProfile
+        {
+            public string ProgressionCharacterId;
+            public string SkillTreeTitle;
+            public Sprite PortraitSprite;
+            public Color PanelBackgroundColor;
+            public GameObject SkillTreeRoot;
+        }
+
         [Serializable]
         public struct DetailUiBindings
         {
@@ -32,11 +42,58 @@ namespace Erumperem.Progression
                     Body.text = PlayerFacingText.FormatSkillTreeNodeDescription(nodeAsset);
                 }
             }
+
+            public void Clear()
+            {
+                if (Title != null)
+                {
+                    Title.text = string.Empty;
+                }
+
+                if (Body != null)
+                {
+                    Body.text = string.Empty;
+                }
+            }
         }
 
+        private static readonly Color DefaultWulfricBackground = new(0.17f, 0.21f, 0.23f, 0.996f);
+        private static readonly Color DefaultBuckBackground = new(0.25f, 0.19f, 0.18f, 0.996f);
+
         [Header("Data")]
-        [SerializeField] private string _characterId = "wulfric";
         [SerializeField] private PlayerProgressionService _progressionService;
+
+        [Header("Navigation")]
+        [SerializeField] private Button _arrowLeftButton;
+        [SerializeField] private Button _arrowRightButton;
+
+        [Header("Character profiles (order = arrow cycle)")]
+        [SerializeField] private SkillTreeCharacterUiProfile[] _characterProfiles =
+        {
+            new()
+            {
+                ProgressionCharacterId = "wulfric",
+                SkillTreeTitle = "Splintered Knight",
+                PanelBackgroundColor = DefaultWulfricBackground,
+            },
+            new()
+            {
+                ProgressionCharacterId = "buck",
+                SkillTreeTitle = "El Pistolero",
+                PanelBackgroundColor = DefaultBuckBackground,
+            },
+        };
+
+        [Header("Panel chrome")]
+        [SerializeField] private TMP_Text _skillTreeTitleText;
+        [SerializeField] private Image _portraitImage;
+        [SerializeField] private Image _panelBackgroundImage;
+
+        [Header("Shared skill budget")]
+        [SerializeField] private TMP_Text _levelTextValue;
+
+        [Header("Reset")]
+        [SerializeField] private Button _resetSkillsButton;
 
         [Header("Tints (applied to each button image)")]
         [SerializeField] private Color _lockedTint = new(0.55f, 0.55f, 0.6f, 1f);
@@ -53,44 +110,230 @@ namespace Erumperem.Progression
 
         private readonly List<SkillTreeNodePresenter> _presenters = new();
         private CharacterSkillTreesDefinition _characterTrees;
+        private int _currentProfileIndex;
         private bool _subscribedToService;
+
+        public string CurrentProgressionCharacterId =>
+            _characterProfiles.Length > 0
+                ? _characterProfiles[_currentProfileIndex].ProgressionCharacterId
+                : string.Empty;
+
+        private void Awake()
+        {
+            TryAutoBindHierarchyReferences();
+        }
 
         private void OnEnable()
         {
-            EnsureProgressionServiceExists();
+            EnsureProgressionServiceReady();
             EnsureSubscribed();
-            CollectPresenters();
-            BindPresenters();
-            CacheCharacterTreesOrWarn();
-            RefreshAllPresenters();
+            BindNavigationButtons();
+            ApplyCharacterSelection(_currentProfileIndex);
         }
 
-        private void OnDisable() => Unsubscribe();
+        private void OnDisable()
+        {
+            Unsubscribe();
+            UnbindNavigationButtons();
+        }
 
         private void Start()
         {
-            EnsureProgressionServiceExists();
+            EnsureProgressionServiceReady();
             EnsureSubscribed();
+            ApplyCharacterSelection(_currentProfileIndex);
+        }
+
+        public void SelectNextCharacter()
+        {
+            if (_characterProfiles.Length == 0)
+            {
+                return;
+            }
+
+            var nextIndex = (_currentProfileIndex + 1) % _characterProfiles.Length;
+            ApplyCharacterSelection(nextIndex);
+        }
+
+        public void SelectPreviousCharacter()
+        {
+            if (_characterProfiles.Length == 0)
+            {
+                return;
+            }
+
+            var previousIndex = (_currentProfileIndex - 1 + _characterProfiles.Length) % _characterProfiles.Length;
+            ApplyCharacterSelection(previousIndex);
+        }
+
+        public void SelectCharacterByIndex(int profileIndex)
+        {
+            if (profileIndex < 0 || profileIndex >= _characterProfiles.Length)
+            {
+                return;
+            }
+
+            ApplyCharacterSelection(profileIndex);
+        }
+
+        public void ResetCurrentCharacterSkillTree()
+        {
+            var service = ResolveService();
+            if (service == null || string.IsNullOrWhiteSpace(CurrentProgressionCharacterId))
+            {
+                return;
+            }
+
+            service.ResetCharacter(CurrentProgressionCharacterId);
+        }
+
+        private void ApplyCharacterSelection(int profileIndex)
+        {
+            if (_characterProfiles.Length == 0)
+            {
+                return;
+            }
+
+            _currentProfileIndex = profileIndex;
+            var profile = _characterProfiles[_currentProfileIndex];
+
+            for (var profileLoopIndex = 0; profileLoopIndex < _characterProfiles.Length; profileLoopIndex++)
+            {
+                var characterProfile = _characterProfiles[profileLoopIndex];
+                if (characterProfile.SkillTreeRoot != null)
+                {
+                    characterProfile.SkillTreeRoot.SetActive(profileLoopIndex == _currentProfileIndex);
+                }
+            }
+
+            if (_skillTreeTitleText != null)
+            {
+                _skillTreeTitleText.text = profile.SkillTreeTitle;
+            }
+
+            if (_portraitImage != null)
+            {
+                _portraitImage.sprite = profile.PortraitSprite;
+                _portraitImage.enabled = profile.PortraitSprite != null;
+            }
+
+            if (_panelBackgroundImage != null)
+            {
+                _panelBackgroundImage.color = profile.PanelBackgroundColor;
+            }
+
+            _detailPanel.Clear();
             CollectPresenters();
             BindPresenters();
             CacheCharacterTreesOrWarn();
             RefreshAllPresenters();
         }
 
-        private static void EnsureProgressionServiceExists()
+        private void BindNavigationButtons()
         {
-            if (PlayerProgressionService.Instance != null)
+            if (_arrowLeftButton != null)
+            {
+                _arrowLeftButton.onClick.RemoveListener(SelectPreviousCharacter);
+                _arrowLeftButton.onClick.AddListener(SelectPreviousCharacter);
+            }
+
+            if (_arrowRightButton != null)
+            {
+                _arrowRightButton.onClick.RemoveListener(SelectNextCharacter);
+                _arrowRightButton.onClick.AddListener(SelectNextCharacter);
+            }
+
+            if (_resetSkillsButton != null)
+            {
+                _resetSkillsButton.onClick.RemoveListener(ResetCurrentCharacterSkillTree);
+                _resetSkillsButton.onClick.AddListener(ResetCurrentCharacterSkillTree);
+            }
+        }
+
+        private void UnbindNavigationButtons()
+        {
+            if (_arrowLeftButton != null)
+            {
+                _arrowLeftButton.onClick.RemoveListener(SelectPreviousCharacter);
+            }
+
+            if (_arrowRightButton != null)
+            {
+                _arrowRightButton.onClick.RemoveListener(SelectNextCharacter);
+            }
+
+            if (_resetSkillsButton != null)
+            {
+                _resetSkillsButton.onClick.RemoveListener(ResetCurrentCharacterSkillTree);
+            }
+        }
+
+        private void TryAutoBindHierarchyReferences()
+        {
+            _skillTreeTitleText ??= FindChildComponent<TMP_Text>("SkillTreeTitle");
+            _portraitImage ??= FindChildComponent<Image>("Portrait");
+            _panelBackgroundImage ??= GetComponent<Image>();
+            _levelTextValue ??= FindChildComponent<TMP_Text>("LevelTextValue");
+            _arrowLeftButton ??= FindChildComponent<Button>("ArrowLeft");
+            _arrowRightButton ??= FindChildComponent<Button>("ArrowRight");
+            _resetSkillsButton ??= FindChildComponent<Button>("ResetSkills");
+
+            if (_characterProfiles == null || _characterProfiles.Length < 2)
             {
                 return;
             }
 
-            if (FindFirstObjectByType<PlayerProgressionService>(FindObjectsInactive.Include) != null)
+            var wulfricProfile = _characterProfiles[0];
+            var buckProfile = _characterProfiles[1];
+
+            wulfricProfile.SkillTreeRoot ??= FindChildTransform("SkillTree_Wulfric")?.gameObject
+                ?? FindChildTransform("SkillTree")?.gameObject;
+            buckProfile.SkillTreeRoot ??= FindChildTransform("SkillTree_Buck")?.gameObject;
+
+            _characterProfiles[0] = wulfricProfile;
+            _characterProfiles[1] = buckProfile;
+        }
+
+        private Transform FindChildTransform(string childName)
+        {
+            var transforms = GetComponentsInChildren<Transform>(true);
+            foreach (var childTransform in transforms)
             {
-                return;
+                if (string.Equals(childTransform.name, childName, StringComparison.Ordinal))
+                {
+                    return childTransform;
+                }
             }
 
-            var serviceRoot = new GameObject(nameof(PlayerProgressionService));
-            serviceRoot.AddComponent<PlayerProgressionService>();
+            return null;
+        }
+
+        private T FindChildComponent<T>(string childName) where T : Component
+        {
+            var childTransform = FindChildTransform(childName);
+            return childTransform != null ? childTransform.GetComponent<T>() : null;
+        }
+
+        private PlayerProgressionService EnsureProgressionServiceReady()
+        {
+            var service = _progressionService != null
+                ? _progressionService
+                : PlayerProgressionService.Instance;
+
+            if (service == null)
+            {
+                service = UnityEngine.Object.FindFirstObjectByType<PlayerProgressionService>(FindObjectsInactive.Include);
+            }
+
+            if (service == null)
+            {
+                var serviceRoot = new GameObject(nameof(PlayerProgressionService));
+                service = serviceRoot.AddComponent<PlayerProgressionService>();
+            }
+
+            service.EnsureSkillTreesCatalogLoaded();
+            _progressionService = service;
+            return service;
         }
 
         private void EnsureSubscribed()
@@ -129,16 +372,25 @@ namespace Erumperem.Progression
         private void CollectPresenters()
         {
             _presenters.Clear();
-            var found = FindObjectsByType<SkillTreeNodePresenter>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
-            _presenters.AddRange(found);
+            var activeRoot = _characterProfiles.Length > 0
+                ? _characterProfiles[_currentProfileIndex].SkillTreeRoot
+                : null;
+
+            if (activeRoot != null)
+            {
+                _presenters.AddRange(activeRoot.GetComponentsInChildren<SkillTreeNodePresenter>(true));
+            }
+            else
+            {
+                var found = FindObjectsByType<SkillTreeNodePresenter>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                _presenters.AddRange(found);
+            }
 
             if (_presenters.Count == 0)
             {
                 Debug.LogWarning(
-                    "SkillTreeView: nenhum SkillTreeNodePresenter na cena. " +
-                    "Confirma que adicionaste o componente em cada botão da árvore.",
+                    "SkillTreeView: nenhum SkillTreeNodePresenter no root activo. " +
+                    "Confirma SkillTreeRoot e SkillTreeNodePresenter nos botões.",
                     this);
             }
         }
@@ -154,23 +406,30 @@ namespace Erumperem.Progression
         private void CacheCharacterTreesOrWarn()
         {
             var service = ResolveService();
-            _characterTrees = service != null
-                ? service.GetCharacterDefinition(_characterId)
+            var characterId = CurrentProgressionCharacterId;
+            _characterTrees = service != null && !string.IsNullOrWhiteSpace(characterId)
+                ? service.GetCharacterDefinition(characterId)
                 : null;
 
             if (_characterTrees == null)
             {
+                var catalogLoaded = service.IsSkillTreesCatalogLoaded;
                 Debug.LogError(
-                    $"SkillTreeView: personagem '{_characterId}' não está em skill_trees.json " +
-                    "(ou PlayerProgressionService falhou a carregar StreamingAssets/Data/skill_trees.json).",
+                    catalogLoaded
+                        ? $"SkillTreeView: personagem '{characterId}' não está em skill_trees.json."
+                        : $"SkillTreeView: skill_trees.json não carregou " +
+                          $"(verifica Assets/StreamingAssets/Data/skill_trees.json). Personagem pedido: '{characterId}'.",
                     this);
             }
         }
 
         private void HandleUnlockedNodesChanged(string characterIdWhoseSaveChanged)
         {
-            if (!string.IsNullOrEmpty(characterIdWhoseSaveChanged) &&
-                !string.Equals(characterIdWhoseSaveChanged, _characterId, StringComparison.OrdinalIgnoreCase))
+            var service = ResolveService();
+            if (service != null &&
+                !string.IsNullOrEmpty(characterIdWhoseSaveChanged) &&
+                !service.IsSharedSkillBudgetCharacter(characterIdWhoseSaveChanged) &&
+                !string.Equals(characterIdWhoseSaveChanged, CurrentProgressionCharacterId, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
@@ -184,12 +443,13 @@ namespace Erumperem.Progression
         public void NotifyNodePointerActivated(SkillTreeNodeAsset nodeAsset)
         {
             var service = ResolveService();
-            if (service == null || _characterTrees == null)
+            var characterId = CurrentProgressionCharacterId;
+            if (service == null || _characterTrees == null || string.IsNullOrWhiteSpace(characterId))
             {
                 return;
             }
 
-            if (!service.TryUnlock(_characterId, nodeAsset.NodeId, out var failureReason))
+            if (!service.TryUnlock(characterId, nodeAsset.NodeId, out var failureReason))
             {
                 Debug.Log($"SkillTreeView: nó '{nodeAsset.NodeId}' bloqueado — {failureReason}", this);
             }
@@ -200,7 +460,6 @@ namespace Erumperem.Progression
             _detailPanel.Apply(nodeAsset);
         }
 
-        /// <summary>Hook para botões de debug ou para revalidar manualmente.</summary>
         public void RefreshNow() => RefreshAllPresenters();
 
         private void RefreshAllPresenters()
@@ -216,11 +475,20 @@ namespace Erumperem.Progression
                 return;
             }
 
-            var unlocked = service.GetUnlockedNodesForCharacter(_characterId);
-            var spent = SkillTreeLookup.SumUnlockedNodeCosts(_characterTrees, unlocked);
+            var characterId = CurrentProgressionCharacterId;
+            var unlocked = service.GetUnlockedNodesForCharacter(characterId);
+            var sharedSkillLevel = service.GetSharedSkillLevel();
+            var characterPointsSpent = service.GetPointsSpent(characterId);
+            var budgetLabel = $"{sharedSkillLevel} / {service.MaxSkillPoints}";
+
+            if (_levelTextValue != null)
+            {
+                _levelTextValue.text = budgetLabel;
+            }
+
             if (_pointsLabel != null)
             {
-                _pointsLabel.text = $"{spent} / {service.MaxSkillPoints}";
+                _pointsLabel.text = budgetLabel;
             }
 
             foreach (var presenter in _presenters)
@@ -239,7 +507,7 @@ namespace Erumperem.Progression
                     continue;
                 }
 
-                var state = ComputeVisualState(asset, service, unlocked, spent);
+                var state = ComputeVisualState(asset, service, unlocked, sharedSkillLevel, characterPointsSpent);
                 presenter.ApplyVisualState(state, GetTintFor(state));
             }
         }
@@ -255,7 +523,8 @@ namespace Erumperem.Progression
             SkillTreeNodeAsset asset,
             PlayerProgressionService service,
             IReadOnlyDictionary<string, bool> unlocked,
-            int currentlySpent)
+            int sharedSkillLevel,
+            int currentCharacterPointsSpent)
         {
             if (_characterTrees == null)
             {
@@ -279,7 +548,7 @@ namespace Erumperem.Progression
                 if (_logVisualStateDecisions)
                 {
                     Debug.LogWarning(
-                        $"SkillTreeView: nodeId '{asset.NodeId}' não está na árvore de '{_characterId}'.",
+                        $"SkillTreeView: nodeId '{asset.NodeId}' não está na árvore de '{CurrentProgressionCharacterId}'.",
                         asset);
                 }
 
@@ -291,12 +560,13 @@ namespace Erumperem.Progression
                 return SkillTreeNodeVisualState.Unlocked;
             }
 
-            if (currentlySpent + nodeDef.Cost > service.MaxSkillPoints)
+            if (currentCharacterPointsSpent + nodeDef.Cost > sharedSkillLevel)
             {
                 if (_logVisualStateDecisions)
                 {
                     Debug.Log(
-                        $"SkillTreeView: '{asset.NodeId}' inactivo — sem pontos ({currentlySpent}/{service.MaxSkillPoints}).",
+                        $"SkillTreeView: '{asset.NodeId}' inactivo — {CurrentProgressionCharacterId} sem pontos " +
+                        $"(gasto {currentCharacterPointsSpent}, level partilhado {sharedSkillLevel}/{service.MaxSkillPoints}).",
                         asset);
                 }
 

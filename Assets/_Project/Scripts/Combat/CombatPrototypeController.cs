@@ -13,7 +13,9 @@ using Game.Core.Engine;
 using Game.Core.Models;
 using Game.Core.Progression;
 using Erumperem.Characters;
+using Erumperem.Combat.HealthBars;
 using Erumperem.Progression;
+using Erumperem.UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -122,6 +124,8 @@ namespace Erumperem.Combat
         private Combatant _pendingPlayerActor;
 
         private readonly Dictionary<string, Transform> _views = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, EnemyVisualDefinition> _enemyVisualByCombatantId =
+            new(StringComparer.Ordinal);
         private readonly HashSet<string> _damageFeedbackBusy = new(StringComparer.Ordinal);
         private bool _presentationBusy;
         private string _ongoingPresentationActorCombatantId = string.Empty;
@@ -136,6 +140,23 @@ namespace Erumperem.Combat
         private bool _rightClickPressedThisFrame;
         private Vector2 _pointerScreenPosition;
         private bool _hasPointerScreenPosition;
+
+        private bool _isInfiniteAllyHealthCheatActive;
+        private bool _isDoubleAllyDamageCheatActive;
+        private readonly Dictionary<string, AllyHealthCheatSnapshot> _allyHealthBeforeInfiniteHealthCheat =
+            new(StringComparer.Ordinal);
+
+        private readonly struct AllyHealthCheatSnapshot
+        {
+            public AllyHealthCheatSnapshot(int currentHp, bool isDead)
+            {
+                CurrentHp = currentHp;
+                IsDead = isDead;
+            }
+
+            public int CurrentHp { get; }
+            public bool IsDead { get; }
+        }
 
         public BattleState BattleState => _state;
         public BattleSimulator BattleSimulator => _sim;
@@ -307,6 +328,7 @@ namespace Erumperem.Combat
             var skillsPath = Path.Combine(dataDir, "skills.json");
             var skillTreesPath = Path.Combine(dataDir, "skill_trees.json");
             var passivesPath = Path.Combine(dataDir, "passives.json");
+            var enemiesPath = Path.Combine(dataDir, "enemies.json");
 
             var hasAnyPassiveAuthoring = _skillTreeAuthoringAssets != null &&
                                          _skillTreeAuthoringAssets.Any(asset =>
@@ -348,6 +370,14 @@ namespace Erumperem.Combat
 
             MergePassiveDefinitionsFromAuthoringAssets(passives);
 
+            IReadOnlyDictionary<string, EnemyDefinition> enemyDefinitionsById =
+                new Dictionary<string, EnemyDefinition>(StringComparer.OrdinalIgnoreCase);
+            if (File.Exists(enemiesPath))
+            {
+                enemyDefinitionsById = CombatDataLoader.BuildEnemyDefinitionIndex(
+                    CombatDataLoader.LoadEnemies(enemiesPath));
+            }
+
             var skillTreesList = CombatDataLoader.LoadSkillTrees(skillTreesPath);
             var partyCharacterNames = CombatPartyResolver.GetCombatAllyCharacterNames();
             Debug.Log(
@@ -374,7 +404,8 @@ namespace Erumperem.Combat
                 corruptionValue: 0,
                 allySkillIds: BattleFactory.DefaultAllySkillIds,
                 passivesById: passives,
-                unlockAllPassiveNodesForAllies: false);
+                unlockAllPassiveNodesForAllies: false,
+                enemyDefinitionsById: enemyDefinitionsById);
 
             ApplyCharacterStatsFromCatalog(
                 partyCharacterNames,
@@ -434,6 +465,7 @@ namespace Erumperem.Combat
 
         private void OnDisable()
         {
+            ClearAllCombatCheats();
             HealDebugTrace.OnLog = null;
             UnsubscribeFromInputEvents();
             StopActorActionRock();
@@ -456,6 +488,8 @@ namespace Erumperem.Combat
             InputManager.Instance.OnRightClickPressed += OnRightClickPressed;
             InputManager.Instance.OnCombatCheatKillAllEnemiesPressed += OnCombatCheatKillAllEnemiesPressed;
             InputManager.Instance.OnCombatCheatKillAllAlliesPressed += OnCombatCheatKillAllAlliesPressed;
+            InputManager.Instance.OnCombatCheatInfiniteAllyHealthPressed += OnCombatCheatInfiniteAllyHealthPressed;
+            InputManager.Instance.OnCombatCheatDoubleAllyDamagePressed += OnCombatCheatDoubleAllyDamagePressed;
         }
 
         private void UnsubscribeFromInputEvents()
@@ -470,6 +504,8 @@ namespace Erumperem.Combat
             InputManager.Instance.OnRightClickPressed -= OnRightClickPressed;
             InputManager.Instance.OnCombatCheatKillAllEnemiesPressed -= OnCombatCheatKillAllEnemiesPressed;
             InputManager.Instance.OnCombatCheatKillAllAlliesPressed -= OnCombatCheatKillAllAlliesPressed;
+            InputManager.Instance.OnCombatCheatInfiniteAllyHealthPressed -= OnCombatCheatInfiniteAllyHealthPressed;
+            InputManager.Instance.OnCombatCheatDoubleAllyDamagePressed -= OnCombatCheatDoubleAllyDamagePressed;
         }
 
         private void OnPointerPositionChanged(Vector2 pointerScreenPosition)
@@ -484,6 +520,127 @@ namespace Erumperem.Combat
         private void OnCombatCheatKillAllEnemiesPressed() => DebugKillAllEnemiesInstantly();
 
         private void OnCombatCheatKillAllAlliesPressed() => DebugKillAllAlliesInstantly();
+
+        private void OnCombatCheatInfiniteAllyHealthPressed() => ToggleInfiniteAllyHealthCheat();
+
+        private void OnCombatCheatDoubleAllyDamagePressed() => ToggleDoubleAllyDamageCheat();
+
+        private void ToggleInfiniteAllyHealthCheat()
+        {
+            if (_state == null)
+            {
+                Debug.LogWarning("Cheat F9 ignorado: combate ainda não está pronto.");
+                return;
+            }
+
+            if (_battleEnded)
+            {
+                Debug.Log("Cheat F9 ignorado: combate já terminou.");
+                return;
+            }
+
+            if (_isInfiniteAllyHealthCheatActive)
+            {
+                DisableInfiniteAllyHealthCheat(restoreSavedHealth: true);
+                Debug.Log("Cheat F9: vida infinita dos aliados DESLIGADA — HP restaurado ao valor anterior.");
+                return;
+            }
+
+            SnapshotAllyHealthForInfiniteHealthCheat();
+            _isInfiniteAllyHealthCheatActive = true;
+            _state.AlliesHaveInfiniteHealth = true;
+            Debug.Log("Cheat F9: vida infinita dos aliados LIGADA.");
+        }
+
+        private void ToggleDoubleAllyDamageCheat()
+        {
+            if (_state == null)
+            {
+                Debug.LogWarning("Cheat F10 ignorado: combate ainda não está pronto.");
+                return;
+            }
+
+            if (_battleEnded)
+            {
+                Debug.Log("Cheat F10 ignorado: combate já terminou.");
+                return;
+            }
+
+            if (_isDoubleAllyDamageCheatActive)
+            {
+                _isDoubleAllyDamageCheatActive = false;
+                _state.AllyOutgoingDamageMultiplier = 1.0;
+                Debug.Log("Cheat F10: dano ×2 dos aliados DESLIGADO.");
+                return;
+            }
+
+            _isDoubleAllyDamageCheatActive = true;
+            _state.AllyOutgoingDamageMultiplier = 2.0;
+            Debug.Log("Cheat F10: dano ×2 dos aliados LIGADO.");
+        }
+
+        private void SnapshotAllyHealthForInfiniteHealthCheat()
+        {
+            _allyHealthBeforeInfiniteHealthCheat.Clear();
+            foreach (var ally in _state.Allies)
+            {
+                _allyHealthBeforeInfiniteHealthCheat[ally.Identity.Id] =
+                    new AllyHealthCheatSnapshot(ally.Health.CurrentHp, ally.Health.IsDead);
+            }
+        }
+
+        private void DisableInfiniteAllyHealthCheat(bool restoreSavedHealth)
+        {
+            _isInfiniteAllyHealthCheatActive = false;
+            if (_state != null)
+            {
+                _state.AlliesHaveInfiniteHealth = false;
+            }
+
+            if (!restoreSavedHealth || _state == null)
+            {
+                _allyHealthBeforeInfiniteHealthCheat.Clear();
+                return;
+            }
+
+            foreach (var ally in _state.Allies)
+            {
+                if (!_allyHealthBeforeInfiniteHealthCheat.TryGetValue(ally.Identity.Id, out var snapshot))
+                {
+                    continue;
+                }
+
+                ally.Health.CurrentHp = Math.Max(0, Math.Min(snapshot.CurrentHp, ally.Health.MaxHp));
+                ally.Health.IsDead = snapshot.IsDead;
+                ally.Health.IsDeathblowPending = false;
+            }
+
+            _allyHealthBeforeInfiniteHealthCheat.Clear();
+            InvalidateAllyHealthBarDisplays();
+        }
+
+        private void DisableDoubleAllyDamageCheat()
+        {
+            _isDoubleAllyDamageCheatActive = false;
+            if (_state != null)
+            {
+                _state.AllyOutgoingDamageMultiplier = 1.0;
+            }
+        }
+
+        private void ClearAllCombatCheats()
+        {
+            DisableInfiniteAllyHealthCheat(restoreSavedHealth: true);
+            DisableDoubleAllyDamageCheat();
+        }
+
+        private void InvalidateAllyHealthBarDisplays()
+        {
+            foreach (var healthBarHudView in FindObjectsByType<HealthBarHudView>(FindObjectsSortMode.None))
+            {
+                healthBarHudView.InvalidateHealthDisplayCache();
+            }
+        }
 
         /// <summary>
         /// Cheat para QA / playtests: zera o HP de todos os inimigos vivos, dispara a animação de morte
@@ -863,6 +1020,7 @@ namespace Erumperem.Combat
 
             if (!_preparedThisStep)
             {
+                var turnEventStartIndex = _collector.Events.Count;
                 if (!_sim.TryPrepareActorTurn(_state, actor))
                 {
                     _actorIndex++;
@@ -870,6 +1028,7 @@ namespace Erumperem.Combat
                     return true;
                 }
 
+                ProcessTurnStartCombatEvents(turnEventStartIndex);
                 _preparedThisStep = true;
                 _sessionHub?.RaiseTurnStarted();
             }
@@ -917,6 +1076,7 @@ namespace Erumperem.Combat
             _battleEnded = true;
             _needsPlayerInput = false;
             ClearSkillBarSelection();
+            ClearAllCombatCheats();
             _sim.EmitBattleEnded(_state);
             LogLastEvents();
 
@@ -1346,6 +1506,8 @@ namespace Erumperem.Combat
 
                     OverrideEnemySkillLoadoutFromVisualDefinition(enemy, enemyVisualDefinition);
                     ApplyEnemyCharacterStatsFromCatalog(enemy, enemyVisualDefinition);
+                    ApplyEnemyPassiveIdsFromVisualDefinition(enemy, enemyVisualDefinition);
+                    _enemyVisualByCombatantId[enemy.Identity.Id] = enemyVisualDefinition;
                 }
 
                 EnsureCombatCapsuleTagOnUnit(enemyViewRoot, enemy.Identity.Id);
@@ -1491,16 +1653,8 @@ namespace Erumperem.Combat
             return null;
         }
 
-        private static IReadOnlyList<string> ResolveInnateSkillIds(string progressionCharacterId)
-        {
-            if (string.Equals(progressionCharacterId, "wulfric", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(progressionCharacterId, "buck", StringComparison.OrdinalIgnoreCase))
-            {
-                return BattleFactory.WulfricInnateSkillIds;
-            }
-
-            return BattleFactory.DefaultAllySkillIds;
-        }
+        private static IReadOnlyList<string> ResolveInnateSkillIds(string progressionCharacterId) =>
+            BattleFactory.ResolveInnateSkillIds(progressionCharacterId);
 
         private void ApplyEnemyCharacterStatsFromCatalog(
             Combatant enemy,
@@ -1560,6 +1714,151 @@ namespace Erumperem.Combat
 
             enemy.SkillLoadout.Skills.Clear();
             enemy.SkillLoadout.Skills.AddRange(validSkillIds);
+        }
+
+        private void ApplyEnemyPassiveIdsFromVisualDefinition(
+            Combatant enemy,
+            EnemyVisualDefinition enemyVisualDefinition)
+        {
+            if (enemy == null || enemyVisualDefinition?.enemyPassiveIds == null)
+            {
+                return;
+            }
+
+            foreach (var passiveId in enemyVisualDefinition.enemyPassiveIds)
+            {
+                if (string.IsNullOrWhiteSpace(passiveId))
+                {
+                    continue;
+                }
+
+                enemy.Progression.UnlockedNodes[passiveId] = true;
+            }
+        }
+
+        private void ProcessTurnStartCombatEvents(int turnEventStartIndex)
+        {
+            if (_collector == null || _state == null || turnEventStartIndex >= _collector.Events.Count)
+            {
+                return;
+            }
+
+            var turnEvents = _collector.Events.GetRange(
+                turnEventStartIndex,
+                _collector.Events.Count - turnEventStartIndex);
+            var narrativeLines = new List<string>();
+            foreach (var combatEvent in turnEvents)
+            {
+                if (combatEvent.EventType == BattleEventType.CombatantSpawned)
+                {
+                    TrySpawnSummonedEnemyVisual(combatEvent);
+                    var summonLine = PlayerFacingText.FormatCombatantSpawnedLine(_state, combatEvent);
+                    if (!string.IsNullOrEmpty(summonLine))
+                    {
+                        narrativeLines.Add(summonLine);
+                    }
+                }
+            }
+
+            if (narrativeLines.Count > 0)
+            {
+                _sessionHub?.RaiseNarrativeLines(narrativeLines);
+            }
+
+            if (logEventsToConsole)
+            {
+                LogLastEvents();
+            }
+        }
+
+        private void TrySpawnSummonedEnemyVisual(CombatEvent combatEvent)
+        {
+            if (combatEvent.EventType != BattleEventType.CombatantSpawned ||
+                string.IsNullOrEmpty(combatEvent.TargetId))
+            {
+                return;
+            }
+
+            var spawnedCombatant = FindCombatantById(combatEvent.TargetId);
+            if (spawnedCombatant == null)
+            {
+                return;
+            }
+
+            var archetypeId = combatEvent.SkillId;
+            if (!TryResolveEnemyVisualDefinitionByArchetypeId(archetypeId, out var enemyVisualDefinition) ||
+                enemyVisualDefinition.battlePrefab == null)
+            {
+                Debug.LogWarning(
+                    $"CombatPrototypeController: sem visual para arquétipo invocado '{archetypeId}'.",
+                    this);
+                return;
+            }
+
+            var rankIndex = combatEvent.PassiveAuxInt - 1;
+            if (enemyVisualRoots == null || rankIndex < 0 || rankIndex >= enemyVisualRoots.Length)
+            {
+                Debug.LogWarning(
+                    $"CombatPrototypeController: rank inválido {combatEvent.PassiveAuxInt} para spawn de '{archetypeId}'.",
+                    this);
+                return;
+            }
+
+            var slotRoot = enemyVisualRoots[rankIndex];
+            if (slotRoot == null)
+            {
+                return;
+            }
+
+            EnemyVisualBattleInstaller.ClearSlotForEnemyVisualPrefab(slotRoot);
+            var alliesFacingReference = ResolveAlliesFacingReference();
+            var instantiatedEnemyRoot = EnemyVisualBattleInstaller.InstantiateEnemyUnderSlot(
+                slotRoot,
+                enemyVisualDefinition.battlePrefab,
+                alliesFacingReference);
+            if (instantiatedEnemyRoot == null)
+            {
+                Debug.LogError(
+                    $"CombatPrototypeController: falha ao instanciar prefab de '{archetypeId}' no rank {combatEvent.PassiveAuxInt}.",
+                    enemyVisualDefinition);
+                return;
+            }
+
+            OverrideEnemySkillLoadoutFromVisualDefinition(spawnedCombatant, enemyVisualDefinition);
+            ApplyEnemyCharacterStatsFromCatalog(spawnedCombatant, enemyVisualDefinition);
+            EnsureCombatCapsuleTagOnUnit(instantiatedEnemyRoot, spawnedCombatant.Identity.Id);
+            _views[spawnedCombatant.Identity.Id] = instantiatedEnemyRoot;
+            _enemyVisualByCombatantId[spawnedCombatant.Identity.Id] = enemyVisualDefinition;
+        }
+
+        private bool TryResolveEnemyVisualDefinitionByArchetypeId(
+            string archetypeId,
+            out EnemyVisualDefinition enemyVisualDefinition)
+        {
+            enemyVisualDefinition = null;
+            if (string.IsNullOrWhiteSpace(archetypeId) || enemyVisualSpawnCatalog?.Definitions == null)
+            {
+                return false;
+            }
+
+            foreach (var candidateDefinition in enemyVisualSpawnCatalog.Definitions)
+            {
+                if (candidateDefinition == null)
+                {
+                    continue;
+                }
+
+                if (string.Equals(
+                        candidateDefinition.ResolveCharacterStatId(),
+                        archetypeId,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    enemyVisualDefinition = candidateDefinition;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private bool TryGetEnemyAnimationController(string combatantId, out EnemyAnimationController enemyAnimationController)

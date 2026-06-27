@@ -14,11 +14,28 @@ public class ChangePanelButtonController : UiButtonController<ChangePanelButtonM
 
     void IPointerDownHandler.OnPointerDown(PointerEventData eventData)
     {
-        if (!isDisabled)
+        if (isDisabled)
         {
-            _fsm.TransitionTo(new ButtonPressed(this, uiButtonView._pressedEnterEffects, uiButtonView._pressedExitEffects));
-            UIManager.Instance.ClosePanel(uiButtonModel.panelToHide);
-            UIManager.Instance.OpenPanel(uiButtonModel.panelToOpen);
+            return;
+        }
+
+        _fsm.TransitionTo(new ButtonPressed(this, uiButtonView._pressedEnterEffects, uiButtonView._pressedExitEffects));
+
+        var uiManager = UIManager.Instance;
+        if (uiManager == null)
+        {
+            Debug.LogWarning($"{nameof(ChangePanelButtonController)}: {nameof(UIManager)}.{nameof(UIManager.Instance)} is null.", this);
+            return;
+        }
+
+        if (uiButtonModel.panelToHide != null)
+        {
+            uiManager.ClosePanel(uiButtonModel.panelToHide);
+        }
+
+        if (uiButtonModel.panelToOpen != null)
+        {
+            uiManager.OpenPanel(uiButtonModel.panelToOpen);
         }
     }
 

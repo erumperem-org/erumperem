@@ -16,6 +16,29 @@ public static class BattleFactory
         "wulfric_innate_guard",
     ];
 
+    /// <summary>Placeholder innates for Buck (cloned from Wulfric).</summary>
+    public static readonly string[] BuckInnateSkillIds =
+    [
+        "buck_innate_cleave",
+        "buck_innate_shove",
+        "buck_innate_guard",
+    ];
+
+    public static IReadOnlyList<string> ResolveInnateSkillIds(string progressionCharacterId)
+    {
+        if (string.Equals(progressionCharacterId, "buck", StringComparison.OrdinalIgnoreCase))
+        {
+            return BuckInnateSkillIds;
+        }
+
+        if (string.Equals(progressionCharacterId, "wulfric", StringComparison.OrdinalIgnoreCase))
+        {
+            return WulfricInnateSkillIds;
+        }
+
+        return DefaultAllySkillIds;
+    }
+
     public static readonly string[] WulfricFullSkillLoadout =
     [
         "wulfric_innate_cleave", "wulfric_innate_shove", "wulfric_innate_guard",
@@ -34,7 +57,8 @@ public static class BattleFactory
         IReadOnlyList<string>? allySkillIds = null,
         IReadOnlyList<string>? enemySkillIds = null,
         IReadOnlyDictionary<string, PassiveDefinition>? passivesById = null,
-        bool unlockAllPassiveNodesForAllies = false)
+        bool unlockAllPassiveNodesForAllies = false,
+        IReadOnlyDictionary<string, EnemyDefinition>? enemyDefinitionsById = null)
     {
         var skillsById = skills.ToDictionary(skill => skill.Id, skill => skill);
         var passiveCatalog = passivesById ?? new Dictionary<string, PassiveDefinition>();
@@ -71,6 +95,8 @@ public static class BattleFactory
             Enemies = enemies,
             SkillsById = skillsById,
             PassivesById = passiveCatalog,
+            EnemyDefinitionsById = enemyDefinitionsById ??
+                                   new Dictionary<string, EnemyDefinition>(StringComparer.OrdinalIgnoreCase),
             CorruptionValue = Math.Max(CorruptionRules.MinCorruptionValue, corruptionValue),
             BalanceConfig = CombatBalanceConfig.CreateDefault(),
             TurnNumber = 0,

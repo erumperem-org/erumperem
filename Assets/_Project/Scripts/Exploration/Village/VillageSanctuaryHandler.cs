@@ -3,7 +3,7 @@ using Services.DebugUtilities;
 using UnityEngine;
 
 /// <summary>
-/// Cura o Main e zera corrupção apenas se ele permanecer na vila por tempo suficiente.
+/// Cura todos os aliados e zera corrupção quando o Main permanece na vila por tempo suficiente.
 /// </summary>
 public sealed class VillageSanctuaryHandler : MonoBehaviour
 {
@@ -119,10 +119,10 @@ public sealed class VillageSanctuaryHandler : MonoBehaviour
             yield break;
         }
 
-        ApplyVillageSanctuaryToMain(mainPlayableCharacter);
+        ApplyVillageSanctuaryToParty();
     }
 
-    private void ApplyVillageSanctuaryToMain(PlayableCharacter mainPlayableCharacter)
+    private void ApplyVillageSanctuaryToParty()
     {
         if (_corruptionSystem != null)
         {
@@ -135,7 +135,7 @@ public sealed class VillageSanctuaryHandler : MonoBehaviour
                 LogCategory.Player);
         }
 
-        HealMainIfPresent(mainPlayableCharacter);
+        HealAllAllies();
 
         var loadContext = ExplorationLoadContext.Instance;
         if (loadContext != null)
@@ -144,7 +144,7 @@ public sealed class VillageSanctuaryHandler : MonoBehaviour
         }
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
-            "[HEAL-DEBUG] [VILLAGE] Santuário aplicado: corrupção zerada e Main curado.",
+            "[HEAL-DEBUG] [VILLAGE] Santuário aplicado: corrupção zerada e aliados curados.",
             LogCategory.Player);
     }
 
@@ -168,25 +168,33 @@ public sealed class VillageSanctuaryHandler : MonoBehaviour
             LogCategory.Player);
     }
 
-    private static void HealMainIfPresent(PlayableCharacter mainPlayableCharacter)
+    private void HealAllAllies()
     {
-        if (mainPlayableCharacter == null)
+        if (_playableCharactersManager == null)
         {
             return;
         }
 
-        var healthBar = mainPlayableCharacter.HealthBar;
-        if (healthBar == null)
+        foreach (var playableCharacter in _playableCharactersManager.Playables)
         {
-            return;
+            if (playableCharacter == null)
+            {
+                continue;
+            }
+
+            var healthBar = playableCharacter.HealthBar;
+            if (healthBar == null)
+            {
+                continue;
+            }
+
+            float healthBeforeHeal = healthBar.CurrentHealth;
+            healthBar.HealFullFromVillageSanctuary();
+
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"[HEAL-DEBUG] [VILLAGE] Aliado '{playableCharacter.CharacterName}' curado " +
+                $"{healthBeforeHeal} → {healthBar.CurrentHealth}/{healthBar.MaxHealth}.",
+                LogCategory.Player);
         }
-
-        float healthBeforeHeal = healthBar.CurrentHealth;
-        healthBar.HealFullFromVillageSanctuary();
-
-        LoggerService.PrintLogMessage(LogLevel.Debug,
-            $"[HEAL-DEBUG] [VILLAGE] Main '{mainPlayableCharacter.CharacterName}' curado " +
-            $"{healthBeforeHeal} → {healthBar.CurrentHealth}/{healthBar.MaxHealth}.",
-            LogCategory.Player);
     }
 }
