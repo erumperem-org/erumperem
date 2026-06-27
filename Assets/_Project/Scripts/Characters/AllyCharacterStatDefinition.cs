@@ -27,7 +27,6 @@ namespace Erumperem.Characters
         [SerializeField] private int maxHitPoints = 100;
 
         [Header("Combate")]
-
         [Min(0)]
         [SerializeField] private int speed = 6;
 
@@ -52,13 +51,28 @@ namespace Erumperem.Characters
 
         [Tooltip("1 = frente (Main), 2 = atrás (Companion).")]
         [Min(1)]
-        [SerializeField] public int battleFormationRank = 1;
+        [SerializeField] private int battleFormationRank = 1;
+
+        // Propriedades públicas somente leitura
 
         public string CharacterId => characterId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? characterId : displayName;
         public PlayableCharacterState DefaultExplorationState => defaultExplorationState;
+
         public int MaxHitPoints => maxHitPoints;
+
+        public int Speed => speed;
+        public double Accuracy => accuracy;
+        public double CritChance => critChance;
+
+        public double BurnResistance => burnResistance;
+        public double BlightResistance => blightResistance;
+        public double StunResistance => stunResistance;
+
+        public ElementType ElementType => elementType;
+
         public string ProgressionCharacterId => progressionCharacterId;
+
         public GameObject BattlePrefab => battlePrefab;
         public int BattleFormationRank => battleFormationRank;
 
