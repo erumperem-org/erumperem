@@ -139,8 +139,7 @@ namespace Player
                 return;
             }
 
-            var state = _character.CurrentState;
-            if (state != PlayableCharacterState.Main && state != PlayableCharacterState.Companion)
+            if (_character.CurrentState != PlayableCharacterState.Main)
             {
                 return;
             }
@@ -148,7 +147,6 @@ namespace Player
             _isOn = !_isOn;
             ApplyTorchVisuals();
         }
-
         private void ApplyTorchVisuals()
         {
             if (_naturalLightObject != null)
