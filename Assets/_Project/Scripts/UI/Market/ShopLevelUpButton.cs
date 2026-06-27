@@ -145,12 +145,12 @@ public sealed class ShopLevelUpButton : MonoBehaviour
         {
             _button.interactable = false;
             if (_priceText) _priceText.text = "MAX";
-            if (_levelText) _levelText.text = $"Nível {MaxLevel}/{MaxLevel}";
+            if (_levelText) _levelText.text = $"Level {MaxLevel}/{MaxLevel}";
             return;
         }
 
         if (_priceText) _priceText.text = GetCurrentPrice().ToString();
-        if (_levelText) _levelText.text = $"Nível {_currentLevel + 1}/{MaxLevel}";
+        if (_levelText) _levelText.text = $"Level {_currentLevel + 1}/{MaxLevel}";
         _button.interactable = true;
     }
 

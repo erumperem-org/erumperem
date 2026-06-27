@@ -7,36 +7,8 @@ namespace Erumperem.UI
 {
     /// <summary>
     /// Converte marcas de autor (colchetes) em rich text do TextMeshPro e em links especiais
-    /// animados por <see cref="TmpAuthoredTextEffectDriver"/>.
-    /// Chamar <see cref="ExpandAuthoringMarkupToTextMeshPro"/> no fim do pipeline de cópia (depois de
-    /// <see cref="PlayerFacingText.PresentForUi"/> ou equivalente).
+    /// animados por TmpAuthoredTextEffectDriver.
     /// </summary>
-    /// <remarks>
-    /// <para><b>Tags suportadas (autor → TMP)</b></para>
-    /// <para>
-    /// <b>[c ARG]…[/c]</b> — cor. O marcador de abertura é obrigatoriamente <c>[c </c> (espaço após o c), por exemplo
-    /// <c>[c #RRGGBB]…[/c]</c>, <c>[c #RRGGBBAA]…[/c]</c>, <c>[c fire]…[/c]</c>.
-    /// Nomes: fire, metal, anomaly, none, damage, heal, buff, debuff.
-    /// </para>
-    /// <para><b>[dot bleed|blight|burn]</b> — ícone opcional + nome PT do DoT.</para>
-    /// <para><b>[elem none|fire|metal|anomaly]</b> — ícone opcional + nome PT do elemento.</para>
-    /// <para>
-    /// <b>[token block|blockplus|dodge|blind|taunt|stealth|combo|stun]</b> — ícone opcional + nome PT
-    /// (igual ao enum, sem underscores).
-    /// </para>
-    /// <para>
-    /// <b>[rainbow]…[/rainbow]</b> — cores animadas (requer <see cref="TmpAuthoredTextEffectDriver"/> no
-    /// mesmo GameObject que o TMP).
-    /// </para>
-    /// <para><b>[shake]…[/shake]</b> — tremer.</para>
-    /// <para><b>[wobble]…[/wobble]</b> — oscilar.</para>
-    /// <para>
-    /// Links TMP internos: <c>fx_rainbow</c>, <c>fx_shake</c>, <c>fx_wobble</c>.
-    /// </para>
-    /// <para>
-    /// Opção: <c>Resources/PlayerGameRichTextSettings.asset</c> com prefixos de nome de sprite.
-    /// </para>
-    /// </remarks>
     public static class PlayerGameRichText
     {
         public const string LinkIdRainbow = "fx_rainbow";
@@ -305,33 +277,33 @@ namespace Erumperem.UI
         private static string DotTypeDisplayName(DotType dotType) =>
             dotType switch
             {
-                DotType.Bleed => "Sangramento",
-                DotType.Blight => "Praga",
-                DotType.Burn => "Queimadura",
+                DotType.Bleed => "Bleed",
+                DotType.Blight => "Blight",
+                DotType.Burn => "Burn",
                 _ => dotType.ToString(),
             };
 
         private static string ElementTypeDisplayName(ElementType elementType) =>
             elementType switch
             {
-                ElementType.None => "Neutro",
-                ElementType.Fire => "Fogo",
+                ElementType.None => "Neutral",
+                ElementType.Fire => "Fire",
                 ElementType.Metal => "Metal",
-                ElementType.Anomaly => "Anomalia",
+                ElementType.Anomaly => "Anomaly",
                 _ => elementType.ToString(),
             };
 
         private static string TokenTypeDisplayName(TokenType tokenType) =>
             tokenType switch
             {
-                TokenType.Block => "Bloqueio",
-                TokenType.BlockPlus => "Bloqueio Reforçado",
-                TokenType.Dodge => "Esquiva",
-                TokenType.Blind => "Cegueira",
-                TokenType.Taunt => "Provocação",
-                TokenType.Stealth => "Furtividade",
+                TokenType.Block => "Block",
+                TokenType.BlockPlus => "Block Plus",
+                TokenType.Dodge => "Dodge",
+                TokenType.Blind => "Blind",
+                TokenType.Taunt => "Taunt",
+                TokenType.Stealth => "Stealth",
                 TokenType.Combo => "Combo",
-                TokenType.Stun => "Atordoamento",
+                TokenType.Stun => "Stun",
                 _ => tokenType.ToString(),
             };
 
