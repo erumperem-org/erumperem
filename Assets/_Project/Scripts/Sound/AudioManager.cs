@@ -74,7 +74,7 @@ public class AudioManager : MonoBehaviour
         bgmSource.Play();
     }
 
-    public void PlaySFX(string soundName)
+    public void PlaySFX(string soundName, float volumeMultiplier = 1f)
     {
         Sound s = Array.Find(sfxClips, x => x.name == soundName);
         if (s != null && s.clips.Length > 0)
@@ -83,7 +83,6 @@ public class AudioManager : MonoBehaviour
 
             int randomIndex = 0;
 
-            // Se houver mais de um áudio, aplica a lógica matemática de não-repetição
             if (s.clips.Length > 1)
             {
                 do
@@ -93,9 +92,10 @@ public class AudioManager : MonoBehaviour
             }
 
             s.lastPlayedIndex = randomIndex;
-            sfxSource.PlayOneShot(s.clips[randomIndex], s.volume);
+            sfxSource.PlayOneShot(s.clips[randomIndex], s.volume * volumeMultiplier);
         }
     }
+
 
     public void PlayAmbientLoop(string soundName)
     {
