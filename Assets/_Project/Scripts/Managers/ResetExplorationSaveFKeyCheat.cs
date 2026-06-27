@@ -75,5 +75,6 @@ public sealed class ResetExplorationSaveFKeyCheat : MonoBehaviour
     {
         Debug.Log("Cheat F5 acionado: reset do save de exploração.");
         ExplorationDataManagement.ResetExplorationSave();
+        ExplorationDataManagement.ResetInventorySave();
     }
 }

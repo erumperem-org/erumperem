@@ -1087,6 +1087,7 @@ namespace Erumperem.Combat
             else if (_state.Winner == Side.Enemies)
             {
                 defeatPanel.SetActive(true);
+                FindAnyObjectByType<PlayerInventorySaveSystem>().ClearSave();
             }
             else
             {

@@ -30,7 +30,8 @@ internal sealed class InventorySaveData
 /// <summary>
 /// Persiste e restaura o <see cref="PlayerInventorySystem"/> em disco (JSON).
 ///
-/// • <c>Awake</c>  → tenta carregar; se o arquivo não existir, mantém inventário vazio.
+/// • Singleton: acesse via <see cref="Instance"/>.
+/// • <c>Awake</c>      → tenta carregar; se o arquivo não existir, mantém inventário vazio.
 /// • <c>SaveAsync</c>  → serializa o inventário atual e grava em disco.
 /// • <c>LoadAsync</c>  → lê o arquivo e reaplica os itens no inventário.
 /// • <c>ClearSave</c>  → apaga o arquivo e limpa o inventário em memória.
@@ -40,6 +41,10 @@ internal sealed class InventorySaveData
 /// </summary>
 public sealed class PlayerInventorySaveSystem : MonoBehaviour
 {
+    // ── Singleton ─────────────────────────────────────────────────────────
+
+    public static PlayerInventorySaveSystem Instance { get; private set; }
+
     // ── Inspector ─────────────────────────────────────────────────────────
 
     [Header("Referências")]
@@ -61,8 +66,24 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Log(LogLevel.Warning, "Instância duplicada detectada — destruindo.");
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+
         _saveDirectory = System.IO.Path.Combine(Application.persistentDataPath, _saveFolderName);
-        _ = LoadAsync(); // fire-and-forget; inventário começa vazio se arquivo não existir
+        _ = LoadAsync();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 
     // ── API pública ───────────────────────────────────────────────────────
@@ -116,7 +137,6 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
                 return;
             }
 
-            // Reconstrói o dicionário a partir dos ids
             var toAdd = new Dictionary<IStorageable, int>();
             foreach (var entry in saveData.Entries)
             {
@@ -140,8 +160,8 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
         }
     }
 
-    /// <summary>Apaga o arquivo de save e limpa o inventário em memória.</summary>
-    public async void ClearSave()
+    /// <summary>Apaga o arquivo de save.</summary>
+    public async System.Threading.Tasks.Task ClearSave()
     {
         try
         {
@@ -158,4 +178,49 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
 
     private static void Log(LogLevel level, string msg) =>
         LoggerService.PrintLogMessage(level, $"[InventorySave] {msg}", LogCategory.Inventory);
+
+    // ── Custom Editor (somente no Editor) ────────────────────────────────
+
+#if UNITY_EDITOR
+    [UnityEditor.CustomEditor(typeof(PlayerInventorySaveSystem))]
+    private class PlayerInventorySaveSystemEditor : UnityEditor.Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            DrawDefaultInspector();
+
+            var system = (PlayerInventorySaveSystem)target;
+
+            // Botões só fazem sentido em runtime — FileService e _saveDirectory
+            // só estão inicializados após o Awake.
+            UnityEditor.EditorGUILayout.Space(8);
+            UnityEditor.EditorGUILayout.LabelField("Runtime Controls", UnityEditor.EditorStyles.boldLabel);
+
+            UnityEngine.GUI.enabled = Application.isPlaying;
+
+            if (GUILayout.Button("Save"))
+                system.SaveAsync();
+
+            if (GUILayout.Button("Load"))
+                _ = system.LoadAsync();
+
+            UnityEditor.EditorGUILayout.Space(4);
+
+            // Vermelho para sinalizar que Clear é destrutivo
+            var prevColor = UnityEngine.GUI.backgroundColor;
+            UnityEngine.GUI.backgroundColor = new Color(1f, 0.4f, 0.4f);
+
+            if (GUILayout.Button("Clear Save"))
+                _ = system.ClearSave();
+
+            UnityEngine.GUI.backgroundColor = prevColor;
+            UnityEngine.GUI.enabled = true;
+
+            if (!Application.isPlaying)
+                UnityEditor.EditorGUILayout.HelpBox(
+                    "Entre em Play Mode para usar os controles acima.",
+                    UnityEditor.MessageType.Info);
+        }
+    }
+#endif
 }

@@ -35,7 +35,7 @@ public sealed class ExplorationDataManagement : MonoBehaviour
 
     /// <summary>Mesma lógica que <see cref="ResetExplorationContext"/>; usável sem instância na cena.</summary>
     public static async void ResetExplorationSave() => await ResetExplorationSaveAsync();
-
+    public static async void ResetInventorySave() => await ResetInventorySaveAsync();
     private static async Task ResetExplorationSaveAsync()
     {
         var loadContext = ExplorationLoadContext.Instance;
@@ -48,6 +48,17 @@ public sealed class ExplorationDataManagement : MonoBehaviour
         await loadContext.ResetToDefaultStateAsync();
     }
 
+    private static async Task ResetInventorySaveAsync()
+    {
+        var inventorySaveSystem = PlayerInventorySaveSystem.Instance;
+        if (inventorySaveSystem == null)
+        {
+            Debug.LogWarning("[ExplorationDataManagement] PlayerInventorySaveSystem.Instance é nulo — operação ignorada.");
+            return;
+        }
+
+        inventorySaveSystem.ClearSave();
+    }
     private static void InvokeOnLoadContext(Action<ExplorationLoadContext> action)
     {
         var loadContext = ExplorationLoadContext.Instance;
