@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -24,7 +25,13 @@ namespace Player
         [SerializeField] private PlayableCharacter _character;
         [SerializeField] private PlayerInputReader _inputReader;
 
+        [Header("Estado inicial")]
+        [Tooltip("No overworld, o Main começa com a tocha acesa.")]
+        [SerializeField] private bool _startsWithTorchOn = true;
+
         private bool _isOn;
+        private bool _hasAppliedInitialTorchState;
+        private PlayableCharactersManager _charactersManager;
 
         // ── Unity lifecycle ───────────────────────────────────────────────
 
@@ -49,21 +56,81 @@ namespace Player
             {
                 _inputReader = FindFirstObjectByType<PlayerInputReader>();
             }
+
+            _charactersManager = FindFirstObjectByType<PlayableCharactersManager>();
         }
 
         private void OnEnable()
         {
-            if (_inputReader == null) return;
-            _inputReader.OnTorch += Toggle;
+            if (_inputReader != null)
+            {
+                _inputReader.OnTorch += Toggle;
+            }
+
+            if (_charactersManager != null)
+            {
+                _charactersManager.OnMainChanged += HandleMainCharacterChanged;
+            }
+
+            StartCoroutine(ApplyInitialTorchStateWhenReady());
         }
 
         private void OnDisable()
         {
-            if (_inputReader == null) return;
-            _inputReader.OnTorch -= Toggle;
+            if (_inputReader != null)
+            {
+                _inputReader.OnTorch -= Toggle;
+            }
+
+            if (_charactersManager != null)
+            {
+                _charactersManager.OnMainChanged -= HandleMainCharacterChanged;
+            }
         }
 
         // ── Lógica ───────────────────────────────────────────────────────
+
+        private void HandleMainCharacterChanged(IPlayableCharacter mainCharacter)
+        {
+            if (mainCharacter is not PlayableCharacter playableCharacter || playableCharacter != _character)
+            {
+                return;
+            }
+
+            TryApplyInitialTorchStateForMain();
+        }
+
+        private IEnumerator ApplyInitialTorchStateWhenReady()
+        {
+            const int maxFramesToWait = 180;
+            for (var frameIndex = 0; frameIndex < maxFramesToWait; frameIndex++)
+            {
+                if (TryApplyInitialTorchStateForMain())
+                {
+                    yield break;
+                }
+
+                yield return null;
+            }
+        }
+
+        private bool TryApplyInitialTorchStateForMain()
+        {
+            if (_hasAppliedInitialTorchState || !_startsWithTorchOn || _character == null)
+            {
+                return _hasAppliedInitialTorchState;
+            }
+
+            if (_character.CurrentState != PlayableCharacterState.Main)
+            {
+                return false;
+            }
+
+            _hasAppliedInitialTorchState = true;
+            _isOn = true;
+            ApplyTorchVisuals();
+            return true;
+        }
 
         private void Toggle()
         {
@@ -74,9 +141,16 @@ namespace Player
 
             var state = _character.CurrentState;
             if (state != PlayableCharacterState.Main && state != PlayableCharacterState.Companion)
+            {
                 return;
+            }
 
             _isOn = !_isOn;
+            ApplyTorchVisuals();
+        }
+
+        private void ApplyTorchVisuals()
+        {
             if (_naturalLightObject != null)
             {
                 _naturalLightObject.SetActive(!_isOn);
