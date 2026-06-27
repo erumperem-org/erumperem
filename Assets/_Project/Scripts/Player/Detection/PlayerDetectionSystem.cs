@@ -12,7 +12,8 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
     [SerializeField] private PlayableAnimationController _animationController;
     [SerializeField] private PlayableCharacter _character;
     [SerializeField] private PlayerInventorySystem _inventory;
-
+    [SerializeField] private GameObject center;
+    private readonly int centerOffsetForCharacterInteraction = 20;
     public IReadOnlyList<Interactable> Available => _available;
     [SerializeField] private List<Interactable> _available = new();
     private Detector _detector;
@@ -44,9 +45,9 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
 
     public void Update()
     {
-        if(this.tag == "Player")
+        if (this.tag == "Player")
         {
-             _detector.Scan();
+            _detector.Scan();
         }
     }
     public void StartScan()
@@ -118,11 +119,20 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
 
     private void OnEnter(Collider col, string label, int _)
     {
-        TryToggleCharacterInteractPrompt(col, label, shouldShow: true);
+
+
 
         if (!IsRelevant(label)) return;
 
+        if (Vector3.Distance(this.transform.position, center.transform.position) < centerOffsetForCharacterInteraction)
+        {
+            TryToggleCharacterInteractPrompt(col, label, shouldShow: true);
+        }
         var interactable = ResolveInteractable(col);
+        if (interactable is CharacterSelectionNpc selectionNpc && Vector3.Distance(this.transform.position, center.transform.position) > centerOffsetForCharacterInteraction)
+        {
+            return;
+        }
         if (interactable == null || _available.Contains(interactable)) return;
 
         _available.Add(interactable);
@@ -138,7 +148,7 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
         var interactable = ResolveInteractable(col);
         if (interactable != null) _available.Remove(interactable);
         var characterSelectionNpc = interactable.GetComponent<CharacterSelectionNpc>();
-        if(characterSelectionNpc != null)
+        if (characterSelectionNpc != null)
         {
             characterSelectionNpc._canvas._panel.SetActive(false);
         }

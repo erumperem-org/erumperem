@@ -56,7 +56,7 @@ namespace Player
             {
                 _inputReader = FindFirstObjectByType<PlayerInputReader>();
             }
-
+            _isOn = _startsWithTorchOn;
             _charactersManager = FindFirstObjectByType<PlayableCharactersManager>();
         }
 

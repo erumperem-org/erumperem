@@ -85,11 +85,6 @@ namespace Player
             {
                 OnInteract?.Invoke();
             }
-
-            if (_torchAction != null && _torchAction.WasPressedThisFrame())
-            {
-                OnTorch?.Invoke();
-            }
         }
 
         // ── API pública ───────────────────────────────────────────────────

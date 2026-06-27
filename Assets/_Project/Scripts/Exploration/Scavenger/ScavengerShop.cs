@@ -29,7 +29,7 @@ public sealed class ScavengerShop : Interactable
             return;
         }
 
-        ToggleShop();
+        OpenShop();
     }
 
     private void ToggleShop()
@@ -52,7 +52,7 @@ public sealed class ScavengerShop : Interactable
         _isShopOpen = isOpen;
 
         shopPanelRoot.SetActive(isOpen);
-        SetOtherObjectsActive(!isOpen);
+        SetOtherObjectsActive(false);
     }
 
     private void SetOtherObjectsActive(bool isActive)

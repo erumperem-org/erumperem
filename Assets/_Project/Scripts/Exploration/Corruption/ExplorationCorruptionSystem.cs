@@ -37,6 +37,8 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     [Header("Taxas")]
     [SerializeField, Min(0f)] private float _baseGainPerSecond = 2f;
     [SerializeField, Min(0f)] private float _gainPerMeterBeyondRadius = 0.5f;
+    // Adicionar no header Taxas:
+    [SerializeField, Min(0f)] private float _decayPerSecond = .1f;
 
     [Header("UI")]
     [SerializeField] private Slider _corruptionSlider;
@@ -45,7 +47,7 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     [Header("IO Settings")]
     [Tooltip("Deve coincidir com a pasta usada pelo ExplorationLoadContext.")]
     [SerializeField] private string _saveFolderName = "Saves";
-    [SerializeField] private string _saveFileName   = "corruption_save.json";
+    [SerializeField] private string _saveFileName = "corruption_save.json";
 
     // ── Eventos públicos ──────────────────────────────────────────────────
 
@@ -91,14 +93,14 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     public CorruptionTier CurrentTier { get; private set; } = CorruptionTier.Low;
 
     private IPlayableCharacter _main;
-    private CorruptionTier     _lastTier = CorruptionTier.Low;
+    private CorruptionTier _lastTier = CorruptionTier.Low;
 
     private readonly IFileService _fileService = new FileService();
     private string _saveDirectory;
 
     // Valor lido do disco por LoadAsync(), aguardando RestoreState().
     private float _loadedCorruption;
-    private bool  _loadCompleted;
+    private bool _loadCompleted;
 
     // ── Unity lifecycle ───────────────────────────────────────────────────
 
@@ -175,7 +177,7 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     public async Task ClearSaveAsync()
     {
         _loadedCorruption = 0f;
-        _loadCompleted    = true;
+        _loadCompleted = true;
         ApplyCorruption(0f, fireEvents: false);
 
         try
@@ -223,16 +225,15 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     {
         float beyondRadius = DistanceBeyondRadius();
 
-        // Dentro da área segura não há decaimento: corrupção só é zerada ao entrar na vila.
         if (beyondRadius <= 0f)
         {
+            Corruption -= _decayPerSecond * Time.deltaTime;
             return;
         }
 
         float gainPerSecond = _baseGainPerSecond + _gainPerMeterBeyondRadius * beyondRadius;
         Corruption += gainPerSecond * Time.deltaTime;
     }
-
     private float DistanceBeyondRadius()
     {
         float dist = Vector3.Distance(_main.Transform.position, _safeAreaCenter.transform.position);
@@ -249,8 +250,8 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
         _lastTier = CurrentTier = tier;
         switch (tier)
         {
-            case CorruptionTier.Low:  OnTierLow?.Invoke();  break;
-            case CorruptionTier.Mid:  OnTierMid?.Invoke();  break;
+            case CorruptionTier.Low: OnTierLow?.Invoke(); break;
+            case CorruptionTier.Mid: OnTierMid?.Invoke(); break;
             case CorruptionTier.High: OnTierHigh?.Invoke(); break;
         }
     }
@@ -263,14 +264,14 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     private void ApplyCorruption(float value, bool fireEvents)
     {
         Corruption = value;
-        var tier   = TierFor(Corruption);
-        _lastTier  = CurrentTier = tier;
+        var tier = TierFor(Corruption);
+        _lastTier = CurrentTier = tier;
 
         if (fireEvents)
             switch (tier)
             {
-                case CorruptionTier.Low:  OnTierLow?.Invoke();  break;
-                case CorruptionTier.Mid:  OnTierMid?.Invoke();  break;
+                case CorruptionTier.Low: OnTierLow?.Invoke(); break;
+                case CorruptionTier.Mid: OnTierMid?.Invoke(); break;
                 case CorruptionTier.High: OnTierHigh?.Invoke(); break;
             }
 
@@ -283,7 +284,7 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     {
         try
         {
-            var json     = JsonUtility.ToJson(new CorruptionSaveData { Corruption = Corruption }, true);
+            var json = JsonUtility.ToJson(new CorruptionSaveData { Corruption = Corruption }, true);
             var fileData = new FileData(json, _saveFileName, _saveDirectory);
             await _fileService.WriteAsync(fileData);
 
@@ -310,7 +311,7 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
             }
 
             var fileData = await _fileService.ReadAsync(_saveFileName, _saveDirectory);
-            var data     = JsonUtility.FromJson<CorruptionSaveData>(fileData._fileContent);
+            var data = JsonUtility.FromJson<CorruptionSaveData>(fileData._fileContent);
 
             _loadedCorruption = data != null ? Mathf.Clamp(data.Corruption, 0f, 100f) : 0f;
 

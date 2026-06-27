@@ -173,7 +173,18 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
             Log(LogLevel.Warning, $"Falha ao deletar save: {ex.Message}");
         }
     }
-
+    public async void DeletesSave()
+    {
+        try
+        {
+            await _fileService.DeleteAsync(_saveFileName, _saveDirectory);
+            Log(LogLevel.Debug, "Arquivo de save deletado.");
+        }
+        catch (Exception ex)
+        {
+            Log(LogLevel.Warning, $"Falha ao deletar save: {ex.Message}");
+        }
+    }
     // ── Helper ────────────────────────────────────────────────────────────
 
     private static void Log(LogLevel level, string msg) =>
