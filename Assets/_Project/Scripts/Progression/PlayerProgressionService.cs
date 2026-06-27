@@ -377,5 +377,10 @@ namespace Erumperem.Progression
                 Debug.LogError($"PlayerProgressionService: falha ao gravar save — {ex.Message}");
             }
         }
+
+        public void GiveProgressionPoints(int pointsToGive)
+        {
+            _maxSkillPoints += pointsToGive;
+        }
     }
 }

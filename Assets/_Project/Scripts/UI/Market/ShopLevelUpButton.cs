@@ -1,5 +1,7 @@
 using System;
+using Core.Exploration.Items;
 using Erumperem.Progression;
+using Services.DebugUtilities;
 using Services.IO;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,7 +13,7 @@ public sealed class ShopLevelUpButton : MonoBehaviour
     [Header("Visualização")]
     [SerializeField] private TMPro.TMP_Text _priceText;
     [SerializeField] private TMPro.TMP_Text _levelText;
-    [SerializeField] private Button         _button;
+    [SerializeField] private Button _button;
 
     [Header("Persistência")]
     [SerializeField] private string _saveId = "shop_levelup_default";
@@ -23,12 +25,15 @@ public sealed class ShopLevelUpButton : MonoBehaviour
 
     /// <summary>Nível atual (0 = nenhum nível comprado ainda).</summary>
     private int _currentLevel;
-
-    private const int MaxLevel  = 12;
-    private const int TierSize  = 4;
-    private static readonly int[] TierPrices = { 5, 10, 15, 20 };
+    public int pointsTogive;
+    private const int MaxLevel = 12;
+    private const int TierSize = 4;
+    private static readonly int[] TierPrices = { 500, 1000, 1500, 2000 };
 
     private enum Tier { Rare, Epic, Legendary }
+    public ScriptableObject rareCurrency, epicCurrency, legendaryCurrency;
+    public PlayerInventorySystem inventorySystem;
+    public PlayerProgressionService playerProgression;
 
     // ── Unity lifecycle ───────────────────────────────────────────────────
 
@@ -49,22 +54,54 @@ public sealed class ShopLevelUpButton : MonoBehaviour
         _button.onClick.RemoveListener(OnClick);
     }
 
-    private void OnEnable()  => RefreshUI();
+    private void OnEnable() => RefreshUI();
 
     // ── Click ─────────────────────────────────────────────────────────────
 
     private async void OnClick()
     {
-        if (_currentLevel >= MaxLevel) return;
+        if (_currentLevel >= MaxLevel)
+            return;
 
-        OnLevelUp(_currentLevel, GetCurrentTier(), GetCurrentPrice());
+        var tier = GetCurrentTier();
+        var price = GetCurrentPrice();
+        var currency = GetCurrentCurrency(tier);
+
+        if (currency is not IStorageable item)
+            return;
+
+        if (inventorySystem.GetAmount(item) < price)
+        {
+            LoggerService.PrintLogMessage(
+                LogLevel.Debug,
+                "Fundos insuficientes",
+                LogCategory.Gameplay);
+            return;
+        }
+
+        inventorySystem.RemoveItems(new System.Collections.Generic.Dictionary<IStorageable, int>
+    {
+        { item, price }
+    });
 
         _currentLevel++;
 
-        await SaveStateAsync();
+        OnLevelUp(_currentLevel, tier, price);
+
+        try
+        {
+            await SaveStateAsync();
+        }
+        catch (Exception ex)
+        {
+            LoggerService.PrintLogMessage(
+                LogLevel.Error,
+                ex.Message,
+                LogCategory.SaveSystem);
+        }
+
         RefreshUI();
     }
-
     // ── Ponto de extensão ─────────────────────────────────────────────────
 
     /// <summary>
@@ -76,6 +113,7 @@ public sealed class ShopLevelUpButton : MonoBehaviour
     /// <param name="price">Preço cobrado neste nível.</param>
     private void OnLevelUp(int level, Tier tier, int price)
     {
+        playerProgression.GiveProgressionPoints(pointsTogive);
     }
 
     // ── Progressão ────────────────────────────────────────────────────────
@@ -87,6 +125,16 @@ public sealed class ShopLevelUpButton : MonoBehaviour
         _ => Tier.Legendary
     };
 
+    private ScriptableObject GetCurrentCurrency(Tier tier)
+    {
+        switch (tier)
+        {
+            case Tier.Rare: return rareCurrency;
+            case Tier.Epic: return epicCurrency;
+            case Tier.Legendary: return legendaryCurrency;
+        }
+        return null;
+    }
     private int GetCurrentPrice() => TierPrices[_currentLevel % TierSize];
 
     // ── UI ────────────────────────────────────────────────────────────────
@@ -114,8 +162,8 @@ public sealed class ShopLevelUpButton : MonoBehaviour
         {
             await _fileService.WriteAsync(new FileData(
                 fileContent: _currentLevel.ToString(),
-                fileName:    _saveId + ".sav",
-                filePath:    SaveDirectory
+                fileName: _saveId + ".sav",
+                filePath: SaveDirectory
             ));
         }
         catch (Exception e)
