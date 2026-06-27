@@ -16,21 +16,21 @@ namespace Erumperem.Combat.Tokens
         public static string GetTokenAuthoredDescription(TokenType tokenType) => tokenType switch
         {
             TokenType.Block =>
-                "[token block]: reduz o próximo dano físico recebido.",
+                "[token block]: reduces the next physical damage taken.",
             TokenType.BlockPlus =>
-                "[token blockplus]: reduz [c buff]fortemente[/c] o próximo dano físico recebido.",
+                "[token blockplus]: [c buff]strongly[/c] reduces the next physical damage taken.",
             TokenType.Dodge =>
-                "[token dodge]: evade o próximo ataque inimigo.",
+                "[token dodge]: evades the next enemy attack.",
             TokenType.Blind =>
-                "[token blind]: o próximo ataque do portador tem grande chance de errar.",
+                "[token blind]: the bearer's next attack has a high chance to miss.",
             TokenType.Taunt =>
-                "[token taunt]: inimigos priorizam atacar este alvo.",
+                "[token taunt]: enemies prioritize targeting this unit.",
             TokenType.Stealth =>
-                "[token stealth]: não pode ser alvejado por ataques diretos.",
+                "[token stealth]: cannot be targeted by direct attacks.",
             TokenType.Combo =>
-                "[token combo]: acumula e potencializa habilidades específicas; é consumido ao usar.",
+                "[token combo]: accumulates and empowers specific skills; consumed upon use.",
             TokenType.Stun =>
-                "[token stun]: o portador perde o próximo turno.",
+                "[token stun]: the bearer loses their next turn.",
             _ => tokenType.ToString(),
         };
 
@@ -42,9 +42,9 @@ namespace Erumperem.Combat.Tokens
 
             return dotType switch
             {
-                DotType.Bleed => FormatPerTurnDotLine("dano de sangramento", "[dot bleed]", potencyRangePhrase),
-                DotType.Blight => FormatPerTurnDotLine("dano de praga", "[dot blight]", potencyRangePhrase),
-                DotType.Burn => FormatPerTurnDotLine("dano de fogo", "[dot burn]", potencyRangePhrase),
+                DotType.Bleed => FormatPerTurnDotLine("bleed damage", "[dot bleed]", potencyRangePhrase),
+                DotType.Blight => FormatPerTurnDotLine("blight damage", "[dot blight]", potencyRangePhrase),
+                DotType.Burn => FormatPerTurnDotLine("burn damage", "[dot burn]", potencyRangePhrase),
                 _ => dotType.ToString(),
             };
         }
@@ -56,10 +56,10 @@ namespace Erumperem.Combat.Tokens
         {
             if (string.IsNullOrEmpty(potencyRangePhrase))
             {
-                return $"Causa {damageKindLabel} de {dotMarkupTag} por turno.";
+                return $"Deals {dotMarkupTag} {damageKindLabel} per turn.";
             }
 
-            return $"Causa {potencyRangePhrase} de {dotMarkupTag} por turno.";
+            return $"Deals {potencyRangePhrase} {dotMarkupTag} {damageKindLabel} per turn.";
         }
 
         private static string BuildPotencyRangePhrase(IReadOnlyList<DotInstance> activeDots, DotType dotType)
