@@ -26,6 +26,12 @@ public sealed class InputManager : MonoBehaviour
     /// <summary>F7: cheat de combate para matar instantaneamente todos os aliados (testes de UI de derrota).</summary>
     public event Action OnCombatCheatKillAllAlliesPressed;
 
+    /// <summary>F9: alterna vida infinita dos aliados no combate actual (toggle).</summary>
+    public event Action OnCombatCheatInfiniteAllyHealthPressed;
+
+    /// <summary>F10: alterna dano dos aliados a ×2 no combate actual (toggle).</summary>
+    public event Action OnCombatCheatDoubleAllyDamagePressed;
+
     private DefaultInputActions _defaultInputActions;
     private Vector2 _lastPointerScreenPosition;
     private bool _hasPointerScreenPosition;
@@ -121,6 +127,8 @@ public sealed class InputManager : MonoBehaviour
         gameplay.ExplorationCheatResetSave.performed += OnExplorationCheatResetSavePerformed;
         gameplay.CombatCheatKillAllEnemies.performed += OnCombatCheatKillAllEnemiesPerformed;
         gameplay.CombatCheatKillAllAllies.performed += OnCombatCheatKillAllAlliesPerformed;
+        gameplay.CombatCheatInfiniteAllyHealth.performed += OnCombatCheatInfiniteAllyHealthPerformed;
+        gameplay.CombatCheatDoubleAllyDamage.performed += OnCombatCheatDoubleAllyDamagePerformed;
     }
 
     private void UnsubscribeGameplayInputEvents()
@@ -146,6 +154,8 @@ public sealed class InputManager : MonoBehaviour
         gameplay.ExplorationCheatResetSave.performed -= OnExplorationCheatResetSavePerformed;
         gameplay.CombatCheatKillAllEnemies.performed -= OnCombatCheatKillAllEnemiesPerformed;
         gameplay.CombatCheatKillAllAllies.performed -= OnCombatCheatKillAllAlliesPerformed;
+        gameplay.CombatCheatInfiniteAllyHealth.performed -= OnCombatCheatInfiniteAllyHealthPerformed;
+        gameplay.CombatCheatDoubleAllyDamage.performed -= OnCombatCheatDoubleAllyDamagePerformed;
     }
 
     private void OnMovePerformedOrCanceled(InputAction.CallbackContext callbackContext)
@@ -183,4 +193,10 @@ public sealed class InputManager : MonoBehaviour
 
     private void OnCombatCheatKillAllAlliesPerformed(InputAction.CallbackContext callbackContext) =>
         OnCombatCheatKillAllAlliesPressed?.Invoke();
+
+    private void OnCombatCheatInfiniteAllyHealthPerformed(InputAction.CallbackContext callbackContext) =>
+        OnCombatCheatInfiniteAllyHealthPressed?.Invoke();
+
+    private void OnCombatCheatDoubleAllyDamagePerformed(InputAction.CallbackContext callbackContext) =>
+        OnCombatCheatDoubleAllyDamagePressed?.Invoke();
 }

@@ -1,5 +1,7 @@
+using Game.Core.Abstractions;
 using Game.Core.Diagnostics;
 using Game.Core.Domain;
+using Game.Core.Engine;
 using Game.Core.Models;
 
 namespace Game.Core.Passives;
@@ -34,6 +36,45 @@ public static class PassiveRuleApplier
             actor.Tokens.Add(def.GrantTokenType.Value, stacks);
             onTokenGranted?.Invoke(def.GrantTokenType.Value, stacks);
         }
+    }
+
+    /// <summary>
+    /// Invocação por tiers de HP no início do turno (ex.: Horse Boss → CorruptedFairy). No máximo um tier por turno.
+    /// </summary>
+    public static bool TryApplyTurnStartSummonPassives(
+        BattleState state,
+        Combatant actor,
+        IRandomSource random,
+        out Combatant spawnedCombatant,
+        out int rankUsed,
+        out PassiveDefinition passiveDefinitionUsed)
+    {
+        spawnedCombatant = null!;
+        rankUsed = 0;
+        passiveDefinitionUsed = null!;
+
+        foreach (var passiveDefinition in EnumerateActivePassives(actor, state))
+        {
+            if (passiveDefinition.EffectKind != PassiveEffectKind.SummonEnemyAtTurnStartWhenHpBelowTiered)
+            {
+                continue;
+            }
+
+            if (EnemySpawnHelper.TryApplyHpTieredSummonPassive(
+                    state,
+                    actor,
+                    passiveDefinition,
+                    random,
+                    out spawnedCombatant,
+                    out rankUsed,
+                    out _))
+            {
+                passiveDefinitionUsed = passiveDefinition;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static void OnOutgoingHitSuccess(BattleState state, Combatant actor, SkillDefinition skill, bool hit)

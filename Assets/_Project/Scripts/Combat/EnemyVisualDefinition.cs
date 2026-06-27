@@ -25,6 +25,9 @@ namespace Erumperem.Combat
                  "Para variantes (ex.: CorruptedMiner Ametista), inclua a skill especial dessa variante.")]
         public string[] enemySkillIds = Array.Empty<string>();
 
+        [Tooltip("Passivas em passives.json activadas ao instanciar este inimigo.")]
+        public string[] enemyPassiveIds = Array.Empty<string>();
+
         [Tooltip("ID no EnemyCharacterStatCatalog (ex.: BeaconOfHope). Vazio = deriva do nome do asset.")]
         public string characterStatId;
 

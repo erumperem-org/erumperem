@@ -14,8 +14,18 @@ public sealed class BattleState
     public IReadOnlyDictionary<string, PassiveDefinition> PassivesById { get; init; } =
         new Dictionary<string, PassiveDefinition>();
 
+    /// <summary>Templates para invocação mid-battle (chave = characterStatId, ex. CorruptedFairy).</summary>
+    public IReadOnlyDictionary<string, EnemyDefinition> EnemyDefinitionsById { get; init; } =
+        new Dictionary<string, EnemyDefinition>(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Observer hub for passive hooks; raise events from <see cref="Game.Core.Engine.BattleSimulator"/>.</summary>
     public CombatPassiveEventBus PassiveBus { get; init; } = new();
+
+    /// <summary>QA cheat: aliados não perdem HP nem morrem enquanto activo.</summary>
+    public bool AlliesHaveInfiniteHealth { get; set; }
+
+    /// <summary>QA cheat: multiplicador de dano outgoing de aliados (default 1.0).</summary>
+    public double AllyOutgoingDamageMultiplier { get; set; } = 1.0;
 
     public required CombatBalanceConfig BalanceConfig { get; init; }
     public required double CorruptionValue { get; set; }

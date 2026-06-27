@@ -138,19 +138,22 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             return;
         }
 
-        var loadContext = ExplorationLoadContext.Instance;
-        if (loadContext == null)
-        {
-            return;
-        }
+        var loadContext = ExplorationLoadContext.EnsureRuntimeInstance();
+        Debug.Log("[Save] SeedBattleFromExploration: a aplicar HP/corrupção do save aos aliados.");
 
-        var explorationHealthByCharacter = loadContext.GetSavedHealthByCharacterName();
+        var savedAllyHealthByCharacter = loadContext.GetSavedHealthByCharacterName();
+        if (savedAllyHealthByCharacter.Count == 0)
+        {
+            Debug.LogWarning(
+                "[Save] SeedBattleFromExploration: nenhum snapshot em memória — " +
+                "verifica se exploration_save.json existe e foi carregado.");
+        }
         var allies = battleState.Allies;
         var combatAllyCharacterNames = CombatPartyResolver.GetCombatAllyCharacterNames();
         for (int allyIndex = 0; allyIndex < allies.Count && allyIndex < combatAllyCharacterNames.Count; allyIndex++)
         {
             var characterName = combatAllyCharacterNames[allyIndex];
-            if (!explorationHealthByCharacter.TryGetValue(characterName, out var healthSnapshot))
+            if (!savedAllyHealthByCharacter.TryGetValue(characterName, out var allyHealth))
             {
                 LoggerService.PrintLogMessage(LogLevel.Warning,
                     $"[COMBAT-BRIDGE] Snapshot de HP ausente para '{characterName}'.",
@@ -158,7 +161,7 @@ public sealed class CombatExplorationBridge : MonoBehaviour
                 continue;
             }
 
-            if (healthSnapshot.MaxHealth <= 0f)
+            if (allyHealth.MaxHealth <= 0f)
             {
                 LoggerService.PrintLogMessage(LogLevel.Warning,
                     $"[COMBAT-BRIDGE] HP máximo inválido para '{characterName}'.",
@@ -169,18 +172,9 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             var ally = allies[allyIndex];
             var hitPointsBeforeSeed = ally.Health.CurrentHp;
             var maxHitPointsBeforeSeed = ally.Health.MaxHp;
-            var explorationHealth = loadContext.ResolveExplorationHealthForCombatSeed(
-                characterName,
-                healthSnapshot.CurrentHealth,
-                healthSnapshot.MaxHealth);
 
-            var maxHitPoints = Math.Max(1, ally.Health.MaxHp);
-            var explorationMaxHealth = Math.Max(1f, explorationHealth.MaxHealth);
-            var savedHealthRatio = Mathf.Clamp01(explorationHealth.CurrentHealth / explorationMaxHealth);
-            var currentHitPoints = Mathf.Clamp(
-                Mathf.RoundToInt(maxHitPoints * savedHealthRatio),
-                0,
-                maxHitPoints);
+            int maxHitPoints = Mathf.RoundToInt(allyHealth.MaxHealth);
+            int currentHitPoints = Mathf.Clamp(Mathf.RoundToInt(allyHealth.CurrentHealth), 0, maxHitPoints);
 
             ally.Health = new HealthComponent
             {
@@ -190,23 +184,15 @@ public sealed class CombatExplorationBridge : MonoBehaviour
                 IsDeathblowPending = false,
             };
 
-            if (currentHitPoints > hitPointsBeforeSeed)
-            {
-                LoggerService.PrintLogMessage(LogLevel.Warning,
-                    $"[HEAL-DEBUG] [COMBAT-SEED] '{characterName}' HP SUBIU no seed " +
-                    $"{hitPointsBeforeSeed}/{maxHitPointsBeforeSeed} → {currentHitPoints}/{maxHitPoints} " +
-                    $"(exploração salva: {healthSnapshot.CurrentHealth}/{healthSnapshot.MaxHealth}, " +
-                    $"ratio {savedHealthRatio:P0}).",
-                    LogCategory.Player);
-            }
-            else
-            {
-                LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"[HEAL-DEBUG] [COMBAT-SEED] '{characterName}' HP seed " +
-                    $"{hitPointsBeforeSeed}/{maxHitPointsBeforeSeed} → {currentHitPoints}/{maxHitPoints} " +
-                    $"(exploração: {healthSnapshot.CurrentHealth}/{healthSnapshot.MaxHealth}, ratio {savedHealthRatio:P0}).",
-                    LogCategory.Player);
-            }
+            Debug.Log(
+                $"[Save] Combate seed '{characterName}': save CurrentHealth={allyHealth.CurrentHealth:F1} " +
+                $"→ CurrentHp={currentHitPoints}/{maxHitPoints} " +
+                $"(antes do seed: {hitPointsBeforeSeed}/{maxHitPointsBeforeSeed}).");
+
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"[HEAL-DEBUG] [COMBAT-SEED] '{characterName}' HP seed " +
+                $"{hitPointsBeforeSeed}/{maxHitPointsBeforeSeed} → {currentHitPoints}/{maxHitPoints}.",
+                LogCategory.Player);
         }
 
         var explorationCorruption = loadContext.GetSavedCorruptionValue();
@@ -299,8 +285,9 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             _requiresCombatEntryZoneClearance = false;
         }
 
+        var isVillageReturnAfterCombat = !_lastBattleAlliesWon;
         ClearPendingReturn();
-        loadContext.FinishCombatReturnAndLoadExploration(targetSceneName);
+        loadContext.FinishCombatReturnAndLoadExploration(targetSceneName, isVillageReturnAfterCombat);
         return true;
     }
 

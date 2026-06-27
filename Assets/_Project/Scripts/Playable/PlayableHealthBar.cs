@@ -72,7 +72,7 @@ public sealed class PlayableHealthBar
             LogCategory.Player);
     }
 
-    /// <summary>Cura autorizada pelo santuário: Main permaneceu tempo suficiente dentro da vila.</summary>
+    /// <summary>Cura autorizada pelo santuário da vila (Main + aliados após permanência na área).</summary>
     public void HealFullFromVillageSanctuary()
     {
         LoggerService.PrintLogMessage(LogLevel.Debug,

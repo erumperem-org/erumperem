@@ -85,6 +85,25 @@ public sealed class BattleSimulator
                 tokenType: tokenType.ToString(),
                 tokenDelta: stackDelta,
                 battleResult: string.Empty));
+        if (PassiveRuleApplier.TryApplyTurnStartSummonPassives(
+                state,
+                actor,
+                _random,
+                out var spawnedCombatant,
+                out var spawnRankUsed,
+                out var summonPassiveDefinition))
+        {
+            Emit(
+                state,
+                BattleEventType.CombatantSpawned,
+                actorId: actor.Identity.Id,
+                targetId: spawnedCombatant.Identity.Id,
+                skillId: summonPassiveDefinition.SkillId ?? string.Empty,
+                passiveId: summonPassiveDefinition.Id,
+                passiveEffectKindName: summonPassiveDefinition.EffectKind.ToString(),
+                passiveAuxInt: spawnRankUsed);
+        }
+
         ResolveDotTick(state, actor);
         if (actor.Health.IsDead || state.IsFinished)
         {
@@ -129,7 +148,7 @@ public sealed class BattleSimulator
             var dotSourceCombatant = string.IsNullOrEmpty(dot.AppliedById)
                 ? null
                 : state.GetAllCombatants().FirstOrDefault(combatant => combatant.Identity.Id == dot.AppliedById);
-            if (damage > 0)
+            if (damage > 0 && !IsAllyInfiniteHealthProtected(state, actor))
             {
                 var hpPercentBeforeDot =
                     actor.Health.MaxHp <= 0 ? 0 : (double)actor.Health.CurrentHp / actor.Health.MaxHp;
@@ -154,6 +173,17 @@ public sealed class BattleSimulator
                     hpPercentBeforeDot,
                     hpPercentAfterDot);
             }
+            else if (damage > 0 && IsAllyInfiniteHealthProtected(state, actor))
+            {
+                Emit(
+                    state,
+                    BattleEventType.DotTick,
+                    actorId: dot.AppliedById,
+                    targetId: actor.Identity.Id,
+                    dotType: dot.Type.ToString(),
+                    dotAmount: damage,
+                    damageAmount: 0);
+            }
 
             dot.RemainingTurns--;
             if (dot.RemainingTurns > 0)
@@ -161,7 +191,7 @@ public sealed class BattleSimulator
                 actor.Dots.ActiveDots.Add(dot);
             }
 
-            if (actor.Health.CurrentHp <= 0 && !actor.Health.IsDead)
+            if (actor.Health.CurrentHp <= 0 && !actor.Health.IsDead && !IsAllyInfiniteHealthProtected(state, actor))
             {
                 actor.Health.IsDead = true;
                 Emit(state, BattleEventType.CombatantDied, targetId: actor.Identity.Id);
@@ -492,9 +522,21 @@ public sealed class BattleSimulator
             damage = Math.Max(0, damage);
         }
 
+        if (damage > 0 &&
+            actor.Identity.Faction == Faction.Player &&
+            state.AllyOutgoingDamageMultiplier > 0 &&
+            Math.Abs(state.AllyOutgoingDamageMultiplier - 1.0) > double.Epsilon)
+        {
+            damage = (int)Math.Round(damage * state.AllyOutgoingDamageMultiplier);
+            damage = Math.Max(0, damage);
+        }
+
         damage = ApplyMitigation(state, target, damage);
         var targetHpBeforeHit = target.Health.CurrentHp;
-        target.Health.CurrentHp = Math.Max(0, target.Health.CurrentHp - damage);
+        if (damage > 0 && !IsAllyInfiniteHealthProtected(state, target))
+        {
+            target.Health.CurrentHp = Math.Max(0, target.Health.CurrentHp - damage);
+        }
 
         Emit(
             state,
@@ -534,7 +576,7 @@ public sealed class BattleSimulator
                 hpPercentAfterDamage);
         }
 
-        if (target.Health.CurrentHp <= 0 && !target.Health.IsDead)
+        if (target.Health.CurrentHp <= 0 && !target.Health.IsDead && !IsAllyInfiniteHealthProtected(state, target))
         {
             target.Health.IsDead = true;
             Emit(state, BattleEventType.CombatantDied, targetId: target.Identity.Id);
@@ -670,6 +712,41 @@ public sealed class BattleSimulator
                     }
 
                     break;
+                case EffectType.ApplyRandomDot:
+                {
+                    if (_random.NextDouble() > effect.Chance)
+                    {
+                        break;
+                    }
+
+                    var randomDotCandidates = new[] { DotType.Burn, DotType.Blight, DotType.Bleed };
+                    var chosenDotType = randomDotCandidates[_random.Next(0, randomDotCandidates.Length)];
+                    if (EffectPassesResistance(target, chosenDotType, state))
+                    {
+                        var elementalMultiplier = GetElementalMultiplier(state, actor, target, skill);
+                        var potency = (int)Math.Round(Math.Max(1, effect.Potency) * elementalMultiplier);
+                        var baseDuration = Math.Max(1, effect.Duration);
+                        var duration = state.PassiveBus.AdjustDotDuration(state, actor, chosenDotType, baseDuration);
+                        target.Dots.ActiveDots.Add(new DotInstance
+                        {
+                            Type = chosenDotType,
+                            Potency = potency,
+                            RemainingTurns = duration,
+                            AppliedById = actor.Identity.Id,
+                        });
+                        Emit(
+                            state,
+                            BattleEventType.DotInflicted,
+                            actorId: actor.Identity.Id,
+                            targetId: target.Identity.Id,
+                            skillId: skill.Id,
+                            dotType: chosenDotType.ToString(),
+                            dotAmount: potency,
+                            dotDurationTurns: duration);
+                    }
+
+                    break;
+                }
                 case EffectType.Push:
                     MoveTarget(state, target, +Math.Abs(effect.Steps));
                     break;
@@ -786,6 +863,9 @@ public sealed class BattleSimulator
         var roster = actor.Position.Side == Side.Allies ? state.Allies : state.Enemies;
         return roster.Where(combatant => !combatant.Health.IsDead);
     }
+
+    private static bool IsAllyInfiniteHealthProtected(BattleState state, Combatant combatant) =>
+        state.AlliesHaveInfiniteHealth && combatant.Identity.Faction == Faction.Player;
 
     private int ApplyMitigation(BattleState state, Combatant target, int damage)
     {

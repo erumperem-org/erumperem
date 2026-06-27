@@ -1,15 +1,29 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using Erumperem.Characters;
+
+[Serializable]
+public struct AllyHealthSaveEntry
+{
+    public string CharacterId;
+    public float CurrentHealth;
+}
+
 public class SaveLifeSystem : MonoBehaviour
 {
-    public List<AllyCharacterStatDefinition> definitions;
+    public List<AllyHealthSaveEntry> healthEntries = new();
     public ExplorationLoadContext context;
+
     public void OnEnable()
     {
-        foreach (var data in definitions)
+        if (context == null)
         {
-            context.SaveLifeFromDefinition(data);
+            return;
+        }
+
+        foreach (var healthEntry in healthEntries)
+        {
+            context.SaveAllyCurrentHealth(healthEntry.CharacterId, healthEntry.CurrentHealth);
         }
     }
 }

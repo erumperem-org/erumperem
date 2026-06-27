@@ -11,12 +11,15 @@ using UnityEngine;
 namespace Erumperem.Progression
 {
     /// <summary>
-    /// Persists skill-tree unlocks under <see cref="Application.persistentDataPath"/> and enforces
-    /// <see cref="SkillTreeRules"/> plus a maximum skill-point budget (default 12).
+    /// Persists skill-tree unlocks and a <see cref="SharedSkillLevel"/> cap (default max 12).
+    /// Wulfric and Buck share the same level value (e.g. 4/12): each may spend up to that many
+    /// points in their own tree; spending on one does not reduce the other's budget.
     /// </summary>
     public sealed class PlayerProgressionService : MonoBehaviour
     {
         public static PlayerProgressionService? Instance { get; private set; }
+
+        private static readonly string[] DefaultSharedSkillLevelCharacterIds = { "wulfric", "buck" };
 
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
@@ -27,18 +30,56 @@ namespace Erumperem.Progression
         [Header("Catalog (StreamingAssets)")]
         [SerializeField] private string _skillTreesResourceRelativePath = "Data/skill_trees.json";
 
-        [Header("Budget")]
-        [Tooltip("Total node cost the player may spend per character (each tier-1..3 node costs 1 in current data → 12 nodes max).")]
+        [Header("Shared skill level")]
+        [Tooltip("Maximum shared skill level (UI denominator, e.g. 12 in 4/12).")]
         [SerializeField] private int _maxSkillPoints = 12;
+
+        [Tooltip("Level assigned on a brand-new save before any external progression sets it.")]
+        [SerializeField] private int _initialSharedSkillLevel = 12;
 
         private readonly Dictionary<string, Dictionary<string, bool>> _unlockedByCharacter =
             new(StringComparer.OrdinalIgnoreCase);
 
         private IReadOnlyList<CharacterSkillTreesDefinition> _skillTreesCatalog = Array.Empty<CharacterSkillTreesDefinition>();
+        private bool _isSkillTreesCatalogLoaded;
+        private int _sharedSkillLevel;
 
         public int MaxSkillPoints => _maxSkillPoints;
 
-        /// <summary>Fires after a successful unlock or after reset. Argument is character id, or empty if reset all.</summary>
+        public bool IsSkillTreesCatalogLoaded => _isSkillTreesCatalogLoaded && _skillTreesCatalog.Count > 0;
+
+        public IReadOnlyList<string> SharedSkillBudgetCharacterIds => DefaultSharedSkillLevelCharacterIds;
+
+        /// <summary>
+        /// Current shared level shown in UI (e.g. 4 in 4/12). Each shared-level character may spend
+        /// up to this many points in their own tree.
+        /// </summary>
+        public int GetSharedSkillLevel() => _sharedSkillLevel;
+
+        public int GetRemainingPointsForCharacter(string characterId) =>
+            Math.Max(0, _sharedSkillLevel - GetPointsSpent(characterId));
+
+        public bool IsSharedSkillBudgetCharacter(string characterId) =>
+            !string.IsNullOrWhiteSpace(characterId) &&
+            DefaultSharedSkillLevelCharacterIds.Any(sharedCharacterId =>
+                string.Equals(sharedCharacterId, characterId, StringComparison.OrdinalIgnoreCase));
+
+        /// <summary>Raises or lowers the shared level cap (both characters benefit together).</summary>
+        public bool TrySetSharedSkillLevel(int newLevel)
+        {
+            var clampedLevel = Math.Clamp(newLevel, 0, _maxSkillPoints);
+            if (clampedLevel == _sharedSkillLevel)
+            {
+                return false;
+            }
+
+            _sharedSkillLevel = clampedLevel;
+            SaveToDisk();
+            OnUnlockedNodesChanged?.Invoke(string.Empty);
+            return true;
+        }
+
+        /// <summary>Fires after a successful unlock, level change, or reset. Empty = refresh all shared-level UIs.</summary>
         public event Action<string>? OnUnlockedNodesChanged;
 
         private string SaveFilePath => Path.Combine(Application.persistentDataPath, "player_skill_progression.json");
@@ -53,8 +94,22 @@ namespace Erumperem.Progression
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            LoadSkillTreesCatalogOrThrow();
+            EnsureSkillTreesCatalogLoaded();
             LoadFromDisk();
+        }
+
+        /// <summary>
+        /// Loads skill_trees.json from StreamingAssets. Retries when the catalog is still empty
+        /// (e.g. DontDestroyOnLoad service created before JSON was present).
+        /// </summary>
+        public void EnsureSkillTreesCatalogLoaded()
+        {
+            if (_isSkillTreesCatalogLoaded && _skillTreesCatalog.Count > 0)
+            {
+                return;
+            }
+
+            LoadSkillTreesCatalogOrThrow();
         }
 
         private void OnDestroy()
@@ -72,14 +127,30 @@ namespace Erumperem.Progression
             {
                 Debug.LogError($"PlayerProgressionService: missing {path}. Copy skill_trees.json to StreamingAssets/Data.");
                 _skillTreesCatalog = Array.Empty<CharacterSkillTreesDefinition>();
+                _isSkillTreesCatalogLoaded = false;
                 return;
             }
 
-            _skillTreesCatalog = CombatDataLoader.LoadSkillTrees(path);
+            try
+            {
+                _skillTreesCatalog = CombatDataLoader.LoadSkillTrees(path);
+                _isSkillTreesCatalogLoaded = _skillTreesCatalog.Count > 0;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError(
+                    $"PlayerProgressionService: failed to parse skill_trees.json at {path} — {ex.Message}",
+                    this);
+                _skillTreesCatalog = Array.Empty<CharacterSkillTreesDefinition>();
+                _isSkillTreesCatalogLoaded = false;
+            }
         }
 
-        public CharacterSkillTreesDefinition? GetCharacterDefinition(string characterId) =>
-            SkillTreeLookup.FindCharacterTrees(_skillTreesCatalog, characterId);
+        public CharacterSkillTreesDefinition? GetCharacterDefinition(string characterId)
+        {
+            EnsureSkillTreesCatalogLoaded();
+            return SkillTreeLookup.FindCharacterTrees(_skillTreesCatalog, characterId);
+        }
 
         public IReadOnlyDictionary<string, bool> GetUnlockedNodesForCharacter(string characterId)
         {
@@ -91,7 +162,7 @@ namespace Erumperem.Progression
             return dict.ToDictionary(static entry => entry.Key, static entry => entry.Value, StringComparer.Ordinal);
         }
 
-        /// <summary>Total cost of unlocked nodes; used for UI (e.g. 7 / 12).</summary>
+        /// <summary>Total cost of unlocked nodes for one character.</summary>
         public int GetPointsSpent(string characterId)
         {
             var character = GetCharacterDefinition(characterId);
@@ -134,10 +205,10 @@ namespace Erumperem.Progression
                 return false;
             }
 
-            var spentSoFar = SkillTreeLookup.SumUnlockedNodeCosts(character, snapshot);
-            if (spentSoFar + nodeDefinition.Cost > _maxSkillPoints)
+            var characterPointsSpent = GetPointsSpent(characterId);
+            if (characterPointsSpent + nodeDefinition.Cost > _sharedSkillLevel)
             {
-                failureReason = "Sem pontos de skill livres.";
+                failureReason = "Sem pontos de skill livres para este personagem.";
                 return false;
             }
 
@@ -150,6 +221,7 @@ namespace Erumperem.Progression
         public void ResetAllCharacters()
         {
             _unlockedByCharacter.Clear();
+            _sharedSkillLevel = Math.Clamp(_initialSharedSkillLevel, 0, _maxSkillPoints);
             DeleteSaveFile();
             SaveToDisk();
             OnUnlockedNodesChanged?.Invoke(string.Empty);
@@ -193,8 +265,11 @@ namespace Erumperem.Progression
         private void LoadFromDisk()
         {
             _unlockedByCharacter.Clear();
+            _sharedSkillLevel = 0;
+
             if (!File.Exists(SaveFilePath))
             {
+                ApplyDefaultSharedSkillLevelForNewSave();
                 return;
             }
 
@@ -204,6 +279,7 @@ namespace Erumperem.Progression
                 var dto = JsonSerializer.Deserialize<PlayerProgressionSaveDto>(json, JsonOptions);
                 if (dto?.Characters == null)
                 {
+                    ApplyDefaultSharedSkillLevelForNewSave();
                     return;
                 }
 
@@ -225,18 +301,52 @@ namespace Erumperem.Progression
 
                     _unlockedByCharacter[characterEntry.Key] = map;
                 }
+
+                _sharedSkillLevel = dto.SharedSkillLevel;
+                ReconcileSharedSkillLevelAfterLoad(dto.Version);
             }
             catch (Exception ex)
             {
                 Debug.LogWarning($"PlayerProgressionService: falha ao ler save — {ex.Message}");
+                ApplyDefaultSharedSkillLevelForNewSave();
             }
+        }
+
+        private void ReconcileSharedSkillLevelAfterLoad(int saveVersion)
+        {
+            if (saveVersion >= 2 && _sharedSkillLevel > 0)
+            {
+                _sharedSkillLevel = Math.Clamp(_sharedSkillLevel, 0, _maxSkillPoints);
+                return;
+            }
+
+            // v1 saves had no SharedSkillLevel field: keep at least enough level for existing unlocks.
+            var highestCharacterSpend = 0;
+            foreach (var characterId in DefaultSharedSkillLevelCharacterIds)
+            {
+                highestCharacterSpend = Math.Max(highestCharacterSpend, GetPointsSpent(characterId));
+            }
+
+            if (highestCharacterSpend > 0)
+            {
+                _sharedSkillLevel = Math.Clamp(highestCharacterSpend, 0, _maxSkillPoints);
+                return;
+            }
+
+            ApplyDefaultSharedSkillLevelForNewSave();
+        }
+
+        private void ApplyDefaultSharedSkillLevelForNewSave()
+        {
+            _sharedSkillLevel = Math.Clamp(_initialSharedSkillLevel, 0, _maxSkillPoints);
         }
 
         private void SaveToDisk()
         {
             var dto = new PlayerProgressionSaveDto
             {
-                Version = 1,
+                Version = 2,
+                SharedSkillLevel = _sharedSkillLevel,
                 Characters = new Dictionary<string, Dictionary<string, bool>>(StringComparer.OrdinalIgnoreCase),
             };
 

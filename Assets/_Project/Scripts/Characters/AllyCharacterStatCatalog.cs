@@ -51,6 +51,8 @@ namespace Erumperem.Characters
             return DefaultExplorationState;
         }
 
+        public float GetMaxHealth(string characterName) => GetExplorationMaxHealth(characterName);
+
         public float GetExplorationMaxHealth(string characterName)
         {
             if (TryGetDefinition(characterName, out var definition))

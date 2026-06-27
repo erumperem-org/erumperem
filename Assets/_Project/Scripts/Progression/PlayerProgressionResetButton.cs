@@ -2,14 +2,21 @@ using UnityEngine;
 
 namespace Erumperem.Progression
 {
-    /// <summary>Liga o OnClick do botão a <see cref="ResetSkillsSave"/>.</summary>
+    /// <summary>Liga o OnClick do botão ao reset da árvore do personagem actual em <see cref="SkillTreeView"/>.</summary>
     public sealed class PlayerProgressionResetButton : MonoBehaviour
     {
-        [Tooltip("Personagem cujo save de árvore se limpa (ex.: wulfric). Ignorado se _resetEntireFile = true.")]
-        [SerializeField] private string _characterId = "wulfric";
+        [SerializeField] private SkillTreeView _skillTreeView;
 
-        [Tooltip("Se verdadeiro, apaga TODAS as entradas em vez de só o personagem acima.")]
+        [Tooltip("Usado só se SkillTreeView estiver vazio. Evita ResetAllCharacters no fluxo normal.")]
+        [SerializeField] private string _fallbackCharacterId = "wulfric";
+
+        [Tooltip("Debug: apaga TODAS as entradas do save.")]
         [SerializeField] private bool _resetEntireFile;
+
+        private void Awake()
+        {
+            _skillTreeView ??= FindFirstObjectByType<SkillTreeView>(FindObjectsInactive.Include);
+        }
 
         public void ResetSkillsSave()
         {
@@ -22,14 +29,17 @@ namespace Erumperem.Progression
                 return;
             }
 
-            if (_resetEntireFile || string.IsNullOrWhiteSpace(_characterId))
+            if (_resetEntireFile)
             {
                 service.ResetAllCharacters();
+                return;
             }
-            else
-            {
-                service.ResetCharacter(_characterId);
-            }
+
+            var characterId = !string.IsNullOrWhiteSpace(_skillTreeView?.CurrentProgressionCharacterId)
+                ? _skillTreeView.CurrentProgressionCharacterId
+                : _fallbackCharacterId;
+
+            service.ResetCharacter(characterId);
         }
 
         private static PlayerProgressionService ResolveOrCreateService()
