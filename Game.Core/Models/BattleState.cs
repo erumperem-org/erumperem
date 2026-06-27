@@ -21,6 +21,12 @@ public sealed class BattleState
     /// <summary>Observer hub for passive hooks; raise events from <see cref="Game.Core.Engine.BattleSimulator"/>.</summary>
     public CombatPassiveEventBus PassiveBus { get; init; } = new();
 
+    /// <summary>QA cheat: aliados não perdem HP nem morrem enquanto activo.</summary>
+    public bool AlliesHaveInfiniteHealth { get; set; }
+
+    /// <summary>QA cheat: multiplicador de dano outgoing de aliados (default 1.0).</summary>
+    public double AllyOutgoingDamageMultiplier { get; set; } = 1.0;
+
     public required CombatBalanceConfig BalanceConfig { get; init; }
     public required double CorruptionValue { get; set; }
     public required int TurnNumber { get; set; }

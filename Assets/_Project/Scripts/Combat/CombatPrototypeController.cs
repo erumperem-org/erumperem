@@ -13,6 +13,7 @@ using Game.Core.Engine;
 using Game.Core.Models;
 using Game.Core.Progression;
 using Erumperem.Characters;
+using Erumperem.Combat.HealthBars;
 using Erumperem.Progression;
 using Erumperem.UI;
 using UnityEngine;
@@ -139,6 +140,23 @@ namespace Erumperem.Combat
         private bool _rightClickPressedThisFrame;
         private Vector2 _pointerScreenPosition;
         private bool _hasPointerScreenPosition;
+
+        private bool _isInfiniteAllyHealthCheatActive;
+        private bool _isDoubleAllyDamageCheatActive;
+        private readonly Dictionary<string, AllyHealthCheatSnapshot> _allyHealthBeforeInfiniteHealthCheat =
+            new(StringComparer.Ordinal);
+
+        private readonly struct AllyHealthCheatSnapshot
+        {
+            public AllyHealthCheatSnapshot(int currentHp, bool isDead)
+            {
+                CurrentHp = currentHp;
+                IsDead = isDead;
+            }
+
+            public int CurrentHp { get; }
+            public bool IsDead { get; }
+        }
 
         public BattleState BattleState => _state;
         public BattleSimulator BattleSimulator => _sim;
@@ -447,6 +465,7 @@ namespace Erumperem.Combat
 
         private void OnDisable()
         {
+            ClearAllCombatCheats();
             HealDebugTrace.OnLog = null;
             UnsubscribeFromInputEvents();
             StopActorActionRock();
@@ -469,6 +488,8 @@ namespace Erumperem.Combat
             InputManager.Instance.OnRightClickPressed += OnRightClickPressed;
             InputManager.Instance.OnCombatCheatKillAllEnemiesPressed += OnCombatCheatKillAllEnemiesPressed;
             InputManager.Instance.OnCombatCheatKillAllAlliesPressed += OnCombatCheatKillAllAlliesPressed;
+            InputManager.Instance.OnCombatCheatInfiniteAllyHealthPressed += OnCombatCheatInfiniteAllyHealthPressed;
+            InputManager.Instance.OnCombatCheatDoubleAllyDamagePressed += OnCombatCheatDoubleAllyDamagePressed;
         }
 
         private void UnsubscribeFromInputEvents()
@@ -483,6 +504,8 @@ namespace Erumperem.Combat
             InputManager.Instance.OnRightClickPressed -= OnRightClickPressed;
             InputManager.Instance.OnCombatCheatKillAllEnemiesPressed -= OnCombatCheatKillAllEnemiesPressed;
             InputManager.Instance.OnCombatCheatKillAllAlliesPressed -= OnCombatCheatKillAllAlliesPressed;
+            InputManager.Instance.OnCombatCheatInfiniteAllyHealthPressed -= OnCombatCheatInfiniteAllyHealthPressed;
+            InputManager.Instance.OnCombatCheatDoubleAllyDamagePressed -= OnCombatCheatDoubleAllyDamagePressed;
         }
 
         private void OnPointerPositionChanged(Vector2 pointerScreenPosition)
@@ -497,6 +520,127 @@ namespace Erumperem.Combat
         private void OnCombatCheatKillAllEnemiesPressed() => DebugKillAllEnemiesInstantly();
 
         private void OnCombatCheatKillAllAlliesPressed() => DebugKillAllAlliesInstantly();
+
+        private void OnCombatCheatInfiniteAllyHealthPressed() => ToggleInfiniteAllyHealthCheat();
+
+        private void OnCombatCheatDoubleAllyDamagePressed() => ToggleDoubleAllyDamageCheat();
+
+        private void ToggleInfiniteAllyHealthCheat()
+        {
+            if (_state == null)
+            {
+                Debug.LogWarning("Cheat F9 ignorado: combate ainda não está pronto.");
+                return;
+            }
+
+            if (_battleEnded)
+            {
+                Debug.Log("Cheat F9 ignorado: combate já terminou.");
+                return;
+            }
+
+            if (_isInfiniteAllyHealthCheatActive)
+            {
+                DisableInfiniteAllyHealthCheat(restoreSavedHealth: true);
+                Debug.Log("Cheat F9: vida infinita dos aliados DESLIGADA — HP restaurado ao valor anterior.");
+                return;
+            }
+
+            SnapshotAllyHealthForInfiniteHealthCheat();
+            _isInfiniteAllyHealthCheatActive = true;
+            _state.AlliesHaveInfiniteHealth = true;
+            Debug.Log("Cheat F9: vida infinita dos aliados LIGADA.");
+        }
+
+        private void ToggleDoubleAllyDamageCheat()
+        {
+            if (_state == null)
+            {
+                Debug.LogWarning("Cheat F10 ignorado: combate ainda não está pronto.");
+                return;
+            }
+
+            if (_battleEnded)
+            {
+                Debug.Log("Cheat F10 ignorado: combate já terminou.");
+                return;
+            }
+
+            if (_isDoubleAllyDamageCheatActive)
+            {
+                _isDoubleAllyDamageCheatActive = false;
+                _state.AllyOutgoingDamageMultiplier = 1.0;
+                Debug.Log("Cheat F10: dano ×2 dos aliados DESLIGADO.");
+                return;
+            }
+
+            _isDoubleAllyDamageCheatActive = true;
+            _state.AllyOutgoingDamageMultiplier = 2.0;
+            Debug.Log("Cheat F10: dano ×2 dos aliados LIGADO.");
+        }
+
+        private void SnapshotAllyHealthForInfiniteHealthCheat()
+        {
+            _allyHealthBeforeInfiniteHealthCheat.Clear();
+            foreach (var ally in _state.Allies)
+            {
+                _allyHealthBeforeInfiniteHealthCheat[ally.Identity.Id] =
+                    new AllyHealthCheatSnapshot(ally.Health.CurrentHp, ally.Health.IsDead);
+            }
+        }
+
+        private void DisableInfiniteAllyHealthCheat(bool restoreSavedHealth)
+        {
+            _isInfiniteAllyHealthCheatActive = false;
+            if (_state != null)
+            {
+                _state.AlliesHaveInfiniteHealth = false;
+            }
+
+            if (!restoreSavedHealth || _state == null)
+            {
+                _allyHealthBeforeInfiniteHealthCheat.Clear();
+                return;
+            }
+
+            foreach (var ally in _state.Allies)
+            {
+                if (!_allyHealthBeforeInfiniteHealthCheat.TryGetValue(ally.Identity.Id, out var snapshot))
+                {
+                    continue;
+                }
+
+                ally.Health.CurrentHp = Math.Max(0, Math.Min(snapshot.CurrentHp, ally.Health.MaxHp));
+                ally.Health.IsDead = snapshot.IsDead;
+                ally.Health.IsDeathblowPending = false;
+            }
+
+            _allyHealthBeforeInfiniteHealthCheat.Clear();
+            InvalidateAllyHealthBarDisplays();
+        }
+
+        private void DisableDoubleAllyDamageCheat()
+        {
+            _isDoubleAllyDamageCheatActive = false;
+            if (_state != null)
+            {
+                _state.AllyOutgoingDamageMultiplier = 1.0;
+            }
+        }
+
+        private void ClearAllCombatCheats()
+        {
+            DisableInfiniteAllyHealthCheat(restoreSavedHealth: true);
+            DisableDoubleAllyDamageCheat();
+        }
+
+        private void InvalidateAllyHealthBarDisplays()
+        {
+            foreach (var healthBarHudView in FindObjectsByType<HealthBarHudView>(FindObjectsSortMode.None))
+            {
+                healthBarHudView.InvalidateHealthDisplayCache();
+            }
+        }
 
         /// <summary>
         /// Cheat para QA / playtests: zera o HP de todos os inimigos vivos, dispara a animação de morte
@@ -932,6 +1076,7 @@ namespace Erumperem.Combat
             _battleEnded = true;
             _needsPlayerInput = false;
             ClearSkillBarSelection();
+            ClearAllCombatCheats();
             _sim.EmitBattleEnded(_state);
             LogLastEvents();
 
