@@ -423,6 +423,23 @@ namespace Erumperem.UI
             return $"{targetName} suffers {dotName} ({combatEvent.DotAmount}/turn, {combatEvent.DotDurationTurns} turns){source}.";
         }
 
+        public static string FormatCombatantSpawnedLine(BattleState state, CombatEvent combatEvent)
+        {
+            if (combatEvent.EventType != BattleEventType.CombatantSpawned)
+            {
+                return string.Empty;
+            }
+
+            var summonerName = DisplayCombatantName(state, combatEvent.ActorId);
+            var summonedName = DisplayCombatantName(state, combatEvent.TargetId);
+            if (string.IsNullOrEmpty(summonedName))
+            {
+                summonedName = "uma fada corrompida";
+            }
+
+            return $"{summonerName} invoca {summonedName}!";
+        }
+
         private static string DisplayCombatantName(BattleState state, string combatantId)
         {
             if (state == null || string.IsNullOrEmpty(combatantId))
