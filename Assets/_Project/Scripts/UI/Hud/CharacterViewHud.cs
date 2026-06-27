@@ -211,7 +211,7 @@ public sealed class CharacterViewHud : MonoBehaviour
         slot.Root?.SetActive(true);
 
         if (slot.Icon      != null) slot.Icon.sprite    = character.Icon;
-        if (slot.NameLabel != null) slot.NameLabel.text = character.CharacterName;
+        if (slot.NameLabel != null) slot.NameLabel.text = character._characterExplorationDisplayName;
 
         RefreshHealth(slot);
 

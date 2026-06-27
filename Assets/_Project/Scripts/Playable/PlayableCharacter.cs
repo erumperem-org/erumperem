@@ -15,6 +15,7 @@ public sealed class PlayableCharacter : MonoBehaviour, IPlayableCharacter
 {
     [Header("Identificação")]
     [SerializeField] private string _characterName;
+    [SerializeField] public string _characterExplorationDisplayName;
     [SerializeField] private Sprite _icon;
     public AllyCharacterStatDefinition definition;
 
