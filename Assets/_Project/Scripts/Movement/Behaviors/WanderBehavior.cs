@@ -70,8 +70,6 @@ namespace Core.Exploration.Character.Movement
                         continue;
                     }
 
-                    LoggerService.PrintLogMessage(LogLevel.Debug, $"[{ctx.CharacterName}] [WanderBehavior] novo ponto: {point}", LogCategory.NPC, LogCategory.AI, LogCategory.Navigation);
-
                     ctx.NavMesh.MoveTo(ctx.Adapter, point);
 
                     while (ctx.NavMesh.IsPending(ctx.Adapter) && !ct.IsCancellationRequested)
