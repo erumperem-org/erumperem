@@ -1,5 +1,6 @@
 using System;
 using Core.Exploration.Items;
+using Core.Exploration.Items.Currencies;
 using Erumperem.Progression;
 using Services.DebugUtilities;
 using Services.IO;
@@ -13,6 +14,7 @@ public sealed class ShopLevelUpButton : MonoBehaviour
     [Header("Visualização")]
     [SerializeField] private TMPro.TMP_Text _priceText;
     [SerializeField] private TMPro.TMP_Text _levelText;
+    [SerializeField] private Image icon;
     [SerializeField] private Button _button;
 
     [Header("Persistência")]
@@ -146,9 +148,15 @@ public sealed class ShopLevelUpButton : MonoBehaviour
             _button.interactable = false;
             if (_priceText) _priceText.text = "MAX";
             if (_levelText) _levelText.text = $"Level {MaxLevel}/{MaxLevel}";
+            icon.sprite = null;
             return;
         }
-
+        var reference = GetCurrentCurrency(GetCurrentTier());
+        if(reference is AnomalousArtifact anomalousArtifact)
+        {
+            icon.sprite = anomalousArtifact.Sprite;
+        }
+        
         if (_priceText) _priceText.text = GetCurrentPrice().ToString();
         if (_levelText) _levelText.text = $"Level {_currentLevel + 1}/{MaxLevel}";
         _button.interactable = true;
