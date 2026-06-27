@@ -6,6 +6,7 @@ using Services.DebugUtilities;
 using UnityEngine;
 
 [RequireComponent(typeof(Detector))]
+[DefaultExecutionOrder(-200)]
 public sealed class PlayerDetectionSystem : MonoBehaviour
 {
     [SerializeField] private PlayableAnimationController _animationController;
@@ -41,6 +42,13 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
 
     // ── API pública ───────────────────────────────────────────────────────
 
+    public void Update()
+    {
+        if(this.tag == "Player")
+        {
+             _detector.Scan();
+        }
+    }
     public void StartScan()
     {
         StopScan();

@@ -78,6 +78,18 @@ namespace Player
             MoveInput = (!IsBlocked && _moveAction != null)
                 ? _moveAction.ReadValue<Vector2>()
                 : Vector2.zero;
+
+            // Polling em vez de evento — garante que o input é lido
+            // no mesmo ponto do frame que o scan já executou
+            if (!IsBlocked && _interactAction != null && _interactAction.WasPressedThisFrame())
+            {
+                OnInteract?.Invoke();
+            }
+
+            if (_torchAction != null && _torchAction.WasPressedThisFrame())
+            {
+                OnTorch?.Invoke();
+            }
         }
 
         // ── API pública ───────────────────────────────────────────────────
