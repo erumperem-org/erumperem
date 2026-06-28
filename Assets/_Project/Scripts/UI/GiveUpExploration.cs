@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using Services.DebugUtilities;
 using System.Collections;
+using System.Threading.Tasks;
 
 public class GiveUpExploration : UiButtonController<ChangeSceneButtonModel>,
     IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
@@ -23,60 +24,60 @@ public class GiveUpExploration : UiButtonController<ChangeSceneButtonModel>,
         if (isDisabled || _isProcessing) return;
 
         _fsm.TransitionTo(new ButtonPressed(this, uiButtonView._pressedEnterEffects, uiButtonView._pressedExitEffects));
-        playerInventorySaveSystem.DeletesSave();
-        foreach(var character in manager.Playables)
-        {
-            character.transform.position = character.RestingPoint.transform.position;
-        }
-
-    }
-
-    void IPointerExitHandler.OnPointerExit(PointerEventData eventData)
-    {
-        if (!isDisabled)
-            _fsm.TransitionTo(new ButtonDefault(this, uiButtonView._defaultEnterEffects, uiButtonView._defaultExitEffects));
+        StartCoroutine(HandleGiveUpAsync());
     }
 
     private IEnumerator HandleGiveUpAsync()
     {
         _isProcessing = true;
 
-        // 1. Deleta o save do inventário (síncrono)
+        // 1. Reposiciona personagens nos RestingPoints imediatamente na cena
+        foreach (var character in manager.Playables)
+        {
+            if (character == null || character.RestingPoint == null)
+            {
+                Debug.LogWarning($"[GiveUpExploration] '{character?.CharacterName}' sem RestingPoint — ignorado.");
+                continue;
+            }
+
+            character.transform.SetPositionAndRotation(
+                character.RestingPoint.position,
+                character.RestingPoint.rotation);
+        }
+
+        // 2. Deleta o save do inventário
         playerInventorySaveSystem.DeletesSave();
 
-        // 2. Aguarda o reset dos snapshots para os RestingPoints
-        var task = loadContext.MoveSnapshotsToCharacterRestingPoints();
-        yield return new WaitUntil(() => task.IsCompleted);
+        // 3. Aguarda o LoadAsync do inventário
+        var loadTask = playerInventorySaveSystem.LoadAsync();
+        yield return new WaitUntil(() => loadTask.IsCompleted);
 
-        // 3. Propaga exceção se houver falha
-        if (task.IsFaulted)
+        if (loadTask.IsFaulted)
         {
-            Debug.LogError($"[GiveUpExploration] Falha ao mover snapshots: {task.Exception}");
+            Debug.LogError($"[GiveUpExploration] Falha no LoadAsync: {loadTask.Exception}");
             _isProcessing = false;
             yield break;
         }
 
-        // 4. Só navega DEPOIS do save estar completo
-        if (string.IsNullOrWhiteSpace(uiButtonModel.sceneName))
+        // 4. Salva o estado de exploração com as novas posições
+        //    SaveState() é async void internamente — aguardamos via MoveSnapshotsToCharacterRestingPoints
+        //    que já persiste em disco de forma awaitable
+        var moveTask = loadContext.MoveSnapshotsToCharacterRestingPoints();
+        yield return new WaitUntil(() => moveTask.IsCompleted);
+
+        if (moveTask.IsFaulted)
         {
-            Debug.LogError("[ChangeSceneButtonController] sceneName não configurado no botão.", this);
+            Debug.LogError($"[GiveUpExploration] Falha ao mover snapshots: {moveTask.Exception}");
             _isProcessing = false;
             yield break;
         }
 
-        if (ScenesManager.Instance == null)
-        {
-            Debug.LogError("[ChangeSceneButtonController] ScenesManager.Instance não encontrado.", this);
-            _isProcessing = false;
-            yield break;
-        }
+        _isProcessing = false;
+    }
 
-        if (CombatExplorationBridge.Instance != null
-            && CombatExplorationBridge.Instance.TryCompleteReturnToExploration(uiButtonModel.sceneName))
-        {
-            yield break;
-        }
-
-        ScenesManager.Instance.LoadSceneByName(uiButtonModel.sceneName);
+    void IPointerExitHandler.OnPointerExit(PointerEventData eventData)
+    {
+        if (!isDisabled)
+            _fsm.TransitionTo(new ButtonDefault(this, uiButtonView._defaultEnterEffects, uiButtonView._defaultExitEffects));
     }
 }
