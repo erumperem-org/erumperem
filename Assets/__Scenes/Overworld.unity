@@ -133,7 +133,7 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: f8bb3f0cbdcf9354494dc095051603be, type: 2}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 4.3
+      value: 11.06
       objectReference: {fileID: 0}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalPosition.y
@@ -141,7 +141,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 2.1
+      value: 2.55
       objectReference: {fileID: 0}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1589,9 +1589,9 @@ MonoBehaviour:
   _manager: {fileID: 783874771}
   _safeAreaCenter: {fileID: 198571124}
   _safeAreaRadius: 20
-  _baseGainPerSecond: 25
+  _baseGainPerSecond: 0.2
   _gainPerMeterBeyondRadius: 0.002
-  _decayPerSecond: 0.1
+  _decayPerSecond: 250
   _maxCorruption: 250
   _corruptionSlider: {fileID: 1119371129}
   _corruptionNumber: {fileID: 1948169271}
@@ -4036,6 +4036,17 @@ Transform:
   - {fileID: 1921985098}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &628668134 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3770305613251037889, guid: ae08eb99b18dc624a8dace5cd3813983, type: 3}
+  m_PrefabInstance: {fileID: 2122725727}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 384e0e400472b1146b1be8ff9270ee93, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterViewHud
 --- !u!1001 &639698791
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8837,7 +8848,7 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: da4c139e88a57af4280eb9599d115575, type: 2}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.11429
+      value: -7.49
       objectReference: {fileID: 0}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalPosition.y
@@ -8845,7 +8856,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -1.48137
+      value: 3.38
       objectReference: {fileID: 0}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalRotation.w
@@ -8877,7 +8888,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9094609322646104423, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_Name
-      value: Chest
+      value: ChestReset
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -10860,7 +10871,7 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: 317a84591297bc44e8c4875506051397, type: 2}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 5.39
+      value: -2.74
       objectReference: {fileID: 0}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalPosition.y
@@ -10868,7 +10879,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.09
+      value: -14.14
       objectReference: {fileID: 0}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalRotation.w
@@ -12086,7 +12097,7 @@ MonoBehaviour:
   isDisabled: 0
   playerInventorySaveSystem: {fileID: 948181013}
   loadContext: {fileID: 1263911526}
-  manager: {fileID: 0}
+  manager: {fileID: 783874771}
 --- !u!1 &1816098997
 GameObject:
   m_ObjectHideFlags: 0
@@ -12618,9 +12629,9 @@ MonoBehaviour:
   _manager: {fileID: 783874771}
   _safeAreaCenter: {fileID: 1921985097}
   _safeAreaRadius: 20
-  viewHud: {fileID: 0}
-  _healPerSecond: 5
-  _intervalSeconds: 3
+  viewHud: {fileID: 628668134}
+  _healPerSecond: 999
+  _intervalSeconds: 0.1
 --- !u!135 &1921985100
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -13046,7 +13057,7 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: db3f8958815265f4b903988394bea283, type: 2}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 6.19
+      value: -15.8
       objectReference: {fileID: 0}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalPosition.y
@@ -13054,7 +13065,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -2.47
+      value: 2.44
       objectReference: {fileID: 0}
     - target: {fileID: 8466022186081498077, guid: cca2bad3ab474fb43b580ce6cd35e053, type: 3}
       propertyPath: m_LocalRotation.w
