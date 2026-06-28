@@ -149,6 +149,7 @@ public sealed class ShopLevelUpButton : MonoBehaviour
             if (_priceText) _priceText.text = "MAX";
             if (_levelText) _levelText.text = $"Level {MaxLevel}/{MaxLevel}";
             icon.sprite = null;
+            icon.enabled = false;
             return;
         }
         var reference = GetCurrentCurrency(GetCurrentTier());
@@ -157,8 +158,9 @@ public sealed class ShopLevelUpButton : MonoBehaviour
             icon.sprite = anomalousArtifact.Sprite;
         }
 
+        icon.enabled = true;
         if (_priceText) _priceText.text = GetCurrentPrice().ToString();
-        if (_levelText) _levelText.text = $"Level {_currentLevel + 1}/{MaxLevel}";
+        if (_levelText) _levelText.text = $"Level {_currentLevel}/{MaxLevel}";
         _button.interactable = true;
     }
 
