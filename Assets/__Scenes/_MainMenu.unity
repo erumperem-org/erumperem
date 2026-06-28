@@ -2089,7 +2089,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 889548338901274654, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 889548338901274654, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
@@ -2459,6 +2459,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7035364837975527395, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2042240646}
+    - targetCorrespondingSourceObject: {fileID: 7877517229260938872, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2042240648}
   m_SourcePrefab: {fileID: 100100000, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
 --- !u!1 &2042240645 stripped
 GameObject:
@@ -2478,6 +2481,37 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SaveFileWiper
   _saveFolderName: Saves
+--- !u!1 &2042240647 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7877517229260938872, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
+  m_PrefabInstance: {fileID: 2042240644}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2042240648
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2042240647}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67bf75c88246b01499a7c22d7a155657, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChangeSceneButtonController
+  uiButtonModel:
+    sceneName: Overworld
+  uiButtonView:
+    _defaultEnterEffects: []
+    _defaultExitEffects: []
+    _hoverEnterEffects:
+    - {fileID: 11400000, guid: b4e519ca65770ab42b9057e8fe8af045, type: 2}
+    _hoverExitEffects:
+    - {fileID: 11400000, guid: 4c1ebc9f27a2b2a43b8622fb2c1dfafe, type: 2}
+    _pressedEnterEffects: []
+    _pressedExitEffects: []
+    _disabledEnterEffects: []
+    _disabledExitEffects: []
+  isDisabled: 0
 --- !u!1 &2051272776
 GameObject:
   m_ObjectHideFlags: 0
