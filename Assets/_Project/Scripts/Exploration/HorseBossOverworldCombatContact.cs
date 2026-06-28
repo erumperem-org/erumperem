@@ -82,21 +82,13 @@ public sealed class HorseBossOverworldCombatContact : MonoBehaviour
             return;
         }
 
-        if (!IsPlayerCollider(detectedCollider))
+        if (detectedCollider.tag == "Player")
         {
-            return;
+            ExplorationLoadContext.EnsureRuntimeInstance();
+            _combatTriggered = true;
+            CombatExplorationBridge.RegisterHorseBossOverworldEncounter(CombatEnemyRosterSize);
+            SceneTransitionHandler.LoadScene(CombatSceneName);
         }
-
-        if (_combatTriggered || IsCombatTriggerBlocked())
-        {
-            return;
-        }
-
-        ExplorationLoadContext.EnsureRuntimeInstance();
-
-        _combatTriggered = true;
-        CombatExplorationBridge.RegisterHorseBossOverworldEncounter(CombatEnemyRosterSize);
-        SceneTransitionHandler.LoadScene(CombatSceneName);
     }
 
     private void HandleDetectorExit(Collider detectedCollider, string shapeLabel, int shapeIndex)
