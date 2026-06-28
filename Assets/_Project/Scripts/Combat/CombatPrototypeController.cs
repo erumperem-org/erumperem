@@ -31,6 +31,8 @@ namespace Erumperem.Combat
     {
         private const string ActionRockTweenId = "CombatActionRock";
         private const string CorruptionPulseTweenId = "CombatCorruptionPulse";
+        private const string HorseBossCharacterStatId = "HorseBoss";
+        private static readonly string[] RandomEncounterExcludedCharacterStatIds = { HorseBossCharacterStatId };
 
         [Header("Sessão (eventos)")]
         [Tooltip("Opcional: emite apresentação e hooks de turno. Use CombatSceneViewBinder na cena para ligar UI.")]
@@ -47,6 +49,9 @@ namespace Erumperem.Combat
         [SerializeField] private bool spawnEnemyModelsFromCatalog = false;
 
         [SerializeField] private EnemyVisualSpawnCatalog enemyVisualSpawnCatalog;
+
+        [Tooltip("Visual/stats do Horse Boss para encounters especiais (overworld). Se vazio, procura HorseBoss no spawn catalog.")]
+        [SerializeField] private EnemyVisualDefinition horseBossVisualDefinition;
 
         [Tooltip("Stats de combate dos aliados (Wulfric, Matsuda, etc.).")]
         [SerializeField] private AllyCharacterStatCatalog allyCharacterStatCatalog;
@@ -1462,42 +1467,153 @@ namespace Erumperem.Combat
                 _views[ally.Identity.Id] = allyViewRoot;
             }
 
+            ExplorationLoadContext.EnsureRuntimeInstance();
+
+            var horseBossEnemySlotIndex = -1;
+            var hasHorseBossEncounter = CombatExplorationBridge.TryConsumePendingHorseBossEncounter(
+                out horseBossEnemySlotIndex);
+
+            if (hasHorseBossEncounter)
+            {
+                Debug.Log(
+                    $"CombatPrototypeController: encounter Horse Boss — slot enemy_{horseBossEnemySlotIndex + 1}.",
+                    this);
+            }
+            else
+            {
+                Debug.Log(
+                    "CombatPrototypeController: combate normal (sem encounter Horse Boss pendente).",
+                    this);
+            }
+
             for (var enemyIndex = 0; enemyIndex < enemyCount; enemyIndex++)
             {
-                var root = enemyVisualRoots[enemyIndex];
-                if (root == null)
+                var slotRoot = enemyVisualRoots[enemyIndex];
+                if (slotRoot == null)
                 {
                     Debug.LogError($"CombatPrototypeController: Enemy Visual Roots[{enemyIndex}] está vazio.");
                     return false;
                 }
 
                 var enemy = _state.Enemies[enemyIndex];
-                var enemyViewRoot = root;
+                var enemyViewRoot = slotRoot;
+
                 if (spawnEnemyModelsFromCatalog &&
                     enemyVisualSpawnCatalog != null &&
-                    enemyVisualSpawnCatalog.TryPickDefinition(_random, out var enemyVisualDefinition) &&
-                    enemyVisualDefinition.battlePrefab != null)
+                    TrySpawnRandomCatalogEnemyAtSlot(slotRoot, enemy, out var catalogEnemyViewRoot))
                 {
-                    var alliesFacingReference = ResolveAlliesFacingReference();
-                    var instantiatedEnemyRoot = EnemyVisualBattleInstaller.InstantiateEnemyUnderSlot(
-                        root,
-                        enemyVisualDefinition.battlePrefab,
-                        alliesFacingReference);
-                    if (instantiatedEnemyRoot != null)
+                    enemyViewRoot = catalogEnemyViewRoot;
+                }
+
+                if (hasHorseBossEncounter && enemyIndex == horseBossEnemySlotIndex)
+                {
+                    if (!TryReplaceEnemySlotWithHorseBoss(slotRoot, enemy, out var horseBossViewRoot))
                     {
-                        enemyViewRoot = instantiatedEnemyRoot;
+                        Debug.LogError(
+                            $"CombatPrototypeController: falha ao substituir enemy_{enemyIndex + 1} pelo Horse Boss.",
+                            this);
+                        return false;
                     }
 
-                    OverrideEnemySkillLoadoutFromVisualDefinition(enemy, enemyVisualDefinition);
-                    ApplyEnemyCharacterStatsFromCatalog(enemy, enemyVisualDefinition);
-                    ApplyEnemyPassiveIdsFromVisualDefinition(enemy, enemyVisualDefinition);
-                    _enemyVisualByCombatantId[enemy.Identity.Id] = enemyVisualDefinition;
+                    enemyViewRoot = horseBossViewRoot;
                 }
 
                 EnsureCombatCapsuleTagOnUnit(enemyViewRoot, enemy.Identity.Id);
                 _views[enemy.Identity.Id] = enemyViewRoot;
             }
 
+            return true;
+        }
+
+        private bool TrySpawnRandomCatalogEnemyAtSlot(
+            Transform slotRoot,
+            Combatant enemy,
+            out Transform enemyViewRoot)
+        {
+            enemyViewRoot = slotRoot;
+            if (enemyVisualSpawnCatalog == null)
+            {
+                return false;
+            }
+
+            if (!enemyVisualSpawnCatalog.TryPickDefinitionExcludingCharacterStatIds(
+                    _random,
+                    RandomEncounterExcludedCharacterStatIds,
+                    out var enemyVisualDefinition) ||
+                enemyVisualDefinition.battlePrefab == null)
+            {
+                return false;
+            }
+
+            var alliesFacingReference = ResolveAlliesFacingReference();
+            var instantiatedEnemyRoot = EnemyVisualBattleInstaller.InstantiateEnemyUnderSlot(
+                slotRoot,
+                enemyVisualDefinition.battlePrefab,
+                alliesFacingReference);
+            if (instantiatedEnemyRoot != null)
+            {
+                enemyViewRoot = instantiatedEnemyRoot;
+            }
+
+            OverrideEnemySkillLoadoutFromVisualDefinition(enemy, enemyVisualDefinition);
+            ApplyEnemyCharacterStatsFromCatalog(enemy, enemyVisualDefinition);
+            ApplyEnemyPassiveIdsFromVisualDefinition(enemy, enemyVisualDefinition);
+            _enemyVisualByCombatantId[enemy.Identity.Id] = enemyVisualDefinition;
+            return true;
+        }
+
+        private bool TryReplaceEnemySlotWithHorseBoss(
+            Transform slotRoot,
+            Combatant enemy,
+            out Transform horseBossViewRoot)
+        {
+            horseBossViewRoot = slotRoot;
+            if (!TryResolveHorseBossVisualDefinition(out var horseBossVisual) ||
+                horseBossVisual.battlePrefab == null)
+            {
+                Debug.LogError(
+                    "CombatPrototypeController: HorseBossVisualDefinition ou battlePrefab em falta.",
+                    this);
+                return false;
+            }
+
+            EnemyVisualBattleInstaller.ClearSlotForEnemyVisualPrefab(slotRoot);
+
+            if (!EnemySpawnHelper.TryApplyEnemyArchetypeToCombatant(
+                    _state,
+                    enemy,
+                    "horse_boss",
+                    BattleFactory.DefaultEnemySkillIds))
+            {
+                Debug.LogWarning(
+                    "CombatPrototypeController: template horse_boss não encontrado; " +
+                    "aplicando só visual/stats do Horse Boss.",
+                    this);
+            }
+
+            var alliesFacingReference = ResolveAlliesFacingReference();
+            var instantiatedHorseBossRoot = EnemyVisualBattleInstaller.InstantiateEnemyUnderSlot(
+                slotRoot,
+                horseBossVisual.battlePrefab,
+                alliesFacingReference);
+            if (instantiatedHorseBossRoot == null)
+            {
+                Debug.LogError(
+                    "CombatPrototypeController: falha ao instanciar prefab do Horse Boss.",
+                    horseBossVisual.battlePrefab);
+                return false;
+            }
+
+            horseBossViewRoot = instantiatedHorseBossRoot;
+            OverrideEnemySkillLoadoutFromVisualDefinition(enemy, horseBossVisual);
+            ApplyEnemyCharacterStatsFromCatalog(enemy, horseBossVisual);
+            ApplyEnemyPassiveIdsFromVisualDefinition(enemy, horseBossVisual);
+            _enemyVisualByCombatantId[enemy.Identity.Id] = horseBossVisual;
+
+            Debug.Log(
+                $"CombatPrototypeController: Horse Boss aplicado a {enemy.Identity.Id} " +
+                $"(display '{enemy.Identity.DisplayName}').",
+                horseBossVisual);
             return true;
         }
 
@@ -1718,6 +1834,44 @@ namespace Erumperem.Combat
 
                 enemy.Progression.UnlockedNodes[passiveId] = true;
             }
+        }
+
+        private bool TryResolveHorseBossVisualDefinition(out EnemyVisualDefinition resolvedHorseBossVisualDefinition)
+        {
+            if (horseBossVisualDefinition != null)
+            {
+                resolvedHorseBossVisualDefinition = horseBossVisualDefinition;
+                return true;
+            }
+
+            if (TryResolveEnemyVisualDefinitionByArchetypeId("HorseBoss", out resolvedHorseBossVisualDefinition))
+            {
+                return true;
+            }
+
+            var loadedHorseBossDefinitions = Resources.FindObjectsOfTypeAll<EnemyVisualDefinition>();
+            for (var definitionIndex = 0; definitionIndex < loadedHorseBossDefinitions.Length; definitionIndex++)
+            {
+                var candidateDefinition = loadedHorseBossDefinitions[definitionIndex];
+                if (candidateDefinition == null)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(
+                        candidateDefinition.ResolveCharacterStatId(),
+                        HorseBossCharacterStatId,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                resolvedHorseBossVisualDefinition = candidateDefinition;
+                return candidateDefinition.battlePrefab != null;
+            }
+
+            resolvedHorseBossVisualDefinition = null;
+            return false;
         }
 
         private void ProcessTurnStartCombatEvents(int turnEventStartIndex)

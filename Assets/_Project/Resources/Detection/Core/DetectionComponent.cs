@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using DetectionSystem.Core.Shapes;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -32,6 +34,49 @@ namespace DetectionSystem.Core
 
         /// <summary>Read-only access to the configured shape entries.</summary>
         public IReadOnlyList<ShapeEntry> Shapes => shapes;
+
+        /// <summary>
+        /// Garante uma shape de contacto com jogador (overlap box + filtro Player).
+        /// Usado por contactos de combate no overworld quando o prefab não tem shapes configuradas.
+        /// </summary>
+        public void EnsurePlayerContactBoxShape(
+            Vector3 localOffset,
+            Vector3 halfExtents,
+            string shapeLabel = "Contact")
+        {
+            shapes ??= new List<ShapeEntry>();
+
+            for (var shapeIndex = 0; shapeIndex < shapes.Count; shapeIndex++)
+            {
+                var existingShape = shapes[shapeIndex];
+                if (!string.Equals(existingShape.label, shapeLabel, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                existingShape.enabled = true;
+                existingShape.shapeType = ShapeType.Box;
+                existingShape.offset = localOffset;
+                existingShape.box.halfExtents = halfExtents;
+                if (existingShape.filterTags == null || existingShape.filterTags.Count == 0)
+                {
+                    existingShape.filterTags = new List<string> { "Player" };
+                }
+
+                return;
+            }
+
+            shapes.Add(new ShapeEntry
+            {
+                label = shapeLabel,
+                shapeType = ShapeType.Box,
+                enabled = true,
+                offset = localOffset,
+                layerMasks = new List<LayerMask> { 1 << LayerMask.NameToLayer("Player") },
+                filterTags = new List<string> { "Player" },
+                box = new BoxShape { halfExtents = halfExtents },
+            });
+        }
 
         /// <summary>
         /// Returns true if <paramref name="point"/> is inside ANY enabled shape.
