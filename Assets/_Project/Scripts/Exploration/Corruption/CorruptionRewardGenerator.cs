@@ -7,6 +7,7 @@ using Services.IO;
 using Services.Loot;
 using UnityEngine;
 using Core.Exploration.Interactables.Chest;
+using Unity.VisualScripting;
 /// <summary>
 /// Gera recompensas baseadas no tier de corrupção lido em Awake.
 ///
@@ -22,7 +23,7 @@ public sealed class CorruptionRewardGenerator : MonoBehaviour
     // ── Inspector ─────────────────────────────────────────────────────────
 
     [Header("Referências")]
-    [SerializeField] private PlayerInventorySystem     _inventory;
+    [SerializeField] private PlayerInventorySystem _inventory;
     [SerializeField] private PlayerInventorySaveSystem _inventorySave;
 
     [Header("LootTables por Tier (índice = tier 0-4)")]
@@ -30,9 +31,10 @@ public sealed class CorruptionRewardGenerator : MonoBehaviour
     [SerializeField] private LootTable[] _lootTablesByTier = new LootTable[5];
 
     [Header("IO — deve coincidir com ExplorationCorruptionSystem")]
-    [SerializeField] private string _saveFolderName  = "Saves";
-    [SerializeField] private string _saveFileName    = "corruption_save.json";
-
+    [SerializeField] private string _saveFolderName = "Saves";
+    [SerializeField] private string _saveFileName = "corruption_save.json";
+    [SerializeField] private GameObject rewardViewParent;
+    [SerializeField] private GameObject rewardPrefab;
     // ── Estado ────────────────────────────────────────────────────────────
 
     /// <summary>Tier resolvido no Awake (0-4). -1 = não inicializado.</summary>
@@ -156,6 +158,35 @@ public sealed class CorruptionRewardGenerator : MonoBehaviour
 
         Log(LogLevel.Debug,
             $"{_lastReward.Count} tipo(s) de item transferido(s) ao inventário.");
+
+        SpawnRewardView();
+    }
+
+    private void SpawnRewardView()
+    {
+        if (rewardPrefab == null || rewardViewParent == null)
+        {
+            Log(LogLevel.Warning, "rewardPrefab ou rewardViewParent não atribuído — visualização ignorada.");
+            return;
+        }
+
+        foreach (var (storageable, amount) in _lastReward)
+        {
+            var instance = Instantiate(rewardPrefab, rewardViewParent.transform);
+            ApplyRewardVisual(instance, storageable, amount);
+        }
+    }
+
+    private void ApplyRewardVisual(GameObject rewardInstance, IStorageable storageable, int amount)
+    {
+        var view = rewardInstance.GetComponent<RewardView>();
+        if (view == null)
+        {
+            Log(LogLevel.Warning, "RewardView não encontrado no rewardPrefab.");
+            return;
+        }
+
+        view.UpdateView(storageable, amount);
     }
 
     private void SaveInventory()
