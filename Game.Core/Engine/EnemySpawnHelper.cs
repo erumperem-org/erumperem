@@ -72,7 +72,8 @@ public static class EnemySpawnHelper
         var deadSlot = deadEnemySlots[selectedSlotIndex];
         ReinitializeCombatantFromTemplate(deadSlot, template, defaultSkillIds);
         spawnedCombatant = deadSlot;
-        rankUsed = deadSlot.Position.FrontRank;
+        var enemyRosterIndex = state.Enemies.IndexOf(deadSlot);
+        rankUsed = enemyRosterIndex >= 0 ? enemyRosterIndex + 1 : deadSlot.Position.FrontRank;
         return true;
     }
 
@@ -162,7 +163,9 @@ public static class EnemySpawnHelper
         combatant.ElementAffinity = new ElementAffinityComponent { Element = template.Element };
         combatant.Tokens = new TokenComponent();
         combatant.Dots = new DotComponent();
-        combatant.AI ??= new AIComponent { DecisionPolicyId = template.AiPolicy };
+        combatant.Progression = new ProgressionComponent { Level = 0, SpentPoints = 0 };
+        combatant.PassiveRuntime = new PassiveRuntimeState();
+        combatant.AI = new AIComponent { DecisionPolicyId = template.AiPolicy };
 
         combatant.SkillLoadout.Skills.Clear();
         var skillsToAssign = template.Skills.Count > 0 ? template.Skills : skillIds;

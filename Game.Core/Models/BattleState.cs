@@ -50,7 +50,29 @@ public sealed class BattleState
 
     public bool HasActiveEnemies => Enemies.Any(IsActiveBattler);
 
-    public bool IsFinished => !HasActiveAllies || !HasActiveEnemies;
+    /// <summary>
+    /// Sincroniza <see cref="HealthComponent.IsDead"/> quando HP já chegou a zero
+    /// (ex.: respawn mid-battle ou desync UI/sim).
+    /// </summary>
+    public void SyncDeathFlagsFromHealth()
+    {
+        foreach (var combatant in GetAllCombatants())
+        {
+            if (combatant.Health.CurrentHp <= 0 && !combatant.Health.IsDead)
+            {
+                combatant.Health.IsDead = true;
+            }
+        }
+    }
+
+    public bool IsFinished
+    {
+        get
+        {
+            SyncDeathFlagsFromHealth();
+            return !HasActiveAllies || !HasActiveEnemies;
+        }
+    }
 
     public Side? Winner
     {

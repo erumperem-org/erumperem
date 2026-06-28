@@ -1193,6 +1193,8 @@ namespace Erumperem.Combat
                             {
                                 deadEnemyVisual.EnsureDeathVisualSequenceStarted(enemyDeathClipMarginSeconds);
                             }
+
+                            TryFinishBattleIfComplete();
                         }
 
                         if (combatEvent.EventType == BattleEventType.DamageApplied && combatEvent.DamageAmount > 0)
@@ -1771,6 +1773,22 @@ namespace Erumperem.Combat
             {
                 LogLastEvents();
             }
+
+            TryFinishBattleIfComplete();
+        }
+
+        private void TryFinishBattleIfComplete()
+        {
+            if (_state == null || _battleEnded)
+            {
+                return;
+            }
+
+            _state.SyncDeathFlagsFromHealth();
+            if (_state.IsFinished)
+            {
+                EndBattle();
+            }
         }
 
         private void TrySpawnSummonedEnemyVisual(CombatEvent combatEvent)
@@ -1797,11 +1815,12 @@ namespace Erumperem.Combat
                 return;
             }
 
-            var rankIndex = combatEvent.PassiveAuxInt - 1;
+            var rankIndex = ResolveEnemyVisualRootIndex(spawnedCombatant, combatEvent.PassiveAuxInt);
             if (enemyVisualRoots == null || rankIndex < 0 || rankIndex >= enemyVisualRoots.Length)
             {
                 Debug.LogWarning(
-                    $"CombatPrototypeController: rank inválido {combatEvent.PassiveAuxInt} para spawn de '{archetypeId}'.",
+                    $"CombatPrototypeController: slot inválido {rankIndex} para spawn de '{archetypeId}' " +
+                    $"(combatente '{spawnedCombatant.Identity.Id}').",
                     this);
                 return;
             }
@@ -1828,9 +1847,50 @@ namespace Erumperem.Combat
 
             OverrideEnemySkillLoadoutFromVisualDefinition(spawnedCombatant, enemyVisualDefinition);
             ApplyEnemyCharacterStatsFromCatalog(spawnedCombatant, enemyVisualDefinition);
+            ApplyEnemyPassiveIdsFromVisualDefinition(spawnedCombatant, enemyVisualDefinition);
             EnsureCombatCapsuleTagOnUnit(instantiatedEnemyRoot, spawnedCombatant.Identity.Id);
             _views[spawnedCombatant.Identity.Id] = instantiatedEnemyRoot;
             _enemyVisualByCombatantId[spawnedCombatant.Identity.Id] = enemyVisualDefinition;
+        }
+
+        private int ResolveEnemyVisualRootIndex(Combatant spawnedCombatant, int fallbackOneBasedSlotFromEvent)
+        {
+            if (_state?.Enemies == null || spawnedCombatant == null)
+            {
+                return fallbackOneBasedSlotFromEvent - 1;
+            }
+
+            for (var enemyIndex = 0; enemyIndex < _state.Enemies.Count; enemyIndex++)
+            {
+                if (ReferenceEquals(_state.Enemies[enemyIndex], spawnedCombatant))
+                {
+                    return enemyIndex;
+                }
+            }
+
+            if (TryParseEnemySlotIndexFromCombatantId(spawnedCombatant.Identity.Id, out var slotIndexFromId))
+            {
+                return slotIndexFromId;
+            }
+
+            return fallbackOneBasedSlotFromEvent - 1;
+        }
+
+        private static bool TryParseEnemySlotIndexFromCombatantId(string combatantId, out int slotIndex)
+        {
+            slotIndex = -1;
+            if (string.IsNullOrEmpty(combatantId) || !combatantId.StartsWith("enemy_", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (!int.TryParse(combatantId.AsSpan("enemy_".Length), out var oneBasedSlotNumber))
+            {
+                return false;
+            }
+
+            slotIndex = oneBasedSlotNumber - 1;
+            return slotIndex >= 0;
         }
 
         private bool TryResolveEnemyVisualDefinitionByArchetypeId(
