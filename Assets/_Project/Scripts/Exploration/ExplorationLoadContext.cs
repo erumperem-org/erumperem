@@ -1051,39 +1051,70 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     public IReadOnlyList<PlayableCharacterSnapshot> Snapshots => _snapshots;
 
     /// <summary>
-    /// Atualiza posição/rotação de cada snapshot para o RestingPoint do personagem na cena.
+    /// Atualiza posição/rotação de cada snapshot para o RestingPoint do personagem na cena
+    /// e persiste em disco se ao menos um snapshot foi alterado.
     /// </summary>
     /// <returns>Número de snapshots actualizados.</returns>
-    public int MoveSnapshotsToCharacterRestingPoints()
+    public async Task<int> MoveSnapshotsToCharacterRestingPoints()
     {
         if (!TryGetManager())
         {
             return 0;
         }
 
-        var patchedSnapshotCount = 0;
+        var charactersByName = new Dictionary<string, PlayableCharacter>(
+            _manager.Playables.Count,
+            StringComparer.OrdinalIgnoreCase);
 
-        foreach (var snapshot in _snapshots)
+        foreach (var playableCharacter in _manager.Playables)
         {
-            var playableCharacter = FindPlayableCharacterByName(snapshot.CharacterName);
-            if (playableCharacter == null)
+            if (playableCharacter == null ||
+                string.IsNullOrWhiteSpace(playableCharacter.CharacterName))
             {
                 continue;
             }
 
-            var restingPointTransform = playableCharacter.RestingPoint;
-            if (restingPointTransform == null)
+            charactersByName[playableCharacter.CharacterName] = playableCharacter;
+        }
+
+        var patchedSnapshotCount = 0;
+
+        foreach (var snapshot in _snapshots)
+        {
+            if (string.IsNullOrWhiteSpace(snapshot.CharacterName))
+            {
+                continue;
+            }
+
+            if (!charactersByName.TryGetValue(snapshot.CharacterName, out var character))
+            {
+                LoggerService.PrintLogMessage(LogLevel.Warning,
+                    $"[RestingPointPatcher] Personagem '{snapshot.CharacterName}' não encontrado na cena.",
+                    LogCategory.Player);
+                continue;
+            }
+
+            var restingPoint = character.RestingPoint;
+            if (restingPoint == null)
             {
                 continue;
             }
 
             var previousPosition = snapshot.Position;
-            snapshot.Position = restingPointTransform.position;
-            snapshot.Rotation = restingPointTransform.rotation;
+            snapshot.Position = restingPoint.position;
+            snapshot.Rotation = restingPoint.rotation;
             patchedSnapshotCount++;
 
             LoggerService.PrintLogMessage(LogLevel.Debug,
                 $"[RestingPointPatcher] '{snapshot.CharacterName}' {previousPosition} → {snapshot.Position} (RestingPoint)",
+                LogCategory.Player);
+        }
+
+        if (patchedSnapshotCount > 0)
+        {
+            await SaveToFileAsync();
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"[RestingPointPatcher] {patchedSnapshotCount} snapshot(s) persistido(s) em disco.",
                 LogCategory.Player);
         }
 
