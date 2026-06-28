@@ -829,19 +829,16 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
         if (_corruptionSystem != null)
         {
-            _corruptionSystem.Corruption = Mathf.Clamp(_savedCorruptionValue, 0f, 100f);
+            _corruptionSystem.Corruption = Mathf.Clamp(_savedCorruptionValue, 0f, _corruptionSystem.MaxCorruption);
         }
     }
 
     public void PersistCorruptionToDedicatedSaveFile()
     {
         TryResolveCorruptionSystemFromScene();
-        if (_corruptionSystem == null)
-        {
-            return;
-        }
+        if (_corruptionSystem == null) return;
 
-        _corruptionSystem.Corruption = Mathf.Clamp(_savedCorruptionValue, 0f, 100f);
+        _corruptionSystem.Corruption = Mathf.Clamp(_savedCorruptionValue, 0f, _corruptionSystem.MaxCorruption);
         _corruptionSystem.SaveState();
     }
 
