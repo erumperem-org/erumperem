@@ -115,7 +115,7 @@ public sealed class ShopLevelUpButton : MonoBehaviour
     /// <param name="price">Preço cobrado neste nível.</param>
     private void OnLevelUp(int level, Tier tier, int price)
     {
-        playerProgression.GiveProgressionPoints(pointsTogive);
+        playerProgression.TrySetSharedSkillLevel(2);
     }
 
     // ── Progressão ────────────────────────────────────────────────────────
