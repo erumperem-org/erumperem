@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using System.Text;
 using Game.Core.Domain;
@@ -57,7 +58,17 @@ public sealed class CombatEventCollector
 {
     public List<CombatEvent> Events { get; } = [];
 
-    public void Add(CombatEvent combatEvent) => Events.Add(combatEvent);
+    /// <summary>Disparado sempre que um combatente morre (inclui invocados mid-battle).</summary>
+    public event Action<CombatEvent>? CombatantDied;
+
+    public void Add(CombatEvent combatEvent)
+    {
+        Events.Add(combatEvent);
+        if (combatEvent.EventType == BattleEventType.CombatantDied)
+        {
+            CombatantDied?.Invoke(combatEvent);
+        }
+    }
 }
 
 public sealed class CombatAggregateRow
