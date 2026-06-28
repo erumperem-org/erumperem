@@ -38,8 +38,6 @@ namespace Systems.Chest.Builder
 
             if (!_pool.HasAvailable)
             {
-                LoggerService.PrintLogMessage(LogLevel.Warning,
-                    "[ChestBuilder] Pool esgotada.", LogCategory.Interaction);
                 return null;
             }
 
@@ -53,11 +51,6 @@ namespace Systems.Chest.Builder
             // ── Posiciona na cena ─────────────────────────────────────────
             chest.transform.position = spawnPoint;
             chest.transform.rotation = rotation == default ? Quaternion.identity : rotation;
-
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[ChestBuilder] '{chest.name}' posicionado em {spawnPoint} " +
-                $"com LootTable '{(lootTable != null ? lootTable.name : "nenhuma")}'.",
-                LogCategory.Interaction);
 
             return chest;
         }
@@ -80,9 +73,6 @@ namespace Systems.Chest.Builder
 
             if (tables == null || tables.Count == 0)
             {
-                LoggerService.PrintLogMessage(LogLevel.Warning,
-                    "[ChestBuilder] Nenhuma LootTable configurada na pool. Baú ficará sem loot.",
-                    LogCategory.Interaction);
                 return null;
             }
 
@@ -92,8 +82,6 @@ namespace Systems.Chest.Builder
         private bool ValidateDependencies()
         {
             if (_pool != null) return true;
-            LoggerService.PrintLogMessage(LogLevel.Error,
-                "[ChestBuilder] ChestPool não configurada!", LogCategory.Interaction);
             return false;
         }
     }

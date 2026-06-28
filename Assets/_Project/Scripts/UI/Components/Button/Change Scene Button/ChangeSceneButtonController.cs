@@ -30,11 +30,7 @@ public class ChangeSceneButtonController : UiButtonController<ChangeSceneButtonM
             return;
         }
 
-        if (CombatExplorationBridge.Instance != null
-            && CombatExplorationBridge.Instance.TryCompleteReturnToExploration(uiButtonModel.sceneName))
-        {
-            return;
-        }
+
 
         ScenesManager.Instance.LoadSceneByName(uiButtonModel.sceneName);
     }

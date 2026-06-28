@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Erumperem.Characters;
 using Services.DebugUtilities;
 using Services.IO;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -192,8 +193,11 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             return;
         }
 
+        // Invalida referências de cena anterior — ambas pertencem
+        // a objetos que foram destruídos com o unload da cena anterior.
         _manager = null;
-        Awake();
+        _corruptionSystem = null;
+
         CombatExplorationBridge.Instance?.BlockExplorationCombatContactsAfterSceneLoad();
         StartCoroutine(RestoreNextFrame());
     }
@@ -259,7 +263,6 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     {
         if (!TryGetManager()) return;
 
-        // ── Personagens ──────────────────────────────────────────────────
         _snapshots.Clear();
         foreach (var character in _manager.Playables)
         {
@@ -281,11 +284,15 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 ? Mathf.Clamp(healthBar.CurrentHealth, 0f, maxHealth)
                 : maxHealth;
 
+            var stateToSave = character.CurrentState == PlayableCharacterState.None
+                ? ResolveDefaultExplorationState(character.CharacterName)
+                : character.CurrentState;
+
             _snapshots.Add(new PlayableCharacterSnapshot(
                 character.CharacterName,
                 character.Transform.position,
                 character.Transform.rotation,
-                character.CurrentState,
+                stateToSave,
                 currentHealth));
         }
 
@@ -297,7 +304,6 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         LoggerService.PrintLogMessage(LogLevel.Debug,
             $"[SAVE] {_snapshots.Count} personagens salvos.", LogCategory.Player);
 
-        // ── Corrupção ────────────────────────────────────────────────────
         if (_corruptionSystem != null)
         {
             _corruptionSystem.Corruption = _savedCorruptionValue;
@@ -390,7 +396,16 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 await LoadFromFileAsync();
             }
 
+            // Reavalia _hasSave após eventual LoadFromFileAsync —
+            // garante que a decisão abaixo usa o estado actual correcto.
             bool shouldApplySavedSnapshots = _hasSave && _snapshots.Count > 0;
+
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"[LOAD] shouldApplySavedSnapshots={shouldApplySavedSnapshots} " +
+                $"_hasSave={_hasSave} snapshots={_snapshots.Count} " +
+                $"fromMemory={restoreSnapshotsFromMemory}",
+                LogCategory.Player);
+
             if (shouldApplySavedSnapshots)
             {
                 ApplySnapshots();
@@ -579,7 +594,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 LogCategory.Player);
         }
 
-        ApplySavedCorruptionValue(corruptionValue);
+        // Grava apenas em memória — não toca _corruptionSystem antes do restore
+        _savedCorruptionValue = (float)Math.Max(0, corruptionValue);
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
             $"[HEAL-DEBUG] [COMBAT-SAVE] Corrupção pós-combate → {_savedCorruptionValue:F1}.",
@@ -960,8 +976,13 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             }
         }
 
-        _preferInMemorySnapshotsOnNextRestore = _hasSave;
+        // Garante que _hasSave reflecte o estado real dos snapshots
+        // ANTES de decidir se restaura da memória ou do disco.
+        // Se ClearSaveAsync foi chamado no passo anterior, _snapshots.Count
+        // é 0 e _hasSave já é false — nesse caso o restore vai para o disco
+        // (ou para ApplyDefaultSetups se não houver arquivo), que é o comportamento correcto.
         _hasSave = _snapshots.Count > 0;
+        _preferInMemorySnapshotsOnNextRestore = _hasSave;
 
         PersistCorruptionToDedicatedSaveFile();
 
@@ -1255,20 +1276,32 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         IsApplyingSavedExplorationState = true;
         try
         {
-            foreach (var character in _manager.Playables)
-            {
-                var snap = _snapshots.Find(snapshot =>
-                    string.Equals(snapshot.CharacterName, character.CharacterName, StringComparison.OrdinalIgnoreCase));
-                if (snap == null)
-                {
-                    LoggerService.PrintLogMessage(LogLevel.Warning,
-                        $"[LOAD] Snapshot não encontrado para '{character.CharacterName}'.",
-                        LogCategory.Player);
-                    continue;
-                }
+            var ordered = _manager.Playables
+                .Select(character => (
+                    character,
+                    snap: _snapshots.Find(s =>
+                        string.Equals(s.CharacterName, character.CharacterName,
+                            StringComparison.OrdinalIgnoreCase))
+                ))
+                .Where(pair => pair.snap != null)
+                .OrderBy(pair => GetDefaultSetupApplyOrder(pair.snap.State))
+                .ToList();
 
+            // LOG: confirma o que vai ser aplicado e em que ordem
+            foreach (var (character, snap) in ordered)
+            {
+                LoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"[APPLY-DEBUG] Fila: '{snap.CharacterName}' State={snap.State} " +
+                    $"HP={snap.CurrentHealth} Pos={snap.Position}",
+                    LogCategory.Player);
+            }
+
+
+            foreach (var (character, snap) in ordered)
+            {
                 if (character.HealthBar != null)
                 {
+
                     var maxHealth = ResolveAllyMaxHealth(character.CharacterName);
                     character.HealthBar.SetMaxHealth(maxHealth, keepRatio: false);
                     character.HealthBar.RestoreForInitialization(
@@ -1279,16 +1312,47 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                         LogCategory.Player);
                 }
 
-                character.Transform.SetPositionAndRotation(snap.Position, snap.Rotation);
-                _manager.SetState(snap.State, character);
+                character.CurrentState = PlayableCharacterState.None;
 
                 LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"[LOAD] '{character.CharacterName}' → {snap.State} @ {snap.Position}",
+                    $"[APPLY-DEBUG] Chamando SetState({snap.State}, {character.CharacterName}) " +
+                    $"CurrentState antes={character.CurrentState}",
+                    LogCategory.Player);
+
+                try
+                {
+                    _manager.SetStateForLoad(snap.State, character, snap.Position);
+                }
+                catch (Exception ex)
+                {
+                    LoggerService.PrintLogMessage(LogLevel.Error,
+                        $"[APPLY-DEBUG] EXCEPTION em SetStateForLoad({snap.State}, {character.CharacterName}): {ex.Message}\n{ex.StackTrace}",
+                        LogCategory.Player);
+                    continue;
+                }
+
+                character.Transform.SetPositionAndRotation(snap.Position, snap.Rotation);
+
+                LoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"[APPLY-DEBUG] Após SetState: '{character.CharacterName}' " +
+                    $"CurrentState={character.CurrentState} " +
+                    $"Manager.Main={(_manager.Main as PlayableCharacter)?.CharacterName ?? "null"} " +
+                    $"Manager.Companion={(_manager.Companion as PlayableCharacter)?.CharacterName ?? "null"}",
                     LogCategory.Player);
             }
 
-            ApplySavedCorruptionValue(_savedCorruptionValue);
+            foreach (var character in _manager.Playables)
+            {
+                if (ordered.All(pair => pair.character != character))
+                {
 
+                    LoggerService.PrintLogMessage(LogLevel.Warning,
+                        $"[LOAD] Snapshot não encontrado para '{character.CharacterName}'.",
+                        LogCategory.Player);
+                }
+            }
+
+            ApplySavedCorruptionValue(_savedCorruptionValue);
             _manager.NotifyCurrentMainIfAny();
             NotifyExplorationStateApplied();
         }
@@ -1532,7 +1596,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             return;
         }
 
-        if (!_hasSave)
+        if (_snapshots.Count == 0)
         {
             await LoadFromFileAsync();
         }
@@ -1548,6 +1612,11 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         }
         else
         {
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                $"[SAVE-LIFE] '{characterId}' não tem snapshot em memória nem em disco. " +
+                $"Criando com posição zerada — pode causar teleporte no próximo load.",
+                LogCategory.Player);
+
             _snapshots.Add(new PlayableCharacterSnapshot(
                 characterId,
                 Vector3.zero,
@@ -1557,7 +1626,6 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         }
 
         _hasSave = _snapshots.Count > 0;
-
         await SaveToFileAsync();
 
         LoggerService.PrintLogMessage(LogLevel.Debug,

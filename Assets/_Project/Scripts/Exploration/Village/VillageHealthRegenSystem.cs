@@ -122,10 +122,6 @@ public sealed class VillageHealthRegenSystem : MonoBehaviour
             }
 
             character.HealthBar.Heal(healAmount);
-
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[VillageRegen] [{character.CharacterName}] +{healAmount} HP.",
-                LogCategory.Player);
         }
 
         viewHud?.RefreshAll();

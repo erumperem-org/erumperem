@@ -30,20 +30,12 @@ namespace Core.Exploration.Character.Movement
         {
             if (context is not WanderBehaviorContext ctx) return;
 
-            LoggerService.PrintLogMessage(
-                LogLevel.Debug,
-                $"[{ctx.CharacterName}] → [WanderBehavior] raio: {ctx.WanderRadius}", LogCategory.NPC, LogCategory.AI, LogCategory.Navigation);
-
             _cts = new CancellationTokenSource();
             await WanderAsync(ctx, _cts.Token);
         }
 
         public async Task UnexecuteBehavior(ICharacterMovementStrategyContext context)
         {
-            if (context is WanderBehaviorContext ctx)
-                LoggerService.PrintLogMessage(
-                    LogLevel.Debug,
-                    $"[{ctx.CharacterName}] saindo de [WanderBehavior]", LogCategory.NPC, LogCategory.AI, LogCategory.Navigation);
 
             CancelImmediate();
             await Task.CompletedTask;

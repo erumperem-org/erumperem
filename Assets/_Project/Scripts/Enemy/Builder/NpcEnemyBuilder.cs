@@ -92,7 +92,6 @@ namespace Systems.NPC.Builder
 
             if (!found)
             {
-                Debug.LogWarning("[NpcEnemyBuilder] Nenhuma posição de spawn válida encontrada no NavMesh.");
                 return false;
             }
 
@@ -104,7 +103,6 @@ namespace Systems.NPC.Builder
             if (!ValidateDependenciesForExactSpawn()) return false;
             if (!_pool.HasAvailable)
             {
-                Debug.LogWarning("[NpcEnemyBuilder] Pool esgotada.");
                 return false;
             }
 
@@ -139,9 +137,6 @@ namespace Systems.NPC.Builder
             npc.Activate();
 
             _contactHandler?.Register(npc);
-
-            Debug.Log($"[NpcEnemyBuilder] '{npc.name}' ativado em {spawnPoint} " +
-                      $"[Wander: {_wanderRadius}m | Chase: {_chaseRadius}m | Lifetime: {_wanderLifetime}s]", npc);
 
             return true;
         }

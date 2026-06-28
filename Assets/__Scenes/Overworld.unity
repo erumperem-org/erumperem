@@ -5509,21 +5509,61 @@ PrefabInstance:
     m_TransformParent: {fileID: 1187310794}
     m_Modifications:
     - target: {fileID: 4781651870924612967, guid: 2c2c56d8f1486f444a33f23184f85501, type: 3}
-      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 1677461393}
+      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4781651870924612967, guid: 2c2c56d8f1486f444a33f23184f85501, type: 3}
-      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[1].m_Target
+      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[3].m_Mode
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4781651870924612967, guid: 2c2c56d8f1486f444a33f23184f85501, type: 3}
+      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1263911527}
     - target: {fileID: 4781651870924612967, guid: 2c2c56d8f1486f444a33f23184f85501, type: 3}
-      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[2].m_Target
+      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[1].m_Target
       value: 
       objectReference: {fileID: 198571126}
     - target: {fileID: 4781651870924612967, guid: 2c2c56d8f1486f444a33f23184f85501, type: 3}
-      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[3].m_Target
+      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[2].m_Target
       value: 
       objectReference: {fileID: 948181013}
+    - target: {fileID: 4781651870924612967, guid: 2c2c56d8f1486f444a33f23184f85501, type: 3}
+      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[3].m_Target
+      value: 
+      objectReference: {fileID: 1677461393}
+    - target: {fileID: 4781651870924612967, guid: 2c2c56d8f1486f444a33f23184f85501, type: 3}
+      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: Save
+      objectReference: {fileID: 0}
+    - target: {fileID: 4781651870924612967, guid: 2c2c56d8f1486f444a33f23184f85501, type: 3}
+      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
+      value: SaveState
+      objectReference: {fileID: 0}
+    - target: {fileID: 4781651870924612967, guid: 2c2c56d8f1486f444a33f23184f85501, type: 3}
+      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[2].m_MethodName
+      value: SaveAsync
+      objectReference: {fileID: 0}
+    - target: {fileID: 4781651870924612967, guid: 2c2c56d8f1486f444a33f23184f85501, type: 3}
+      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[3].m_MethodName
+      value: LoadSceneByName
+      objectReference: {fileID: 0}
+    - target: {fileID: 4781651870924612967, guid: 2c2c56d8f1486f444a33f23184f85501, type: 3}
+      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: ExplorationDataManagement, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 4781651870924612967, guid: 2c2c56d8f1486f444a33f23184f85501, type: 3}
+      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[1].m_TargetAssemblyTypeName
+      value: ExplorationCorruptionSystem, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 4781651870924612967, guid: 2c2c56d8f1486f444a33f23184f85501, type: 3}
+      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[2].m_TargetAssemblyTypeName
+      value: PlayerInventorySaveSystem, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 4781651870924612967, guid: 2c2c56d8f1486f444a33f23184f85501, type: 3}
+      propertyPath: _onContact.m_PersistentCalls.m_Calls.Array.data[3].m_TargetAssemblyTypeName
+      value: ScenesManager, Assembly-CSharp
+      objectReference: {fileID: 0}
     - target: {fileID: 4814605866384824363, guid: 2c2c56d8f1486f444a33f23184f85501, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -8683,7 +8723,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1187310794
 Transform:
   m_ObjectHideFlags: 0
@@ -12688,7 +12728,7 @@ PrefabInstance:
     - target: {fileID: 515815141306533141, guid: 14b7b5635183bb64eab81246256bdefe, type: 3}
       propertyPath: _playerInput
       value: 
-      objectReference: {fileID: 1616503563}
+      objectReference: {fileID: 0}
     - target: {fileID: 515815141306533141, guid: 14b7b5635183bb64eab81246256bdefe, type: 3}
       propertyPath: _restingPoint
       value: 
@@ -12824,7 +12864,7 @@ PrefabInstance:
     - target: {fileID: 7698733288504628103, guid: 14b7b5635183bb64eab81246256bdefe, type: 3}
       propertyPath: _inputReader
       value: 
-      objectReference: {fileID: 1616503563}
+      objectReference: {fileID: 0}
     - target: {fileID: 7698733288504628103, guid: 14b7b5635183bb64eab81246256bdefe, type: 3}
       propertyPath: animationController
       value: 
@@ -12832,7 +12872,7 @@ PrefabInstance:
     - target: {fileID: 7802707801292817878, guid: 14b7b5635183bb64eab81246256bdefe, type: 3}
       propertyPath: _inputReader
       value: 
-      objectReference: {fileID: 1616503563}
+      objectReference: {fileID: 0}
     - target: {fileID: 7802707801292817878, guid: 14b7b5635183bb64eab81246256bdefe, type: 3}
       propertyPath: _startsWithTorchOn
       value: 0
