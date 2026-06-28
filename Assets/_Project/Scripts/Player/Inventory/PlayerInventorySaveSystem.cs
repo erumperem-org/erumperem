@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Services.DebugUtilities;
 using Services.IO;
 using UnityEngine;
+using System.Threading.Tasks;
 
 // ── DTO de serialização ───────────────────────────────────────────────────────
 
@@ -10,7 +11,7 @@ using UnityEngine;
 internal sealed class InventoryEntry
 {
     public string ItemId;
-    public int    Amount;
+    public int Amount;
 
     public InventoryEntry(string itemId, int amount)
     {
@@ -54,7 +55,7 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
     [SerializeField] private ItemRegistry _registry;
 
     [Header("IO")]
-    [SerializeField] private string _saveFileName   = "inventory_save.json";
+    [SerializeField] private string _saveFileName = "inventory_save.json";
     [SerializeField] private string _saveFolderName = "Saves";
 
     // ── Serviço de IO ─────────────────────────────────────────────────────
@@ -101,8 +102,8 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
 
         try
         {
-            string json     = JsonUtility.ToJson(saveData, prettyPrint: true);
-            var    fileData = new FileData(json, _saveFileName, _saveDirectory);
+            string json = JsonUtility.ToJson(saveData, prettyPrint: true);
+            var fileData = new FileData(json, _saveFileName, _saveDirectory);
             await _fileService.WriteAsync(fileData);
 
             Log(LogLevel.Debug, $"Save gravado em: {fileData.FullPath} ({saveData.Entries.Count} entradas)");
@@ -110,53 +111,6 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
         catch (Exception ex)
         {
             Log(LogLevel.Error, $"Falha ao gravar save: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Lê o arquivo de save e reaplica os itens no inventário.
-    /// Se o arquivo não existir, mantém o inventário vazio sem erro.
-    /// </summary>
-    public async System.Threading.Tasks.Task LoadAsync()
-    {
-        try
-        {
-            bool exists = await _fileService.ExistsAsync(_saveFileName, _saveDirectory);
-            if (!exists)
-            {
-                Log(LogLevel.Debug, "Nenhum arquivo de save encontrado — inventário iniciado vazio.");
-                return;
-            }
-
-            FileData fileData = await _fileService.ReadAsync(_saveFileName, _saveDirectory);
-            var saveData = JsonUtility.FromJson<InventorySaveData>(fileData._fileContent);
-
-            if (saveData?.Entries == null || saveData.Entries.Count == 0)
-            {
-                Log(LogLevel.Debug, "Arquivo de save vazio — inventário iniciado vazio.");
-                return;
-            }
-
-            var toAdd = new Dictionary<IStorageable, int>();
-            foreach (var entry in saveData.Entries)
-            {
-                IStorageable item = _registry.Resolve(entry.ItemId);
-                if (item == null)
-                {
-                    Log(LogLevel.Warning, $"ItemId '{entry.ItemId}' não encontrado no registry — ignorado.");
-                    continue;
-                }
-                toAdd[item] = entry.Amount;
-            }
-
-            if (toAdd.Count > 0)
-                _inventory.AddItems(toAdd);
-
-            Log(LogLevel.Debug, $"{toAdd.Count} item(s) restaurados do save.");
-        }
-        catch (Exception ex)
-        {
-            Log(LogLevel.Error, $"Falha ao ler save: {ex.Message}");
         }
     }
 
@@ -185,6 +139,69 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
             Log(LogLevel.Warning, $"Falha ao deletar save: {ex.Message}");
         }
     }
+
+    /// <summary>Apaga o arquivo de save E limpa o inventário em memória.</summary>
+    public async Task DeletesSaveAsync()
+    {
+        try
+        {
+            _inventory.Clear(); // limpa memória imediatamente
+            await _fileService.DeleteAsync(_saveFileName, _saveDirectory);
+            Log(LogLevel.Debug, "Save de inventário deletado e memória limpa.");
+        }
+        catch (Exception ex)
+        {
+            Log(LogLevel.Warning, $"Falha ao deletar save: {ex.Message}");
+        }
+    }
+
+    public async Task LoadAsync()
+    {
+        try
+        {
+            bool exists = await _fileService.ExistsAsync(_saveFileName, _saveDirectory);
+            if (!exists)
+            {
+                Log(LogLevel.Debug, "Nenhum arquivo de save encontrado — inventário vazio.");
+                return;
+            }
+
+            FileData fileData = await _fileService.ReadAsync(_saveFileName, _saveDirectory);
+            var saveData = JsonUtility.FromJson<InventorySaveData>(fileData._fileContent);
+
+            if (saveData?.Entries == null || saveData.Entries.Count == 0)
+            {
+                Log(LogLevel.Debug, "Arquivo de save vazio — inventário vazio.");
+                return;
+            }
+
+            // CORREÇÃO: limpa antes de restaurar para evitar duplicatas
+            _inventory.Clear();
+
+            var toAdd = new Dictionary<IStorageable, int>();
+            foreach (var entry in saveData.Entries)
+            {
+                IStorageable item = _registry.Resolve(entry.ItemId);
+                if (item == null)
+                {
+                    Log(LogLevel.Warning, $"ItemId '{entry.ItemId}' não encontrado no registry — ignorado.");
+                    continue;
+                }
+                toAdd[item] = entry.Amount;
+            }
+
+            if (toAdd.Count > 0)
+                _inventory.AddItems(toAdd);
+
+            Log(LogLevel.Debug, $"{toAdd.Count} item(s) restaurados do save.");
+        }
+        catch (Exception ex)
+        {
+            Log(LogLevel.Error, $"Falha ao ler save: {ex.Message}");
+        }
+    }
+
+
     // ── Helper ────────────────────────────────────────────────────────────
 
     private static void Log(LogLevel level, string msg) =>

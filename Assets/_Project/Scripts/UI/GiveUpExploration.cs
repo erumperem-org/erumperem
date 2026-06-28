@@ -3,7 +3,7 @@ using UnityEngine.EventSystems;
 using Services.DebugUtilities;
 using System.Collections;
 using System.Threading.Tasks;
-
+using UnityEngine.SceneManagement;
 public class GiveUpExploration : UiButtonController<ChangeSceneButtonModel>,
     IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
 {
@@ -31,24 +31,18 @@ public class GiveUpExploration : UiButtonController<ChangeSceneButtonModel>,
     {
         _isProcessing = true;
 
-        // 1. Reposiciona personagens nos RestingPoints imediatamente na cena
-        foreach (var character in manager.Playables)
-        {
-            if (character == null || character.RestingPoint == null)
-            {
-                Debug.LogWarning($"[GiveUpExploration] '{character?.CharacterName}' sem RestingPoint — ignorado.");
-                continue;
-            }
+        // ── PASSO 1: apaga inventário do disco e limpa memória ────────────────
+        var deleteTask = playerInventorySaveSystem.DeletesSaveAsync();
+        yield return new WaitUntil(() => deleteTask.IsCompleted);
 
-            character.transform.SetPositionAndRotation(
-                character.RestingPoint.position,
-                character.RestingPoint.rotation);
+        if (deleteTask.IsFaulted)
+        {
+            Debug.LogError($"[GiveUpExploration] Falha ao deletar inventário: {deleteTask.Exception}");
+            _isProcessing = false;
+            yield break;
         }
 
-        // 2. Deleta o save do inventário
-        playerInventorySaveSystem.DeletesSave();
-
-        // 3. Aguarda o LoadAsync do inventário
+        // ── PASSO 3: carrega inventário (vazio, pois foi deletado) ────────────
         var loadTask = playerInventorySaveSystem.LoadAsync();
         yield return new WaitUntil(() => loadTask.IsCompleted);
 
@@ -59,19 +53,12 @@ public class GiveUpExploration : UiButtonController<ChangeSceneButtonModel>,
             yield break;
         }
 
-        // 4. Salva o estado de exploração com as novas posições
-        //    SaveState() é async void internamente — aguardamos via MoveSnapshotsToCharacterRestingPoints
-        //    que já persiste em disco de forma awaitable
-        var moveTask = loadContext.MoveSnapshotsToCharacterRestingPoints();
-        yield return new WaitUntil(() => moveTask.IsCompleted);
-
-        if (moveTask.IsFaulted)
+        foreach(var character in manager.Playables)
         {
-            Debug.LogError($"[GiveUpExploration] Falha ao mover snapshots: {moveTask.Exception}");
-            _isProcessing = false;
-            yield break;
+            character.transform.position = character.RestingPoint.transform.position;
         }
 
+        FindAnyObjectByType<ExplorationLoadContext>().SaveState();
         _isProcessing = false;
     }
 

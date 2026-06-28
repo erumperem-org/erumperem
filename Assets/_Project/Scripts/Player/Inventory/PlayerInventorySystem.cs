@@ -177,7 +177,24 @@ public sealed class PlayerInventorySystem : MonoBehaviour
         Log(LogLevel.Debug, $"Removed [{item}] completely");
         OnItemRemoved?.Invoke(item, 1);
     }
+    /// <summary>Remove todos os itens do inventário em memória e dispara OnItemRemoved para cada um.</summary>
+    public void Clear()
+    {
+        if (_inventory.Count == 0) return;
 
+        // Copia as entradas antes de iterar pois vamos modificar o dicionário
+        var entries = new List<KeyValuePair<IStorageable, int>>(_inventory);
+
+        foreach (var (item, amount) in entries)
+        {
+            _inventory.Remove(item);
+            OnItemRemoved?.Invoke(item, amount);
+            Log(LogLevel.Debug, $"Clear: removido [{item}] amount=[{amount}]");
+        }
+
+        Log(LogLevel.Debug, "Inventário limpo (Clear).");
+        PrintDebug();
+    }
     private void RemoveFromStack(IStorageable item, int amount)
     {
         // FIX 3a: clamp para evitar stack negativo quando amount > quantidade atual.

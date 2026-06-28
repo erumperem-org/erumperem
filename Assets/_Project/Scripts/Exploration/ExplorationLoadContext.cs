@@ -193,6 +193,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         }
 
         _manager = null;
+        Awake();
         CombatExplorationBridge.Instance?.BlockExplorationCombatContactsAfterSceneLoad();
         StartCoroutine(RestoreNextFrame());
     }
@@ -887,7 +888,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         }
     }
 
-    private async System.Threading.Tasks.Task LoadFromFileAsync()
+    public async System.Threading.Tasks.Task LoadFromFileAsync()
     {
         try
         {
@@ -1076,7 +1077,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             LoggerService.PrintLogMessage(LogLevel.Debug,
                 "[RestingPointPatcher] _snapshots vazio — carregando do disco antes de mover.",
                 LogCategory.Player);
-            await SaveToFileAsync();
+            // Era SaveToFileAsync() — bug: devia carregar, não salvar
             await LoadFromFileAsync();
         }
 
