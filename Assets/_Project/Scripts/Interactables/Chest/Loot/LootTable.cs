@@ -35,25 +35,30 @@ namespace Core.Exploration.Interactables.Chest
         /// </returns>
         public Dictionary<IStorageable, int> Generate()
         {
-            var result      = new Dictionary<IStorageable, int>();
-            var validEntries = GetValidEntries();
+            var result       = new Dictionary<IStorageable, int>();
+            var pool         = GetValidEntries();
 
-            if (validEntries.Count == 0)
+            if (pool.Count == 0)
             {
                 LoggerService.PrintLogMessage(LogLevel.Warning,
                     $"[LootTable:{name}] Nenhuma entrada válida encontrada. Verifique os assets e pesos.");
                 return result;
             }
 
-            float totalWeight = ComputeTotalWeight(validEntries);
+            // FIX 3: totalWeight é mantido incrementalmente — subtraído a cada remoção,
+            // eliminando o recálculo O(n) por iteração (era O(n²) no total).
+            float totalWeight = ComputeTotalWeight(pool);
             int   remaining   = maxChestCapacity;
 
-            while (remaining > 0 && validEntries.Count > 0)
+            while (remaining > 0 && pool.Count > 0)
             {
-                LootEntry entry = PickEntry(validEntries, totalWeight);
+                LootEntry entry = PickEntry(pool, totalWeight);
 
+                // FIX 2: quantity é limitado também pelo mínimo 1, impedindo que uma
+                // entrada com minQuantity == 0 consuma uma iteração sem reduzir remaining,
+                // o que poderia gerar resultados silenciosamente incompletos.
                 int quantity = Random.Range(entry.minQuantity, entry.maxQuantity + 1);
-                quantity = Mathf.Min(quantity, remaining);
+                quantity = Mathf.Clamp(quantity, 1, remaining);
 
                 if (result.TryGetValue(entry.Storageable, out int current))
                     result[entry.Storageable] = current + quantity;
@@ -63,8 +68,9 @@ namespace Core.Exploration.Interactables.Chest
                 remaining -= quantity;
 
                 // Remove a entrada já sorteada para evitar duplicatas no mesmo sorteio.
-                validEntries.Remove(entry);
-                totalWeight = ComputeTotalWeight(validEntries);
+                // FIX 3: subtrai o peso da entrada removida em O(1) em vez de recomputar.
+                pool.Remove(entry);
+                totalWeight -= entry.weight;
             }
 
             return result;
@@ -76,17 +82,21 @@ namespace Core.Exploration.Interactables.Chest
 
         private LootEntry PickEntry(List<LootEntry> pool, float totalWeight)
         {
-            float roll = Random.Range(0f, totalWeight);
+            // FIX 1: Random.Range(float, float) retorna [min, max) — o limite superior
+            // é exclusivo. A comparação deve ser estritamente menor que (<), não menor
+            // ou igual (<=). Com <=, roll == 0f sempre caia no primeiro item, e o último
+            // nunca era atingido via caminho normal (só pelo fallback).
+            float roll       = Random.Range(0f, totalWeight);
             float cumulative = 0f;
 
             foreach (var entry in pool)
             {
                 cumulative += entry.weight;
-                if (roll <= cumulative)
+                if (roll < cumulative)
                     return entry;
             }
 
-            // Fallback seguro: retorna o último (cobre imprecisão de float)
+            // Fallback seguro: retorna o último (cobre imprecisão de float).
             return pool[^1];
         }
 
@@ -107,7 +117,7 @@ namespace Core.Exploration.Interactables.Chest
                     valid.Add(entry);
                 else
                     LoggerService.PrintLogMessage(LogLevel.Warning,
-                        $"[LootTable:{name}] Entrada inválida ignorada: asset='{entry.item.name ?? "null"}', " +
+                        $"[LootTable:{name}] Entrada inválida ignorada: asset='{entry.item?.name ?? "null"}', " +
                         $"peso={entry.weight}, min={entry.minQuantity}, max={entry.maxQuantity}");
             }
             return valid;
@@ -123,6 +133,14 @@ namespace Core.Exploration.Interactables.Chest
             for (int i = 0; i < entries.Count; i++)
             {
                 var e = entries[i];
+
+                // Garante que minQuantity nunca seja menor que 1 no inspector,
+                // evitando o cenário de quantidade zero em tempo de execução.
+                if (e.minQuantity < 1)
+                {
+                    e.minQuantity = 1;
+                    entries[i]    = e;
+                }
 
                 // Garante que maxQuantity nunca seja menor que minQuantity no inspector.
                 if (e.maxQuantity < e.minQuantity)
