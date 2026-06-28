@@ -12,10 +12,10 @@ using UnityEngine;
 /// </summary>
 public sealed class CombatExplorationBridge : MonoBehaviour
 {
-    private const float CombatReentryBlockSeconds = 5f;
-    private const float HorseBossCombatReentryBlockSeconds = 10f;
-    private const float PostCombatMonsterSpawnBlockSeconds = 5f;
-    private const float ExplorationSceneCombatContactActivationDelaySeconds = 5f;
+    private const float CombatReentryBlockSeconds = 3f;
+    private const float HorseBossCombatReentryBlockSeconds = 3f;
+    private const float PostCombatMonsterSpawnBlockSeconds = 3f;
+    private const float ExplorationSceneCombatContactActivationDelaySeconds = 3f;
     private const float VictoryReturnSeparationFromCombatEntry = 6f;
     private const int DefaultCombatEnemyRosterSize = 4;
     public static CombatExplorationBridge Instance { get; private set; }
