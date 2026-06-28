@@ -15,6 +15,7 @@
 using System;
 using Core.Exploration.Character.Movement;
 using DetectionSystem.Core;
+using Player;
 using Services.Navigation;
 using Systems.NPC.Enemy.Contracts;
 using Systems.NPC.Enemy.StateMachine;
@@ -28,7 +29,7 @@ namespace Systems.NPC.Enemy
     public sealed class NpcEnemy : MonoBehaviour, INpcEnemy
     {
         // ── INpcEnemy ─────────────────────────────────────────────────────
-
+        private PlayableCharacter main;
         public NpcEnemyState CurrentState => _stateMachine?.Current ?? NpcEnemyState.Idle;
 
         /// <inheritdoc/>
@@ -37,14 +38,14 @@ namespace Systems.NPC.Enemy
         // ── Componentes Unity ─────────────────────────────────────────────
 
         private NpcMovementController _movementController;
-        private NavMeshAgentAdapter   _adapter;
-        private Detector              _detector;
+        private NavMeshAgentAdapter _adapter;
+        private Detector _detector;
 
         // ── Colaboradores (criados em Initialize) ─────────────────────────
 
-        private NpcEnemyStateMachine     _stateMachine;
-        private NpcEnemyDetectionHandler _detectionHandler;
-        private NpcEnemyBehaviorRunner   _behaviorRunner;
+        private NpcEnemyStateMachine _stateMachine;
+        [SerializeField] private NpcEnemyDetectionHandler _detectionHandler;
+        private NpcEnemyBehaviorRunner _behaviorRunner;
 
         private NpcEnemyConfig _config;
 
@@ -53,10 +54,15 @@ namespace Systems.NPC.Enemy
         private void Awake()
         {
             _movementController = GetComponent<NpcMovementController>();
-            _adapter            = GetComponent<NavMeshAgentAdapter>();
-            _detector           = GetComponent<Detector>();
+            _adapter = GetComponent<NavMeshAgentAdapter>();
+            _detector = GetComponent<Detector>();
+            HandleTorchChange();
         }
 
+        private void HandleTorchChange()
+        {
+            PlayerTorchHandler.OnMainTorchChanged += isOn => _detectionHandler.HandleTorch(isOn, _detector.DetectionComponent);
+        }
         // ═════════════════════════════════════════════════════════════════
         // INpcEnemy
         // ═════════════════════════════════════════════════════════════════
@@ -77,8 +83,8 @@ namespace Systems.NPC.Enemy
                 _movementController, _adapter, _stateMachine, this, config);
 
             // Conecta StateMachine → BehaviorRunner
-            _stateMachine.OnEnterWander       += _behaviorRunner.RunWander;
-            _stateMachine.OnEnterChase        += _behaviorRunner.RunChase;
+            _stateMachine.OnEnterWander += _behaviorRunner.RunWander;
+            _stateMachine.OnEnterChase += _behaviorRunner.RunChase;
             _stateMachine.OnEnterReturnToPool += OnReturnToPoolRequested;
 
             // BehaviorRunner notifica quando deve retornar à pool

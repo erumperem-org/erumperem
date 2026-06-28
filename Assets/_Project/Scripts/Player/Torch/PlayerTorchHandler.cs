@@ -1,17 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Player
 {
-    /// <summary>
-    /// Controla a tocha do personagem jogável.
-    ///
-    /// Recebe o toggle via <see cref="PlayerInputReader.OnTorch"/> — não lê
-    /// InputActionAsset diretamente, eliminando o input duplicado.
-    ///
-    /// Só age quando o personagem é Main ou Companion.
-    /// </summary>
     public sealed class PlayerTorchHandler : MonoBehaviour
     {
         [Header("Referências")]
@@ -33,29 +26,27 @@ namespace Player
         private bool _hasAppliedInitialTorchState;
         private PlayableCharactersManager _charactersManager;
 
+        /// <summary>
+        /// Disparado quando a tocha do Main é ligada (true) ou desligada (false).
+        /// </summary>
+        public static event Action<bool> OnMainTorchChanged;
+
         // ── Unity lifecycle ───────────────────────────────────────────────
 
         private void Awake()
         {
             if (_animationController == null)
-            {
                 _animationController = GetComponentInChildren<PlayableAnimationController>();
-            }
 
             if (_character == null)
-            {
                 _character = GetComponent<PlayableCharacter>();
-            }
 
             if (_inputReader == null)
-            {
                 _inputReader = GetComponent<PlayerInputReader>();
-            }
 
             if (_inputReader == null)
-            {
                 _inputReader = FindFirstObjectByType<PlayerInputReader>();
-            }
+
             _isOn = _startsWithTorchOn;
             _charactersManager = FindFirstObjectByType<PlayableCharactersManager>();
         }
@@ -63,14 +54,10 @@ namespace Player
         private void OnEnable()
         {
             if (_inputReader != null)
-            {
                 _inputReader.OnTorch += Toggle;
-            }
 
             if (_charactersManager != null)
-            {
                 _charactersManager.OnMainChanged += HandleMainCharacterChanged;
-            }
 
             StartCoroutine(ApplyInitialTorchStateWhenReady());
         }
@@ -78,24 +65,21 @@ namespace Player
         private void OnDisable()
         {
             if (_inputReader != null)
-            {
                 _inputReader.OnTorch -= Toggle;
-            }
 
             if (_charactersManager != null)
-            {
                 _charactersManager.OnMainChanged -= HandleMainCharacterChanged;
-            }
         }
 
         // ── Lógica ───────────────────────────────────────────────────────
 
         private void HandleMainCharacterChanged(IPlayableCharacter mainCharacter)
         {
-            if (this.gameObject.GetComponent<PlayableCharacter>().CurrentStateExposed == PlayableCharacterState.Companion)
+            if (gameObject.GetComponent<PlayableCharacter>().CurrentStateExposed == PlayableCharacterState.Companion)
             {
                 DeactivateTorch();
             }
+
             if (mainCharacter is not PlayableCharacter playableCharacter || playableCharacter != _character)
             {
                 return;
@@ -132,7 +116,7 @@ namespace Player
 
             _hasAppliedInitialTorchState = true;
             _isOn = true;
-            ApplyTorchVisuals();
+            ApplyTorchVisuals(notifyEvent: true);
             return true;
         }
 
@@ -149,57 +133,52 @@ namespace Player
             }
 
             _isOn = !_isOn;
-            ApplyTorchVisuals();
+            ApplyTorchVisuals(notifyEvent: true);
         }
-        private void ApplyTorchVisuals()
+
+        private void ApplyTorchVisuals(bool notifyEvent = false)
         {
             if (_naturalLightObject != null)
-            {
                 _naturalLightObject.SetActive(!_isOn);
-            }
 
             if (_handItensObject != null)
             {
                 foreach (var handItemObject in _handItensObject)
                 {
                     if (handItemObject != null)
-                    {
                         handItemObject.SetActive(!_isOn);
-                    }
                 }
             }
 
             if (_torchObject != null)
-            {
                 _torchObject.SetActive(_isOn);
-            }
 
             _animationController?.SetIsTorchOn(_isOn);
+
+            if (notifyEvent && _character?.CurrentState == PlayableCharacterState.Main)
+            {
+                OnMainTorchChanged?.Invoke(_isOn);
+            }
         }
 
         private void DeactivateTorch()
         {
             _isOn = false;
+
             if (_naturalLightObject != null)
-            {
                 _naturalLightObject.SetActive(true);
-            }
 
             if (_handItensObject != null)
             {
                 foreach (var handItemObject in _handItensObject)
                 {
                     if (handItemObject != null)
-                    {
                         handItemObject.SetActive(true);
-                    }
                 }
             }
 
             if (_torchObject != null)
-            {
                 _torchObject.SetActive(false);
-            }
 
             _animationController?.SetIsTorchOn(false);
         }
