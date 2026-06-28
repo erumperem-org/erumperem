@@ -92,6 +92,10 @@ namespace Player
 
         private void HandleMainCharacterChanged(IPlayableCharacter mainCharacter)
         {
+            if (this.gameObject.GetComponent<PlayableCharacter>().CurrentStateExposed == PlayableCharacterState.Companion)
+            {
+                DeactivateTorch();
+            }
             if (mainCharacter is not PlayableCharacter playableCharacter || playableCharacter != _character)
             {
                 return;
@@ -171,6 +175,33 @@ namespace Player
             }
 
             _animationController?.SetIsTorchOn(_isOn);
+        }
+
+        private void DeactivateTorch()
+        {
+            _isOn = false;
+            if (_naturalLightObject != null)
+            {
+                _naturalLightObject.SetActive(true);
+            }
+
+            if (_handItensObject != null)
+            {
+                foreach (var handItemObject in _handItensObject)
+                {
+                    if (handItemObject != null)
+                    {
+                        handItemObject.SetActive(true);
+                    }
+                }
+            }
+
+            if (_torchObject != null)
+            {
+                _torchObject.SetActive(false);
+            }
+
+            _animationController?.SetIsTorchOn(false);
         }
     }
 }

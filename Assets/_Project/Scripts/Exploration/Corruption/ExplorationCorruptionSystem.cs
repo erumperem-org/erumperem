@@ -39,6 +39,9 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     [SerializeField, Min(0f)] private float _gainPerMeterBeyondRadius = 0.5f;
     [SerializeField, Min(0f)] private float _decayPerSecond = .1f;
 
+    [Header("Limites")]
+    [SerializeField, Min(1f)] private float _maxCorruption = 250f;
+
     [Header("UI")]
     [SerializeField] private Slider _corruptionSlider;
     [SerializeField] private TMPro.TMP_Text _corruptionNumber;
@@ -54,15 +57,18 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     public event Action OnTierMid;
     public event Action OnTierHigh;
 
-    /// <summary>Disparado sempre que o valor de corrupção muda (0–250). A UI reage a este evento.</summary>
+    /// <summary>Disparado sempre que o valor de corrupção muda (0–MaxCorruption). A UI reage a este evento.</summary>
     public event Action<float> OnCorruptionChanged;
 
     // ── Estado interno ────────────────────────────────────────────────────
 
     private float _corruption;
 
+    /// <summary>Valor máximo de corrupção configurável via Inspector.</summary>
+    public float MaxCorruption => _maxCorruption;
+
     /// <summary>
-    /// Valor atual de corrupção (0–250). O setter faz clamp e dispara
+    /// Valor atual de corrupção (0–MaxCorruption). O setter faz clamp e dispara
     /// <see cref="OnCorruptionChanged"/> apenas quando o valor muda.
     /// </summary>
     public float Corruption
@@ -70,7 +76,7 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
         get => _corruption;
         set
         {
-            float clampedCorruption = Mathf.Clamp(value, 0f, 250f);
+            float clampedCorruption = Mathf.Clamp(value, 0f, _maxCorruption);
             if (Mathf.Approximately(_corruption, clampedCorruption))
             {
                 return;
@@ -240,8 +246,10 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
         }
     }
 
-    private static CorruptionTier TierFor(float v) =>
-        v < 125f ? CorruptionTier.Low : v < 187.5f ? CorruptionTier.Mid : CorruptionTier.High;
+    private CorruptionTier TierFor(float v) =>
+        v < _maxCorruption * 0.5f ? CorruptionTier.Low
+        : v < _maxCorruption * 0.75f ? CorruptionTier.Mid
+        : CorruptionTier.High;
 
     // ── Helpers de aplicação ──────────────────────────────────────────────
 
@@ -297,7 +305,7 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
             var fileData = await _fileService.ReadAsync(_saveFileName, _saveDirectory);
             var data = JsonUtility.FromJson<CorruptionSaveData>(fileData._fileContent);
 
-            _loadedCorruption = data != null ? Mathf.Clamp(data.Corruption, 0f, 250f) : 0f;
+            _loadedCorruption = data != null ? Mathf.Clamp(data.Corruption, 0f, _maxCorruption) : 0f;
 
             LoggerService.PrintLogMessage(LogLevel.Debug,
                 $"[CORRUPTION] Lido do disco: {_loadedCorruption:F1}", LogCategory.Player);
@@ -323,9 +331,9 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     private void UpdateSlider()
     {
         if (_corruptionSlider == null) return;
-        _corruptionSlider.value = Corruption / 250f;
+        _corruptionSlider.value = Corruption / _maxCorruption;
         if (_corruptionNumber != null)
-            _corruptionNumber.text = Mathf.RoundToInt(Corruption / 250f * 100f).ToString();
+            _corruptionNumber.text = Mathf.RoundToInt(Corruption / _maxCorruption * 100f).ToString();
     }
 
     // ── Gizmos ────────────────────────────────────────────────────────────
