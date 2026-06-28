@@ -23,7 +23,7 @@ public class GiveUpExploration : UiButtonController<ChangeSceneButtonModel>,
         if (isDisabled || _isProcessing) return;
 
         _fsm.TransitionTo(new ButtonPressed(this, uiButtonView._pressedEnterEffects, uiButtonView._pressedExitEffects));
-        StartCoroutine(HandleGiveUpAsync());
+        playerInventorySaveSystem.DeletesSave();
         foreach(var character in manager.Playables)
         {
             character.transform.position = character.RestingPoint.transform.position;
