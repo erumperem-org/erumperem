@@ -115,6 +115,7 @@ namespace Erumperem.Combat
         private BattleSimulator _sim;
         private CombatEventCollector _collector;
         private SeededRandomSource _random;
+        private readonly CombatBattleOutcomeMonitor _battleOutcomeMonitor = new();
 
         private readonly List<Combatant> _roundOrder = new();
         private int _actorIndex;
@@ -454,6 +455,7 @@ namespace Erumperem.Combat
             }
 
             _sim.EmitBattleStarted(_state);
+            _battleOutcomeMonitor.Begin(_state, _collector, EndBattle);
             ApplyDebugInitiativeOverrides();
             BeginRound();
             _sessionHub?.RaiseCombatSessionReadyForUi(this);
@@ -465,6 +467,7 @@ namespace Erumperem.Combat
 
         private void OnDisable()
         {
+            _battleOutcomeMonitor.End();
             ClearAllCombatCheats();
             HealDebugTrace.OnLog = null;
             UnsubscribeFromInputEvents();
@@ -671,6 +674,7 @@ namespace Erumperem.Combat
                 enemy.Health.CurrentHp = 0;
                 enemy.Health.IsDead = true;
                 killedAtLeastOne = true;
+                _sim.EmitCombatantDied(_state, enemy.Identity.Id);
 
                 if (TryGetEnemyAnimationController(enemy.Identity.Id, out var enemyAnimationController))
                 {
@@ -688,7 +692,6 @@ namespace Erumperem.Combat
             _needsPlayerInput = false;
             _pendingPlayerActor = null;
             ClearSkillBarSelection();
-            EndBattle();
         }
 
         /// <summary>
@@ -720,6 +723,7 @@ namespace Erumperem.Combat
                 ally.Health.CurrentHp = 0;
                 ally.Health.IsDead = true;
                 killedAtLeastOne = true;
+                _sim.EmitCombatantDied(_state, ally.Identity.Id);
 
                 if (TryGetEnemyAnimationController(ally.Identity.Id, out var allyAnimationController))
                 {
@@ -737,7 +741,6 @@ namespace Erumperem.Combat
             _needsPlayerInput = false;
             _pendingPlayerActor = null;
             ClearSkillBarSelection();
-            EndBattle();
         }
 
         private void ConsumeFrameInputFlags()
@@ -784,13 +787,6 @@ namespace Erumperem.Combat
         {
             if (_battleEnded || _state == null)
             {
-                ConsumeFrameInputFlags();
-                return;
-            }
-
-            if (_state.IsFinished)
-            {
-                EndBattle();
                 ConsumeFrameInputFlags();
                 return;
             }
@@ -994,20 +990,9 @@ namespace Erumperem.Combat
                 return false;
             }
 
-            if (_state.IsFinished)
-            {
-                EndBattle();
-                return false;
-            }
-
             while (_actorIndex >= _roundOrder.Count)
             {
                 BeginRound();
-                if (_state.IsFinished)
-                {
-                    EndBattle();
-                    return false;
-                }
             }
 
             var actor = _roundOrder[_actorIndex];
@@ -1074,6 +1059,7 @@ namespace Erumperem.Combat
             }
 
             _battleEnded = true;
+            _battleOutcomeMonitor.End();
             _needsPlayerInput = false;
             ClearSkillBarSelection();
             ClearAllCombatCheats();
@@ -1193,8 +1179,6 @@ namespace Erumperem.Combat
                             {
                                 deadEnemyVisual.EnsureDeathVisualSequenceStarted(enemyDeathClipMarginSeconds);
                             }
-
-                            TryFinishBattleIfComplete();
                         }
 
                         if (combatEvent.EventType == BattleEventType.DamageApplied && combatEvent.DamageAmount > 0)
@@ -1251,10 +1235,6 @@ namespace Erumperem.Combat
                 onStepComplete?.Invoke();
                 _sessionHub?.RaiseTurnEnded();
                 StartCoroutine(NotifyPresentationEndedDeferred());
-                if (_state.IsFinished && !_battleEnded)
-                {
-                    EndBattle();
-                }
             }
         }
 
@@ -1772,22 +1752,6 @@ namespace Erumperem.Combat
             if (logEventsToConsole)
             {
                 LogLastEvents();
-            }
-
-            TryFinishBattleIfComplete();
-        }
-
-        private void TryFinishBattleIfComplete()
-        {
-            if (_state == null || _battleEnded)
-            {
-                return;
-            }
-
-            _state.SyncDeathFlagsFromHealth();
-            if (_state.IsFinished)
-            {
-                EndBattle();
             }
         }
 

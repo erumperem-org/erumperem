@@ -1261,6 +1261,39 @@ public class UnitTest1
         Assert.Equal(Side.Allies, battle.Winner);
     }
 
+    [Fact]
+    public void CombatEventCollector_RaisesCombatantDiedWhenDeathEventIsRecorded()
+    {
+        var eventCollector = new CombatEventCollector();
+        CombatEvent? receivedEvent = null;
+        eventCollector.CombatantDied += combatEvent => receivedEvent = combatEvent;
+
+        var deathEvent = new CombatEvent
+        {
+            EventId = "death-1",
+            BattleId = "battle-1",
+            Turn = 2,
+            TimestampUtc = DateTime.UtcNow,
+            EventType = BattleEventType.CombatantDied,
+            TargetId = "enemy_2",
+        };
+
+        eventCollector.Add(deathEvent);
+        eventCollector.Add(new CombatEvent
+        {
+            EventId = "damage-1",
+            BattleId = "battle-1",
+            Turn = 2,
+            TimestampUtc = DateTime.UtcNow,
+            EventType = BattleEventType.DamageApplied,
+            TargetId = "enemy_2",
+            DamageAmount = 5,
+        });
+
+        Assert.Same(deathEvent, receivedEvent);
+        Assert.Equal("enemy_2", receivedEvent?.TargetId);
+    }
+
     private sealed class FixedRollRandomSource : IRandomSource
     {
         private readonly int[] _rolls;

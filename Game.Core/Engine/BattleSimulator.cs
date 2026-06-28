@@ -65,6 +65,10 @@ public sealed class BattleSimulator
         Emit(state, BattleEventType.BattleEnded, battleResult: winner);
     }
 
+    /// <summary>Emite morte de combatente (cheats QA, testes ou fluxos fora de <see cref="ResolveChosenAction"/>).</summary>
+    public void EmitCombatantDied(BattleState state, string targetCombatantId) =>
+        Emit(state, BattleEventType.CombatantDied, targetId: targetCombatantId);
+
     /// <summary>TurnStarted, passivas de início de turno, DOTs e stun. Devolve false se o actor não age (morto, stun, etc.).</summary>
     public bool TryPrepareActorTurn(BattleState state, Combatant actor)
     {
