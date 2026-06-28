@@ -1070,6 +1070,25 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             return 0;
         }
 
+        // Garante snapshots em memória — carrega do disco se necessário
+        if (_snapshots.Count == 0)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                "[RestingPointPatcher] _snapshots vazio — carregando do disco antes de mover.",
+                LogCategory.Player);
+            await SaveToFileAsync();
+            await LoadFromFileAsync();
+        }
+
+        // Sem save em disco também — nada a fazer
+        if (_snapshots.Count == 0)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[RestingPointPatcher] Nenhum snapshot em memória nem em disco — nada a mover.",
+                LogCategory.Player);
+            return 0;
+        }
+
         var charactersByName = new Dictionary<string, PlayableCharacter>(
             _manager.Playables.Count,
             StringComparer.OrdinalIgnoreCase);
@@ -1097,14 +1116,20 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             if (!charactersByName.TryGetValue(snapshot.CharacterName, out var character))
             {
                 LoggerService.PrintLogMessage(LogLevel.Warning,
-                    $"[RestingPointPatcher] Personagem '{snapshot.CharacterName}' não encontrado na cena.",
+                    $"[RestingPointPatcher] '{snapshot.CharacterName}' não encontrado na cena.",
                     LogCategory.Player);
                 continue;
             }
 
             var restingPoint = character.RestingPoint;
+
+            // CORREÇÃO 2: log explícito quando RestingPoint não está atribuído
             if (restingPoint == null)
             {
+                LoggerService.PrintLogMessage(LogLevel.Warning,
+                    $"[RestingPointPatcher] '{character.CharacterName}' não tem RestingPoint " +
+                    $"atribuído no Inspector — snapshot não atualizado.",
+                    LogCategory.Player);
                 continue;
             }
 
@@ -1114,7 +1139,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             patchedSnapshotCount++;
 
             LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[RestingPointPatcher] '{snapshot.CharacterName}' {previousPosition} → {snapshot.Position} (RestingPoint)",
+                $"[RestingPointPatcher] '{snapshot.CharacterName}' " +
+                $"{previousPosition} → {snapshot.Position} (RestingPoint)",
                 LogCategory.Player);
         }
 
@@ -1123,6 +1149,13 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             await SaveToFileAsync();
             LoggerService.PrintLogMessage(LogLevel.Debug,
                 $"[RestingPointPatcher] {patchedSnapshotCount} snapshot(s) persistido(s) em disco.",
+                LogCategory.Player);
+        }
+        else
+        {
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[RestingPointPatcher] Nenhum snapshot foi atualizado. " +
+                "Verifique se RestingPoint está atribuído em todos os PlayableCharacter.",
                 LogCategory.Player);
         }
 

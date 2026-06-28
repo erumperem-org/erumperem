@@ -8,6 +8,7 @@ public class GiveUpExploration : UiButtonController<ChangeSceneButtonModel>,
 {
     public PlayerInventorySaveSystem playerInventorySaveSystem;
     public ExplorationLoadContext loadContext;
+    public PlayableCharactersManager manager;
 
     private bool _isProcessing = false; // evita duplo clique durante await
 
@@ -23,6 +24,11 @@ public class GiveUpExploration : UiButtonController<ChangeSceneButtonModel>,
 
         _fsm.TransitionTo(new ButtonPressed(this, uiButtonView._pressedEnterEffects, uiButtonView._pressedExitEffects));
         StartCoroutine(HandleGiveUpAsync());
+        foreach(var character in manager.Playables)
+        {
+            character.transform.position = character.RestingPoint.transform.position;
+        }
+
     }
 
     void IPointerExitHandler.OnPointerExit(PointerEventData eventData)
