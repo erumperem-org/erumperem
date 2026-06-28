@@ -115,7 +115,7 @@ public sealed class ShopLevelUpButton : MonoBehaviour
     /// <param name="price">Preço cobrado neste nível.</param>
     private void OnLevelUp(int level, Tier tier, int price)
     {
-        playerProgression.TrySetSharedSkillLevel(2);
+        playerProgression.TrySetSharedSkillLevel(level * pointsTogive);
     }
 
     // ── Progressão ────────────────────────────────────────────────────────
@@ -152,11 +152,11 @@ public sealed class ShopLevelUpButton : MonoBehaviour
             return;
         }
         var reference = GetCurrentCurrency(GetCurrentTier());
-        if(reference is AnomalousArtifact anomalousArtifact)
+        if (reference is AnomalousArtifact anomalousArtifact)
         {
             icon.sprite = anomalousArtifact.Sprite;
         }
-        
+
         if (_priceText) _priceText.text = GetCurrentPrice().ToString();
         if (_levelText) _levelText.text = $"Level {_currentLevel + 1}/{MaxLevel}";
         _button.interactable = true;
