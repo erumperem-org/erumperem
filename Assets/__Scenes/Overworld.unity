@@ -4584,7 +4584,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2066732138403516229, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -383.97803
+      value: -399.14523
       objectReference: {fileID: 0}
     - target: {fileID: 2211102204121806163, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
@@ -4620,7 +4620,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2458544750415670159, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2458544750415670159, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
@@ -4660,7 +4660,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2486716601971177648, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -63.995605
+      value: -67.029045
       objectReference: {fileID: 0}
     - target: {fileID: 2689392890741368564, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: isDisabled
@@ -4708,7 +4708,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4796866965939597838, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -223.98682
+      value: -233.08713
       objectReference: {fileID: 0}
     - target: {fileID: 5282935465979357104, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: m_Name
@@ -4836,7 +4836,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8307146537910463769, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -543.96924
+      value: -565.2033
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 7575018512249943058, guid: ad16307581b12244ab60d96f05737038, type: 3}
@@ -4853,10 +4853,10 @@ PrefabInstance:
       addedObject: {fileID: 1294575389}
     - targetCorrespondingSourceObject: {fileID: 4016659781743702863, guid: ad16307581b12244ab60d96f05737038, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1803372904}
+      addedObject: {fileID: 1803372909}
     - targetCorrespondingSourceObject: {fileID: 4016659781743702863, guid: ad16307581b12244ab60d96f05737038, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1803372909}
+      addedObject: {fileID: 1803372914}
     - targetCorrespondingSourceObject: {fileID: 1805303628286468856, guid: ad16307581b12244ab60d96f05737038, type: 3}
       insertIndex: -1
       addedObject: {fileID: 121127397}
@@ -12043,32 +12043,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 4016659781743702863, guid: ad16307581b12244ab60d96f05737038, type: 3}
   m_PrefabInstance: {fileID: 762411124}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1803372904
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1803372898}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 67bf75c88246b01499a7c22d7a155657, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ChangeSceneButtonController
-  uiButtonModel:
-    sceneName: Overworld
-  uiButtonView:
-    _defaultEnterEffects: []
-    _defaultExitEffects: []
-    _hoverEnterEffects:
-    - {fileID: 11400000, guid: b4e519ca65770ab42b9057e8fe8af045, type: 2}
-    _hoverExitEffects:
-    - {fileID: 11400000, guid: 4c1ebc9f27a2b2a43b8622fb2c1dfafe, type: 2}
-    _pressedEnterEffects: []
-    _pressedExitEffects: []
-    _disabledEnterEffects: []
-    _disabledExitEffects: []
-  isDisabled: 0
 --- !u!114 &1803372909
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12084,6 +12058,34 @@ MonoBehaviour:
   hoverSound: Hover
   clickSound: Press
   dragTickInterval: 0.1
+--- !u!114 &1803372914
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1803372898}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 297ffd34d0abc384eb938b901618ab45, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GiveUpExploration
+  uiButtonModel:
+    sceneName: Overworld
+  uiButtonView:
+    _defaultEnterEffects: []
+    _defaultExitEffects: []
+    _hoverEnterEffects:
+    - {fileID: 11400000, guid: b4e519ca65770ab42b9057e8fe8af045, type: 2}
+    _hoverExitEffects:
+    - {fileID: 11400000, guid: 4c1ebc9f27a2b2a43b8622fb2c1dfafe, type: 2}
+    _pressedEnterEffects: []
+    _pressedExitEffects: []
+    _disabledEnterEffects: []
+    _disabledExitEffects: []
+  isDisabled: 0
+  playerInventorySaveSystem: {fileID: 948181013}
+  loadContext: {fileID: 1263911526}
 --- !u!1 &1816098997
 GameObject:
   m_ObjectHideFlags: 0
