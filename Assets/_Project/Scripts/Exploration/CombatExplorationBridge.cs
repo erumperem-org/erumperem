@@ -18,6 +18,7 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     private const float ExplorationSceneCombatContactActivationDelaySeconds = 3f;
     private const float VictoryReturnSeparationFromCombatEntry = 6f;
     private const int DefaultCombatEnemyRosterSize = 4;
+
     public static CombatExplorationBridge Instance { get; private set; }
 
     public static bool IsCombatReentryBlocked =>
@@ -58,10 +59,6 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     private IReadOnlyList<string> _pendingCombatAllyCharacterNames;
     private int _pendingHorseBossEnemySlotIndex = -1;
 
-    /// <summary>
-    /// Persiste entre loads de cena — o slot no bridge MonoBehaviour perdia-se quando
-    /// <see cref="ExplorationLoadContext.EnsureRuntimeInstance"/> recriava o host em runtime.
-    /// </summary>
     private static bool _hasStaticPendingHorseBossEncounter;
     private static int _staticPendingHorseBossEnemySlotIndex = -1;
     private static float _staticHorseBossCombatReentryBlockedUntil;
@@ -227,6 +224,12 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     {
         _hasPendingCombatReturn = false;
         _lastBattleState = null;
+        _lastBattleAlliesWon = false;
+        _hasLastCombatEntryPosition = false;
+        // Reseta flags de combate anterior para não contaminar o novo ciclo.
+        // _lastCombatWasFromStaticContact é setado DEPOIS por NotifyStaticCombatContactTriggered
+        // se aplicável — então é seguro zerar aqui.
+        _lastCombatWasFromStaticContact = false;
 
         if (ExplorationLoadContext.Instance == null)
         {
@@ -287,6 +290,7 @@ public sealed class CombatExplorationBridge : MonoBehaviour
                 "[Save] SeedBattleFromExploration: nenhum snapshot em memória — " +
                 "verifica se exploration_save.json existe e foi carregado.");
         }
+
         var allies = battleState.Allies;
         var combatAllyCharacterNames = CombatPartyResolver.GetCombatAllyCharacterNames();
         for (int allyIndex = 0; allyIndex < allies.Count && allyIndex < combatAllyCharacterNames.Count; allyIndex++)
@@ -356,11 +360,13 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         _combatReentryBlockedUntil = Time.time + CombatReentryBlockSeconds;
         _monsterSpawnBlockedUntil = Time.time + PostCombatMonsterSpawnBlockSeconds;
 
+        // FIX 3: Horse Boss flags são lidos ANTES de serem limpos, para que
+        // TryCompleteReturnToExploration ainda os veja caso loadContext seja null aqui.
+        // O cooldown é aplicado agora mas os flags só são limpos após uso em
+        // TryCompleteReturnToExploration → evita perda do estado em retry.
         if (_enteredCombatFromHorseBoss || _staticEnteredCombatFromHorseBoss)
         {
             BlockHorseBossCombatReentry(HorseBossCombatReentryBlockSeconds);
-            _enteredCombatFromHorseBoss = false;
-            _staticEnteredCombatFromHorseBoss = false;
         }
 
         var loadContext = ExplorationLoadContext.Instance;
@@ -399,6 +405,17 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             return false;
         }
 
+        // FIX 3 (continuação): limpa Horse Boss flags aqui, após confirmação de retorno.
+        if (_enteredCombatFromHorseBoss || _staticEnteredCombatFromHorseBoss)
+        {
+            _enteredCombatFromHorseBoss = false;
+            _staticEnteredCombatFromHorseBoss = false;
+
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                "[COMBAT-BRIDGE] Flags Horse Boss limpos no retorno à exploração.",
+                LogCategory.Player);
+        }
+
         var loadContext = ExplorationLoadContext.Instance;
         if (loadContext == null)
         {
@@ -416,19 +433,49 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         {
             loadContext.ReturnSnapshotsToResetSpawn();
             _requiresCombatEntryZoneClearance = false;
+            // FIX 2: limpa o flag de contato estático tanto em vitória quanto em derrota.
             _lastCombatWasFromStaticContact = false;
+
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                "[COMBAT-BRIDGE] Retorno de contato estático — snapshots movidos para reset spawn.",
+                LogCategory.Player);
         }
-        else if (_lastBattleAlliesWon && _hasLastCombatEntryPosition)
+        else if (_lastBattleAlliesWon)
         {
-            loadContext.NudgeSnapshotsAwayFromWorldPoint(
-                _lastCombatEntryWorldPosition,
-                VictoryReturnSeparationFromCombatEntry);
+            // FIX 1: separado de _hasLastCombatEntryPosition — _requiresCombatEntryZoneClearance
+            // é sempre limpo em vitória, independente de ter posição salva.
+            if (_hasLastCombatEntryPosition)
+            {
+                loadContext.NudgeSnapshotsAwayFromWorldPoint(
+                    _lastCombatEntryWorldPosition,
+                    VictoryReturnSeparationFromCombatEntry);
+
+                LoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"[COMBAT-BRIDGE] Vitória: snapshots afastados do ponto de entrada " +
+                    $"{_lastCombatEntryWorldPosition} por {VictoryReturnSeparationFromCombatEntry}u.",
+                    LogCategory.Player);
+            }
+            else
+            {
+                LoggerService.PrintLogMessage(LogLevel.Warning,
+                    "[COMBAT-BRIDGE] Vitória sem posição de entrada registada — nudge ignorado.",
+                    LogCategory.Player);
+            }
+
+            // FIX 1: sempre limpa a flag de clearance em vitória, mesmo sem posição.
             _requiresCombatEntryZoneClearance = false;
         }
-        else if (!_lastBattleAlliesWon)
+        else
         {
+            // Derrota
             loadContext.ApplyCombatDefeatReturnToVillage();
             _requiresCombatEntryZoneClearance = false;
+            // FIX 2: garante limpeza do flag de contato estático também em derrota.
+            _lastCombatWasFromStaticContact = false;
+
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                "[COMBAT-BRIDGE] Derrota: snapshots reposicionados na aldeia.",
+                LogCategory.Player);
         }
 
         var isVillageReturnAfterCombat = !_lastBattleAlliesWon;
