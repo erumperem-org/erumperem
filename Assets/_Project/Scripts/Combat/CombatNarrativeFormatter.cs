@@ -36,7 +36,7 @@ namespace Erumperem.Combat
 
             var actorName = DisplayName(state, action.Actor.Identity.Id);
             var targetName = DisplayName(state, action.Target.Identity.Id);
-            var skillName = action.Skill.Name;
+            var skillName = PlayerFacingText.TranslateToEnglish(action.Skill.Name);
 
             if (hitEvent == null)
             {
@@ -70,7 +70,7 @@ namespace Erumperem.Combat
                 var narrativeLine = PlayerFacingText.FormatCombatLogLine(state, combatEvent);
                 if (!string.IsNullOrEmpty(narrativeLine))
                 {
-                    yield return narrativeLine;
+                    yield return PlayerFacingText.TranslateToEnglish(narrativeLine);
                 }
             }
 
@@ -83,7 +83,7 @@ namespace Erumperem.Combat
 
                 foreach (var line in FormatTokenLine(state, combatEvent))
                 {
-                    yield return line;
+                    yield return PlayerFacingText.TranslateToEnglish(line);
                 }
             }
 
@@ -146,7 +146,8 @@ namespace Erumperem.Combat
         private static string DisplayName(BattleState state, string combatantId)
         {
             var combatant = FindCombatant(state, combatantId);
-            return combatant?.Identity.DisplayName ?? combatantId;
+            var rawName = combatant?.Identity.DisplayName ?? combatantId;
+            return PlayerFacingText.FormatCombatantName(rawName);
         }
 
         private static Combatant FindCombatant(BattleState state, string id)

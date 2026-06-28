@@ -115,8 +115,7 @@ namespace Erumperem.Editor.Progression
 
             var detailPanelProperty = skillTreeViewSerializedObject.FindProperty("_detailPanel");
             detailPanelProperty.FindPropertyRelative("Title").objectReferenceValue =
-                FindChildComponent<TMP_Text>(prefabRootTransform, "SkillDescription")?.transform
-                    .GetComponentInChildren<TMP_Text>(true);
+                FindChildComponent<TMP_Text>(prefabRootTransform, "SkillTitle");
             detailPanelProperty.FindPropertyRelative("Body").objectReferenceValue =
                 FindChildTransform(prefabRootTransform, "SkillDescription")
                     ?.GetComponentInChildren<TMP_Text>(true);
@@ -134,7 +133,7 @@ namespace Erumperem.Editor.Progression
             WriteCharacterProfile(
                 profilesProperty.GetArrayElementAtIndex(1),
                 "buck",
-                "El Pistolero",
+                "The Gunslinger",
                 buckPortraitSprite,
                 BuckPanelBackground,
                 buckSkillTreeRoot);

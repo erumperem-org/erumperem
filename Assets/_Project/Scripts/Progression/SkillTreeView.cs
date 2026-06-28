@@ -34,7 +34,7 @@ namespace Erumperem.Progression
             {
                 if (Title != null)
                 {
-                    Title.text = nodeAsset.DisplayName;
+                    Title.text = nodeAsset.IsPassiveNode ? "Passive" : PlayerFacingText.TranslateToEnglish(nodeAsset.DisplayName);
                 }
 
                 if (Body != null)
@@ -68,19 +68,22 @@ namespace Erumperem.Progression
         [SerializeField] private Button _arrowRightButton;
 
         [Header("Character profiles (order = arrow cycle)")]
-        [SerializeField] private SkillTreeCharacterUiProfile[] _characterProfiles =
+        [SerializeField]
+        private SkillTreeCharacterUiProfile[] _characterProfiles =
         {
             new()
             {
                 ProgressionCharacterId = "wulfric",
                 SkillTreeTitle = "Splintered Knight",
                 PanelBackgroundColor = DefaultWulfricBackground,
+                SkillTreeRoot = null
             },
             new()
             {
                 ProgressionCharacterId = "buck",
-                SkillTreeTitle = "El Pistolero",
+                SkillTreeTitle = "The Gunslinger",
                 PanelBackgroundColor = DefaultBuckBackground,
+                SkillTreeRoot = null
             },
         };
 
@@ -278,6 +281,15 @@ namespace Erumperem.Progression
             _arrowRightButton ??= FindChildComponent<Button>("ArrowRight");
             _resetSkillsButton ??= FindChildComponent<Button>("ResetSkills");
 
+            if (_detailPanel.Title == null)
+            {
+                _detailPanel.Title = FindChildComponent<TMP_Text>("SkillTitle");
+            }
+            if (_detailPanel.Body == null)
+            {
+                _detailPanel.Body = FindChildComponent<TMP_Text>("SkillDescription");
+            }
+
             if (_characterProfiles == null || _characterProfiles.Length < 2)
             {
                 return;
@@ -299,7 +311,7 @@ namespace Erumperem.Progression
             var transforms = GetComponentsInChildren<Transform>(true);
             foreach (var childTransform in transforms)
             {
-                if (string.Equals(childTransform.name, childName, StringComparison.Ordinal))
+                if (string.Equals(childTransform.name, childName, System.StringComparison.Ordinal))
                 {
                     return childTransform;
                 }

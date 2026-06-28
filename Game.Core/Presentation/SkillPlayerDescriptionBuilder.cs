@@ -14,6 +14,66 @@ public static class SkillPlayerDescriptionBuilder
 {
     private static readonly CultureInfo EnglishCulture = CultureInfo.InvariantCulture;
 
+    private static readonly Dictionary<string, string> EnglishTranslations = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Wulfric"] = "Splintered Knight",
+        ["Buck"] = "The Gunslinger",
+        ["Talho direto"] = "Direct Slash",
+        ["Empurrão brutal"] = "Brutal Shove",
+        ["Postura de lobo"] = "Wolf Stance",
+        ["Rasgar tendão"] = "Tear Tendon",
+        ["Fio candente"] = "Searing Thread",
+        ["Execução de leilão"] = "Auction Execution",
+        ["Remendar couraça"] = "Mend Cuirass",
+        ["Muralha"] = "Bulwark",
+        ["Salvaguarda"] = "Safeguard",
+        ["Fio da anomalia"] = "Anomaly Thread",
+        ["Puxar o veio"] = "Pull the Veil",
+        ["Puxar o véu"] = "Pull the Veil",
+        ["Abrir o vão"] = "Open the Gap",
+        ["Soco Normal"] = "Normal Punch",
+        ["Lança Pedra"] = "Rock Throw",
+        ["Para-raio"] = "Lightning Rod",
+        ["Laser Distorcido"] = "Distorted Laser",
+        ["Giro Turbina (Ametista)"] = "Turbine Spin (Amethyst)",
+        ["Giro Turbina (Ágata)"] = "Turbine Spin (Agate)",
+        ["Giro Turbina (Citrino)"] = "Turbine Spin (Citrine)",
+        ["Giro Turbina (Esmeralda)"] = "Turbine Spin (Emerald)",
+        ["Açoite Metálico"] = "Iron Lash",
+        ["Brilho Hipnótico"] = "Hypnotic Glare",
+        ["Sussurro do Vício"] = "Whisper of Vice",
+        ["Colapso da Armadura"] = "Armor Collapse",
+        ["Garra"] = "Claw",
+        ["Garras afiadas"] = "Sharp Claws",
+        ["Mordida dilacerante"] = "Painful Bite",
+        ["Uivo gelado"] = "Chilling Howl",
+        ["Vómito cegante"] = "Blinding Vomit",
+        ["Vomito cegante"] = "Blinding Vomit",
+        ["Disparo rápido"] = "Quick Shot",
+        ["Empurrão do coldre"] = "Holster Shove",
+        ["Postura do duelista"] = "Duelist Stance",
+        ["Tiro incendiário"] = "Incendiary Shot",
+        ["Rajada flamejante"] = "Flaming Volley",
+        ["Execução do pistoleiro"] = "Gunslinger Execution",
+        ["Reforço de couro"] = "Leather Reinforcement",
+        ["Barricada"] = "Barricade",
+        ["Último recurso"] = "Last Resort",
+        ["Fio do revólver"] = "Revolver Thread",
+        ["Puxar o gatilho"] = "Pull the Trigger",
+        ["Abrir fogo"] = "Open Fire",
+        ["Aranha Stunadora"] = "Stunner Spider"
+    };
+
+    public static string TranslateToEnglish(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return name;
+        if (EnglishTranslations.TryGetValue(name.Trim(), out var translated))
+        {
+            return translated;
+        }
+        return name;
+    }
+
     public sealed class SkillDescriptionContext
     {
         public Combatant? Actor { get; init; }
@@ -65,7 +125,9 @@ public static class SkillPlayerDescriptionBuilder
         var passiveParts = DescribePassiveModifiersForSkill(skill, context);
         detailParts.AddRange(passiveParts);
 
-        return $"{skill.Name}: {string.Join(" | ", detailParts.Where(part => !string.IsNullOrEmpty(part)))}.";
+        var translatedName = TranslateToEnglish(skill.Name);
+
+        return $"{translatedName}: {string.Join(" | ", detailParts.Where(part => !string.IsNullOrEmpty(part)))}.";
     }
 
     private static string DescribeTarget(SkillDefinition skill) =>
