@@ -1477,7 +1477,7 @@ GameObject:
   - component: {fileID: 2304095505429028449}
   - component: {fileID: 2673233164625458937}
   - component: {fileID: 771914087207660580}
-  - component: {fileID: 2958651569059478219}
+  - component: {fileID: 2667248101238070073}
   m_Layer: 5
   m_Name: Return
   m_TagString: Untagged
@@ -1599,7 +1599,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
---- !u!114 &2958651569059478219
+--- !u!114 &2667248101238070073
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1608,14 +1608,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 7819761611404954466}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 062aad8a9b82c72438843697f81b20cc, type: 3}
+  m_Script: {fileID: 11500000, guid: 67bf75c88246b01499a7c22d7a155657, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CloseApplicationButtonController
+  m_EditorClassIdentifier: Assembly-CSharp::ChangeSceneButtonController
+  uiButtonModel:
+    sceneName: _MainMenu
   uiButtonView:
     _defaultEnterEffects: []
     _defaultExitEffects: []
-    _hoverEnterEffects: []
-    _hoverExitEffects: []
+    _hoverEnterEffects:
+    - {fileID: 11400000, guid: b4e519ca65770ab42b9057e8fe8af045, type: 2}
+    _hoverExitEffects:
+    - {fileID: 11400000, guid: 4c1ebc9f27a2b2a43b8622fb2c1dfafe, type: 2}
     _pressedEnterEffects: []
     _pressedExitEffects: []
     _disabledEnterEffects: []
