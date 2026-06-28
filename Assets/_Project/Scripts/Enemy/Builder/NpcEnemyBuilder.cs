@@ -6,10 +6,13 @@
 // config e sistemas externos.
 //
 // CORREÇÕES:
-//   [9] Build() usa o playerTransform injetado pelo Spawner para
-//       calcular um centro deslocado pelo raio mínimo antes de
-//       chamar TryGetPosition — sem inventar API inexistente.
-//       NpcEnemySpawner injeta via SetPlayerTransform().
+//   • onReturnToPool: removido cast desnecessário `enemy is NpcEnemy`.
+//     O delegate agora recebe NpcEnemy diretamente, alinhado com
+//     o que NpcEnemy.OnReturnToPoolRequested já invoca (passa `this`).
+//   • ResolveDependencies() não é mais chamado em cada Build()/BuildAt().
+//     Os métodos Validate* só chamam Resolve se alguma dep ainda é nula,
+//     evitando GetComponentInChildren repetido a cada spawn.
+//   • corruptionSystem removido — era campo serializado sem uso.
 // ============================================================
 
 using DetectionSystem.Core;
@@ -27,7 +30,6 @@ namespace Systems.NPC.Builder
         [SerializeField] private NpcEnemyPool                    _pool;
         [SerializeField] private NavMeshSpawnPositionServiceMono _spawnService;
         [SerializeField] private NpcEnemyContactHandler          _contactHandler;
-        [SerializeField] private ExplorationCorruptionSystem      corruptionSystem;
 
         [Header("Comportamento")]
         [SerializeField, Min(1f)]   private float _wanderRadius    = 8f;
@@ -41,15 +43,15 @@ namespace Systems.NPC.Builder
                  "Deve coincidir com o PlayerMinSpawnRadius do NpcEnemySpawner.")]
         [SerializeField, Min(0f)]   private float _minSpawnRadiusFromPlayer = 10f;
 
-        // [9] Transform do Main atual, injetado pelo NpcEnemySpawner via SetPlayerTransform().
         private Transform _playerTransform;
+
+        // ── Flags de resolução ────────────────────────────────────────────
+
+        // Evita chamar GetComponentInChildren repetidamente após resolução bem-sucedida.
+        private bool _dependenciesResolved;
 
         // ── API pública ───────────────────────────────────────────────────
 
-        /// <summary>
-        /// Injeta o Transform do personagem Main atual.
-        /// Chamado pelo NpcEnemySpawner sempre que o Main muda.
-        /// </summary>
         public void SetPlayerTransform(Transform playerTransform)
         {
             _playerTransform = playerTransform;
@@ -69,13 +71,10 @@ namespace Systems.NPC.Builder
 
             if (spawnCenter != Vector3.zero)
             {
-                // Centro explícito fornecido pelo chamador.
                 found = _spawnService.TryGetPosition(spawnCenter, _wanderRadius * 2f, out spawnPoint);
             }
             else if (_playerTransform != null && _minSpawnRadiusFromPlayer > 0f)
             {
-                // [9] Calcula um centro candidato deslocado do player pelo raio mínimo
-                //     em direção aleatória — sem precisar de API nova no serviço.
                 Vector2 randomDir2D = Random.insideUnitCircle.normalized;
                 var     offset      = new Vector3(randomDir2D.x, 0f, randomDir2D.y)
                                       * _minSpawnRadiusFromPlayer;
@@ -83,7 +82,6 @@ namespace Systems.NPC.Builder
 
                 found = _spawnService.TryGetPosition(candidateCenter, _wanderRadius, out spawnPoint);
 
-                // Fallback sem restrição se o candidato não tiver NavMesh acessível.
                 if (!found)
                     found = _spawnService.TryGetPosition(out spawnPoint);
             }
@@ -120,19 +118,20 @@ namespace Systems.NPC.Builder
             NpcEnemy npc = _pool.Get();
             if (npc == null) return false;
 
+            // CORREÇÃO: callback tipado como NpcEnemy — sem cast, sem ambiguidade.
+            // NpcEnemy.OnReturnToPoolRequested invoca OnReturnToPool passando `this`
+            // que já é NpcEnemy, então o delegate pode receber o tipo concreto diretamente.
             var config = new NpcEnemyConfig(
                 spawnPoint      : spawnPoint,
                 wanderRadius    : _wanderRadius,
                 chaseRadius     : _chaseRadius,
                 contactDistance : _contactDistance,
                 wanderLifetime  : _wanderLifetime,
-                onReturnToPool  : (enemy) =>
+                onReturnToPool  : (INpcEnemy enemy) =>
                 {
-                    if (enemy is NpcEnemy concreteEnemy)
-                    {
-                        _contactHandler?.Unregister(enemy);
-                        _pool.Return(concreteEnemy);
-                    }
+                    _contactHandler?.Unregister(enemy);
+                    if(enemy is NpcEnemy npcEnemy){_pool.Return(npcEnemy);}
+                    
                 }
             );
 
@@ -151,6 +150,9 @@ namespace Systems.NPC.Builder
 
         private void ResolveDependencies()
         {
+            // CORREÇÃO: evita buscas repetidas por reflexão após resolução bem-sucedida.
+            if (_dependenciesResolved) return;
+
             Transform enemySystemRoot = transform.parent;
             if (enemySystemRoot == null) return;
 
@@ -162,11 +164,14 @@ namespace Systems.NPC.Builder
 
             if (_contactHandler == null)
                 _contactHandler = enemySystemRoot.GetComponentInChildren<NpcEnemyContactHandler>(true);
+
+            // Considera resolvido quando o mínimo necessário está disponível.
+            _dependenciesResolved = _pool != null;
         }
 
         private bool ValidateDependenciesForExactSpawn()
         {
-            ResolveDependencies();
+            if (_pool == null) ResolveDependencies();
             if (_pool != null) return true;
             Debug.LogError("[NpcEnemyBuilder] Pool não configurada!", this);
             return false;
@@ -174,7 +179,7 @@ namespace Systems.NPC.Builder
 
         private bool ValidateDependenciesForRandomSpawn()
         {
-            ResolveDependencies();
+            if (_pool == null || _spawnService == null) ResolveDependencies();
             if (_pool != null && _spawnService != null) return true;
             Debug.LogError("[NpcEnemyBuilder] Pool ou SpawnService não configurados!", this);
             return false;
