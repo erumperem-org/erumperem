@@ -3196,7 +3196,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 468691763332735010, guid: de8bc432666396d4b9f8a7e47ba27345, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 468691763332735010, guid: de8bc432666396d4b9f8a7e47ba27345, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
@@ -3333,7 +3333,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4427427296882058800, guid: de8bc432666396d4b9f8a7e47ba27345, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1331952482}
   m_SourcePrefab: {fileID: 100100000, guid: de8bc432666396d4b9f8a7e47ba27345, type: 3}
 --- !u!224 &1331952479 stripped
 RectTransform:
@@ -3345,6 +3348,35 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 8527581671747725055, guid: de8bc432666396d4b9f8a7e47ba27345, type: 3}
   m_PrefabInstance: {fileID: 1331952478}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1331952481 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4427427296882058800, guid: de8bc432666396d4b9f8a7e47ba27345, type: 3}
+  m_PrefabInstance: {fileID: 1331952478}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1331952482
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1331952481}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67bf75c88246b01499a7c22d7a155657, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChangeSceneButtonController
+  uiButtonModel:
+    sceneName: Overworld
+  uiButtonView:
+    _defaultEnterEffects: []
+    _defaultExitEffects: []
+    _hoverEnterEffects: []
+    _hoverExitEffects: []
+    _pressedEnterEffects: []
+    _pressedExitEffects: []
+    _disabledEnterEffects: []
+    _disabledExitEffects: []
+  isDisabled: 0
 --- !u!1001 &1393329068
 PrefabInstance:
   m_ObjectHideFlags: 0
