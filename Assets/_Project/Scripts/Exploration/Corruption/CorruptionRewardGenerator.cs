@@ -8,15 +8,11 @@ using Services.Loot;
 using UnityEngine;
 using Core.Exploration.Interactables.Chest;
 using Unity.VisualScripting;
+
 /// <summary>
-/// Gera recompensas baseadas no tier de corrupção lido em Awake.
-///
-/// Fluxo:
-///   Awake         → lê o arquivo de corrupção e determina o tier (0-4) via
-///                   <see cref="CorruptionTierCalculator"/>.
-///   GenerateRewards() → gera loot da <see cref="LootTable"/> correspondente
-///                   ao tier, transfere ao <see cref="PlayerInventorySystem"/>
-///                   e persiste via <see cref="PlayerInventorySaveSystem"/>.
+/// Gera recompensas baseadas no tier de corrupção.
+/// A corrupção é lida do disco diretamente em <see cref="GenerateRewards"/>,
+/// eliminando qualquer dependência de ordem de inicialização.
 /// </summary>
 public sealed class CorruptionRewardGenerator : MonoBehaviour
 {
@@ -35,9 +31,10 @@ public sealed class CorruptionRewardGenerator : MonoBehaviour
     [SerializeField] private string _saveFileName = "corruption_save.json";
     [SerializeField] private GameObject rewardViewParent;
     [SerializeField] private GameObject rewardPrefab;
+
     // ── Estado ────────────────────────────────────────────────────────────
 
-    /// <summary>Tier resolvido no Awake (0-4). -1 = não inicializado.</summary>
+    /// <summary>Tier resolvido na última chamada a GenerateRewards. -1 = nunca gerou.</summary>
     public int ResolvedTier { get; private set; } = -1;
 
     /// <summary>Último loot gerado.</summary>
@@ -47,45 +44,58 @@ public sealed class CorruptionRewardGenerator : MonoBehaviour
         new Dictionary<IStorageable, int>();
 
     private ILootService _lootService = new LootService();
-
     private readonly IFileService _fileService = new FileService();
-    private string _saveDirectory;
 
-    // ── Unity lifecycle ───────────────────────────────────────────────────
-
-    private void Awake()
-    {
-        _saveDirectory = System.IO.Path.Combine(
-            Application.persistentDataPath, _saveFolderName);
-
-        _ = InitializeTierAsync();
-    }
     // ── API pública ───────────────────────────────────────────────────────
 
     /// <summary>
-    /// Gera recompensas com base no tier resolvido, adiciona ao inventário
-    /// e salva em disco. Retorna false se o tier ainda não foi resolvido ou
-    /// não há LootTable configurada para o tier atual.
+    /// Lê a corrupção do disco, resolve o tier, gera recompensas,
+    /// transfere ao inventário e salva. Tudo numa única chamada async.
     /// </summary>
-    public void GenerateRewards()
+    public async void GenerateRewards()
     {
-        if (ResolvedTier < 0)
-        {
-            Log(LogLevel.Warning, "Tier ainda não resolvido — aguarde Awake concluir.");
-        }
+        var saveDirectory = System.IO.Path.Combine(
+            Application.persistentDataPath, _saveFolderName);
+
+        Log(LogLevel.Debug, $"[GenerateRewards] Iniciando leitura de corrupção. Diretório: {saveDirectory}");
+
+        double corruption = await ReadCorruptionFromFileAsync(saveDirectory);
+
+        Log(LogLevel.Debug, $"[GenerateRewards] Valor de corrupção lido: {corruption:F2}%");
+
+        ResolvedTier = CorruptionTierCalculator.GetTier(corruption);
+
+        Log(LogLevel.Debug,
+            $"[GenerateRewards] Tier resolvido: {ResolvedTier} " +
+            $"(corrupção {corruption:F2} | faixas: 0=≤32 / 1=≤65 / 2=≤98 / 3=≤198 / 4=>198)");
 
         LootTable table = GetTableForTier(ResolvedTier);
+
+        Log(LogLevel.Debug,
+            $"[GenerateRewards] LootTable para tier {ResolvedTier}: " +
+            $"{(table != null ? table.name : "NULL — nenhuma tabela configurada")}");
+
         if (table == null)
         {
             Log(LogLevel.Warning,
-                $"Nenhuma LootTable configurada para tier {ResolvedTier}. Recompensa não gerada.");
+                $"[GenerateRewards] Nenhuma LootTable configurada para tier {ResolvedTier}. " +
+                $"Verifique o array _lootTablesByTier no Inspector (tamanho atual: {_lootTablesByTier?.Length ?? 0}). " +
+                $"Recompensa não gerada.");
+            return;
         }
 
         var context = new LootRequestContext(gameObject.name, transform.position);
         _lastReward = _lootService.GenerateLoot(table, context);
 
         Log(LogLevel.Debug,
-            $"Recompensa gerada — Tier {ResolvedTier} | {_lastReward.Count} tipo(s) de item.");
+            $"[GenerateRewards] Recompensa gerada — Tier {ResolvedTier} | " +
+            $"LootTable '{table.name}' | {_lastReward.Count} tipo(s) de item.");
+
+        foreach (var (storageable, amount) in _lastReward)
+        {
+            Log(LogLevel.Debug,
+                $"[GenerateRewards]   → {storageable?.GetType().Name ?? "null"} x{amount}");
+        }
 
         TransferToInventory();
         SaveInventory();
@@ -95,43 +105,41 @@ public sealed class CorruptionRewardGenerator : MonoBehaviour
     public void InjectLootService(ILootService service) =>
         _lootService = service ?? throw new ArgumentNullException(nameof(service));
 
-    // ── Inicialização assíncrona do tier ──────────────────────────────────
+    // ── IO ────────────────────────────────────────────────────────────────
 
-    private async Task InitializeTierAsync()
+    private async Task<double> ReadCorruptionFromFileAsync(string saveDirectory)
     {
-        double corruption = await ReadCorruptionFromFileAsync();
-        ResolvedTier = CorruptionTierCalculator.GetTier(corruption);
+        var fullPath = System.IO.Path.Combine(saveDirectory, _saveFileName);
+        Log(LogLevel.Debug, $"[ReadCorruption] Caminho completo do arquivo: {fullPath}");
 
-        Log(LogLevel.Debug,
-            $"Corrupção lida: {corruption:F1}% → Tier resolvido: {ResolvedTier}");
-    }
-
-    private async Task<double> ReadCorruptionFromFileAsync()
-    {
         try
         {
-            bool exists = await _fileService.ExistsAsync(_saveFileName, _saveDirectory);
+            bool exists = await _fileService.ExistsAsync(_saveFileName, saveDirectory);
+            Log(LogLevel.Debug, $"[ReadCorruption] Arquivo existe: {exists}");
+
             if (!exists)
             {
-                Log(LogLevel.Debug, "Sem arquivo de save de corrupção — usando 0 (Tier 0).");
+                Log(LogLevel.Debug, "[ReadCorruption] Sem arquivo de save de corrupção — usando 0 (Tier 0).");
                 return 0.0;
             }
 
-            FileData fileData = await _fileService.ReadAsync(_saveFileName, _saveDirectory);
+            FileData fileData = await _fileService.ReadAsync(_saveFileName, saveDirectory);
+            Log(LogLevel.Debug, $"[ReadCorruption] Conteúdo bruto lido: {fileData._fileContent}");
+
             var data = JsonUtility.FromJson<CorruptionSaveData>(fileData._fileContent);
 
             if (data == null)
             {
-                Log(LogLevel.Warning, "Falha ao desserializar save de corrupção — usando 0.");
+                Log(LogLevel.Warning, "[ReadCorruption] Falha ao desserializar CorruptionSaveData — usando 0.");
                 return 0.0;
             }
 
-            Log(LogLevel.Debug, $"Corrupção lida do disco: {data.Corruption:F1}%");
+            Log(LogLevel.Debug, $"[ReadCorruption] Corrupção desserializada: {data.Corruption:F2}%");
             return data.Corruption;
         }
         catch (Exception ex)
         {
-            Log(LogLevel.Error, $"Erro ao ler corrupção: {ex.Message} — usando 0.");
+            Log(LogLevel.Error, $"[ReadCorruption] Exceção ao ler arquivo '{fullPath}': {ex.Message} — usando 0.");
             return 0.0;
         }
     }
@@ -206,7 +214,7 @@ public sealed class CorruptionRewardGenerator : MonoBehaviour
     private LootTable GetTableForTier(int tier)
     {
         if (_lootTablesByTier == null || tier < 0 || tier >= _lootTablesByTier.Length)
-            return _lootTablesByTier[0];
+            return null;
 
         return _lootTablesByTier[tier];
     }
@@ -215,7 +223,7 @@ public sealed class CorruptionRewardGenerator : MonoBehaviour
         LoggerService.PrintLogMessage(level,
             $"[CorruptionRewardGenerator] {msg}", LogCategory.Player);
 
-    // ── Gizmos ────────────────────────────────────────────────────────────
+    // ── Editor ────────────────────────────────────────────────────────────
 
 #if UNITY_EDITOR
     private void OnValidate()
