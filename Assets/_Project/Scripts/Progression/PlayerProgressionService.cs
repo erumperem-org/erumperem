@@ -221,7 +221,7 @@ namespace Erumperem.Progression
         public void ResetAllCharacters()
         {
             _unlockedByCharacter.Clear();
-            _sharedSkillLevel = Math.Clamp(_initialSharedSkillLevel, 0, _maxSkillPoints);
+            //_sharedSkillLevel = Math.Clamp(_initialSharedSkillLevel, 0, _maxSkillPoints);
             DeleteSaveFile();
             SaveToDisk();
             OnUnlockedNodesChanged?.Invoke(string.Empty);

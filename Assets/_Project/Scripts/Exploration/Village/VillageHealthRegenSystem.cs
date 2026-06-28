@@ -20,6 +20,8 @@ public sealed class VillageHealthRegenSystem : MonoBehaviour
     [SerializeField] private GameObject _safeAreaCenter;
     [SerializeField, Min(0.1f)] private float _safeAreaRadius = 10f;
 
+    public CharacterViewHud viewHud;
+
     [Header("Regeneração")]
     [Tooltip("HP restaurado por segundo enquanto dentro da área segura.")]
     [SerializeField, Min(0f)] private float _healPerSecond = 5f;
@@ -98,7 +100,7 @@ public sealed class VillageHealthRegenSystem : MonoBehaviour
                 $"[VillageRegen] [{character.CharacterName}] +{healAmount} HP.",
                 LogCategory.Player);
         }
-        FindAnyObjectByType<CharacterViewHud>().RefreshAll();
+        viewHud.RefreshAll();
     }
 
     // ── Gizmos ────────────────────────────────────────────────────────────

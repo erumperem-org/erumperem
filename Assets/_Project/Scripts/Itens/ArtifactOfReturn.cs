@@ -9,6 +9,8 @@ using Core.Exploration.Items;
 using Erumperem.Progression;
 using Services.DebugUtilities;
 using UnityEngine;
+using System;
+using System.IO;
 
 namespace Core.Exploration.Items.Usables
 {
@@ -33,6 +35,7 @@ namespace Core.Exploration.Items.Usables
 
         public void ExecuteItemEffect()
         {
+            
             var progression = PlayerProgressionService.Instance;
             if (progression == null)
             {
@@ -41,7 +44,6 @@ namespace Core.Exploration.Items.Usables
                     LogCategory.Interaction);
                 return;
             }
-
             progression.ResetAllCharacters();
             LoggerService.PrintLogMessage(LogLevel.Debug,
                 "[ArtifactOfReturn] Arquivo de progressão inteiro resetado.",
