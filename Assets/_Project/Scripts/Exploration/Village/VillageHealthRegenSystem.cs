@@ -39,7 +39,14 @@ public sealed class VillageHealthRegenSystem : MonoBehaviour
     private void Awake()
     {
         if (_manager == null)
+        {
             _manager = FindFirstObjectByType<PlayableCharactersManager>();
+        }
+
+        if (viewHud == null)
+        {
+            viewHud = FindFirstObjectByType<CharacterViewHud>();
+        }
     }
 
     private void OnEnable()
@@ -62,12 +69,21 @@ public sealed class VillageHealthRegenSystem : MonoBehaviour
 
     private void Update()
     {
-        if (_main == null || _safeAreaCenter == null) return;
+        if (_main == null || _safeAreaCenter == null || _manager == null)
+        {
+            return;
+        }
 
-        if (!IsInsideSafeArea()) return;
+        if (!IsInsideSafeArea())
+        {
+            return;
+        }
 
         _elapsed += Time.deltaTime;
-        if (_elapsed < _intervalSeconds) return;
+        if (_elapsed < _intervalSeconds)
+        {
+            return;
+        }
 
         _elapsed -= _intervalSeconds;
         HealAllPlayables();
@@ -87,12 +103,23 @@ public sealed class VillageHealthRegenSystem : MonoBehaviour
 
     private void HealAllPlayables()
     {
+        if (_manager == null)
+        {
+            return;
+        }
+
         int healAmount = Mathf.RoundToInt(_healPerSecond * _intervalSeconds);
-        if (healAmount <= 0) return;
+        if (healAmount <= 0)
+        {
+            return;
+        }
 
         foreach (var character in _manager.Playables)
         {
-            if (character == null || character.HealthBar == null) continue;
+            if (character == null || character.HealthBar == null)
+            {
+                continue;
+            }
 
             character.HealthBar.Heal(healAmount);
 
@@ -100,7 +127,8 @@ public sealed class VillageHealthRegenSystem : MonoBehaviour
                 $"[VillageRegen] [{character.CharacterName}] +{healAmount} HP.",
                 LogCategory.Player);
         }
-        viewHud.RefreshAll();
+
+        viewHud?.RefreshAll();
     }
 
     // ── Gizmos ────────────────────────────────────────────────────────────

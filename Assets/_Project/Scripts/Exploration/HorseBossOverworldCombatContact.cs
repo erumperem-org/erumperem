@@ -10,6 +10,7 @@ using UnityEngine;
 [DisallowMultipleComponent]
 [RequireComponent(typeof(DetectionComponent))]
 [RequireComponent(typeof(Detector))]
+[DefaultExecutionOrder(-200)]
 public sealed class HorseBossOverworldCombatContact : MonoBehaviour
 {
     private const string CombatSceneName = "CombatScene";
@@ -34,9 +35,12 @@ public sealed class HorseBossOverworldCombatContact : MonoBehaviour
         _detector = GetComponent<Detector>();
         if (_detector != null)
         {
+            _detector.ReinitializeScanner();
             _detector.OnDetectorEnter += HandleDetectorEnter;
             _detector.OnDetectorExit += HandleDetectorExit;
         }
+
+        _combatTriggered = false;
     }
 
     private void OnDisable()
@@ -48,9 +52,22 @@ public sealed class HorseBossOverworldCombatContact : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        EnsureContactDetectionConfigured();
+        _detector = GetComponent<Detector>();
+        _detector?.ReinitializeScanner();
+        _combatTriggered = false;
+    }
+
     private void Update()
     {
-        if (_detector == null || IsCombatTriggerBlocked())
+        if (_detector == null)
+        {
+            return;
+        }
+
+        if (IsCombatTriggerBlocked())
         {
             return;
         }
@@ -123,6 +140,33 @@ public sealed class HorseBossOverworldCombatContact : MonoBehaviour
         {
             gameObject.AddComponent<Detector>();
         }
+
+        EnsureSolidBlockingCollider();
+    }
+
+    /// <summary>
+    /// Mantém collider sólido para bloqueio físico; combate usa Detector (overlap), não trigger.
+    /// </summary>
+    private void EnsureSolidBlockingCollider()
+    {
+        var boxCollider = GetComponent<BoxCollider>();
+        if (boxCollider != null)
+        {
+            boxCollider.isTrigger = false;
+            return;
+        }
+
+        var rootCollider = GetComponent<Collider>();
+        if (rootCollider != null)
+        {
+            rootCollider.isTrigger = false;
+            return;
+        }
+
+        boxCollider = gameObject.AddComponent<BoxCollider>();
+        boxCollider.center = ContactShapeLocalOffset;
+        boxCollider.size = ContactShapeHalfExtents * 2f;
+        boxCollider.isTrigger = false;
     }
 
     private static bool IsPlayerCollider(Collider collider)

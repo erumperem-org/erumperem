@@ -79,6 +79,21 @@ namespace DetectionSystem.Core
             _scanner?.Tick(this);
         }
 
+        /// <summary>
+        /// Recria o scanner (ex.: shapes adicionadas em runtime após o primeiro OnEnable).
+        /// </summary>
+        public void ReinitializeScanner()
+        {
+            if (_scanner != null)
+            {
+                _scanner.OnEnter -= HandleEnter;
+                _scanner.OnExit -= HandleExit;
+                _scanner = null;
+            }
+
+            EnsureScannerInitialized();
+        }
+
         private void EnsureScannerInitialized()
         {
             if (_scanner != null) return;
