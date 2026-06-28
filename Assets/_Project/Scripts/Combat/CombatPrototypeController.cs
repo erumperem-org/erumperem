@@ -1083,6 +1083,7 @@ namespace Erumperem.Combat
             if (_state.Winner == Side.Allies)
             {
                 victoryPanel.SetActive(true);
+                victoryPanel.GetComponent<CorruptionRewardGenerator>().GenerateRewards();
             }
             else if (_state.Winner == Side.Enemies)
             {

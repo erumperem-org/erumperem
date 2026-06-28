@@ -60,7 +60,6 @@ public sealed class CorruptionRewardGenerator : MonoBehaviour
 
         _ = InitializeTierAsync();
     }
-
     // ── API pública ───────────────────────────────────────────────────────
 
     /// <summary>
@@ -207,7 +206,7 @@ public sealed class CorruptionRewardGenerator : MonoBehaviour
     private LootTable GetTableForTier(int tier)
     {
         if (_lootTablesByTier == null || tier < 0 || tier >= _lootTablesByTier.Length)
-            return null;
+            return _lootTablesByTier[0];
 
         return _lootTablesByTier[tier];
     }
