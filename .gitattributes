@@ -9,3 +9,5 @@
 *.meta   merge=unityyamlmerge eol=lf text
 
 *.cs     diff=csharp text
+# Garante que arquivos com "Terrain" no nome sejam tratados estritamente como binários
+*Terrain*.asset binary
