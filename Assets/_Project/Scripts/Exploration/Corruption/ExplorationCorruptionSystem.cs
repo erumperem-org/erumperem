@@ -37,7 +37,6 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     [Header("Taxas")]
     [SerializeField, Min(0f)] private float _baseGainPerSecond = 2f;
     [SerializeField, Min(0f)] private float _gainPerMeterBeyondRadius = 0.5f;
-    // Adicionar no header Taxas:
     [SerializeField, Min(0f)] private float _decayPerSecond = .1f;
 
     [Header("UI")]
@@ -55,7 +54,7 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     public event Action OnTierMid;
     public event Action OnTierHigh;
 
-    /// <summary>Disparado sempre que o valor de corrupção muda (0–100). A UI reage a este evento.</summary>
+    /// <summary>Disparado sempre que o valor de corrupção muda (0–250). A UI reage a este evento.</summary>
     public event Action<float> OnCorruptionChanged;
 
     // ── Estado interno ────────────────────────────────────────────────────
@@ -63,7 +62,7 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     private float _corruption;
 
     /// <summary>
-    /// Valor atual de corrupção (0–100). O setter faz clamp e dispara
+    /// Valor atual de corrupção (0–250). O setter faz clamp e dispara
     /// <see cref="OnCorruptionChanged"/> apenas quando o valor muda.
     /// </summary>
     public float Corruption
@@ -71,7 +70,7 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
         get => _corruption;
         set
         {
-            float clampedCorruption = Mathf.Clamp(value, 0f, 100f);
+            float clampedCorruption = Mathf.Clamp(value, 0f, 250f);
             if (Mathf.Approximately(_corruption, clampedCorruption))
             {
                 return;
@@ -98,7 +97,6 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     private readonly IFileService _fileService = new FileService();
     private string _saveDirectory;
 
-    // Valor lido do disco por LoadAsync(), aguardando RestoreState().
     private float _loadedCorruption;
     private bool _loadCompleted;
 
@@ -143,35 +141,24 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
 
     // ── API pública de IO ─────────────────────────────────────────────────
 
-    /// <summary>
-    /// Lê o arquivo de save e armazena o valor internamente.
-    /// Deve ser aguardado pelo <see cref="ExplorationLoadContext"/> antes de
-    /// chamar <see cref="RestoreState"/>.
-    /// </summary>
     public async Task LoadAsync()
     {
         await LoadFromFileAsync();
         _loadCompleted = true;
     }
 
-    /// <summary>
-    /// Aplica o valor carregado por <see cref="LoadAsync"/>.
-    /// Se LoadAsync não foi chamado ou o arquivo não existia, aplica 0 (default).
-    /// </summary>
     public void RestoreState()
     {
         float value = _loadCompleted ? _loadedCorruption : 0f;
         ApplyCorruption(value, fireEvents: false);
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
-            $"[CORRUPTION] RestoreState: {Corruption:F1}% (Tier: {CurrentTier})",
+            $"[CORRUPTION] RestoreState: {Corruption:F1} (Tier: {CurrentTier})",
             LogCategory.Player);
     }
 
-    /// <summary>Grava o valor atual em disco.</summary>
     public async void SaveState() => await SaveToFileAsync();
 
-    /// <summary>Zera a corrupção e apaga o arquivo em disco (novo jogo).</summary>
     public async void ClearSave() => await ClearSaveAsync();
 
     public async Task ClearSaveAsync()
@@ -193,10 +180,6 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Identifica o primeiro frame da pilha de chamadas fora desta classe,
-    /// para que os logs de redução de corrupção revelem QUEM disparou a alteração.
-    /// </summary>
     private static string ResolveCorruptionCallSiteDescription()
     {
         var stackTrace = new System.Diagnostics.StackTrace(false);
@@ -234,6 +217,7 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
         float gainPerSecond = _baseGainPerSecond + _gainPerMeterBeyondRadius * beyondRadius;
         Corruption += gainPerSecond * Time.deltaTime;
     }
+
     private float DistanceBeyondRadius()
     {
         float dist = Vector3.Distance(_main.Transform.position, _safeAreaCenter.transform.position);
@@ -250,14 +234,14 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
         _lastTier = CurrentTier = tier;
         switch (tier)
         {
-            case CorruptionTier.Low: OnTierLow?.Invoke(); break;
-            case CorruptionTier.Mid: OnTierMid?.Invoke(); break;
+            case CorruptionTier.Low:  OnTierLow?.Invoke();  break;
+            case CorruptionTier.Mid:  OnTierMid?.Invoke();  break;
             case CorruptionTier.High: OnTierHigh?.Invoke(); break;
         }
     }
 
     private static CorruptionTier TierFor(float v) =>
-        v < 50f ? CorruptionTier.Low : v < 75f ? CorruptionTier.Mid : CorruptionTier.High;
+        v < 125f ? CorruptionTier.Low : v < 187.5f ? CorruptionTier.Mid : CorruptionTier.High;
 
     // ── Helpers de aplicação ──────────────────────────────────────────────
 
@@ -270,8 +254,8 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
         if (fireEvents)
             switch (tier)
             {
-                case CorruptionTier.Low: OnTierLow?.Invoke(); break;
-                case CorruptionTier.Mid: OnTierMid?.Invoke(); break;
+                case CorruptionTier.Low:  OnTierLow?.Invoke();  break;
+                case CorruptionTier.Mid:  OnTierMid?.Invoke();  break;
                 case CorruptionTier.High: OnTierHigh?.Invoke(); break;
             }
 
@@ -289,7 +273,7 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
             await _fileService.WriteAsync(fileData);
 
             LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[CORRUPTION] Salvo: {Corruption:F1}%", LogCategory.Player);
+                $"[CORRUPTION] Salvo: {Corruption:F1}", LogCategory.Player);
         }
         catch (Exception ex)
         {
@@ -304,7 +288,7 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
         {
             if (!await _fileService.ExistsAsync(_saveFileName, _saveDirectory))
             {
-                _loadedCorruption = 0f; // default
+                _loadedCorruption = 0f;
                 LoggerService.PrintLogMessage(LogLevel.Debug,
                     "[CORRUPTION] Sem arquivo de save — default 0.", LogCategory.Player);
                 return;
@@ -313,10 +297,10 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
             var fileData = await _fileService.ReadAsync(_saveFileName, _saveDirectory);
             var data = JsonUtility.FromJson<CorruptionSaveData>(fileData._fileContent);
 
-            _loadedCorruption = data != null ? Mathf.Clamp(data.Corruption, 0f, 100f) : 0f;
+            _loadedCorruption = data != null ? Mathf.Clamp(data.Corruption, 0f, 250f) : 0f;
 
             LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[CORRUPTION] Lido do disco: {_loadedCorruption:F1}%", LogCategory.Player);
+                $"[CORRUPTION] Lido do disco: {_loadedCorruption:F1}", LogCategory.Player);
         }
         catch (Exception ex)
         {
@@ -339,9 +323,9 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     private void UpdateSlider()
     {
         if (_corruptionSlider == null) return;
-        _corruptionSlider.value = Corruption / 100f;
+        _corruptionSlider.value = Corruption / 250f;
         if (_corruptionNumber != null)
-            _corruptionNumber.text = Mathf.RoundToInt(Corruption).ToString();
+            _corruptionNumber.text = Mathf.RoundToInt(Corruption / 250f * 100f).ToString();
     }
 
     // ── Gizmos ────────────────────────────────────────────────────────────
