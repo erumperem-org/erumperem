@@ -53,7 +53,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &3218222300413977494
 RectTransform:
   m_ObjectHideFlags: 0
@@ -146,8 +146,8 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 5434918232662500080}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.5184486}
-  m_AnchorMax: {x: 1, y: 0.9999995}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -254,21 +254,20 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Troca de cenas: teclas de fun\xE7\xE3o.\nF1 = Menu; F2 = Combate; F3 =
-    Overworld;\nF4 = Cena de testes de Tokens;\nF5 = Varia\xE7\xE3o do Overworld
-    com decora\xE7\xF5es;\n \nW, A, S, D: Movimenta\xE7\xE3o do personagem (Modo
-    Explora\xE7\xE3o - no Overworld)\n\nCombate: Uma aura verde no ch\xE3o simboliza
-    de qual dos seus personagens \xE9 o turno, durante seu turno voc\xEA pode clicar
-    nas habilidades na hotbar na parte inferior da tela, ou utilizar os n\xFAmeros
-    no teclado para selecion\xE1-las. Ap\xF3s selecionar uma habilidade escolha um
-    inimigo como alvo para usar. Passar o mouse por cima de uma habilidade mostra
-    um tooltip contendo algumas informa\xE7\xF5es sobre ela. O objetivo \xE9 derrotar
-    todos inimigos.\n\nNota: futuramente o overworld ser\xE1 onde voc\xEA encontrar\xE1
-    diversos combates enquanto explora, derrotando inimigos, fortalecendo personagens
-    com skill trees at\xE9 alcan\xE7ar e derrotar um chefe final.  Os sistemas para
-    complementar esse loop de jogo ainda est\xE3o em desenvolvimento. Ademais, as
-    habilidades possuem cooldowns atualmente, entretanto isso serve apenas para finalizar
-    o prot\xF3tipo do sistema decombate e ser\xE3o removidos."
+  m_text: "Troca de cenas: teclas de fun\xE7\xE3o.\nF1 = Menu; F2 = Overworld; F3
+    = Combate;\n \nW, A, S, D: Movimenta\xE7\xE3o do personagem (Modo Explora\xE7\xE3o
+    - no Overworld)\n\nCombate: Uma aura verde no ch\xE3o simboliza de qual dos seus
+    personagens \xE9 o turno, durante seu turno voc\xEA pode clicar nas habilidades
+    na hotbar na parte inferior da tela, ou utilizar os n\xFAmeros no teclado para
+    selecion\xE1-las. Ap\xF3s selecionar uma habilidade escolha um inimigo como alvo
+    para usar. Passar o mouse por cima de uma habilidade mostra um tooltip contendo
+    algumas informa\xE7\xF5es sobre ela. O objetivo \xE9 derrotar todos inimigos.\n\nNota:
+    futuramente o overworld ser\xE1 onde voc\xEA encontrar\xE1 diversos combates
+    enquanto explora, derrotando inimigos, fortalecendo personagens com skill trees
+    at\xE9 alcan\xE7ar e derrotar um chefe final.  Os sistemas para complementar
+    esse loop de jogo ainda est\xE3o em desenvolvimento. Ademais, as habilidades
+    possuem cooldowns atualmente, entretanto isso serve apenas para finalizar o prot\xF3tipo
+    do sistema decombate e ser\xE3o removidos."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -598,7 +597,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 8024184086314249232}
   m_Direction: 2
   m_Value: 0.99999917
-  m_Size: 0.48155096
+  m_Size: 0.48179096
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -989,7 +988,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6521630827053315948}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3312d7739989d2b4e91e6319e9a96d76, type: 3}
   m_Name: 
