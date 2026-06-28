@@ -17,6 +17,25 @@ public static class EnemySpawnHelper
         (0.25, 4),
     ];
 
+    /// <summary>
+    /// Aplica template de inimigo (HP, skills, AI, etc.) a um combatente existente no roster.
+    /// Usado para encounters especiais (ex.: Horse Boss num slot aleatório).
+    /// </summary>
+    public static bool TryApplyEnemyArchetypeToCombatant(
+        BattleState state,
+        Combatant combatant,
+        string archetypeId,
+        IReadOnlyList<string> defaultSkillIds)
+    {
+        if (!TryResolveEnemyTemplate(state, archetypeId, out var template))
+        {
+            return false;
+        }
+
+        ReinitializeCombatantFromTemplate(combatant, template, defaultSkillIds);
+        return true;
+    }
+
     public static bool TryResolveEnemyTemplate(
         BattleState state,
         string archetypeId,

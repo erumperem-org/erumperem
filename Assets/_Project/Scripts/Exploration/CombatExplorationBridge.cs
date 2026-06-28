@@ -16,6 +16,7 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     private const float PostCombatMonsterSpawnBlockSeconds = 5f;
     private const float ExplorationSceneCombatContactActivationDelaySeconds = 1f;
     private const float VictoryReturnSeparationFromCombatEntry = 6f;
+    private const int DefaultCombatEnemyRosterSize = 4;
     public static CombatExplorationBridge Instance { get; private set; }
 
     public static bool IsCombatReentryBlocked =>
@@ -47,12 +48,20 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     private bool _hasLastCombatEntryPosition;
     private Vector3 _lastCombatEntryWorldPosition;
     private IReadOnlyList<string> _pendingCombatAllyCharacterNames;
+    private int _pendingHorseBossEnemySlotIndex = -1;
+
+    /// <summary>
+    /// Persiste entre loads de cena — o slot no bridge MonoBehaviour perdia-se quando
+    /// <see cref="ExplorationLoadContext.EnsureRuntimeInstance"/> recriava o host em runtime.
+    /// </summary>
+    private static bool _hasStaticPendingHorseBossEncounter;
+    private static int _staticPendingHorseBossEnemySlotIndex = -1;
 
     private void Awake()
     {
         if (Instance != null && Instance != this)
         {
-            Destroy(gameObject);
+            Destroy(this);
             return;
         }
 
@@ -81,6 +90,108 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             $"[COMBAT-BRIDGE] Contatos de combate bloqueados por " +
             $"{ExplorationSceneCombatContactActivationDelaySeconds:F1}s após load do overworld.",
             LogCategory.Player);
+    }
+
+    /// <summary>
+    /// Regista encounter Horse Boss vindo do overworld (estático + bridge quando existir).
+    /// </summary>
+    public static void RegisterHorseBossOverworldEncounter(int enemyRosterSize = DefaultCombatEnemyRosterSize)
+    {
+        if (Instance != null)
+        {
+            Instance.NotifyEnteringHorseBossCombat(enemyRosterSize);
+            return;
+        }
+
+        var clampedRosterSize = Mathf.Max(1, enemyRosterSize);
+        var horseBossEnemySlotIndex = UnityEngine.Random.Range(0, clampedRosterSize);
+        RememberPendingHorseBossEncounter(horseBossEnemySlotIndex);
+
+        LoggerService.PrintLogMessage(LogLevel.Warning,
+            $"[COMBAT-BRIDGE] Encounter Horse Boss registado sem bridge activo — slot enemy_{horseBossEnemySlotIndex + 1}.",
+            LogCategory.Player);
+    }
+
+    /// <summary>
+    /// Combate especial: exactamente um inimigo (slot aleatório 0..roster-1) será o Horse Boss na CombatScene.
+    /// </summary>
+    public void NotifyEnteringHorseBossCombat(int enemyRosterSize = DefaultCombatEnemyRosterSize)
+    {
+        var clampedRosterSize = Mathf.Max(1, enemyRosterSize);
+        var horseBossEnemySlotIndex = UnityEngine.Random.Range(0, clampedRosterSize);
+        RememberPendingHorseBossEncounter(horseBossEnemySlotIndex);
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[COMBAT-BRIDGE] Encounter Horse Boss: slot inimigo aleatório = enemy_{horseBossEnemySlotIndex + 1}.",
+            LogCategory.Player);
+
+        NotifyStaticCombatContactTriggered();
+        NotifyEnteringCombat();
+    }
+
+    /// <summary>
+    /// Lê e limpa o encounter Horse Boss pendente (estático — sobrevive a recriação do bridge em runtime).
+    /// </summary>
+    public static bool TryConsumePendingHorseBossEncounter(out int enemySlotIndex)
+    {
+        if (_hasStaticPendingHorseBossEncounter && _staticPendingHorseBossEnemySlotIndex >= 0)
+        {
+            enemySlotIndex = _staticPendingHorseBossEnemySlotIndex;
+            ClearPendingHorseBossEncounter();
+
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"[COMBAT-BRIDGE] Encounter Horse Boss consumido na CombatScene: slot enemy_{enemySlotIndex + 1}.",
+                LogCategory.Player);
+            return true;
+        }
+
+        enemySlotIndex = -1;
+        if (Instance != null && Instance.TryConsumePendingHorseBossEnemySlotIndex(out enemySlotIndex))
+        {
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"[COMBAT-BRIDGE] Encounter Horse Boss consumido (fallback instância): slot enemy_{enemySlotIndex + 1}.",
+                LogCategory.Player);
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Lê e limpa o slot reservado para Horse Boss (só válido na primeira chamada após o contacto no overworld).
+    /// </summary>
+    public bool TryConsumePendingHorseBossEnemySlotIndex(out int enemySlotIndex)
+    {
+        enemySlotIndex = _pendingHorseBossEnemySlotIndex;
+        if (_pendingHorseBossEnemySlotIndex < 0)
+        {
+            return false;
+        }
+
+        _pendingHorseBossEnemySlotIndex = -1;
+        return true;
+    }
+
+    private static void RememberPendingHorseBossEncounter(int horseBossEnemySlotIndex)
+    {
+        _hasStaticPendingHorseBossEncounter = true;
+        _staticPendingHorseBossEnemySlotIndex = horseBossEnemySlotIndex;
+
+        if (Instance != null)
+        {
+            Instance._pendingHorseBossEnemySlotIndex = horseBossEnemySlotIndex;
+        }
+    }
+
+    private static void ClearPendingHorseBossEncounter()
+    {
+        _hasStaticPendingHorseBossEncounter = false;
+        _staticPendingHorseBossEnemySlotIndex = -1;
+
+        if (Instance != null)
+        {
+            Instance._pendingHorseBossEnemySlotIndex = -1;
+        }
     }
 
     /// <summary>Chamado imediatamente antes de carregar a cena de combate.</summary>
