@@ -117,7 +117,7 @@ public sealed class HorseBossOverworldCombatContact : MonoBehaviour
 
     private static bool IsCombatTriggerBlocked()
     {
-        return CombatExplorationBridge.IsCombatReentryBlocked
+        return CombatExplorationBridge.IsHorseBossCombatReentryBlocked
             || CombatExplorationBridge.AreExplorationCombatContactsBlocked
             || CombatExplorationBridge.RequiresCombatEntryZoneClearance
             || ExplorationVillageEvents.IsPlayerInsideVillage;

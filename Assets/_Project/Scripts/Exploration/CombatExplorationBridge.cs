@@ -13,6 +13,7 @@ using UnityEngine;
 public sealed class CombatExplorationBridge : MonoBehaviour
 {
     private const float CombatReentryBlockSeconds = 5f;
+    private const float HorseBossCombatReentryBlockSeconds = 10f;
     private const float PostCombatMonsterSpawnBlockSeconds = 5f;
     private const float ExplorationSceneCombatContactActivationDelaySeconds = 1f;
     private const float VictoryReturnSeparationFromCombatEntry = 6f;
@@ -21,6 +22,11 @@ public sealed class CombatExplorationBridge : MonoBehaviour
 
     public static bool IsCombatReentryBlocked =>
         Instance != null && Time.time < Instance._combatReentryBlockedUntil;
+
+    /// <summary>Bloqueia reentrada no Horse Boss no overworld durante 10s após sair do combate dele.</summary>
+    public static bool IsHorseBossCombatReentryBlocked =>
+        Time.time < _staticHorseBossCombatReentryBlockedUntil
+        || (Instance != null && Time.time < Instance._horseBossCombatReentryBlockedUntil);
 
     /// <summary>Bloqueia spawn de inimigos no overworld durante alguns segundos após o combate.</summary>
     public static bool IsMonsterSpawnBlocked =>
@@ -40,9 +46,11 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     private bool _hasPendingCombatReturn;
     private bool _lastBattleAlliesWon;
     private bool _lastCombatWasFromStaticContact;
+    private bool _enteredCombatFromHorseBoss;
     private bool _requiresCombatEntryZoneClearance;
     private BattleState _lastBattleState;
     private float _combatReentryBlockedUntil;
+    private float _horseBossCombatReentryBlockedUntil;
     private float _monsterSpawnBlockedUntil;
     private float _explorationCombatContactsBlockedUntil;
     private bool _hasLastCombatEntryPosition;
@@ -56,6 +64,8 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     /// </summary>
     private static bool _hasStaticPendingHorseBossEncounter;
     private static int _staticPendingHorseBossEnemySlotIndex = -1;
+    private static float _staticHorseBossCombatReentryBlockedUntil;
+    private static bool _staticEnteredCombatFromHorseBoss;
 
     private void Awake()
     {
@@ -106,6 +116,7 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         var clampedRosterSize = Mathf.Max(1, enemyRosterSize);
         var horseBossEnemySlotIndex = UnityEngine.Random.Range(0, clampedRosterSize);
         RememberPendingHorseBossEncounter(horseBossEnemySlotIndex);
+        _staticEnteredCombatFromHorseBoss = true;
 
         LoggerService.PrintLogMessage(LogLevel.Warning,
             $"[COMBAT-BRIDGE] Encounter Horse Boss registado sem bridge activo — slot enemy_{horseBossEnemySlotIndex + 1}.",
@@ -120,6 +131,8 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         var clampedRosterSize = Mathf.Max(1, enemyRosterSize);
         var horseBossEnemySlotIndex = UnityEngine.Random.Range(0, clampedRosterSize);
         RememberPendingHorseBossEncounter(horseBossEnemySlotIndex);
+        _enteredCombatFromHorseBoss = true;
+        _staticEnteredCombatFromHorseBoss = true;
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
             $"[COMBAT-BRIDGE] Encounter Horse Boss: slot inimigo aleatório = enemy_{horseBossEnemySlotIndex + 1}.",
@@ -192,6 +205,21 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         {
             Instance._pendingHorseBossEnemySlotIndex = -1;
         }
+    }
+
+    private static void BlockHorseBossCombatReentry(float blockDurationSeconds)
+    {
+        var blockedUntil = Time.time + blockDurationSeconds;
+        _staticHorseBossCombatReentryBlockedUntil = blockedUntil;
+
+        if (Instance != null)
+        {
+            Instance._horseBossCombatReentryBlockedUntil = blockedUntil;
+        }
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[COMBAT-BRIDGE] Horse Boss bloqueado por {blockDurationSeconds:F0}s após combate.",
+            LogCategory.Player);
     }
 
     /// <summary>Chamado imediatamente antes de carregar a cena de combate.</summary>
@@ -327,6 +355,13 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         _lastBattleState = battleState;
         _combatReentryBlockedUntil = Time.time + CombatReentryBlockSeconds;
         _monsterSpawnBlockedUntil = Time.time + PostCombatMonsterSpawnBlockSeconds;
+
+        if (_enteredCombatFromHorseBoss || _staticEnteredCombatFromHorseBoss)
+        {
+            BlockHorseBossCombatReentry(HorseBossCombatReentryBlockSeconds);
+            _enteredCombatFromHorseBoss = false;
+            _staticEnteredCombatFromHorseBoss = false;
+        }
 
         var loadContext = ExplorationLoadContext.Instance;
         if (loadContext == null)
