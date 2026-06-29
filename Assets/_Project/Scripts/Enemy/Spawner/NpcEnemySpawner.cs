@@ -17,6 +17,8 @@
 //       recriando PlayerAwareSpawnPointSelector com o novo transform.
 //   [5] PlayerAwareSpawnPointSelector agora exige distância mínima
 //       E máxima, garantindo que o player possa encontrar o inimigo.
+//   [6] _initialSpawnDelay: aguarda N segundos antes do spawn
+//       inicial, evitando spawns durante o fade-in da cena.
 // ============================================================
 
 using System.Collections;
@@ -56,6 +58,10 @@ namespace Systems.NPC.Spawner
         [Tooltip("Inimigos não spawnão além deste raio (garante que o player possa encontrá-los). " +
                  "0 = sem limite máximo.")]
         [SerializeField, Min(0f)] private float _playerMaxSpawnRadius = 40f;
+
+        [Header("Delay inicial")]
+        [Tooltip("Segundos de espera antes do spawn inicial ao entrar na cena.")]
+        [SerializeField, Min(0f)] private float _initialSpawnDelay = 3f;
 
         // ── Estado interno ────────────────────────────────────────────────
 
@@ -176,9 +182,15 @@ namespace Systems.NPC.Spawner
             ResolveSpawnPointsIfNeeded();
             RebuildSelector();
 
-            // [3] Instância: reseta ao entrar na cena, permitindo preenchimento no retorno.
+            // [3][6] Instância: reseta ao entrar na cena, permitindo preenchimento no retorno.
+            //        Aguarda o delay inicial antes de spawnar (ex.: fade-in da cena).
             if (!_hasCompletedInitialSpawnFill)
             {
+                if (_initialSpawnDelay > 0f)
+                    yield return new WaitForSeconds(_initialSpawnDelay);
+
+                if (!_isRunning || !isActiveAndEnabled) yield break;
+
                 SpawnOneAtEachSpawnPoint();
                 _hasCompletedInitialSpawnFill = true;
             }
