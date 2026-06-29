@@ -367,6 +367,9 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         if (_enteredCombatFromHorseBoss || _staticEnteredCombatFromHorseBoss)
         {
             BlockHorseBossCombatReentry(HorseBossCombatReentryBlockSeconds);
+            // Limpa aqui, não em TryCompleteReturnToExploration
+            _enteredCombatFromHorseBoss = false;
+            _staticEnteredCombatFromHorseBoss = false;
         }
 
         var loadContext = ExplorationLoadContext.Instance;

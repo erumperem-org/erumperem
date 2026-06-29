@@ -198,7 +198,6 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         _manager = null;
         _corruptionSystem = null;
 
-        CombatExplorationBridge.Instance?.BlockExplorationCombatContactsAfterSceneLoad();
         StartCoroutine(RestoreNextFrame());
     }
 

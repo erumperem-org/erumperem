@@ -1,12 +1,7 @@
 using DetectionSystem.Core;
+using System.Collections;
 using UnityEngine;
 
-/// <summary>
-/// Contacto no overworld com o Horse Boss: inicia combate com exactamente um inimigo
-/// (posição aleatória entre os 4 slots) configurado como Horse Boss.
-/// Usa <see cref="Detector"/> (overlap por frame), igual aos inimigos estáticos —
-/// fiável com CharacterController e quando o jogador já está dentro da zona ao carregar.
-/// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(DetectionComponent))]
 [RequireComponent(typeof(Detector))]
@@ -17,27 +12,27 @@ public sealed class HorseBossOverworldCombatContact : MonoBehaviour
     private const string ContactShapeLabel = "Contact";
     private const int CombatEnemyRosterSize = 4;
 
-    private static readonly Vector3 ContactShapeLocalOffset = new(0f, 2.5f, 0f);
-    private static readonly Vector3 ContactShapeHalfExtents = new(2f, 2.5f, 2f);
+    // Tempo de espera antes de confirmar o combate
+    [SerializeField] private float _detectionDelay = 3f;
+
 
     private Detector _detector;
     private bool _combatTriggered;
+    private Coroutine _pendingCombatCoroutine;   // <-- coroutine pendente
 
     private void Awake()
     {
-        EnsureContactDetectionConfigured();
         _detector = GetComponent<Detector>();
     }
 
     private void OnEnable()
     {
-        EnsureContactDetectionConfigured();
         _detector = GetComponent<Detector>();
         if (_detector != null)
         {
             _detector.ReinitializeScanner();
             _detector.OnDetectorEnter += HandleDetectorEnter;
-            _detector.OnDetectorExit += HandleDetectorExit;
+            _detector.OnDetectorExit  += HandleDetectorExit;
         }
 
         _combatTriggered = false;
@@ -45,16 +40,17 @@ public sealed class HorseBossOverworldCombatContact : MonoBehaviour
 
     private void OnDisable()
     {
+        CancelPendingCombat();   // garante limpeza ao desativar
+
         if (_detector != null)
         {
             _detector.OnDetectorEnter -= HandleDetectorEnter;
-            _detector.OnDetectorExit -= HandleDetectorExit;
+            _detector.OnDetectorExit  -= HandleDetectorExit;
         }
     }
 
     private void Start()
     {
-        EnsureContactDetectionConfigured();
         _detector = GetComponent<Detector>();
         _detector?.ReinitializeScanner();
         _combatTriggered = false;
@@ -62,50 +58,55 @@ public sealed class HorseBossOverworldCombatContact : MonoBehaviour
 
     private void Update()
     {
-        if (_detector == null)
-        {
-            return;
-        }
-
-        if (IsCombatTriggerBlocked())
-        {
-            return;
-        }
-
+        if (_detector == null) return;
         _detector.Scan();
     }
 
+    // --- detecção de entrada: agenda combate com delay ---
+
     private void HandleDetectorEnter(Collider detectedCollider, string shapeLabel, int shapeIndex)
     {
-        if (!string.Equals(shapeLabel, ContactShapeLabel, System.StringComparison.Ordinal))
+        if (detectedCollider.tag != "Player") return;
+        if (_pendingCombatCoroutine != null) return;  // já aguardando
+
+        _pendingCombatCoroutine = StartCoroutine(CombatDelayRoutine());
+    }
+
+    private IEnumerator CombatDelayRoutine()
+    {
+        yield return new WaitForSeconds(_detectionDelay);
+
+        // confirma que o combate ainda não foi bloqueado durante a espera
+        if (CombatExplorationBridge.IsHorseBossCombatReentryBlocked)
         {
-            return;
+            _pendingCombatCoroutine = null;
+            yield break;
         }
 
-        if (detectedCollider.tag == "Player")
-        {
-            ExplorationLoadContext.EnsureRuntimeInstance();
-            _combatTriggered = true;
-            CombatExplorationBridge.RegisterHorseBossOverworldEncounter(CombatEnemyRosterSize);
-            SceneTransitionHandler.LoadScene(CombatSceneName);
-        }
+        ExplorationLoadContext.EnsureRuntimeInstance();
+        _combatTriggered = true;
+        _pendingCombatCoroutine = null;
+        CombatExplorationBridge.RegisterHorseBossOverworldEncounter(CombatEnemyRosterSize);
+        SceneTransitionHandler.LoadScene(CombatSceneName);
     }
+
+    // --- detecção de saída: cancela se o jogador saiu antes do delay ---
 
     private void HandleDetectorExit(Collider detectedCollider, string shapeLabel, int shapeIndex)
     {
-        if (!string.Equals(shapeLabel, ContactShapeLabel, System.StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        if (!IsPlayerCollider(detectedCollider))
-        {
-            return;
-        }
-
+        if (detectedCollider.tag != "Player") return;
+        CancelPendingCombat(); 
         _combatTriggered = false;
-        CombatExplorationBridge.Instance?.NotifyPlayerLeftCombatEntryZone();
     }
+
+    private void CancelPendingCombat()
+    {
+        if (_pendingCombatCoroutine == null) return;
+        StopCoroutine(_pendingCombatCoroutine);
+        _pendingCombatCoroutine = null;
+    }
+
+    // --- resto inalterado ---
 
     private static bool IsCombatTriggerBlocked()
     {
@@ -115,64 +116,10 @@ public sealed class HorseBossOverworldCombatContact : MonoBehaviour
             || ExplorationVillageEvents.IsPlayerInsideVillage;
     }
 
-    private void EnsureContactDetectionConfigured()
-    {
-        var detectionComponent = GetComponent<DetectionComponent>();
-        if (detectionComponent == null)
-        {
-            detectionComponent = gameObject.AddComponent<DetectionComponent>();
-        }
-
-        detectionComponent.EnsurePlayerContactBoxShape(
-            ContactShapeLocalOffset,
-            ContactShapeHalfExtents,
-            ContactShapeLabel);
-
-        if (GetComponent<Detector>() == null)
-        {
-            gameObject.AddComponent<Detector>();
-        }
-
-        EnsureSolidBlockingCollider();
-    }
-
-    /// <summary>
-    /// Mantém collider sólido para bloqueio físico; combate usa Detector (overlap), não trigger.
-    /// </summary>
-    private void EnsureSolidBlockingCollider()
-    {
-        var boxCollider = GetComponent<BoxCollider>();
-        if (boxCollider != null)
-        {
-            boxCollider.isTrigger = false;
-            return;
-        }
-
-        var rootCollider = GetComponent<Collider>();
-        if (rootCollider != null)
-        {
-            rootCollider.isTrigger = false;
-            return;
-        }
-
-        boxCollider = gameObject.AddComponent<BoxCollider>();
-        boxCollider.center = ContactShapeLocalOffset;
-        boxCollider.size = ContactShapeHalfExtents * 2f;
-        boxCollider.isTrigger = false;
-    }
-
     private static bool IsPlayerCollider(Collider collider)
     {
-        if (collider == null)
-        {
-            return false;
-        }
-
-        if (collider.CompareTag("Player"))
-        {
-            return true;
-        }
-
+        if (collider == null) return false;
+        if (collider.CompareTag("Player")) return true;
         return collider.GetComponentInParent<PlayableCharacter>() != null;
     }
 }

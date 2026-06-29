@@ -83,6 +83,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7237c1a374dd9b0459eecc7cff243fa9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HorseBossOverworldCombatContact
+  _detectionDelay: 4
 --- !u!114 &8612045538176291842
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -110,7 +111,7 @@ MonoBehaviour:
     sphere:
       radius: 1
     box:
-      halfExtents: {x: 3, y: 2.5, z: 3}
+      halfExtents: {x: 5, y: 2.5, z: 5}
     cylinder:
       radius: 1
       height: 2

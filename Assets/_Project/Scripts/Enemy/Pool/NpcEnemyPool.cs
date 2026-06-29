@@ -90,7 +90,7 @@ namespace Systems.NPC.Pool
 
         // ── Unity Lifecycle ───────────────────────────────────────────────
 
-        private void Awake()
+        private void Start()
         {
             if (_npcPrefab == null)
             {

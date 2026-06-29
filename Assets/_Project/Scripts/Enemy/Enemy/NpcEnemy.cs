@@ -141,6 +141,7 @@ namespace Systems.NPC.Enemy
         internal void NotifyPlayerContact()
         {
             OnPlayerContact?.Invoke(this);
+            Debug.Log("NotifyCombat");
         }
 
         // ═════════════════════════════════════════════════════════════════
