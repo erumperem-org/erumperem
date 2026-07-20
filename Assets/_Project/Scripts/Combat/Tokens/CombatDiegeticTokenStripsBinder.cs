@@ -43,6 +43,19 @@ namespace Erumperem.Combat.Tokens
         private readonly List<Transform> _stripRoots = new();
         private Camera _mainCamera;
 
+        private void Awake()
+        {
+            _mainCamera = Camera.main;
+        }
+
+        private void RefreshMainCameraIfMissing()
+        {
+            if (_mainCamera == null)
+            {
+                _mainCamera = Camera.main;
+            }
+        }
+
         private void OnEnable()
         {
             if (sessionHub == null)
@@ -97,10 +110,7 @@ namespace Erumperem.Combat.Tokens
                 }
             }
 
-            if (_mainCamera == null)
-            {
-                _mainCamera = Camera.main;
-            }
+            RefreshMainCameraIfMissing();
 
             if (_mainCamera == null)
             {
@@ -215,7 +225,8 @@ namespace Erumperem.Combat.Tokens
 
             if (sharedCanvas.worldCamera == null)
             {
-                sharedCanvas.worldCamera = Camera.main;
+                RefreshMainCameraIfMissing();
+                sharedCanvas.worldCamera = _mainCamera;
             }
         }
 

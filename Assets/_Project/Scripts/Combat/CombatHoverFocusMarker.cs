@@ -1,4 +1,5 @@
 using DG.Tweening;
+using Erumperem.Combat.Runtime;
 using UnityEngine;
 
 namespace Erumperem.Combat
@@ -44,11 +45,14 @@ namespace Erumperem.Combat
 		private Vector3 _baseLocalScale = Vector3.one;
 		private Quaternion _baseLocalRotation = Quaternion.identity;
 		private string _lastCombatantId;
+		private readonly CombatPointerRaycastService _pointerRaycast = new();
 
 		private void Awake()
 		{
-			if (raycastCamera == null)
-				raycastCamera = Camera.main;
+			_pointerRaycast.Configure(
+				raycastCamera != null ? raycastCamera : Camera.main,
+				raycastMaxDistance,
+				raycastLayerMask);
 		}
 
 		private void Start()
@@ -66,31 +70,13 @@ namespace Erumperem.Combat
 			if (_instance == null || !isActiveAndEnabled)
 				return;
 
-			if (raycastCamera == null)
+			if (!_pointerRaycast.TryRaycastCombatCapsuleTagFromInputManager(out var capsuleTag))
 			{
 				Hide();
 				return;
 			}
 
-			if (InputManager.Instance == null ||
-				!InputManager.Instance.TryGetPointerScreenPosition(out var pointerPosition))
-			{
-				Hide();
-				return;
-			}
-
-			var ray = raycastCamera.ScreenPointToRay(pointerPosition);
-
-			if (!Physics.Raycast(ray, out var hit, raycastMaxDistance, raycastLayerMask))
-			{
-				Hide();
-				return;
-			}
-
-			var capsuleTag = hit.collider.GetComponentInParent<CombatCapsuleTag>();
-
-			if (capsuleTag == null ||
-				string.IsNullOrEmpty(capsuleTag.combatantId) ||
+			if (string.IsNullOrEmpty(capsuleTag.combatantId) ||
 				!capsuleTag.isActiveAndEnabled)
 			{
 				Hide();

@@ -34,6 +34,7 @@ namespace Systems.NPC.Enemy
         // ── Coroutine ─────────────────────────────────────────────────────
 
         private Coroutine _pollingCoroutine;
+        private bool _combatTriggered;
 
         // ── Construtor ────────────────────────────────────────────────────
 
@@ -117,9 +118,15 @@ namespace Systems.NPC.Enemy
 
             if (shapeLabel == "Contact" && detected.tag == "Player")
             {
-                GameObject.FindAnyObjectByType<ExplorationLoadContext>().SaveState();
-                GameObject.FindAnyObjectByType<ExplorationCorruptionSystem>().SaveState();
-                GameObject.FindAnyObjectByType<PlayerInventorySaveSystem>().SaveAsync();
+                if (_combatTriggered)
+                {
+                    return;
+                }
+
+                _combatTriggered = true;
+                GameObject.FindAnyObjectByType<ExplorationLoadContext>()?.SaveState();
+                GameObject.FindAnyObjectByType<ExplorationCorruptionSystem>()?.SaveState();
+                GameObject.FindAnyObjectByType<PlayerInventorySaveSystem>()?.SaveAsync();
                 SceneManager.LoadScene("CombatScene");
                 _npcEnemy.NotifyPlayerContact();
             }

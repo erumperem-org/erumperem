@@ -21,7 +21,7 @@ public class ScavengerDetectionSystem : Detector
     {
         if (detected.CompareTag("Player"))
         {
-            base.OnDetectionEnter(detected, shapeLabel, shapeIndex);
+            base.OnDetectionExit(detected, shapeLabel, shapeIndex);
             panel.SetActive(false);
         }
     }

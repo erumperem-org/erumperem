@@ -66,7 +66,21 @@ public sealed class HorseBossOverworldCombatContact : MonoBehaviour
 
     private void HandleDetectorEnter(Collider detectedCollider, string shapeLabel, int shapeIndex)
     {
-        if (detectedCollider.tag != "Player") return;
+        if (!string.Equals(shapeLabel, ContactShapeLabel, System.StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (!IsPlayerCollider(detectedCollider))
+        {
+            return;
+        }
+
+        if (_combatTriggered || IsCombatTriggerBlocked())
+        {
+            return;
+        }
+
         if (_pendingCombatCoroutine != null) return;  // já aguardando
 
         _pendingCombatCoroutine = StartCoroutine(CombatDelayRoutine());
@@ -77,7 +91,7 @@ public sealed class HorseBossOverworldCombatContact : MonoBehaviour
         yield return new WaitForSeconds(_detectionDelay);
 
         // confirma que o combate ainda não foi bloqueado durante a espera
-        if (CombatExplorationBridge.IsHorseBossCombatReentryBlocked)
+        if (IsCombatTriggerBlocked())
         {
             _pendingCombatCoroutine = null;
             yield break;

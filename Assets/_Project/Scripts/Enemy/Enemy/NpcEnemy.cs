@@ -56,12 +56,16 @@ namespace Systems.NPC.Enemy
             _movementController = GetComponent<NpcMovementController>();
             _adapter = GetComponent<NavMeshAgentAdapter>();
             _detector = GetComponent<Detector>();
-            HandleTorchChange();
         }
 
-        private void HandleTorchChange()
+        private void OnMainTorchChanged(bool isTorchOn)
         {
-            PlayerTorchHandler.OnMainTorchChanged += isOn => _detectionHandler.HandleTorch(isOn, _detector.DetectionComponent);
+            if (_detectionHandler == null)
+            {
+                return;
+            }
+
+            _detectionHandler.HandleTorch(isTorchOn, _detector.DetectionComponent);
         }
         // ═════════════════════════════════════════════════════════════════
         // INpcEnemy
@@ -106,6 +110,8 @@ namespace Systems.NPC.Enemy
 
             _movementController.NavMesh.ResetAgent(_adapter);
 
+            PlayerTorchHandler.OnMainTorchChanged -= OnMainTorchChanged;
+            PlayerTorchHandler.OnMainTorchChanged += OnMainTorchChanged;
             _detectionHandler.StartPolling();
             _stateMachine.ToWander();
         }
@@ -122,6 +128,7 @@ namespace Systems.NPC.Enemy
 
         private void OnReturnToPoolRequested()
         {
+            PlayerTorchHandler.OnMainTorchChanged -= OnMainTorchChanged;
             _detectionHandler.StopPolling();
             _behaviorRunner.StopAll();
 
@@ -150,6 +157,7 @@ namespace Systems.NPC.Enemy
 
         private void OnDestroy()
         {
+            PlayerTorchHandler.OnMainTorchChanged -= OnMainTorchChanged;
             _detectionHandler?.StopPolling();
             _behaviorRunner?.StopAll();
         }

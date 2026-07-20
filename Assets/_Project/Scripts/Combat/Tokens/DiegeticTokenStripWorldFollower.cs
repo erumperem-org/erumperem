@@ -14,6 +14,7 @@ namespace Erumperem.Combat.Tokens
         private RectTransform _rectTransform;
         private RectTransform _parentRect;
         private Canvas _rootCanvas;
+        private Camera _mainCamera;
 
         public void Initialize(
             Transform followTarget,
@@ -28,6 +29,15 @@ namespace Erumperem.Combat.Tokens
         private void Awake()
         {
             _rectTransform = transform as RectTransform;
+            _mainCamera = Camera.main;
+        }
+
+        private void RefreshMainCameraIfMissing()
+        {
+            if (_mainCamera == null)
+            {
+                _mainCamera = Camera.main;
+            }
         }
 
         private void LateUpdate()
@@ -36,6 +46,8 @@ namespace Erumperem.Combat.Tokens
             {
                 return;
             }
+
+            RefreshMainCameraIfMissing();
 
             var worldPosition = _followTarget.TransformPoint(_offsetInFollowLocalSpace);
 
@@ -68,7 +80,7 @@ namespace Erumperem.Combat.Tokens
 
             var eventCamera = _rootCanvas.renderMode == RenderMode.ScreenSpaceCamera
                 ? _rootCanvas.worldCamera
-                : Camera.main;
+                : _mainCamera;
             if (eventCamera == null)
             {
                 return;
@@ -140,13 +152,14 @@ namespace Erumperem.Combat.Tokens
                 return;
             }
 
-            if (Camera.main == null)
+            RefreshMainCameraIfMissing();
+            if (_mainCamera == null)
             {
                 return;
             }
 
             var targetTransform = _rectTransform != null ? (Transform)_rectTransform : transform;
-            targetTransform.rotation = Camera.main.transform.rotation;
+            targetTransform.rotation = _mainCamera.transform.rotation;
         }
     }
 }

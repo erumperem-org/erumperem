@@ -15,9 +15,11 @@ public class FillAmountEffectSO : UiEffectSO
         var image = context.GetComponent<Image>();
         if (image == null) yield break;
 
-        yield return image
+        image.DOKill();
+
+        yield return LinkTweenToContext(context, image
             .DOFillAmount(targetFill, duration)
-            .SetEase(ease)
+            .SetEase(ease))
             .WaitForCompletion();
     }
 }

@@ -127,6 +127,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     private bool _hasSave;
     private bool _preferInMemorySnapshotsOnNextRestore;
     private bool _restoreStateInProgress;
+    private bool _saveStateInProgress;
     private string _saveDirectory;
     private float _savedCorruptionValue;
     private float _corruptionAtCombatEntry;
@@ -262,56 +263,72 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     {
         if (!TryGetManager()) return;
 
-        _snapshots.Clear();
-        foreach (var character in _manager.Playables)
+        if (_saveStateInProgress)
         {
-            if (character == null)
-            {
-                continue;
-            }
-
-            var healthBar = character.HealthBar;
-            if (healthBar == null)
-            {
-                LoggerService.PrintLogMessage(LogLevel.Warning,
-                    $"[SAVE] '{character.CharacterName}' não possui HealthBar — HP ignorado.",
-                    LogCategory.Player);
-            }
-
-            var maxHealth = ResolveAllyMaxHealth(character.CharacterName);
-            var currentHealth = healthBar != null
-                ? Mathf.Clamp(healthBar.CurrentHealth, 0f, maxHealth)
-                : maxHealth;
-
-            var stateToSave = character.CurrentState == PlayableCharacterState.None
-                ? ResolveDefaultExplorationState(character.CharacterName)
-                : character.CurrentState;
-
-            _snapshots.Add(new PlayableCharacterSnapshot(
-                character.CharacterName,
-                character.Transform.position,
-                character.Transform.rotation,
-                stateToSave,
-                currentHealth));
-        }
-
-        _savedCorruptionValue = ResolveCurrentCorruptionValue();
-        _hasSave = _snapshots.Count > 0;
-        if (_hasSave)
-            await SaveToFileAsync();
-
-        LoggerService.PrintLogMessage(LogLevel.Debug,
-            $"[SAVE] {_snapshots.Count} personagens salvos.", LogCategory.Player);
-
-        if (_corruptionSystem != null)
-        {
-            _corruptionSystem.Corruption = _savedCorruptionValue;
-            _corruptionSystem.SaveState();
-        }
-        else
             LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[SAVE] Corrupção ({_savedCorruptionValue:F1}) persistida no save de exploração.",
+                "[SAVE] SaveState ignorado — gravação já em curso.",
                 LogCategory.Player);
+            return;
+        }
+
+        _saveStateInProgress = true;
+        try
+        {
+            _snapshots.Clear();
+            foreach (var character in _manager.Playables)
+            {
+                if (character == null)
+                {
+                    continue;
+                }
+
+                var healthBar = character.HealthBar;
+                if (healthBar == null)
+                {
+                    LoggerService.PrintLogMessage(LogLevel.Warning,
+                        $"[SAVE] '{character.CharacterName}' não possui HealthBar — HP ignorado.",
+                        LogCategory.Player);
+                }
+
+                var maxHealth = ResolveAllyMaxHealth(character.CharacterName);
+                var currentHealth = healthBar != null
+                    ? Mathf.Clamp(healthBar.CurrentHealth, 0f, maxHealth)
+                    : maxHealth;
+
+                var stateToSave = character.CurrentState == PlayableCharacterState.None
+                    ? ResolveDefaultExplorationState(character.CharacterName)
+                    : character.CurrentState;
+
+                _snapshots.Add(new PlayableCharacterSnapshot(
+                    character.CharacterName,
+                    character.Transform.position,
+                    character.Transform.rotation,
+                    stateToSave,
+                    currentHealth));
+            }
+
+            _savedCorruptionValue = ResolveCurrentCorruptionValue();
+            _hasSave = _snapshots.Count > 0;
+            if (_hasSave)
+                await SaveToFileAsync();
+
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"[SAVE] {_snapshots.Count} personagens salvos.", LogCategory.Player);
+
+            if (_corruptionSystem != null)
+            {
+                _corruptionSystem.Corruption = _savedCorruptionValue;
+                _corruptionSystem.SaveState();
+            }
+            else
+                LoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"[SAVE] Corrupção ({_savedCorruptionValue:F1}) persistida no save de exploração.",
+                    LogCategory.Player);
+        }
+        finally
+        {
+            _saveStateInProgress = false;
+        }
     }
 
     /// <summary>

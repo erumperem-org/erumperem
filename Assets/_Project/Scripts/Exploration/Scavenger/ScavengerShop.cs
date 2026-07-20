@@ -11,6 +11,7 @@ public sealed class ScavengerShop : Interactable
     public override bool CanInteract => true;
 
     private bool _isShopOpen;
+    private bool _isProcessingInteraction;
 
     protected override void Awake()
     {
@@ -24,12 +25,25 @@ public sealed class ScavengerShop : Interactable
 
     public override void ExecuteInteraction(InteractionContext context)
     {
+        if (_isProcessingInteraction)
+        {
+            return;
+        }
+
         if (shopPanelRoot == null)
         {
             return;
         }
 
-        OpenShop();
+        _isProcessingInteraction = true;
+        try
+        {
+            OpenShop();
+        }
+        finally
+        {
+            _isProcessingInteraction = false;
+        }
     }
 
     private void ToggleShop()

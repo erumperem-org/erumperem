@@ -13,8 +13,10 @@ public class FadeEffectSO : UiEffectSO
         var canvasGroup = context.GetComponent<CanvasGroup>();
         if (canvasGroup == null) yield break;
 
-        yield return canvasGroup
-            .DOFade(targetAlpha, duration)
+        canvasGroup.DOKill();
+
+        yield return LinkTweenToContext(context, canvasGroup
+            .DOFade(targetAlpha, duration))
             .WaitForCompletion();
     }
 }

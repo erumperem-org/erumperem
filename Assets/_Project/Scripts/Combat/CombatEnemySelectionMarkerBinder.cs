@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Erumperem.Combat.Runtime;
 using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
@@ -31,22 +32,25 @@ namespace Erumperem.Combat
         private readonly Dictionary<string, Transform> _markerTransformsByCombatantId = new(StringComparer.Ordinal);
         private readonly HashSet<string> _highlightedEnemyCombatantIds = new(StringComparer.Ordinal);
         private readonly Dictionary<string, float> _markerSpinZDegreesByCombatantId = new(StringComparer.Ordinal);
+        private readonly CombatPointerRaycastService _pointerRaycast = new();
+        private readonly CombatSessionHubSubscription _sessionHubSubscription = new();
 
         private void Awake()
         {
+            _pointerRaycast.Configure(Camera.main, worldRaycastDistance);
             ResolveReferences();
         }
 
         private void OnEnable()
         {
             ResolveReferences();
-            SubscribeToSessionHubIfAvailable();
-            TryCatchUpWithActiveCombatSession();
+            _sessionHubSubscription.Subscribe(sessionHub, HandleCombatSessionReadyForUi, HandleCombatSessionClosed);
+            _sessionHubSubscription.TryCatchUpWithActiveCombatSession(combatSession);
         }
 
         private void OnDisable()
         {
-            UnsubscribeFromSessionHub();
+            _sessionHubSubscription.Unsubscribe();
             ClearAllMarkers();
         }
 
@@ -77,44 +81,6 @@ namespace Erumperem.Combat
             if (skillButtonBarUIManager == null)
             {
                 skillButtonBarUIManager = FindFirstObjectByType<CombatSkillButtonBarUIManager>();
-            }
-        }
-
-        private void SubscribeToSessionHubIfAvailable()
-        {
-            if (sessionHub == null)
-            {
-                return;
-            }
-
-            sessionHub.OnCombatSessionReadyForUi -= HandleCombatSessionReadyForUi;
-            sessionHub.OnCombatSessionClosed -= HandleCombatSessionClosed;
-            sessionHub.OnCombatSessionReadyForUi += HandleCombatSessionReadyForUi;
-            sessionHub.OnCombatSessionClosed += HandleCombatSessionClosed;
-        }
-
-        private void UnsubscribeFromSessionHub()
-        {
-            if (sessionHub == null)
-            {
-                return;
-            }
-
-            sessionHub.OnCombatSessionReadyForUi -= HandleCombatSessionReadyForUi;
-            sessionHub.OnCombatSessionClosed -= HandleCombatSessionClosed;
-        }
-
-        private void TryCatchUpWithActiveCombatSession()
-        {
-            if (combatSession != null)
-            {
-                return;
-            }
-
-            var activeCombatSession = FindFirstObjectByType<CombatPrototypeController>();
-            if (activeCombatSession != null && activeCombatSession.IsBattleOngoing)
-            {
-                HandleCombatSessionReadyForUi(activeCombatSession);
             }
         }
 
@@ -327,23 +293,7 @@ namespace Erumperem.Combat
                 return true;
             }
 
-            var camera = Camera.main;
-            if (camera == null ||
-                InputManager.Instance == null ||
-                !InputManager.Instance.TryGetPointerScreenPosition(out var pointerScreenPosition))
-            {
-                return false;
-            }
-
-            var ray = camera.ScreenPointToRay(pointerScreenPosition);
-            if (!Physics.Raycast(ray, out var hit, worldRaycastDistance))
-            {
-                return false;
-            }
-
-            var capsuleTag = hit.collider.GetComponentInParent<CombatCapsuleTag>();
-            if (capsuleTag == null ||
-                string.IsNullOrEmpty(capsuleTag.combatantId) ||
+            if (!_pointerRaycast.TryRaycastCombatCapsuleTagFromInputManager(out var capsuleTag) ||
                 !IsEnemyCombatantId(capsuleTag.combatantId))
             {
                 return false;

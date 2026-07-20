@@ -313,17 +313,17 @@ public static class SkillPlayerDescriptionBuilder
 
     private static string DescribeEffectScopePrefix(string effectScope, SkillDefinition skill)
     {
-        if (string.Equals(effectScope, "AllAllies", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(effectScope, EffectScopes.AllAllies, StringComparison.OrdinalIgnoreCase))
         {
             return "all allies";
         }
 
-        if (string.Equals(effectScope, "Self", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(effectScope, EffectScopes.Self, StringComparison.OrdinalIgnoreCase))
         {
             return "on self";
         }
 
-        if (string.Equals(effectScope, "Default", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(effectScope, EffectScopes.Default, StringComparison.OrdinalIgnoreCase))
         {
             return skill.TargetKind switch
             {

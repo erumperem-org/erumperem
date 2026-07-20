@@ -11,9 +11,11 @@ public class RotateEffectSO : UiEffectSO
 
     public override IEnumerator Execute(MonoBehaviour context)
     {
-        yield return context.transform
+        KillTransformTweens(context);
+
+        yield return LinkTweenToContext(context, context.transform
             .DORotate(targetRotation, duration)
-            .SetEase(ease)
+            .SetEase(ease))
             .WaitForCompletion();
     }
 }

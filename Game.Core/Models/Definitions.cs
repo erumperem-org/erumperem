@@ -23,7 +23,7 @@ public sealed class EffectSpec
     public double Chance { get; init; } = 1.0;
 
     /// <summary>Default = single target; AllAllies = same-side party (e.g. Muralha Block on everyone).</summary>
-    public string EffectScope { get; init; } = "Default";
+    public string EffectScope { get; init; } = EffectScopes.Default;
 }
 
 public sealed class SkillDefinition

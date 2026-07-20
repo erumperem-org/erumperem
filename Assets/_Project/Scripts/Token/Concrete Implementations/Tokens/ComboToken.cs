@@ -21,11 +21,13 @@ namespace Core.Tokens
         public HashSet<Type> evolutionSynergys { get; } = new() { typeof(ComboToken) };
         public int evolutionThreshold { get; } = 3;
 
-        public ComboToken() : base(
+        public ComboToken(
+            Func<TokenContainerController, ComboFinisherToken> finisherFactory = null) : base(
             typeof(ComboToken).Name,
             new IndependentStackData(),
             new IOnHitTokenAllocation())
         {
+            this.finisherFactory = finisherFactory ?? (_ => new ComboFinisherToken());
         }
 
         public EvolutionSynergyContext BuildEvolutionContext(TokenAllocationContext context) =>

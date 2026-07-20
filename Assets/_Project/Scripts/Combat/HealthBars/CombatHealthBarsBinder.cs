@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Erumperem.Combat.Runtime;
 using Erumperem.Combat.Tokens;
 using UnityEngine;
 
@@ -47,6 +48,7 @@ namespace Erumperem.Combat.HealthBars
         private readonly List<Transform> _spawnedHealthBarRoots = new();
         private readonly Dictionary<string, HealthBarHudView> _healthBarHudViewsByCombatantId =
             new(System.StringComparer.Ordinal);
+        private readonly CombatPointerRaycastService _pointerRaycast = new();
         private Camera _mainCamera;
 
         public bool TryGetHealthBarHudView(string combatantId, out HealthBarHudView healthBarHudView)
@@ -58,6 +60,19 @@ namespace Erumperem.Combat.HealthBars
             }
 
             return _healthBarHudViewsByCombatantId.TryGetValue(combatantId, out healthBarHudView);
+        }
+
+        private void Awake()
+        {
+            _mainCamera = Camera.main;
+        }
+
+        private void RefreshMainCameraIfMissing()
+        {
+            if (_mainCamera == null)
+            {
+                _mainCamera = Camera.main;
+            }
         }
 
         private void OnEnable()
@@ -103,10 +118,7 @@ namespace Erumperem.Combat.HealthBars
                 }
             }
 
-            if (_mainCamera == null)
-            {
-                _mainCamera = Camera.main;
-            }
+            RefreshMainCameraIfMissing();
 
             if (_mainCamera == null)
             {
@@ -138,6 +150,7 @@ namespace Erumperem.Combat.HealthBars
             }
 
             _combatSession = controller;
+            _pointerRaycast.Configure(Camera.main, pointerRaycastMaxDistance, pointerRaycastLayerMask);
             var battleState = controller.BattleState;
             if (battleState == null)
             {
@@ -243,30 +256,7 @@ namespace Erumperem.Combat.HealthBars
                 return null;
             }
 
-            if (_mainCamera == null)
-            {
-                _mainCamera = Camera.main;
-            }
-
-            if (_mainCamera == null)
-            {
-                return null;
-            }
-
-            if (InputManager.Instance == null ||
-                !InputManager.Instance.TryGetPointerScreenPosition(out var pointerScreenPosition))
-            {
-                return null;
-            }
-
-            var ray = _mainCamera.ScreenPointToRay(pointerScreenPosition);
-            if (!Physics.Raycast(ray, out var hit, pointerRaycastMaxDistance, pointerRaycastLayerMask))
-            {
-                return null;
-            }
-
-            var capsuleTag = hit.collider.GetComponentInParent<CombatCapsuleTag>();
-            if (capsuleTag == null || string.IsNullOrEmpty(capsuleTag.combatantId))
+            if (!_pointerRaycast.TryRaycastCombatCapsuleTagFromInputManager(out var capsuleTag))
             {
                 return null;
             }

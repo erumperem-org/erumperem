@@ -11,9 +11,11 @@ public class MoveEffectSO : UiEffectSO
 
     public override IEnumerator Execute(MonoBehaviour context)
     {
-        yield return context.transform
+        KillTransformTweens(context);
+
+        yield return LinkTweenToContext(context, context.transform
             .DOBlendableLocalMoveBy(offset, duration)
-            .SetEase(ease)
+            .SetEase(ease))
             .WaitForCompletion();
     }
 }

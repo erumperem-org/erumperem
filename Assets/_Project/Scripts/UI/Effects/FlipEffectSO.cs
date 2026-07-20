@@ -9,12 +9,14 @@ public class FlipEffectSO : UiEffectSO
 
     public override IEnumerator Execute(MonoBehaviour context)
     {
-        yield return context.transform
-            .DORotate(new Vector3(0f, 90f, 0f), duration * 0.5f)
+        KillTransformTweens(context);
+
+        yield return LinkTweenToContext(context, context.transform
+            .DORotate(new Vector3(0f, 90f, 0f), duration * 0.5f))
             .WaitForCompletion();
 
-        yield return context.transform
-            .DORotate(Vector3.zero, duration * 0.5f)
+        yield return LinkTweenToContext(context, context.transform
+            .DORotate(Vector3.zero, duration * 0.5f))
             .WaitForCompletion();
     }
 }

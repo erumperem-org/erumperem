@@ -6,7 +6,6 @@ using UnityEngine;
 using Services.DebugUtilities;
 
 using Core.Tokens;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Core.Tokens
@@ -18,25 +17,36 @@ namespace Core.Tokens
     /// </summary>
     public class TokenContainerController : MonoBehaviour
     {
+        private enum TokenStackingResult
+        {
+            AddedToContainer,
+            UpdatedExistingToken
+        }
+
         public TokenContainerModel model;
         public TokenContainerView view;
 
         /// <summary>
         /// Attempts to add a token to the container by:
         /// 1. Checking the token's allocation style prerequisites
-        /// 2. Checking immunity restrictions
+        /// 2. Checking immunity provided by tokens already active in the container
         /// 3. Applying stacking rules
-        /// 4. Applying synergies (only if the token is actually added)
+        /// 4. Applying merge synergies for an absorbed reapplication, or all
+        ///    post-allocation synergies for a newly added token
         /// </summary>
         public static async Task AddTokenToContainer(TokenAllocationContext context)
         {
             if (!IsAllocationStyleSatisfied(context)) return;
-            if (IsBlockedByImmunity(context)) return;
+            if (IsBlockedByActiveImmunity(context)) return;
 
-            if (await ApplyStacking(context))
+            TokenStackingResult stackingResult = await ApplyStacking(context);
+            if (stackingResult == TokenStackingResult.UpdatedExistingToken)
             {
-                ApplySynergies(context);
+                ApplyReapplicationSynergies(context);
+                return;
             }
+
+            await ApplySynergies(context);
         }
 
         /// <summary>
@@ -66,50 +76,50 @@ namespace Core.Tokens
 
         /// <summary>
         /// Applies stacking logic for the incoming token.
-        /// Returns TRUE if the token should be added to the container (and view).
-        /// Returns FALSE if the effect was absorbed by stacking behavior (no new visual).
+        /// Reports whether a new model/view entry was added or an existing entry was updated.
         /// </summary>
-        private static async Task<bool> ApplyStacking(TokenAllocationContext context)
+        private static async Task<TokenStackingResult> ApplyStacking(TokenAllocationContext context)
         {
-            var token = context.token;
-            var container = context.TokenContainerController;
-            var existing = FindSameTokenType(context);
+            TokenController incomingToken = context.token;
+            TokenContainerController container = context.TokenContainerController;
+            TokenController existingToken = FindSameTokenType(context);
 
-            switch (token.data.tokenStackingdata)
+            switch (incomingToken.data.tokenStackingdata)
             {
-                case RefreshDurationStackData data:
-                    if (existing != null &&
-                        existing.data.tokenStackingdata is RefreshDurationStackData refreshData)
+                case RefreshDurationStackData:
+                    if (existingToken != null &&
+                        existingToken.data.tokenStackingdata is RefreshDurationStackData refreshData)
                     {
                         refreshData.currentDuration = refreshData.maxDuration;
-                        return false; // No new visual needed — duration refreshed in-place
+                        return TokenStackingResult.UpdatedExistingToken;
                     }
                     break;
 
-                case LinearStackData data:
-                    if (existing != null &&
-                        existing.data.tokenStackingdata is LinearStackData linearData)
+                case LinearStackData:
+                    if (existingToken != null &&
+                        existingToken.data.tokenStackingdata is LinearStackData linearData)
                     {
                         linearData.stacks++;
-                        return false; // No new visual — stack count updated on existing token
+                        return TokenStackingResult.UpdatedExistingToken;
                     }
                     break;
 
-                case GlobalRefreshStackData data:
-                    if (existing != null &&
-                        existing.data.tokenStackingdata is GlobalRefreshStackData globalData)
+                case GlobalRefreshStackData:
+                    if (existingToken != null &&
+                        existingToken.data.tokenStackingdata is GlobalRefreshStackData globalData)
                     {
                         globalData.stacks++;
 
                         ModifyTokens(context.TokenContainerController,
-                            t => t.GetType() == token.GetType(),
-                            t =>
+                            token => token.GetType() == incomingToken.GetType(),
+                            token =>
                             {
-                                var stack = (GlobalRefreshStackData)t.data.tokenStackingdata;
-                                stack.duration = globalData.duration;
+                                var globalRefreshStackData =
+                                    (GlobalRefreshStackData)token.data.tokenStackingdata;
+                                globalRefreshStackData.duration = globalData.duration;
                             });
 
-                        return false; // No new visual — global refresh applied
+                        return TokenStackingResult.UpdatedExistingToken;
                     }
                     break;
 
@@ -117,12 +127,12 @@ namespace Core.Tokens
                     // Always adds a new independent token — falls through to spawn
                     break;
 
-                case DiminishingStackData data:
-                    if (existing != null &&
-                        existing.data.tokenStackingdata is DiminishingStackData diminishingData)
+                case DiminishingStackData:
+                    if (existingToken != null &&
+                        existingToken.data.tokenStackingdata is DiminishingStackData diminishingData)
                     {
                         diminishingData.stacks++;
-                        return false; // No new visual — stack updated on existing token
+                        return TokenStackingResult.UpdatedExistingToken;
                     }
                     break;
             }
@@ -132,9 +142,9 @@ namespace Core.Tokens
                 $"Owner: [{context.ownerName}] | " +
                 $"Target Container: [{context.TokenContainerController.name}]", LogCategory.Combat);
 
-            container.model.tokens.Add(token);
-            await container.view.AddTokenToView(token);
-            return true;
+            container.model.tokens.Add(incomingToken);
+            await container.view.AddTokenToView(incomingToken);
+            return TokenStackingResult.AddedToContainer;
         }
 
         /// <summary>
@@ -147,80 +157,174 @@ namespace Core.Tokens
 
             UnApplySynergies(controller, container);
             CanvasLoggerService.PrintLogMessage(LogLevel.Debug,
-            $"Removing Token [{controller.data.tokenDisplayName}] | " +
-            $"Target Container: [{container.name}]",LogCategory.Combat );
+                $"Removing Token [{controller.data.tokenDisplayName}] | " +
+                $"Target Container: [{container.name}]", LogCategory.Combat);
             container.model.tokens.Remove(controller);
-            container.view.RemoveToken(controller);    // FIX: view removal now happens AFTER model removal,
-                                                       // ensuring view always reflects actual model state.
+            container.view.RemoveToken(controller);
         }
 
         /// <summary>
-        /// Checks whether the token is blocked by any immunity rule.
+        /// Checks immunity sources already active in the target container.
+        /// A cancellation reaction may bypass only the immunity source it consumes.
         /// </summary>
-        private static bool IsBlockedByImmunity(TokenAllocationContext context)
+        private static bool IsBlockedByActiveImmunity(TokenAllocationContext context)
         {
-            if (context.token is not IImmunitySynergy immunity) return false;
-
-            var ctx = immunity.BuildImmunityContext(context);
-            bool blocked = immunity.CheckImmunity(ctx);
-
-            if (blocked)
+            foreach (TokenController activeToken in context.TokenContainerController.model.tokens)
             {
+                if (activeToken is not IImmunitySynergy activeImmunity)
+                    continue;
+
+                ImmunitySynergyContext immunityContext =
+                    activeImmunity.BuildImmunityContext(context);
+                immunityContext.incomingToken = context.token;
+
+                if (!activeImmunity.CheckImmunity(immunityContext))
+                    continue;
+
+                if (CanIncomingCancellationConsumeImmunitySource(context.token, activeToken))
+                    continue;
+
                 CanvasLoggerService.PrintLogMessage(LogLevel.Debug,
                     $"Immunity Synergy blocked [{context.token.data.tokenDisplayName}] " +
-                    $"on Container [{context.TokenContainerController.name}]",LogCategory.Combat);
+                    $"because [{activeToken.data.tokenDisplayName}] protects " +
+                    $"Container [{context.TokenContainerController.name}]",
+                    LogCategory.Combat);
+                return true;
             }
 
-            return blocked;
+            return false;
+        }
+
+        private static bool CanIncomingCancellationConsumeImmunitySource(
+            TokenController incomingToken,
+            TokenController immunitySource)
+        {
+            return incomingToken is ICancellationSynergy cancellationSynergy
+                && cancellationSynergy.cancellationSynergys.Contains(immunitySource.GetType());
+        }
+
+        /// <summary>
+        /// Applies only merge behavior when stacking absorbs the incoming instance.
+        /// Other post-allocation synergies belong to the surviving stored token.
+        /// </summary>
+        private static void ApplyReapplicationSynergies(TokenAllocationContext context)
+        {
+            if (context.token is not IAdditiveSynergy additiveSynergy)
+                return;
+
+            if (!additiveSynergy.CanApply(context))
+                return;
+
+            additiveSynergy.ApplyAdditiveSynergy(
+                additiveSynergy.BuildAdditiveContext(context));
+
+            CanvasLoggerService.PrintLogMessage(LogLevel.Debug,
+                $"{nameof(IAdditiveSynergy)} applied during token reapplication",
+                LogCategory.Combat);
         }
 
         /// <summary>
         /// Applies all compatible synergies for the given token.
-        /// Uses a generic dispatch mechanism based on implemented interfaces.
-        ///
-        /// NOTE ON ASYNC SYNERGIES (Transformation, Evolution):
-        /// These are dispatched fire-and-forget via async lambdas inside a sync Dispatch call.
-        /// This means exceptions thrown inside them are silently swallowed.
-        /// If ordering guarantees or error propagation matter, ApplySynergies should be made async.
+        /// Async synergies are awaited so each step observes the completed prior step.
         /// </summary>
-        private static void ApplySynergies(TokenAllocationContext context)
+        private static async Task ApplySynergies(TokenAllocationContext context)
         {
             if (context.token is not ITokenSynergy synergy) return;
 
-            void Dispatch<TInterface, TContext>(
+            void DispatchSynchronous<TInterface, TContext>(
                 Action<TInterface, TContext> apply,
                 Func<TInterface, TContext> buildContext)
                 where TInterface : class, ITokenSynergy
             {
-                if (synergy is not TInterface typed) return;
-                if (!typed.CanApply(context)) return;
+                if (synergy is not TInterface typedSynergy) return;
+                if (!typedSynergy.CanApply(context)) return;
 
-                apply(typed, buildContext(typed));
+                apply(typedSynergy, buildContext(typedSynergy));
 
                 CanvasLoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"{typeof(TInterface).Name} applied",LogCategory.Combat);
+                    $"{typeof(TInterface).Name} applied", LogCategory.Combat);
             }
 
-            Dispatch<ICancellationSynergy, CancellationSynergyContext>((s, ctx) => s.ApplyCancellationSynergy(ctx), s => s.BuildCancellationContext(context));
-            Dispatch<IOverrideSynergy, OverrideSynergyContext>((s, ctx) => s.ApplyOverrideSynergy(ctx), s => s.BuildOverrideContext(context));
-            Dispatch<IAbsorptionSynergy, AbsorptionSynergyContext>((s, ctx) => s.ApplyAbsorptionSynergy(ctx), s => s.BuildAbsorptionContext(context));
-            Dispatch<IResistanceSynergy, ResistanceSynergyContext>((s, ctx) => s.ApplyResistanceSynergy(ctx), s => s.BuildResistanceContext(context));
-            Dispatch<IAmplificationSynergy, AmplificationSynergyContext>((s, ctx) => s.ApplyAmplificationSynergy(ctx), s => s.BuildAmplificationContext(context));
-            Dispatch<IAdditiveSynergy, AdditiveSynergyContext>((s, ctx) => s.ApplyAdditiveSynergy(ctx), s => s.BuildAdditiveContext(context));
-            Dispatch<IInversionSynergy, InversionSynergyContext>((s, ctx) => s.ApplyInversionSynergy(ctx), s => s.BuildInversionContext(context));
-            Dispatch<ITransformationSynergy, TransformationSynergyContext>(async (s, ctx) => await s.ApplyTransformationSynergy(ctx), s => s.BuildTransformationContext(context));
-            Dispatch<IEvolutionSynergy, EvolutionSynergyContext>(async (s, ctx) => await s.ApplyEvolutionSynergy(ctx), s => s.BuildEvolutionContext(context));
-            Dispatch<IConversionSynergy, ConversionSynergyContext>((s, ctx) => s.ApplyConversionSynergy(ctx), s => s.BuildConversionContext(context));
-            Dispatch<ISpreadSynergy, SpreadSynergyContext>((s, ctx) => s.ApplySpreadSynergy(ctx), s => s.BuildSpreadContext(context));
-            Dispatch<IConditionalSynergy, ConditionalSynergyContext>((s, ctx) => s.ApplyConditionalSynergy(ctx), s => s.BuildConditionalContext(context));
-            Dispatch<IPassiveSynergy, PassiveSynergyContext>((s, ctx) => s.ApplyPassiveSynergy(ctx), s => s.BuildPassiveContext(context));
-        }
+            async Task DispatchAsynchronous<TInterface, TContext>(
+                Func<TInterface, TContext, Task> apply,
+                Func<TInterface, TContext> buildContext)
+                where TInterface : class, ITokenSynergy
+            {
+                if (synergy is not TInterface typedSynergy) return;
+                if (!typedSynergy.CanApply(context)) return;
 
-        /// <summary>
-        /// Reverts any applied synergies when a token is removed.
-        /// (Not yet implemented)
-        /// </summary>
-        // Trecho para substituir UnApplySynergies em TokenContainerController.cs
+                await apply(typedSynergy, buildContext(typedSynergy));
+
+                CanvasLoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"{typeof(TInterface).Name} applied", LogCategory.Combat);
+            }
+
+            DispatchSynchronous<ICancellationSynergy, CancellationSynergyContext>(
+                (typedSynergy, synergyContext) =>
+                    typedSynergy.ApplyCancellationSynergy(synergyContext),
+                typedSynergy => typedSynergy.BuildCancellationContext(context));
+
+            if (!context.TokenContainerController.model.tokens.Contains(context.token))
+                return;
+
+            DispatchSynchronous<IOverrideSynergy, OverrideSynergyContext>(
+                (typedSynergy, synergyContext) =>
+                    typedSynergy.ApplyOverrideSynergy(synergyContext),
+                typedSynergy => typedSynergy.BuildOverrideContext(context));
+            DispatchSynchronous<IAbsorptionSynergy, AbsorptionSynergyContext>(
+                (typedSynergy, synergyContext) =>
+                    typedSynergy.ApplyAbsorptionSynergy(synergyContext),
+                typedSynergy => typedSynergy.BuildAbsorptionContext(context));
+            DispatchSynchronous<IResistanceSynergy, ResistanceSynergyContext>(
+                (typedSynergy, synergyContext) =>
+                    typedSynergy.ApplyResistanceSynergy(synergyContext),
+                typedSynergy => typedSynergy.BuildResistanceContext(context));
+            DispatchSynchronous<IAmplificationSynergy, AmplificationSynergyContext>(
+                (typedSynergy, synergyContext) =>
+                    typedSynergy.ApplyAmplificationSynergy(synergyContext),
+                typedSynergy => typedSynergy.BuildAmplificationContext(context));
+            DispatchSynchronous<IAdditiveSynergy, AdditiveSynergyContext>(
+                (typedSynergy, synergyContext) =>
+                    typedSynergy.ApplyAdditiveSynergy(synergyContext),
+                typedSynergy => typedSynergy.BuildAdditiveContext(context));
+            DispatchSynchronous<IInversionSynergy, InversionSynergyContext>(
+                (typedSynergy, synergyContext) =>
+                    typedSynergy.ApplyInversionSynergy(synergyContext),
+                typedSynergy => typedSynergy.BuildInversionContext(context));
+
+            await DispatchAsynchronous<ITransformationSynergy, TransformationSynergyContext>(
+                (typedSynergy, synergyContext) =>
+                    typedSynergy.ApplyTransformationSynergy(synergyContext),
+                typedSynergy => typedSynergy.BuildTransformationContext(context));
+
+            if (!context.TokenContainerController.model.tokens.Contains(context.token))
+                return;
+
+            await DispatchAsynchronous<IEvolutionSynergy, EvolutionSynergyContext>(
+                (typedSynergy, synergyContext) =>
+                    typedSynergy.ApplyEvolutionSynergy(synergyContext),
+                typedSynergy => typedSynergy.BuildEvolutionContext(context));
+
+            if (!context.TokenContainerController.model.tokens.Contains(context.token))
+                return;
+
+            await DispatchAsynchronous<IConversionSynergy, ConversionSynergyContext>(
+                (typedSynergy, synergyContext) =>
+                    typedSynergy.ApplyConversionSynergy(synergyContext),
+                typedSynergy => typedSynergy.BuildConversionContext(context));
+            await DispatchAsynchronous<ISpreadSynergy, SpreadSynergyContext>(
+                (typedSynergy, synergyContext) =>
+                    typedSynergy.ApplySpreadSynergy(synergyContext),
+                typedSynergy => typedSynergy.BuildSpreadContext(context));
+            DispatchSynchronous<IConditionalSynergy, ConditionalSynergyContext>(
+                (typedSynergy, synergyContext) =>
+                    typedSynergy.ApplyConditionalSynergy(synergyContext),
+                typedSynergy => typedSynergy.BuildConditionalContext(context));
+            DispatchSynchronous<IPassiveSynergy, PassiveSynergyContext>(
+                (typedSynergy, synergyContext) =>
+                    typedSynergy.ApplyPassiveSynergy(synergyContext),
+                typedSynergy => typedSynergy.BuildPassiveContext(context));
+        }
 
         /// <summary>
         /// Reverts any reverseable synergy applied by this token.
@@ -319,46 +423,42 @@ namespace Core.Tokens
 
         /// <summary>
         /// Removes the first token that matches any of the given types.
-        /// FIX: Model removal now precedes view removal to prevent orphaned visuals.
         /// </summary>
         public static void RemoveFirstByTypes(TokenContainerController container, IEnumerable<Type> types)
         {
-            var typeSet = new HashSet<Type>(types);
-            var list = container.model.tokens;
+            var matchingTypes = new HashSet<Type>(types);
+            List<TokenController> tokens = container.model.tokens;
 
-            for (int i = list.Count - 1; i >= 0; i--)
+            for (int tokenIndex = tokens.Count - 1; tokenIndex >= 0; tokenIndex--)
             {
-                if (typeSet.Contains(list[i].GetType()))
-                {
-                    var token = list[i];
-                    list.RemoveAt(i);              // FIX: remove from model before destroying visual
-                    container.view.RemoveToken(token);
-                    return;
-                }
+                TokenController token = tokens[tokenIndex];
+                if (!matchingTypes.Contains(token.GetType()))
+                    continue;
+
+                RemoveTokenFromContainer(container, token);
+                return;
             }
         }
 
         /// <summary>
         /// Removes all tokens that match the given types and invokes a callback for each removal.
-        /// FIX: Model removal now precedes view removal to prevent orphaned visuals.
         /// </summary>
         public static void RemoveByTypes(TokenContainerController container,
             IEnumerable<Type> types,
             Action<TokenController> onRemove)
         {
-            var typeSet = new HashSet<Type>(types);
-            var list = container.model.tokens;
+            var matchingTypes = new HashSet<Type>(types);
+            List<TokenController> tokens = container.model.tokens;
 
-            for (int i = list.Count - 1; i >= 0; i--)
+            for (int tokenIndex = tokens.Count - 1; tokenIndex >= 0; tokenIndex--)
             {
-                var token = list[i];
+                TokenController token = tokens[tokenIndex];
 
-                if (typeSet.Contains(token.GetType()))
-                {
-                    list.RemoveAt(i);              // FIX: remove from model before destroying visual
-                    container.view.RemoveToken(token);
-                    onRemove?.Invoke(token);
-                }
+                if (!matchingTypes.Contains(token.GetType()))
+                    continue;
+
+                RemoveTokenFromContainer(container, token);
+                onRemove?.Invoke(token);
             }
         }
 

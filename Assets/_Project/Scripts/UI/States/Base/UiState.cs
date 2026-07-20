@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
+using UnityEngine.UI;
 
 public abstract class UiState : IState
 {
@@ -36,7 +38,24 @@ public abstract class UiState : IState
             _enterCoroutine = null;
         }
 
+        KillEnterEffectTweens();
+
         Context.StartCoroutine(RunExitEffects());
+    }
+
+    private void KillEnterEffectTweens()
+    {
+        Context.transform.DOKill();
+
+        if (Context.TryGetComponent(out CanvasGroup canvasGroup))
+        {
+            canvasGroup.DOKill();
+        }
+
+        if (Context.TryGetComponent(out Image image))
+        {
+            image.DOKill();
+        }
     }
 
     private IEnumerator RunEnterEffects()

@@ -37,6 +37,8 @@ public sealed class ShopLevelUpButton : MonoBehaviour
     public PlayerInventorySystem inventorySystem;
     public PlayerProgressionService playerProgression;
 
+    private bool _isProcessing;
+
     // ── Unity lifecycle ───────────────────────────────────────────────────
 
     private void Awake()
@@ -62,6 +64,9 @@ public sealed class ShopLevelUpButton : MonoBehaviour
 
     private async void OnClick()
     {
+        if (_isProcessing)
+            return;
+
         if (_currentLevel >= MaxLevel)
             return;
 
@@ -81,28 +86,36 @@ public sealed class ShopLevelUpButton : MonoBehaviour
             return;
         }
 
-        inventorySystem.RemoveItems(new System.Collections.Generic.Dictionary<IStorageable, int>
-    {
-        { item, price }
-    });
-
-        _currentLevel++;
-
-        OnLevelUp(_currentLevel, tier, price);
-
+        _isProcessing = true;
         try
         {
-            await SaveStateAsync();
-        }
-        catch (Exception ex)
+            inventorySystem.RemoveItems(new System.Collections.Generic.Dictionary<IStorageable, int>
         {
-            LoggerService.PrintLogMessage(
-                LogLevel.Error,
-                ex.Message,
-                LogCategory.SaveSystem);
-        }
+            { item, price }
+        });
 
-        RefreshUI();
+            _currentLevel++;
+
+            OnLevelUp(_currentLevel, tier, price);
+
+            try
+            {
+                await SaveStateAsync();
+            }
+            catch (Exception ex)
+            {
+                LoggerService.PrintLogMessage(
+                    LogLevel.Error,
+                    ex.Message,
+                    LogCategory.SaveSystem);
+            }
+
+            RefreshUI();
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
     }
     // ── Ponto de extensão ─────────────────────────────────────────────────
 

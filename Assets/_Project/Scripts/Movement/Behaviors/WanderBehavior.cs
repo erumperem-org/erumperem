@@ -62,19 +62,13 @@ namespace Core.Exploration.Character.Movement
                         continue;
                     }
 
-                    ctx.NavMesh.MoveTo(ctx.Adapter, point);
-
-                    while (ctx.NavMesh.IsPending(ctx.Adapter) && !ct.IsCancellationRequested)
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        await Task.Delay(PathPendingDelayMs, ct);
-                    }
-
-                    while (!ct.IsCancellationRequested && !ctx.NavMesh.HasReachedDestination(ctx.Adapter))
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        await Task.Delay(MovementPollDelayMs, ct);
-                    }
+                    await NavMeshMovementAwaiter.MoveToDestinationAndAwaitArrivalAsync(
+                        ctx.NavMesh,
+                        ctx.Adapter,
+                        point,
+                        ct,
+                        PathPendingDelayMs,
+                        MovementPollDelayMs);
 
                     if (ct.IsCancellationRequested) break;
 
