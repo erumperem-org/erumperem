@@ -74,7 +74,7 @@ public class AudioManager : MonoBehaviour
         bgmSource.Play();
     }
 
-    public void PlaySFX(string soundName)
+    public void PlaySFX(string soundName, float volumeMultiplier = 1f)
     {
         Sound s = Array.Find(sfxClips, x => x.name == soundName);
         if (s != null && s.clips.Length > 0)
@@ -83,7 +83,6 @@ public class AudioManager : MonoBehaviour
 
             int randomIndex = 0;
 
-            // Se houver mais de um áudio, aplica a lógica matemática de não-repetição
             if (s.clips.Length > 1)
             {
                 do
@@ -93,9 +92,10 @@ public class AudioManager : MonoBehaviour
             }
 
             s.lastPlayedIndex = randomIndex;
-            sfxSource.PlayOneShot(s.clips[randomIndex], s.volume);
+            sfxSource.PlayOneShot(s.clips[randomIndex], s.volume * volumeMultiplier);
         }
     }
+
 
     public void PlayAmbientLoop(string soundName)
     {
@@ -125,29 +125,37 @@ public class AudioManager : MonoBehaviour
 
     public void SetMasterVolume(float sliderValue)
     {
-        float dbVolume = sliderValue <= 0.001f ? -80f : Mathf.Log10(sliderValue) * 20f;
-        mainMixer.SetFloat("MasterVolume", dbVolume);
+        ApplyMixerVolume("MasterVolume", sliderValue);
         PlayerPrefs.SetFloat("PrefMasterVolume", sliderValue);
     }
 
     public void SetBGMVolume(float sliderValue)
     {
-        float dbVolume = sliderValue <= 0.001f ? -80f : Mathf.Log10(sliderValue) * 20f;
-        mainMixer.SetFloat("BGMVolume", dbVolume);
+        ApplyMixerVolume("BGMVolume", sliderValue);
         PlayerPrefs.SetFloat("PrefBGMVolume", sliderValue);
     }
 
     public void SetSFXVolume(float sliderValue)
     {
-        float dbVolume = sliderValue <= 0.001f ? -80f : Mathf.Log10(sliderValue) * 20f;
-        mainMixer.SetFloat("SFXVolume", dbVolume);
+        ApplyMixerVolume("SFXVolume", sliderValue);
         PlayerPrefs.SetFloat("PrefSFXVolume", sliderValue);
     }
 
     public void SetAmbientVolume(float sliderValue)
     {
-        float dbVolume = sliderValue <= 0.001f ? -80f : Mathf.Log10(sliderValue) * 20f;
-        mainMixer.SetFloat("AmbientVolume", dbVolume);
+        ApplyMixerVolume("AmbientVolume", sliderValue);
         PlayerPrefs.SetFloat("PrefAmbientVolume", sliderValue);
+    }
+
+    private void ApplyMixerVolume(string exposedParameter, float sliderValue)
+    {
+        if (mainMixer == null)
+        {
+            Debug.LogWarning($"[{nameof(AudioManager)}] {nameof(mainMixer)} is not assigned; cannot set '{exposedParameter}'.", this);
+            return;
+        }
+
+        float dbVolume = sliderValue <= 0.001f ? -80f : Mathf.Log10(sliderValue) * 20f;
+        mainMixer.SetFloat(exposedParameter, dbVolume);
     }
 }

@@ -15,13 +15,13 @@ namespace Core.Tokens
 
         bool ITokenSynergy.CanApply(TokenAllocationContext context) => true;
 
-        public void ApplySpreadSynergy(SpreadSynergyContext context)
+        public async Task ApplySpreadSynergy(SpreadSynergyContext context)
         {
             foreach (var target in context.spreadTargets)
             {
                 bool alreadyPresent = TokenContainerController.HasSameTokenType(target, context.self);
-                if (!alreadyPresent)
-                    context.onSpread?.Invoke(target);
+                if (!alreadyPresent && context.onSpread != null)
+                    await context.onSpread(target);
             }
         }
     }
@@ -34,9 +34,13 @@ namespace Core.Tokens
         // All containers eligible to receive the spread.
         public List<TokenContainerController> spreadTargets;
         // Called per eligible target; implementor allocates the token there.
-        public Action<TokenContainerController> onSpread;
+        public Func<TokenContainerController, Task> onSpread;
 
-        public SpreadSynergyContext(TokenContainerController TokenContainerController, TokenController self, List<TokenContainerController> spreadTargets, Action<TokenContainerController> onSpread)
+        public SpreadSynergyContext(
+            TokenContainerController TokenContainerController,
+            TokenController self,
+            List<TokenContainerController> spreadTargets,
+            Func<TokenContainerController, Task> onSpread)
         {
             this.TokenContainerController = TokenContainerController;
             this.self = self;

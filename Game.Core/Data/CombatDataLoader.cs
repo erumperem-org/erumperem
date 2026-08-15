@@ -9,56 +9,33 @@ public static class CombatDataLoader
     /// <summary>
     /// Locates <c>Game.Simulations/Data/skills.json</c> when running tests, simulations, or the IDE.
     /// </summary>
-    public static string ResolveDefaultSkillsPath()
-    {
-        var candidates = new[]
-        {
-            Path.Combine(AppContext.BaseDirectory, "Data", "skills.json"),
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Data", "skills.json")),
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Game.Simulations", "Data", "skills.json")),
-        };
-        foreach (var candidatePath in candidates)
-        {
-            if (File.Exists(candidatePath)) return candidatePath;
-        }
-
-        throw new FileNotFoundException("skills.json not found. Tried: " + string.Join("; ", candidates));
-    }
+    public static string ResolveDefaultSkillsPath() => ResolveDefaultDataPath("skills.json");
 
     /// <summary>
     /// Locates <c>Game.Simulations/Data/passives.json</c> (mesmo padrão que <see cref="ResolveDefaultSkillsPath"/>).
     /// </summary>
-    public static string ResolveDefaultPassivesPath()
-    {
-        var candidates = new[]
-        {
-            Path.Combine(AppContext.BaseDirectory, "Data", "passives.json"),
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Data", "passives.json")),
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Game.Simulations", "Data", "passives.json")),
-        };
-        foreach (var candidatePath in candidates)
-        {
-            if (File.Exists(candidatePath)) return candidatePath;
-        }
+    public static string ResolveDefaultPassivesPath() => ResolveDefaultDataPath("passives.json");
 
-        throw new FileNotFoundException("passives.json not found. Tried: " + string.Join("; ", candidates));
-    }
+    /// <summary>Localiza <c>Game.Simulations/Data/enemies.json</c>.</summary>
+    public static string ResolveDefaultEnemiesPath() => ResolveDefaultDataPath("enemies.json");
 
     /// <summary>Localiza <c>Game.Simulations/Data/skill_trees.json</c>.</summary>
-    public static string ResolveDefaultSkillTreesPath()
+    public static string ResolveDefaultSkillTreesPath() => ResolveDefaultDataPath("skill_trees.json");
+
+    private static string ResolveDefaultDataPath(string fileName)
     {
         var candidates = new[]
         {
-            Path.Combine(AppContext.BaseDirectory, "Data", "skill_trees.json"),
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Data", "skill_trees.json")),
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Game.Simulations", "Data", "skill_trees.json")),
+            Path.Combine(AppContext.BaseDirectory, "Data", fileName),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Data", fileName)),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Game.Simulations", "Data", fileName)),
         };
         foreach (var candidatePath in candidates)
         {
             if (File.Exists(candidatePath)) return candidatePath;
         }
 
-        throw new FileNotFoundException("skill_trees.json not found. Tried: " + string.Join("; ", candidates));
+        throw new FileNotFoundException($"{fileName} not found. Tried: " + string.Join("; ", candidates));
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -102,6 +79,27 @@ public static class CombatDataLoader
         var passives = JsonSerializer.Deserialize<List<PassiveDefinition>>(json, JsonOptions) ?? [];
         ValidatePassives(passives);
         return passives;
+    }
+
+    public static IReadOnlyDictionary<string, EnemyDefinition> BuildEnemyDefinitionIndex(
+        IEnumerable<EnemyDefinition> enemyDefinitions)
+    {
+        var index = new Dictionary<string, EnemyDefinition>(StringComparer.OrdinalIgnoreCase);
+        foreach (var enemyDefinition in enemyDefinitions)
+        {
+            index[enemyDefinition.Id] = enemyDefinition;
+            if (string.Equals(enemyDefinition.Id, "corrupted_fairy", StringComparison.OrdinalIgnoreCase))
+            {
+                index["CorruptedFairy"] = enemyDefinition;
+            }
+
+            if (string.Equals(enemyDefinition.Id, "horse_boss", StringComparison.OrdinalIgnoreCase))
+            {
+                index["HorseBoss"] = enemyDefinition;
+            }
+        }
+
+        return index;
     }
 
     private static void ValidateSkills(IEnumerable<SkillDefinition> skills)

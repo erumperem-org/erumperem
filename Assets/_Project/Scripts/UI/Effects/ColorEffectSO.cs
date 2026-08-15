@@ -14,8 +14,10 @@ public class ColorEffectSO : UiEffectSO
         var image = context.GetComponent<Image>();
         if (image == null) yield break;
 
-        yield return image
-            .DOColor(targetColor, duration)
+        image.DOKill();
+
+        yield return LinkTweenToContext(context, image
+            .DOColor(targetColor, duration))
             .WaitForCompletion();
     }
 }

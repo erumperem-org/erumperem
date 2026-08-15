@@ -9,6 +9,7 @@ public sealed class PlayerInventorySystem : MonoBehaviour
 
     public event Action<IStorageable, int> OnItemAdded;
     public event Action<IStorageable, int> OnItemRemoved;
+
     /// <summary>
     /// Retorna todos os itens e suas quantidades no inventário.
     /// Usado pelo InventoryPanelView para popular a UI no OnEnable.
@@ -26,6 +27,10 @@ public sealed class PlayerInventorySystem : MonoBehaviour
             if (!ValidateItem(item, "add")) continue;
 
             Log(LogLevel.Debug, $"Trying to add [{item}] mode=[{item.storageMode}] amount=[{amount}]");
+
+            // FIX 1: removida chamada duplicada de OnItemAdded.Invoke() aqui.
+            // Os métodos privados (AddSingleSlot, AddUnique, AddStackable)
+            // já disparam o evento internamente — invocar aqui causava duplo disparo.
             AddItem(item, amount);
         }
 
@@ -40,6 +45,15 @@ public sealed class PlayerInventorySystem : MonoBehaviour
         {
             if (!ValidateItem(item, "remove")) continue;
 
+            // FIX 2: guarda contra amount inválido — sem isso remoções
+            // com amount <= 0 chegavam silenciosamente até RemoveFromStack
+            // e corrompiam o stack sem disparar warning.
+            if (amount <= 0)
+            {
+                Log(LogLevel.Warning, $"Attempted to remove invalid amount [{amount}] from [{item}]");
+                continue;
+            }
+
             if (!_inventory.ContainsKey(item))
             {
                 Log(LogLevel.Warning, $"Attempted to remove non-existing item [{item}]");
@@ -52,6 +66,7 @@ public sealed class PlayerInventorySystem : MonoBehaviour
 
         PrintDebug();
     }
+
     public void RemoveItem(IStorageable item)
     {
         if (!ValidateItem(item, "remove")) return;
@@ -67,6 +82,7 @@ public sealed class PlayerInventorySystem : MonoBehaviour
 
         PrintDebug();
     }
+
     public bool Contains(IStorageable item) => _inventory.ContainsKey(item);
 
     public int GetAmount(IStorageable item) =>
@@ -161,22 +177,44 @@ public sealed class PlayerInventorySystem : MonoBehaviour
         Log(LogLevel.Debug, $"Removed [{item}] completely");
         OnItemRemoved?.Invoke(item, 1);
     }
+    /// <summary>Remove todos os itens do inventário em memória e dispara OnItemRemoved para cada um.</summary>
+    public void Clear()
+    {
+        if (_inventory.Count == 0) return;
 
+        // Copia as entradas antes de iterar pois vamos modificar o dicionário
+        var entries = new List<KeyValuePair<IStorageable, int>>(_inventory);
+
+        foreach (var (item, amount) in entries)
+        {
+            _inventory.Remove(item);
+            OnItemRemoved?.Invoke(item, amount);
+            Log(LogLevel.Debug, $"Clear: removido [{item}] amount=[{amount}]");
+        }
+
+        Log(LogLevel.Debug, "Inventário limpo (Clear).");
+        PrintDebug();
+    }
     private void RemoveFromStack(IStorageable item, int amount)
     {
-        _inventory[item] -= amount;
-        Log(LogLevel.Debug, $"Decreased [{item}] -{amount} → remaining [{_inventory[item]}]");
+        // FIX 3a: clamp para evitar stack negativo quando amount > quantidade atual.
+        // Sem isso _inventory[item] ficava negativo e o evento reportava
+        // uma quantidade removida maior do que a que existia.
+        int actual = Mathf.Min(amount, _inventory[item]);
+        _inventory[item] -= actual;
+
+        Log(LogLevel.Debug, $"Decreased [{item}] -{actual} → remaining [{_inventory[item]}]");
 
         if (_inventory[item] <= 0)
         {
             _inventory.Remove(item);
             Log(LogLevel.Debug, $"Removed empty stack [{item}]");
-            OnItemRemoved?.Invoke(item, amount);
         }
-        else
-        {
-            OnItemRemoved?.Invoke(item, amount);
-        }
+
+        // FIX 3b: evento consolidado fora do if/else — antes estava duplicado
+        // dentro de cada branch, o que tornava difícil adicionar lógica futura
+        // sem disparar em duplicata acidentalmente.
+        OnItemRemoved?.Invoke(item, actual);
     }
 
     // ── Debug ─────────────────────────────────────────────────────────────

@@ -8,7 +8,7 @@ using UnityEngine.InputSystem.Utilities;
 /// <summary>
 /// InputActions padrão do projeto criadas por código.
 /// Gameplay: movimento, ponteiro, cliques, skills 1-7, cheats de cena (F1-F4),
-/// F5 = reset do save de exploração, F6/F7 = cheats de combate.
+/// F5 = reset do save de exploração, F6/F7 = cheats de combate, F9/F10 = cheats de aliados em combate.
 /// </summary>
 public sealed class DefaultInputActions : IInputActionCollection, IDisposable
 {
@@ -33,6 +33,8 @@ public sealed class DefaultInputActions : IInputActionCollection, IDisposable
     private readonly InputAction _explorationCheatResetSaveAction;
     private readonly InputAction _combatCheatKillAllEnemiesAction;
     private readonly InputAction _combatCheatKillAllAlliesAction;
+    private readonly InputAction _combatCheatInfiniteAllyHealthAction;
+    private readonly InputAction _combatCheatDoubleAllyDamageAction;
 
     public DefaultInputActions()
     {
@@ -91,6 +93,14 @@ public sealed class DefaultInputActions : IInputActionCollection, IDisposable
         _combatCheatKillAllAlliesAction =
             _gameplayMap.AddAction("CombatCheatKillAllAllies", InputActionType.Button);
         _combatCheatKillAllAlliesAction.AddBinding("<Keyboard>/f7");
+
+        _combatCheatInfiniteAllyHealthAction =
+            _gameplayMap.AddAction("CombatCheatInfiniteAllyHealth", InputActionType.Button);
+        _combatCheatInfiniteAllyHealthAction.AddBinding("<Keyboard>/f9");
+
+        _combatCheatDoubleAllyDamageAction =
+            _gameplayMap.AddAction("CombatCheatDoubleAllyDamage", InputActionType.Button);
+        _combatCheatDoubleAllyDamageAction.AddBinding("<Keyboard>/f10");
     }
 
     public InputBinding? bindingMask
@@ -147,5 +157,7 @@ public sealed class DefaultInputActions : IInputActionCollection, IDisposable
         public InputAction ExplorationCheatResetSave => _wrapper._explorationCheatResetSaveAction;
         public InputAction CombatCheatKillAllEnemies => _wrapper._combatCheatKillAllEnemiesAction;
         public InputAction CombatCheatKillAllAllies => _wrapper._combatCheatKillAllAlliesAction;
+        public InputAction CombatCheatInfiniteAllyHealth => _wrapper._combatCheatInfiniteAllyHealthAction;
+        public InputAction CombatCheatDoubleAllyDamage => _wrapper._combatCheatDoubleAllyDamageAction;
     }
 }

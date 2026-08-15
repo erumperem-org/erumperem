@@ -1,4 +1,5 @@
 using System;
+using Erumperem.Combat.Runtime;
 using Game.Core.Models;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -21,6 +22,7 @@ namespace Erumperem.Combat
         private CombatPrototypeController _controller;
         private CharacterSkillButtonsRowView _skillsRowView;
         private string _activeSkillRowCombatantId;
+        private readonly CombatPointerRaycastService _pointerRaycast = new();
 
         public CharacterSkillButtonsRowView SkillsRowView => _skillsRowView;
 
@@ -32,6 +34,7 @@ namespace Erumperem.Combat
         public void Initialize(CombatPrototypeController controller)
         {
             _controller = controller;
+            _pointerRaycast.Configure(Camera.main, worldRaycastDistance);
             TryResolveSkillsPanelParentIfMissing();
             if (skillsPanelParent == null)
             {
@@ -151,30 +154,12 @@ namespace Erumperem.Combat
                 return null;
             }
 
-            var cam = Camera.main;
-            if (cam == null)
+            if (!_pointerRaycast.TryRaycastCombatCapsuleTagFromInputManager(out var capsuleTag))
             {
                 return null;
             }
 
-            if (InputManager.Instance == null || !InputManager.Instance.TryGetPointerScreenPosition(out var pointerScreenPosition))
-            {
-                return null;
-            }
-
-            var ray = cam.ScreenPointToRay(pointerScreenPosition);
-            if (!Physics.Raycast(ray, out var hit, worldRaycastDistance))
-            {
-                return null;
-            }
-
-            var tag = hit.collider.GetComponentInParent<CombatCapsuleTag>();
-            if (tag == null || string.IsNullOrEmpty(tag.combatantId))
-            {
-                return null;
-            }
-
-            var hovered = _controller.FindCombatantById(tag.combatantId);
+            var hovered = _controller.FindCombatantById(capsuleTag.combatantId);
             if (hovered == null || hovered.Health.IsDead)
             {
                 return null;

@@ -20,7 +20,15 @@ public class DeterministicInventorySlotView : MonoBehaviour
         }
     }
 
-    void OnDisable()
+    void OnEnable()
+    {
+        if (this.item is AnomalousArtifact item)
+        {
+            int total = inventorySystem.GetAmount(item);
+            quantity.text = total.ToString();
+        }
+    }
+    void OnDestroy()
     {
         if (item is AnomalousArtifact item1)
         {
@@ -31,7 +39,12 @@ public class DeterministicInventorySlotView : MonoBehaviour
 
     private void HandleItemView(IStorageable storageable, int amount)
     {
-        if (storageable is not IItem item) return;
+        if (storageable is not AnomalousArtifact item) return;
+        if (this.item is AnomalousArtifact itemTest)
+        {
+            if(storageable != this.item ){return;}
+        }
+        
         int total = inventorySystem.GetAmount(item);
         quantity.text = total.ToString();
     }

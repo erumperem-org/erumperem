@@ -1,4 +1,5 @@
 using System;
+using Services.DebugUtilities;
 using UnityEngine;
 
 [Serializable]
@@ -40,7 +41,7 @@ public sealed class PlayableHealthBar
         if (maxHealth <= 0f)
             throw new ArgumentOutOfRangeException(nameof(maxHealth), "HP máximo deve ser maior que zero.");
 
-        MaxHealth     = maxHealth;
+        MaxHealth = maxHealth;
         CurrentHealth = startFull ? maxHealth : 0f;
     }
 
@@ -56,15 +57,86 @@ public sealed class PlayableHealthBar
     /// <summary>Aplica cura (valor positivo aumenta HP, limitado ao máximo).</summary>
     public void Heal(float amount)
     {
-        if (amount <= 0f) return;
-        SetHealth(CurrentHealth + amount);
+        if (amount <= 0f)
+            return;
+
+        CurrentHealth = Mathf.Clamp(CurrentHealth + amount, 0f, MaxHealth);
     }
 
     /// <summary>Cura até o HP máximo.</summary>
-    public void HealFull() => SetHealth(MaxHealth);
+    public void HealFull()
+    {
+        LoggerService.PrintLogMessage(LogLevel.Warning,
+            $"[HEAL-DEBUG] [FORBIDDEN] HealFull() bloqueado. HP atual {CurrentHealth}/{MaxHealth}. " +
+            $"Cura de gameplay só é permitida pelo Main após 3s na vila. Origem: {ResolveCallSiteDescription()}",
+            LogCategory.Player);
+    }
+
+    /// <summary>Cura autorizada pelo santuário da vila (Main + aliados após permanência na área).</summary>
+    public void HealFullFromVillageSanctuary()
+    {
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[HEAL-DEBUG] [VILLAGE] HealFullFromVillageSanctuary() {CurrentHealth}/{MaxHealth} → cheio.",
+            LogCategory.Player);
+
+        SetHealth(MaxHealth);
+    }
 
     /// <summary>Zera o HP imediatamente (dispara <see cref="OnHealthEmpty"/>).</summary>
     public void Kill() => SetHealth(0f);
+
+    /// <summary>
+    /// Restaura HP a partir de um snapshot de save — não é cura de gameplay.
+    /// Usado por <see cref="ExplorationLoadContext"/> ao aplicar estado salvo.
+    /// </summary>
+    public void RestoreFromSnapshot(float savedCurrentHealth)
+    {
+        float previousHealth = CurrentHealth;
+        float clampedHealth = Mathf.Clamp(savedCurrentHealth, 0f, MaxHealth);
+        CurrentHealth = clampedHealth;
+
+        if (Mathf.Approximately(previousHealth, CurrentHealth))
+        {
+            return;
+        }
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[HEAL-DEBUG] RestoreFromSnapshot {previousHealth} → {CurrentHealth}/{MaxHealth}. " +
+            $"Origem: {ResolveCallSiteDescription()}",
+            LogCategory.Player);
+
+        OnHealthChanged?.Invoke(previousHealth, CurrentHealth, MaxHealth);
+
+        if (CurrentHealth <= 0f)
+        {
+            OnHealthEmpty?.Invoke();
+        }
+    }
+
+    /// <summary>Aplica HP inicial/default sem passar pela API de cura de gameplay.</summary>
+    public void RestoreForInitialization(float initialCurrentHealth)
+    {
+        float previousHealth = CurrentHealth;
+        float clampedHealth = Mathf.Clamp(initialCurrentHealth, 0f, MaxHealth);
+        CurrentHealth = clampedHealth;
+
+        if (Mathf.Approximately(previousHealth, CurrentHealth))
+        {
+            return;
+        }
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[HEAL-DEBUG] RestoreForInitialization {previousHealth} → {CurrentHealth}/{MaxHealth}. " +
+            $"Origem: {ResolveCallSiteDescription()}",
+            LogCategory.Player);
+
+        OnHealthChanged?.Invoke(previousHealth, CurrentHealth, MaxHealth);
+
+        if (CurrentHealth <= 0f)
+        {
+            OnHealthEmpty?.Invoke();
+        }
+    }
 
     /// <summary>
     /// Redefine o HP máximo. O HP corrente é mantido proporcional se
@@ -88,14 +160,40 @@ public sealed class PlayableHealthBar
     private void SetHealth(float value)
     {
         float previous = CurrentHealth;
-        CurrentHealth  = Mathf.Clamp(value, 0f, MaxHealth);
+        CurrentHealth = Mathf.Clamp(value, 0f, MaxHealth);
 
         // Só dispara evento se houve mudança real.
         if (Mathf.Approximately(previous, CurrentHealth)) return;
+
+        bool isFullHeal = CurrentHealth > previous && Mathf.Approximately(CurrentHealth, MaxHealth);
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[HEAL-DEBUG] SetHealth {previous} → {CurrentHealth}/{MaxHealth}" +
+            $"{(isFullHeal ? " (CURA TOTAL)" : string.Empty)}. Origem: {ResolveCallSiteDescription()}",
+            LogCategory.Player);
 
         OnHealthChanged?.Invoke(previous, CurrentHealth, MaxHealth);
 
         if (CurrentHealth <= 0f)
             OnHealthEmpty?.Invoke();
+    }
+
+    /// <summary>
+    /// Identifica o primeiro frame da pilha de chamadas fora desta classe,
+    /// para que os logs de cura revelem QUEM disparou a alteração de HP.
+    /// </summary>
+    private static string ResolveCallSiteDescription()
+    {
+        var stackTrace = new System.Diagnostics.StackTrace(false);
+        for (int frameIndex = 0; frameIndex < stackTrace.FrameCount; frameIndex++)
+        {
+            var callingMethod = stackTrace.GetFrame(frameIndex)?.GetMethod();
+            var declaringType = callingMethod?.DeclaringType;
+            if (declaringType != null && declaringType != typeof(PlayableHealthBar))
+            {
+                return $"{declaringType.Name}.{callingMethod.Name}";
+            }
+        }
+
+        return "desconhecido";
     }
 }

@@ -9,23 +9,20 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa11bb22cc33dd44ee55ff6677889900, type: 3}
+  m_Script: {fileID: 11500000, guid: cc11dd22ee33ff44556677889900aabb, type: 3}
   m_Name: BuckCharacterStats
-  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Characters.CharacterStatDefinition
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Characters.AllyCharacterStatDefinition
   characterId: Buck
-  displayName: Buck
-  isPlayableAlly: 1
-  defaultExplorationState: 3
-  explorationMaxHealth: 200
-  defaultStartingHealth: 0
-  combatMaxHitPoints: 50
+  displayName: The Gunslinger
+  defaultExplorationState: 2
+  maxHitPoints: 100
   speed: 5
   accuracy: 1
   critChance: 0.04
   burnResistance: 0.2
   blightResistance: 0.2
-  moveResistance: 0.2
   stunResistance: 0.2
-  deathblowResistance: 0.2
   elementType: 2
-  progressionCharacterId: 
+  progressionCharacterId: buck
+  battlePrefab: {fileID: 1198561148555242824, guid: 17efad2d53c905542956e503bf5aa92a, type: 3}
+  battleFormationRank: 2

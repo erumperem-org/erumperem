@@ -6,12 +6,14 @@ using Services.DebugUtilities;
 using UnityEngine;
 
 [RequireComponent(typeof(Detector))]
+[DefaultExecutionOrder(-200)]
 public sealed class PlayerDetectionSystem : MonoBehaviour
 {
     [SerializeField] private PlayableAnimationController _animationController;
     [SerializeField] private PlayableCharacter _character;
     [SerializeField] private PlayerInventorySystem _inventory;
-
+    [SerializeField] private GameObject center;
+    private readonly int centerOffsetForCharacterInteraction = 20;
     public IReadOnlyList<Interactable> Available => _available;
     [SerializeField] private List<Interactable> _available = new();
     private Detector _detector;
@@ -41,6 +43,13 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
 
     // ── API pública ───────────────────────────────────────────────────────
 
+    public void Update()
+    {
+        if (this.tag == "Player")
+        {
+            _detector.Scan();
+        }
+    }
     public void StartScan()
     {
         StopScan();
@@ -110,11 +119,20 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
 
     private void OnEnter(Collider col, string label, int _)
     {
-        TryToggleCharacterInteractPrompt(col, label, shouldShow: true);
+
+
 
         if (!IsRelevant(label)) return;
 
+        if (Vector3.Distance(this.transform.position, center.transform.position) < centerOffsetForCharacterInteraction)
+        {
+            TryToggleCharacterInteractPrompt(col, label, shouldShow: true);
+        }
         var interactable = ResolveInteractable(col);
+        if (interactable is CharacterSelectionNpc selectionNpc && Vector3.Distance(this.transform.position, center.transform.position) > centerOffsetForCharacterInteraction)
+        {
+            return;
+        }
         if (interactable == null || _available.Contains(interactable)) return;
 
         _available.Add(interactable);
@@ -128,7 +146,15 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
         if (!IsRelevant(label)) return;
 
         var interactable = ResolveInteractable(col);
-        if (interactable != null) _available.Remove(interactable);
+        if (interactable != null)
+        {
+            _available.Remove(interactable);
+            var characterSelectionNpc = interactable.GetComponent<CharacterSelectionNpc>();
+            if (characterSelectionNpc != null)
+            {
+                characterSelectionNpc._canvas._panel.SetActive(false);
+            }
+        }
 
         LoggerService.PrintLogMessage(LogLevel.Debug, $"Interactable [{col.gameObject.name}] lost");
     }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Erumperem.Combat;
 using Erumperem.Combat.HealthBars;
+using Erumperem.Combat.Runtime;
 using Game.Core.Models;
 using TMPro;
 using UnityEngine;
@@ -40,6 +41,7 @@ namespace Erumperem.Combat.HealthBars
         [SerializeField] private List<UnitIconMapping> iconMappings;
 
         private CombatSessionHub _sessionHub;
+        private readonly CombatSessionHubSubscription _sessionHubSubscription = new();
         private CombatHudPanelFocusCoordinator _panelFocusCoordinator;
         private HealthBarHudView _hudView;
 
@@ -145,46 +147,13 @@ namespace Erumperem.Combat.HealthBars
         private void OnEnable()
         {
             ResolveCombatServices();
-            SubscribeToSessionHubIfAvailable();
-            TryCatchUpWithActiveCombatSession();
-        }
-
-        private void SubscribeToSessionHubIfAvailable()
-        {
-            if (_sessionHub == null)
-            {
-                return;
-            }
-
-            _sessionHub.OnCombatSessionReadyForUi -= HandleCombatSessionReady;
-            _sessionHub.OnCombatSessionClosed -= HandleCombatSessionClosed;
-            _sessionHub.OnCombatSessionReadyForUi += HandleCombatSessionReady;
-            _sessionHub.OnCombatSessionClosed += HandleCombatSessionClosed;
-        }
-
-        private void TryCatchUpWithActiveCombatSession()
-        {
-            if (_activeCombatSession != null)
-            {
-                return;
-            }
-
-            var activeCombatSession = FindFirstObjectByType<CombatPrototypeController>();
-            if (activeCombatSession != null && activeCombatSession.IsBattleOngoing)
-            {
-                HandleCombatSessionReady(activeCombatSession);
-            }
+            _sessionHubSubscription.Subscribe(_sessionHub, HandleCombatSessionReady, HandleCombatSessionClosed);
+            _sessionHubSubscription.TryCatchUpWithActiveCombatSession(_activeCombatSession);
         }
 
         private void OnDisable()
         {
-            if (_sessionHub == null)
-            {
-                return;
-            }
-
-            _sessionHub.OnCombatSessionReadyForUi -= HandleCombatSessionReady;
-            _sessionHub.OnCombatSessionClosed -= HandleCombatSessionClosed;
+            _sessionHubSubscription.Unsubscribe();
 
             if (_initializationRoutine != null)
             {

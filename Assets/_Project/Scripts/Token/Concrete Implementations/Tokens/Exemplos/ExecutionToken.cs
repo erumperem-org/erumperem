@@ -14,6 +14,7 @@ namespace Core.Tokens
     public class ExecutionToken : TokenController, IConditionalSynergy
     {
         private readonly Func<bool> lowHealthCheck;
+        private readonly ConditionalSynergyContext conditionalSynergyContext;
 
         public ExecutionToken(TokenContainerController container, Func<bool> isLowHealth) : base(
             typeof(ExecutionToken).Name,
@@ -21,14 +22,17 @@ namespace Core.Tokens
             new IOnConditionMetTokenAllocation(isLowHealth))
         {
             lowHealthCheck = isLowHealth;
+            conditionalSynergyContext = new ConditionalSynergyContext(
+                container,
+                this,
+                lowHealthCheck,
+                () => LoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"Execution triggered on {container.name}", LogCategory.Combat),
+                conditionDescription: "Target HP below 20%");
         }
 
         public ConditionalSynergyContext BuildConditionalContext(TokenAllocationContext context) =>
-            new ConditionalSynergyContext(context.TokenContainerController, this,
-                lowHealthCheck,
-                () => LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"Execution triggered on {context.TokenContainerController.name}", LogCategory.Combat),
-                conditionDescription: "Target HP below 20%");
+            conditionalSynergyContext;
 
         public override void ExecuteTokenEffect() => base.ExecuteTokenEffect();
     }

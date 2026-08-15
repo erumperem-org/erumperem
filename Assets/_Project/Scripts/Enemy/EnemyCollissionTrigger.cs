@@ -40,7 +40,9 @@ public class EnemyCollissionTrigger : MonoBehaviour
     private static bool IsCombatTriggerBlocked()
     {
         return CombatExplorationBridge.IsCombatReentryBlocked
-            || CombatExplorationBridge.RequiresCombatEntryZoneClearance;
+            || CombatExplorationBridge.AreExplorationCombatContactsBlocked
+            || CombatExplorationBridge.RequiresCombatEntryZoneClearance
+            || ExplorationVillageEvents.IsPlayerInsideVillage;
     }
 
     private void EnsureTriggerPhysicsConfigured()

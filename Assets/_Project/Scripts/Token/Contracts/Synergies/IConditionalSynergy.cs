@@ -25,14 +25,18 @@ namespace Core.Tokens
         // so tokens whose condition never triggered do not attempt a spurious revert.
         void IReverseableSynergy.ReverseSynergy(TokenContainerController tokenContainer)
         {
-            var ctx = BuildConditionalContext(new TokenAllocationContext(string.Empty, tokenContainer, (TokenController)this));
-            if (ctx.hasFired)
-                ctx.onRevert?.Invoke();
+            ConditionalSynergyContext conditionalContext = BuildConditionalContext(
+                new TokenAllocationContext(
+                    string.Empty,
+                    tokenContainer,
+                    (TokenController)this));
+            if (conditionalContext.hasFired)
+                conditionalContext.onRevert?.Invoke();
         }
     }
 
     [Serializable]
-    public struct ConditionalSynergyContext
+    public sealed class ConditionalSynergyContext
     {
         public TokenContainerController TokenContainerController;
         public TokenController self;
@@ -46,7 +50,13 @@ namespace Core.Tokens
         // Human-readable description of what this condition represents.
         public string conditionDescription;
 
-        public ConditionalSynergyContext(TokenContainerController TokenContainerController, TokenController self, Func<bool> condition, Action onConditionMet, Action onRevert = null, string conditionDescription = "")
+        public ConditionalSynergyContext(
+            TokenContainerController TokenContainerController,
+            TokenController self,
+            Func<bool> condition,
+            Action onConditionMet,
+            Action onRevert = null,
+            string conditionDescription = "")
         {
             this.TokenContainerController = TokenContainerController;
             this.self = self;

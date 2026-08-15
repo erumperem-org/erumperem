@@ -23,14 +23,14 @@ namespace Core.Exploration.Items.Usables
 
         [Tooltip("Quantidade de HP restaurada em cada personagem ativo (Main e Companion).")]
         [Min(1f)]
-        [SerializeField] private float _healAmount = 30f;
+        [SerializeField] private int _healAmount = 30;
 
         // ── IStorageable ──────────────────────────────────────────────────
 
         public StorageMode storageMode => StorageMode.Stackable;
         [SerializeField] private string _itemId;
         public string ItemId => _itemId;
-                public string Description => _description;
+        public string Description => _description;
         [SerializeField] private string _description;
 
         // ── IItem ─────────────────────────────────────────────────────────
@@ -41,52 +41,19 @@ namespace Core.Exploration.Items.Usables
 
         public void ExecuteItemEffect()
         {
-            var manager = FindManager();
-            if (manager == null) return;
-
-            int healed = 0;
-
-            // ── Main ──────────────────────────────────────────────────────
-            if (manager.Main is PlayableCharacter main && main.HealthBar != null)
+            var manager = GameObject.FindFirstObjectByType<PlayableCharactersManager>();
+            if (manager.Main is PlayableCharacter main)
             {
                 main.HealthBar.Heal(_healAmount);
-                healed++;
-                LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"[RestorativeDrink] '{main.CharacterName}' curado em {_healAmount} HP " +
-                    $"(atual: {main.HealthBar.CurrentHealth}/{main.HealthBar.MaxHealth}).",
-                    LogCategory.Interaction);
             }
 
-            // ── Companion ─────────────────────────────────────────────────
-            if (manager.Companion is PlayableCharacter companion && companion.HealthBar != null)
+            if (manager.Companion is PlayableCharacter companion)
             {
                 companion.HealthBar.Heal(_healAmount);
-                healed++;
-                LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"[RestorativeDrink] '{companion.CharacterName}' curado em {_healAmount} HP " +
-                    $"(atual: {companion.HealthBar.CurrentHealth}/{companion.HealthBar.MaxHealth}).",
-                    LogCategory.Interaction);
             }
 
-            if (healed == 0)
-            {
-                LoggerService.PrintLogMessage(LogLevel.Warning,
-                    "[RestorativeDrink] Nenhum personagem ativo encontrado para curar.",
-                    LogCategory.Interaction);
-            }
-        }
-
-        // ── Helpers ───────────────────────────────────────────────────────
-
-        private static PlayableCharactersManager FindManager()
-        {
-            var manager = Object.FindFirstObjectByType<PlayableCharactersManager>();
-            if (manager != null) return manager;
-
-            LoggerService.PrintLogMessage(LogLevel.Error,
-                "[RestorativeDrink] PlayableCharactersManager não encontrado na cena.",
-                LogCategory.Interaction);
-            return null;
+            ExplorationLoadContext.Instance?.SaveState();
+            FindAnyObjectByType<CharacterViewHud>().RefreshAll();
         }
     }
 }

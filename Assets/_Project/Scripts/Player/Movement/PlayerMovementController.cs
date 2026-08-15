@@ -102,19 +102,7 @@ namespace Player
             SetMode(MovementMode.Player);
         }
 
-        public void EnableFollow(Transform target)
-        {
-            bool targetChanged = target != _followTarget;
-            _followTarget = target;
-            if (targetChanged) _navMesh?.ClearPath(_adapter);
-            SetMode(MovementMode.Follow);
-        }
 
-        public void EnableWalkToPoint(Vector3 destination)
-        {
-            _restingDestination = destination;
-            SetMode(MovementMode.WalkToPoint);
-        }
 
         public void DisableMovement()
         {
@@ -126,24 +114,30 @@ namespace Player
         }
 
         // ── Troca de modo ─────────────────────────────────────────────────
+        public void EnableFollow(Transform target, Vector3? startPosition = null)
+        {
+            bool targetChanged = target != _followTarget;
+            _followTarget = target;
+            if (targetChanged) _navMesh?.ClearPath(_adapter);
+            SetMode(MovementMode.Follow, startPosition);
+        }
 
-        private void SetMode(MovementMode mode)
+        public void EnableWalkToPoint(Vector3 destination, Vector3? startPosition = null)
+        {
+            _restingDestination = destination;
+            SetMode(MovementMode.WalkToPoint, startPosition);
+        }
+
+        private void SetMode(MovementMode mode, Vector3? startPosition = null)
         {
             StopMovementCoroutine();
             _destinationSet = false;
             _mode = mode;
-
-            // Modo Player → física. Follow/WalkToPoint → NavMesh.
-            SetMovementBackend(mode);
-
+            SetMovementBackend(mode, startPosition);
             _movementCoroutine = StartCoroutine(MovementLoop());
         }
 
-        /// <summary>
-        /// Liga/desliga Rigidbody e NavMeshAgent de forma mutuamente exclusiva.
-        /// Ambos ativos ao mesmo tempo causam conflito de posição.
-        /// </summary>
-        private void SetMovementBackend(MovementMode mode)
+        private void SetMovementBackend(MovementMode mode, Vector3? startPosition = null)
         {
             var useRigidbodyPhysics = mode == MovementMode.Player;
             var useNavMeshAgent = mode is MovementMode.Follow or MovementMode.WalkToPoint;
@@ -155,25 +149,19 @@ namespace Player
             }
 
             var navMeshAgent = _adapter.Agent;
-            if (navMeshAgent == null)
-            {
-                return;
-            }
+            if (navMeshAgent == null) return;
 
             navMeshAgent.enabled = useNavMeshAgent;
-            if (!useNavMeshAgent)
-            {
-                return;
-            }
+            if (!useNavMeshAgent) return;
 
-            if (NavMesh.SamplePosition(transform.position, out var navMeshHit, 2f, NavMesh.AllAreas))
+            var sampleOrigin = startPosition ?? transform.position;
+            if (NavMesh.SamplePosition(sampleOrigin, out var navMeshHit, 2f, NavMesh.AllAreas))
             {
                 navMeshAgent.Warp(navMeshHit.position);
             }
 
             _navMesh?.ClearPath(_adapter);
         }
-
         // ── Loop principal ────────────────────────────────────────────────
 
         private IEnumerator MovementLoop()

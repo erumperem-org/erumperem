@@ -82,7 +82,7 @@ public static class SkillCombatHudStatsBuilder
 
         foreach (var effect in effects)
         {
-            if (string.Equals(effect.EffectScope, "AllAllies", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(effect.EffectScope, EffectScopes.AllAllies, StringComparison.OrdinalIgnoreCase))
             {
                 var sameSideCombatants = actor.Position.Side == Side.Allies
                     ? battleState.Allies
@@ -93,7 +93,7 @@ public static class SkillCombatHudStatsBuilder
                 continue;
             }
 
-            if (string.Equals(effect.EffectScope, "AllEnemies", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(effect.EffectScope, EffectScopes.AllEnemies, StringComparison.OrdinalIgnoreCase))
             {
                 var oppositeSideCombatants = actor.Position.Side == Side.Allies
                     ? battleState.Enemies

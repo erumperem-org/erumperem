@@ -23,7 +23,7 @@ using TMPro;
 public sealed class CharacterSelectionCanvas : MonoBehaviour
 {
     [Header("Referências de UI")]
-    [SerializeField] private GameObject            _panel;
+    [SerializeField] public GameObject            _panel;
     [SerializeField] private TextMeshProUGUI       _txtCharacterName;
     [SerializeField] private TextMeshProUGUI       _txtCurrentState;
     [SerializeField] private Button                _btnSetMain;
@@ -106,16 +106,15 @@ public sealed class CharacterSelectionCanvas : MonoBehaviour
     {
         if (_current == null) return;
 
-        // Nome e estado atual
-        //_txtCharacterName.text = _current.characterName;
-        _txtCurrentState.text  = $"Estado atual: {_current.CurrentState}";
+        // Name and current state
+        _txtCurrentState.text = $"Current state: {_current.CurrentState}";
 
-        // Desabilita o botão correspondente ao estado atual (não faz sentido promover para o mesmo estado)
-        _btnSetMain.interactable      = _current.CurrentState != PlayableCharacterState.Main;
+        // Disables the button corresponding to the current state
+        _btnSetMain.interactable = _current.CurrentState != PlayableCharacterState.Main;
         _btnSetCompanion.interactable = _current.CurrentState != PlayableCharacterState.Companion;
 
-        // Labels dinâmicos (opcional — só se os TextMeshPro dos botões foram atribuídos)
-        if (_btnMainLabel      != null) _btnMainLabel.text      = "Definir como Main";
-        if (_btnCompanionLabel != null) _btnCompanionLabel.text = "Definir como Companion";
+        // Dynamic labels
+        if (_btnMainLabel != null) _btnMainLabel.text = "Set as Main";
+        if (_btnCompanionLabel != null) _btnCompanionLabel.text = "Set as Companion";
     }
 }

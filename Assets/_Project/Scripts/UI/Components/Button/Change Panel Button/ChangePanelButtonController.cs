@@ -1,32 +1,26 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using Services.DebugUtilities;
-public class ChangePanelButtonController : UiButtonController<ChangePanelButtonModel>, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
+
+public class ChangePanelButtonController : UiButtonController<ChangePanelButtonModel>
 {
-    //Events
-    void IPointerEnterHandler.OnPointerEnter(PointerEventData eventData)
+    protected override void OnPointerDownHandled(PointerEventData eventData)
     {
-        if (!isDisabled)
+        var uiManager = UIManager.Instance;
+        if (uiManager == null)
         {
-            _fsm.TransitionTo(new ButtonHover(this, uiButtonView._hoverEnterEffects, uiButtonView._hoverExitEffects));
+            Debug.LogWarning($"{nameof(ChangePanelButtonController)}: {nameof(UIManager)}.{nameof(UIManager.Instance)} is null.", this);
+            return;
         }
-    }
 
-    void IPointerDownHandler.OnPointerDown(PointerEventData eventData)
-    {
-        if (!isDisabled)
+        if (uiButtonModel.panelToHide != null)
         {
-            _fsm.TransitionTo(new ButtonPressed(this, uiButtonView._pressedEnterEffects, uiButtonView._pressedExitEffects));
-            UIManager.Instance.ClosePanel(uiButtonModel.panelToHide);
-            UIManager.Instance.OpenPanel(uiButtonModel.panelToOpen);
+            uiManager.ClosePanel(uiButtonModel.panelToHide);
         }
-    }
 
-    void IPointerExitHandler.OnPointerExit(PointerEventData eventData)
-    {
-        if (!isDisabled)
+        if (uiButtonModel.panelToOpen != null)
         {
-            _fsm.TransitionTo(new ButtonDefault(this, uiButtonView._defaultEnterEffects, uiButtonView._defaultExitEffects));
+            uiManager.OpenPanel(uiButtonModel.panelToOpen);
         }
     }
 }

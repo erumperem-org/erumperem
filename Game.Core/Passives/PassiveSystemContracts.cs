@@ -18,6 +18,7 @@ public enum PassiveEffectKind
     OutgoingDamageVsSkillIfTargetHasDot = 9,
     DotTickDamageBonusWhenTargetHpBelow = 10,
     GrantTokenAtTurnStartIfCondition = 11,
+    SummonEnemyAtTurnStartWhenHpBelowTiered = 12,
 }
 
 /// <summary>

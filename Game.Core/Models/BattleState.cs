@@ -14,8 +14,18 @@ public sealed class BattleState
     public IReadOnlyDictionary<string, PassiveDefinition> PassivesById { get; init; } =
         new Dictionary<string, PassiveDefinition>();
 
+    /// <summary>Templates para invocação mid-battle (chave = characterStatId, ex. CorruptedFairy).</summary>
+    public IReadOnlyDictionary<string, EnemyDefinition> EnemyDefinitionsById { get; init; } =
+        new Dictionary<string, EnemyDefinition>(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Observer hub for passive hooks; raise events from <see cref="Game.Core.Engine.BattleSimulator"/>.</summary>
     public CombatPassiveEventBus PassiveBus { get; init; } = new();
+
+    /// <summary>QA cheat: aliados não perdem HP nem morrem enquanto activo.</summary>
+    public bool AlliesHaveInfiniteHealth { get; set; }
+
+    /// <summary>QA cheat: multiplicador de dano outgoing de aliados (default 1.0).</summary>
+    public double AllyOutgoingDamageMultiplier { get; set; } = 1.0;
 
     public required CombatBalanceConfig BalanceConfig { get; init; }
     public required double CorruptionValue { get; set; }
@@ -40,7 +50,29 @@ public sealed class BattleState
 
     public bool HasActiveEnemies => Enemies.Any(IsActiveBattler);
 
-    public bool IsFinished => !HasActiveAllies || !HasActiveEnemies;
+    /// <summary>
+    /// Sincroniza <see cref="HealthComponent.IsDead"/> quando HP já chegou a zero
+    /// (ex.: respawn mid-battle ou desync UI/sim).
+    /// </summary>
+    public void SyncDeathFlagsFromHealth()
+    {
+        foreach (var combatant in GetAllCombatants())
+        {
+            if (combatant.Health.CurrentHp <= 0 && !combatant.Health.IsDead)
+            {
+                combatant.Health.IsDead = true;
+            }
+        }
+    }
+
+    public bool IsFinished
+    {
+        get
+        {
+            SyncDeathFlagsFromHealth();
+            return !HasActiveAllies || !HasActiveEnemies;
+        }
+    }
 
     public Side? Winner
     {

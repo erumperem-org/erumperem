@@ -11,8 +11,10 @@ public class ShakeEffectSO : UiEffectSO
 
     public override IEnumerator Execute(MonoBehaviour context)
     {
-        yield return context.transform
-            .DOShakePosition(duration, Vector3.one * strength, vibrato)
+        KillTransformTweens(context);
+
+        yield return LinkTweenToContext(context, context.transform
+            .DOShakePosition(duration, Vector3.one * strength, vibrato))
             .WaitForCompletion();
     }
 }

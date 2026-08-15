@@ -4,18 +4,18 @@
 // ============================================================
 // Responsabilidade única: orquestrar os colaboradores.
 //
-// NpcEnemy agora é um MonoBehaviour enxuto que:
-//   1. Cria e conecta StateMachine, DetectionHandler e BehaviorRunner.
-//   2. Implementa o ciclo de vida (Initialize / Activate / ReturnToPool).
-//   3. Expõe OnPlayerContact como evento — sem saber o que acontece depois.
-//
-// Quem decide o que fazer no contato com o Player é o ouvinte
-// externo (ex: NpcEnemyContactHandler), não este script.
+// CORREÇÃO:
+//   [8] Initialize chama StopAll() nos colaboradores existentes
+//       antes de recriá-los, garantindo que coroutines de um
+//       ciclo anterior de pool sejam canceladas antes do novo
+//       ciclo começar (evita vazamento de WanderLifetimeCoroutine
+//       e ChaseRadiusMonitorCoroutine entre reutilizações).
 // ============================================================
 
 using System;
 using Core.Exploration.Character.Movement;
 using DetectionSystem.Core;
+using Player;
 using Services.Navigation;
 using Systems.NPC.Enemy.Contracts;
 using Systems.NPC.Enemy.StateMachine;
@@ -29,7 +29,7 @@ namespace Systems.NPC.Enemy
     public sealed class NpcEnemy : MonoBehaviour, INpcEnemy
     {
         // ── INpcEnemy ─────────────────────────────────────────────────────
-
+        private PlayableCharacter main;
         public NpcEnemyState CurrentState => _stateMachine?.Current ?? NpcEnemyState.Idle;
 
         /// <inheritdoc/>
@@ -38,14 +38,14 @@ namespace Systems.NPC.Enemy
         // ── Componentes Unity ─────────────────────────────────────────────
 
         private NpcMovementController _movementController;
-        private NavMeshAgentAdapter   _adapter;
-        private Detector              _detector;
+        private NavMeshAgentAdapter _adapter;
+        private Detector _detector;
 
         // ── Colaboradores (criados em Initialize) ─────────────────────────
 
-        private NpcEnemyStateMachine    _stateMachine;
-        private NpcEnemyDetectionHandler _detectionHandler;
-        private NpcEnemyBehaviorRunner  _behaviorRunner;
+        private NpcEnemyStateMachine _stateMachine;
+        [SerializeField] private NpcEnemyDetectionHandler _detectionHandler;
+        private NpcEnemyBehaviorRunner _behaviorRunner;
 
         private NpcEnemyConfig _config;
 
@@ -54,16 +54,29 @@ namespace Systems.NPC.Enemy
         private void Awake()
         {
             _movementController = GetComponent<NpcMovementController>();
-            _adapter            = GetComponent<NavMeshAgentAdapter>();
-            _detector           = GetComponent<Detector>();
+            _adapter = GetComponent<NavMeshAgentAdapter>();
+            _detector = GetComponent<Detector>();
         }
 
+        private void OnMainTorchChanged(bool isTorchOn)
+        {
+            if (_detectionHandler == null)
+            {
+                return;
+            }
+
+            _detectionHandler.HandleTorch(isTorchOn, _detector.DetectionComponent);
+        }
         // ═════════════════════════════════════════════════════════════════
         // INpcEnemy
         // ═════════════════════════════════════════════════════════════════
 
         public void Initialize(NpcEnemyConfig config)
         {
+            // [8] Cancela coroutines do ciclo anterior antes de recriar colaboradores.
+            _detectionHandler?.StopPolling();
+            _behaviorRunner?.StopAll();
+
             _config = config;
 
             _stateMachine = new NpcEnemyStateMachine();
@@ -74,8 +87,8 @@ namespace Systems.NPC.Enemy
                 _movementController, _adapter, _stateMachine, this, config);
 
             // Conecta StateMachine → BehaviorRunner
-            _stateMachine.OnEnterWander       += _behaviorRunner.RunWander;
-            _stateMachine.OnEnterChase        += _behaviorRunner.RunChase;
+            _stateMachine.OnEnterWander += _behaviorRunner.RunWander;
+            _stateMachine.OnEnterChase += _behaviorRunner.RunChase;
             _stateMachine.OnEnterReturnToPool += OnReturnToPoolRequested;
 
             // BehaviorRunner notifica quando deve retornar à pool
@@ -90,15 +103,15 @@ namespace Systems.NPC.Enemy
 
             var enemyView = GetComponent<NpcEnemyView>();
             if (enemyView != null)
-            {
                 enemyView.RefreshCorruptionTierVisuals();
-            }
 
             if (!_movementController.NavMesh.Warp(_adapter, spawnPoint))
                 _movementController.NavMesh.TeleportToNearestNavMeshPoint(_adapter, spawnPoint);
 
             _movementController.NavMesh.ResetAgent(_adapter);
 
+            PlayerTorchHandler.OnMainTorchChanged -= OnMainTorchChanged;
+            PlayerTorchHandler.OnMainTorchChanged += OnMainTorchChanged;
             _detectionHandler.StartPolling();
             _stateMachine.ToWander();
         }
@@ -115,6 +128,7 @@ namespace Systems.NPC.Enemy
 
         private void OnReturnToPoolRequested()
         {
+            PlayerTorchHandler.OnMainTorchChanged -= OnMainTorchChanged;
             _detectionHandler.StopPolling();
             _behaviorRunner.StopAll();
 
@@ -130,11 +144,11 @@ namespace Systems.NPC.Enemy
 
         /// <summary>
         /// Chamado pelo NpcEnemyDetectionHandler quando a shape "Contact" detecta o Player.
-        /// Dispara o evento — a decisão do que fazer fica fora desta classe.
         /// </summary>
         internal void NotifyPlayerContact()
         {
             OnPlayerContact?.Invoke(this);
+            Debug.Log("NotifyCombat");
         }
 
         // ═════════════════════════════════════════════════════════════════
@@ -143,6 +157,7 @@ namespace Systems.NPC.Enemy
 
         private void OnDestroy()
         {
+            PlayerTorchHandler.OnMainTorchChanged -= OnMainTorchChanged;
             _detectionHandler?.StopPolling();
             _behaviorRunner?.StopAll();
         }

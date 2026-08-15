@@ -69,10 +69,10 @@ namespace Systems.Chest.Trigger
             if (_spawner == null) return;
 
             LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[ChestAreaTrigger:{name}] Player saiu. Populando área de baús.",
+                $"[ChestAreaTrigger:{name}] Player saiu. Devolvendo baús à pool.",
                 LogCategory.Interaction);
 
-            _spawner.OnAreaEntered();
+            _spawner.OnAreaExited();
         }
 
         private void OnTriggerEnter(Collider other)
@@ -81,10 +81,10 @@ namespace Systems.Chest.Trigger
             if (_spawner == null) return;
 
             LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[ChestAreaTrigger:{name}] Player entrou. Devolvendo baús à pool.",
+                $"[ChestAreaTrigger:{name}] Player entrou. Populando área de baús.",
                 LogCategory.Interaction);
 
-            _spawner.OnAreaExited();
+            _spawner.OnAreaEntered();
         }
 
         // ── Gizmos ────────────────────────────────────────────────────────

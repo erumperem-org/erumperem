@@ -14,6 +14,7 @@ namespace Core.Tokens
     public class RevengeToken : TokenController, IConditionalSynergy
     {
         private readonly Func<bool> tookDamageThisTurn;
+        private readonly ConditionalSynergyContext conditionalSynergyContext;
 
         public RevengeToken(TokenContainerController container, Func<bool> tookDamage) : base(
             typeof(RevengeToken).Name,
@@ -21,14 +22,18 @@ namespace Core.Tokens
             new IOnEventTokenAllocation(null))
         {
             tookDamageThisTurn = tookDamage;
+            conditionalSynergyContext = new ConditionalSynergyContext(
+                container,
+                this,
+                tookDamageThisTurn,
+                () => LoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"Revenge counter-attack triggered from {container.name}",
+                    LogCategory.Combat),
+                conditionDescription: "Holder took damage this turn");
         }
 
         public ConditionalSynergyContext BuildConditionalContext(TokenAllocationContext context) =>
-            new ConditionalSynergyContext(context.TokenContainerController, this,
-                tookDamageThisTurn,
-                () => LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"Revenge counter-attack triggered from {context.TokenContainerController.name}", LogCategory.Combat),
-                conditionDescription: "Holder took damage this turn");
+            conditionalSynergyContext;
 
         public override void ExecuteTokenEffect() => base.ExecuteTokenEffect();
     }

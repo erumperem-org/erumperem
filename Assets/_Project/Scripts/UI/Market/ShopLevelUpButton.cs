@@ -1,5 +1,8 @@
 using System;
+using Core.Exploration.Items;
+using Core.Exploration.Items.Currencies;
 using Erumperem.Progression;
+using Services.DebugUtilities;
 using Services.IO;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,7 +14,8 @@ public sealed class ShopLevelUpButton : MonoBehaviour
     [Header("Visualização")]
     [SerializeField] private TMPro.TMP_Text _priceText;
     [SerializeField] private TMPro.TMP_Text _levelText;
-    [SerializeField] private Button         _button;
+    [SerializeField] private Image icon;
+    [SerializeField] private Button _button;
 
     [Header("Persistência")]
     [SerializeField] private string _saveId = "shop_levelup_default";
@@ -23,12 +27,17 @@ public sealed class ShopLevelUpButton : MonoBehaviour
 
     /// <summary>Nível atual (0 = nenhum nível comprado ainda).</summary>
     private int _currentLevel;
-
-    private const int MaxLevel  = 12;
-    private const int TierSize  = 4;
-    private static readonly int[] TierPrices = { 5, 10, 15, 20 };
+    public int pointsTogive;
+    private const int MaxLevel = 12;
+    private const int TierSize = 4;
+    private static readonly int[] TierPrices = { 500, 1000, 1500, 2000 };
 
     private enum Tier { Rare, Epic, Legendary }
+    public ScriptableObject rareCurrency, epicCurrency, legendaryCurrency;
+    public PlayerInventorySystem inventorySystem;
+    public PlayerProgressionService playerProgression;
+
+    private bool _isProcessing;
 
     // ── Unity lifecycle ───────────────────────────────────────────────────
 
@@ -49,22 +58,65 @@ public sealed class ShopLevelUpButton : MonoBehaviour
         _button.onClick.RemoveListener(OnClick);
     }
 
-    private void OnEnable()  => RefreshUI();
+    private void OnEnable() => RefreshUI();
 
     // ── Click ─────────────────────────────────────────────────────────────
 
     private async void OnClick()
     {
-        if (_currentLevel >= MaxLevel) return;
+        if (_isProcessing)
+            return;
 
-        OnLevelUp(_currentLevel, GetCurrentTier(), GetCurrentPrice());
+        if (_currentLevel >= MaxLevel)
+            return;
 
-        _currentLevel++;
+        var tier = GetCurrentTier();
+        var price = GetCurrentPrice();
+        var currency = GetCurrentCurrency(tier);
 
-        await SaveStateAsync();
-        RefreshUI();
+        if (currency is not IStorageable item)
+            return;
+
+        if (inventorySystem.GetAmount(item) < price)
+        {
+            LoggerService.PrintLogMessage(
+                LogLevel.Debug,
+                "Fundos insuficientes",
+                LogCategory.Gameplay);
+            return;
+        }
+
+        _isProcessing = true;
+        try
+        {
+            inventorySystem.RemoveItems(new System.Collections.Generic.Dictionary<IStorageable, int>
+        {
+            { item, price }
+        });
+
+            _currentLevel++;
+
+            OnLevelUp(_currentLevel, tier, price);
+
+            try
+            {
+                await SaveStateAsync();
+            }
+            catch (Exception ex)
+            {
+                LoggerService.PrintLogMessage(
+                    LogLevel.Error,
+                    ex.Message,
+                    LogCategory.SaveSystem);
+            }
+
+            RefreshUI();
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
     }
-
     // ── Ponto de extensão ─────────────────────────────────────────────────
 
     /// <summary>
@@ -76,6 +128,7 @@ public sealed class ShopLevelUpButton : MonoBehaviour
     /// <param name="price">Preço cobrado neste nível.</param>
     private void OnLevelUp(int level, Tier tier, int price)
     {
+        playerProgression.TrySetSharedSkillLevel(level * pointsTogive);
     }
 
     // ── Progressão ────────────────────────────────────────────────────────
@@ -87,6 +140,16 @@ public sealed class ShopLevelUpButton : MonoBehaviour
         _ => Tier.Legendary
     };
 
+    private ScriptableObject GetCurrentCurrency(Tier tier)
+    {
+        switch (tier)
+        {
+            case Tier.Rare: return rareCurrency;
+            case Tier.Epic: return epicCurrency;
+            case Tier.Legendary: return legendaryCurrency;
+        }
+        return null;
+    }
     private int GetCurrentPrice() => TierPrices[_currentLevel % TierSize];
 
     // ── UI ────────────────────────────────────────────────────────────────
@@ -97,12 +160,20 @@ public sealed class ShopLevelUpButton : MonoBehaviour
         {
             _button.interactable = false;
             if (_priceText) _priceText.text = "MAX";
-            if (_levelText) _levelText.text = $"Nível {MaxLevel}/{MaxLevel}";
+            if (_levelText) _levelText.text = $"Level {MaxLevel}/{MaxLevel}";
+            icon.sprite = null;
+            icon.enabled = false;
             return;
         }
+        var reference = GetCurrentCurrency(GetCurrentTier());
+        if (reference is AnomalousArtifact anomalousArtifact)
+        {
+            icon.sprite = anomalousArtifact.Sprite;
+        }
 
+        icon.enabled = true;
         if (_priceText) _priceText.text = GetCurrentPrice().ToString();
-        if (_levelText) _levelText.text = $"Nível {_currentLevel + 1}/{MaxLevel}";
+        if (_levelText) _levelText.text = $"Level {_currentLevel}/{MaxLevel}";
         _button.interactable = true;
     }
 
@@ -114,8 +185,8 @@ public sealed class ShopLevelUpButton : MonoBehaviour
         {
             await _fileService.WriteAsync(new FileData(
                 fileContent: _currentLevel.ToString(),
-                fileName:    _saveId + ".sav",
-                filePath:    SaveDirectory
+                fileName: _saveId + ".sav",
+                filePath: SaveDirectory
             ));
         }
         catch (Exception e)

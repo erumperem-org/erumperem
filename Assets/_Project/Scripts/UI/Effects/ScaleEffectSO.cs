@@ -11,9 +11,11 @@ public class ScaleEffectSO : UiEffectSO
 
     public override IEnumerator Execute(MonoBehaviour context)
     {
-        yield return context.transform
+        KillTransformTweens(context);
+
+        yield return LinkTweenToContext(context, context.transform
             .DOScale(Vector3.one * targetScale, duration)
-            .SetEase(ease)
+            .SetEase(ease))
             .WaitForCompletion();
     }
 }

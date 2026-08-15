@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Erumperem.Combat.Runtime;
 using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
@@ -17,6 +18,7 @@ namespace Erumperem.Combat.HealthBars
         [SerializeField] private CombatSkillButtonBarUIManager skillButtonBarUIManager;
 
         private CombatSessionHub _sessionHub;
+        private readonly CombatSessionHubSubscription _sessionHubSubscription = new();
         private CombatPrototypeController _combatSession;
 
         private bool _isActionPresentationActive;
@@ -34,52 +36,39 @@ namespace Erumperem.Combat.HealthBars
         private void OnEnable()
         {
             ResolveCombatServices();
-            SubscribeToSessionHubIfAvailable();
-            TryCatchUpWithActiveCombatSession();
+            _sessionHubSubscription.Subscribe(_sessionHub, HandleCombatSessionReady, HandleCombatSessionClosed);
+            SubscribeToPresentationEventsIfAvailable();
+            _sessionHubSubscription.TryCatchUpWithActiveCombatSession(_combatSession);
         }
 
-        private void SubscribeToSessionHubIfAvailable()
+        private void SubscribeToPresentationEventsIfAvailable()
         {
             if (_sessionHub == null)
             {
                 return;
             }
 
-            _sessionHub.OnCombatSessionReadyForUi -= HandleCombatSessionReady;
-            _sessionHub.OnCombatSessionClosed -= HandleCombatSessionClosed;
             _sessionHub.OnCombatSkillExecutionPresentationStarted -= HandleSkillPresentationStarted;
             _sessionHub.OnActionPresentationEnded -= HandleActionPresentationEnded;
-            _sessionHub.OnCombatSessionReadyForUi += HandleCombatSessionReady;
-            _sessionHub.OnCombatSessionClosed += HandleCombatSessionClosed;
             _sessionHub.OnCombatSkillExecutionPresentationStarted += HandleSkillPresentationStarted;
             _sessionHub.OnActionPresentationEnded += HandleActionPresentationEnded;
         }
 
-        private void TryCatchUpWithActiveCombatSession()
-        {
-            if (_combatSession != null)
-            {
-                return;
-            }
-
-            var activeCombatSession = FindFirstObjectByType<CombatPrototypeController>();
-            if (activeCombatSession != null && activeCombatSession.IsBattleOngoing)
-            {
-                HandleCombatSessionReady(activeCombatSession);
-            }
-        }
-
-        private void OnDisable()
+        private void UnsubscribeFromPresentationEvents()
         {
             if (_sessionHub == null)
             {
                 return;
             }
 
-            _sessionHub.OnCombatSessionReadyForUi -= HandleCombatSessionReady;
-            _sessionHub.OnCombatSessionClosed -= HandleCombatSessionClosed;
             _sessionHub.OnCombatSkillExecutionPresentationStarted -= HandleSkillPresentationStarted;
             _sessionHub.OnActionPresentationEnded -= HandleActionPresentationEnded;
+        }
+
+        private void OnDisable()
+        {
+            _sessionHubSubscription.Unsubscribe();
+            UnsubscribeFromPresentationEvents();
         }
 
         private void LateUpdate()

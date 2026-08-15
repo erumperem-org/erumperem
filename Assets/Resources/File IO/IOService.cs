@@ -13,8 +13,8 @@ namespace Services.IO
         public FileData(string fileContent, string fileName, string filePath)
         {
             _fileContent = fileContent;
-            _fileName = fileName;
-            _filePath = filePath;
+            _fileName    = fileName;
+            _filePath    = filePath;
         }
 
         /// <summary>Full path including file name (e.g. /tmp/logs/app.txt).</summary>
@@ -31,42 +31,32 @@ namespace Services.IO
 
     public sealed class FileService : IFileService
     {
-        // -------------------------------------------------------------------------
-        // Write
-        // -------------------------------------------------------------------------
+        // ── Write ─────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Writes <see cref="FileData._fileContent"/> to disk, creating any missing
-        /// directories along the way.
+        /// Grava <see cref="FileData._fileContent"/> em disco,
+        /// criando os diretórios necessários se não existirem.
         /// </summary>
         public async Task WriteAsync(FileData fileData)
         {
-            if (string.IsNullOrWhiteSpace(fileData._fileName))
-                throw new ArgumentException("File name cannot be null or empty.", nameof(fileData));
-
-            if (string.IsNullOrWhiteSpace(fileData._filePath))
-                throw new ArgumentException("File path cannot be null or empty.", nameof(fileData));
+            ValidateName(fileData._fileName, nameof(fileData._fileName));
+            ValidatePath(fileData._filePath, nameof(fileData._filePath));
 
             Directory.CreateDirectory(fileData._filePath);
-
             await File.WriteAllTextAsync(fileData.FullPath, fileData._fileContent ?? string.Empty);
         }
 
-        // -------------------------------------------------------------------------
-        // Read
-        // -------------------------------------------------------------------------
+        // ── Read ──────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Reads the file at <paramref name="filePath"/>/<paramref name="fileName"/>
-        /// and returns a populated <see cref="FileData"/>.
+        /// Lê o arquivo em <paramref name="filePath"/>/<paramref name="fileName"/>
+        /// e retorna um <see cref="FileData"/> populado.
+        /// Lança <see cref="FileNotFoundException"/> se o arquivo não existir.
         /// </summary>
         public async Task<FileData> ReadAsync(string fileName, string filePath)
         {
-            if (string.IsNullOrWhiteSpace(fileName))
-                throw new ArgumentException("File name cannot be null or empty.", nameof(fileName));
-
-            if (string.IsNullOrWhiteSpace(filePath))
-                throw new ArgumentException("File path cannot be null or empty.", nameof(filePath));
+            ValidateName(fileName, nameof(fileName));
+            ValidatePath(filePath, nameof(filePath));
 
             string fullPath = Path.Combine(filePath, fileName);
 
@@ -74,34 +64,56 @@ namespace Services.IO
                 throw new FileNotFoundException($"File not found: {fullPath}");
 
             string content = await File.ReadAllTextAsync(fullPath);
-
             return new FileData(content, fileName, filePath);
         }
 
-        // -------------------------------------------------------------------------
-        // Exists
-        // -------------------------------------------------------------------------
+        // ── Exists ────────────────────────────────────────────────────────
 
-        /// <summary>Returns <c>true</c> if the file exists on disk.</summary>
+        /// <summary>Retorna <c>true</c> se o arquivo existir em disco.</summary>
         public Task<bool> ExistsAsync(string fileName, string filePath)
         {
+            // Não lança para paths inválidos — retorna false de forma segura,
+            // evitando que chamadores precisem tratar exceção para um simples "existe?".
+            if (string.IsNullOrWhiteSpace(fileName) || string.IsNullOrWhiteSpace(filePath))
+                return Task.FromResult(false);
+
             string fullPath = Path.Combine(filePath, fileName);
             return Task.FromResult(File.Exists(fullPath));
         }
 
-        // -------------------------------------------------------------------------
-        // Delete
-        // -------------------------------------------------------------------------
+        // ── Delete ────────────────────────────────────────────────────────
 
-        /// <summary>Deletes the file if it exists; does nothing otherwise.</summary>
+        /// <summary>
+        /// Apaga o arquivo se existir; não faz nada caso contrário.
+        /// Não lança exceção se o arquivo não existir.
+        /// </summary>
         public Task DeleteAsync(string fileName, string filePath)
         {
+            // Não lança para paths inválidos — um delete de arquivo inexistente
+            // é considerado sucesso (idempotente).
+            if (string.IsNullOrWhiteSpace(fileName) || string.IsNullOrWhiteSpace(filePath))
+                return Task.CompletedTask;
+
             string fullPath = Path.Combine(filePath, fileName);
 
             if (File.Exists(fullPath))
                 File.Delete(fullPath);
 
             return Task.CompletedTask;
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────────
+
+        private static void ValidateName(string value, string paramName)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException("File name cannot be null or empty.", paramName);
+        }
+
+        private static void ValidatePath(string value, string paramName)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException("File path cannot be null or empty.", paramName);
         }
     }
 }

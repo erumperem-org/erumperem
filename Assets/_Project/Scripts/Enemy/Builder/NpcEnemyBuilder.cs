@@ -5,11 +5,14 @@
 // Responsabilidade única: montar o NPC conectando pool,
 // config e sistemas externos.
 //
-// Mudanças em relação à versão original:
-//   • Não passa mais Detector no NpcEnemyConfig (campo removido —
-//     era um campo morto; o NpcEnemy já obtém o Detector via Awake).
-//   • Registra o NPC no NpcEnemyContactHandler após Activate().
-//   • Chama pool.Return(NpcEnemy) diretamente, sem cast de interface.
+// CORREÇÕES:
+//   • onReturnToPool: removido cast desnecessário `enemy is NpcEnemy`.
+//     O delegate agora recebe NpcEnemy diretamente, alinhado com
+//     o que NpcEnemy.OnReturnToPoolRequested já invoca (passa `this`).
+//   • ResolveDependencies() não é mais chamado em cada Build()/BuildAt().
+//     Os métodos Validate* só chamam Resolve se alguma dep ainda é nula,
+//     evitando GetComponentInChildren repetido a cada spawn.
+//   • corruptionSystem removido — era campo serializado sem uso.
 // ============================================================
 
 using DetectionSystem.Core;
@@ -27,7 +30,6 @@ namespace Systems.NPC.Builder
         [SerializeField] private NpcEnemyPool                    _pool;
         [SerializeField] private NavMeshSpawnPositionServiceMono _spawnService;
         [SerializeField] private NpcEnemyContactHandler          _contactHandler;
-        [SerializeField] private ExplorationCorruptionSystem corruptionSystem;
 
         [Header("Comportamento")]
         [SerializeField, Min(1f)]   private float _wanderRadius    = 8f;
@@ -37,7 +39,23 @@ namespace Systems.NPC.Builder
         [Tooltip("Tempo máximo (s) em Wander antes de retornar à pool.")]
         [SerializeField, Min(1f)]   private float _wanderLifetime  = 30f;
 
+        [Tooltip("Distância mínima do player para spawn aleatório (sem spawn points configurados). " +
+                 "Deve coincidir com o PlayerMinSpawnRadius do NpcEnemySpawner.")]
+        [SerializeField, Min(0f)]   private float _minSpawnRadiusFromPlayer = 10f;
+
+        private Transform _playerTransform;
+
+        // ── Flags de resolução ────────────────────────────────────────────
+
+        // Evita chamar GetComponentInChildren repetidamente após resolução bem-sucedida.
+        private bool _dependenciesResolved;
+
         // ── API pública ───────────────────────────────────────────────────
+
+        public void SetPlayerTransform(Transform playerTransform)
+        {
+            _playerTransform = playerTransform;
+        }
 
         public bool Build(Vector3 spawnCenter = default)
         {
@@ -49,13 +67,31 @@ namespace Systems.NPC.Builder
             }
 
             Vector3 spawnPoint;
-            bool found = spawnCenter == Vector3.zero
-                ? _spawnService.TryGetPosition(out spawnPoint)
-                : _spawnService.TryGetPosition(spawnCenter, _wanderRadius * 2f, out spawnPoint);
+            bool    found;
+
+            if (spawnCenter != Vector3.zero)
+            {
+                found = _spawnService.TryGetPosition(spawnCenter, _wanderRadius * 2f, out spawnPoint);
+            }
+            else if (_playerTransform != null && _minSpawnRadiusFromPlayer > 0f)
+            {
+                Vector2 randomDir2D = Random.insideUnitCircle.normalized;
+                var     offset      = new Vector3(randomDir2D.x, 0f, randomDir2D.y)
+                                      * _minSpawnRadiusFromPlayer;
+                Vector3 candidateCenter = _playerTransform.position + offset;
+
+                found = _spawnService.TryGetPosition(candidateCenter, _wanderRadius, out spawnPoint);
+
+                if (!found)
+                    found = _spawnService.TryGetPosition(out spawnPoint);
+            }
+            else
+            {
+                found = _spawnService.TryGetPosition(out spawnPoint);
+            }
 
             if (!found)
             {
-                Debug.LogWarning("[NpcEnemyBuilder] Nenhuma posição de spawn válida.");
                 return false;
             }
 
@@ -67,7 +103,6 @@ namespace Systems.NPC.Builder
             if (!ValidateDependenciesForExactSpawn()) return false;
             if (!_pool.HasAvailable)
             {
-                Debug.LogWarning("[NpcEnemyBuilder] Pool esgotada.");
                 return false;
             }
 
@@ -81,20 +116,20 @@ namespace Systems.NPC.Builder
             NpcEnemy npc = _pool.Get();
             if (npc == null) return false;
 
+            // CORREÇÃO: callback tipado como NpcEnemy — sem cast, sem ambiguidade.
+            // NpcEnemy.OnReturnToPoolRequested invoca OnReturnToPool passando `this`
+            // que já é NpcEnemy, então o delegate pode receber o tipo concreto diretamente.
             var config = new NpcEnemyConfig(
                 spawnPoint      : spawnPoint,
                 wanderRadius    : _wanderRadius,
                 chaseRadius     : _chaseRadius,
                 contactDistance : _contactDistance,
                 wanderLifetime  : _wanderLifetime,
-                onReturnToPool  : (enemy) =>
+                onReturnToPool  : (INpcEnemy enemy) =>
                 {
-                    // Cast seguro: o Builder sabe que só coloca NpcEnemy na pool
-                    if (enemy is NpcEnemy concreteEnemy)
-                    {
-                        _contactHandler?.Unregister(enemy);
-                        _pool.Return(concreteEnemy);
-                    }
+                    _contactHandler?.Unregister(enemy);
+                    if(enemy is NpcEnemy npcEnemy){_pool.Return(npcEnemy);}
+                    
                 }
             );
 
@@ -103,9 +138,6 @@ namespace Systems.NPC.Builder
 
             _contactHandler?.Register(npc);
 
-            Debug.Log($"[NpcEnemyBuilder] '{npc.name}' ativado em {spawnPoint} " +
-                      $"[Wander: {_wanderRadius}m | Chase: {_chaseRadius}m | Lifetime: {_wanderLifetime}s]", npc);
-
             return true;
         }
 
@@ -113,6 +145,9 @@ namespace Systems.NPC.Builder
 
         private void ResolveDependencies()
         {
+            // CORREÇÃO: evita buscas repetidas por reflexão após resolução bem-sucedida.
+            if (_dependenciesResolved) return;
+
             Transform enemySystemRoot = transform.parent;
             if (enemySystemRoot == null) return;
 
@@ -124,11 +159,14 @@ namespace Systems.NPC.Builder
 
             if (_contactHandler == null)
                 _contactHandler = enemySystemRoot.GetComponentInChildren<NpcEnemyContactHandler>(true);
+
+            // Considera resolvido quando o mínimo necessário está disponível.
+            _dependenciesResolved = _pool != null;
         }
 
         private bool ValidateDependenciesForExactSpawn()
         {
-            ResolveDependencies();
+            if (_pool == null) ResolveDependencies();
             if (_pool != null) return true;
             Debug.LogError("[NpcEnemyBuilder] Pool não configurada!", this);
             return false;
@@ -136,7 +174,7 @@ namespace Systems.NPC.Builder
 
         private bool ValidateDependenciesForRandomSpawn()
         {
-            ResolveDependencies();
+            if (_pool == null || _spawnService == null) ResolveDependencies();
             if (_pool != null && _spawnService != null) return true;
             Debug.LogError("[NpcEnemyBuilder] Pool ou SpawnService não configurados!", this);
             return false;

@@ -30,20 +30,12 @@ namespace Core.Exploration.Character.Movement
         {
             if (context is not WanderBehaviorContext ctx) return;
 
-            LoggerService.PrintLogMessage(
-                LogLevel.Debug,
-                $"[{ctx.CharacterName}] → [WanderBehavior] raio: {ctx.WanderRadius}", LogCategory.NPC, LogCategory.AI, LogCategory.Navigation);
-
             _cts = new CancellationTokenSource();
             await WanderAsync(ctx, _cts.Token);
         }
 
         public async Task UnexecuteBehavior(ICharacterMovementStrategyContext context)
         {
-            if (context is WanderBehaviorContext ctx)
-                LoggerService.PrintLogMessage(
-                    LogLevel.Debug,
-                    $"[{ctx.CharacterName}] saindo de [WanderBehavior]", LogCategory.NPC, LogCategory.AI, LogCategory.Navigation);
 
             CancelImmediate();
             await Task.CompletedTask;
@@ -70,21 +62,13 @@ namespace Core.Exploration.Character.Movement
                         continue;
                     }
 
-                    LoggerService.PrintLogMessage(LogLevel.Debug, $"[{ctx.CharacterName}] [WanderBehavior] novo ponto: {point}", LogCategory.NPC, LogCategory.AI, LogCategory.Navigation);
-
-                    ctx.NavMesh.MoveTo(ctx.Adapter, point);
-
-                    while (ctx.NavMesh.IsPending(ctx.Adapter) && !ct.IsCancellationRequested)
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        await Task.Delay(PathPendingDelayMs, ct);
-                    }
-
-                    while (!ct.IsCancellationRequested && !ctx.NavMesh.HasReachedDestination(ctx.Adapter))
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        await Task.Delay(MovementPollDelayMs, ct);
-                    }
+                    await NavMeshMovementAwaiter.MoveToDestinationAndAwaitArrivalAsync(
+                        ctx.NavMesh,
+                        ctx.Adapter,
+                        point,
+                        ct,
+                        PathPendingDelayMs,
+                        MovementPollDelayMs);
 
                     if (ct.IsCancellationRequested) break;
 

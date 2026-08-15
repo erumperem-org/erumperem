@@ -163,6 +163,15 @@ namespace Erumperem.Combat.HealthBars
             RestoreBarsAfterSkillDamagePreview();
         }
 
+        /// <summary>Força re-sync das barras após alteração externa de HP (ex.: cheat F9).</summary>
+        public void InvalidateHealthDisplayCache()
+        {
+            _hasInitializedFromBattleState = false;
+            _lastSyncedHpPercent = -1f;
+            _lastDisplayedCurrentHp = -1;
+            _lastDisplayedMaxHp = -1;
+        }
+
         private void Awake()
         {
             EnsureVisibilityCanvasGroup();

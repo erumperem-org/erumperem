@@ -49,6 +49,7 @@ public enum EffectType
     HealHp = 4,
     ApplyStun = 5,
     HealHpPercent = 6,
+    ApplyRandomDot = 7,
 }
 
 public enum SkillTargetKind
@@ -84,4 +85,7 @@ public enum BattleEventType
 
     /// <summary>Feed de passiva para narrativa/UI (dano modificado, cura extra, etc.).</summary>
     PassiveCombatNarrative = 11,
+
+    /// <summary>Inimigo invocado em slot livre (ex.: passiva do Horse Boss).</summary>
+    CombatantSpawned = 12,
 }

@@ -13,7 +13,7 @@ public sealed class ChestInteractable : Interactable
     [SerializeField] private bool _startOpened;
     [SerializeField] private Animator _animator;
 
-    private static readonly int OpenTrigger  = Animator.StringToHash("OpeningChest");
+    private static readonly int OpenTrigger = Animator.StringToHash("OpeningChest");
     private static readonly int ResetTrigger = Animator.StringToHash("Reset");
 
     private ILootService _lootService = new LootService();
@@ -66,6 +66,11 @@ public sealed class ChestInteractable : Interactable
             StartCoroutine(ReenableAfterAnimation(context));
         }
 
+        if (context.Inventory == null)
+        {
+            TransferToInventory(FindAnyObjectByType<PlayerInventorySystem>());
+            return;
+        }
         TransferToInventory(context.Inventory);
     }
 
@@ -73,7 +78,7 @@ public sealed class ChestInteractable : Interactable
 
     public void ResetChest()
     {
-        IsOpened  = false;
+        IsOpened = false;
         _lastLoot = new Dictionary<IStorageable, int>();
 
         if (_animator != null)

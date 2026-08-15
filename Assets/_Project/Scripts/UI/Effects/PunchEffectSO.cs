@@ -11,8 +11,10 @@ public class PunchEffectSO : UiEffectSO
 
     public override IEnumerator Execute(MonoBehaviour context)
     {
-        yield return context.transform
-            .DOPunchScale(punch, duration, vibrato)
+        KillTransformTweens(context);
+
+        yield return LinkTweenToContext(context, context.transform
+            .DOPunchScale(punch, duration, vibrato))
             .WaitForCompletion();
     }
 }

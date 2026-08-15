@@ -29,6 +29,7 @@ namespace DetectionSystem.Core
         // ── Components ─────────────────────────────────────────────────
 
         private DetectionComponent _detection;
+        public DetectionComponent DetectionComponent { get => _detection; }
 
         // ── Core scanner (non-MonoBehaviour) ───────────────────────────
 
@@ -63,7 +64,7 @@ namespace DetectionSystem.Core
         {
             if (_scanner == null) return;
             _scanner.OnEnter -= HandleEnter;
-            _scanner.OnExit  -= HandleExit;
+            _scanner.OnExit -= HandleExit;
         }
 
         // ── Scan ───────────────────────────────────────────────────────
@@ -78,6 +79,21 @@ namespace DetectionSystem.Core
             _scanner?.Tick(this);
         }
 
+        /// <summary>
+        /// Recria o scanner (ex.: shapes adicionadas em runtime após o primeiro OnEnable).
+        /// </summary>
+        public void ReinitializeScanner()
+        {
+            if (_scanner != null)
+            {
+                _scanner.OnEnter -= HandleEnter;
+                _scanner.OnExit -= HandleExit;
+                _scanner = null;
+            }
+
+            EnsureScannerInitialized();
+        }
+
         private void EnsureScannerInitialized()
         {
             if (_scanner != null) return;
@@ -89,7 +105,7 @@ namespace DetectionSystem.Core
 
             _scanner = new DetectionScanner(_detection.Shapes, transform);
             _scanner.OnEnter += HandleEnter;
-            _scanner.OnExit  += HandleExit;
+            _scanner.OnExit += HandleExit;
         }
 
         // ── Detector-side reaction hooks ───────────────────────────────

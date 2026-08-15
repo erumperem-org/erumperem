@@ -37,7 +37,10 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     [Header("Taxas")]
     [SerializeField, Min(0f)] private float _baseGainPerSecond = 2f;
     [SerializeField, Min(0f)] private float _gainPerMeterBeyondRadius = 0.5f;
-    [SerializeField, Min(0f)] private float _decayPerSecond = 3f;
+    [SerializeField, Min(0f)] private float _decayPerSecond = .1f;
+
+    [Header("Limites")]
+    [SerializeField, Min(1f)] private float _maxCorruption = 250f;
 
     [Header("UI")]
     [SerializeField] private Slider _corruptionSlider;
@@ -46,7 +49,7 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     [Header("IO Settings")]
     [Tooltip("Deve coincidir com a pasta usada pelo ExplorationLoadContext.")]
     [SerializeField] private string _saveFolderName = "Saves";
-    [SerializeField] private string _saveFileName   = "corruption_save.json";
+    [SerializeField] private string _saveFileName = "corruption_save.json";
 
     // ── Eventos públicos ──────────────────────────────────────────────────
 
@@ -54,20 +57,54 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     public event Action OnTierMid;
     public event Action OnTierHigh;
 
+    /// <summary>Disparado sempre que o valor de corrupção muda (0–MaxCorruption). A UI reage a este evento.</summary>
+    public event Action<float> OnCorruptionChanged;
+
     // ── Estado interno ────────────────────────────────────────────────────
 
-    public float          Corruption ;
+    private float _corruption;
+
+    /// <summary>Valor máximo de corrupção configurável via Inspector.</summary>
+    public float MaxCorruption => _maxCorruption;
+
+    /// <summary>
+    /// Valor atual de corrupção (0–MaxCorruption). O setter faz clamp e dispara
+    /// <see cref="OnCorruptionChanged"/> apenas quando o valor muda.
+    /// </summary>
+    public float Corruption
+    {
+        get => _corruption;
+        set
+        {
+            float clampedCorruption = Mathf.Clamp(value, 0f, _maxCorruption);
+            if (Mathf.Approximately(_corruption, clampedCorruption))
+            {
+                return;
+            }
+
+            if (clampedCorruption < _corruption)
+            {
+                LoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"[HEAL-DEBUG] [CORRUPTION] Corrupção reduzida {_corruption:F1} → {clampedCorruption:F1}. " +
+                    $"Origem: {ResolveCorruptionCallSiteDescription()}",
+                    LogCategory.Player);
+            }
+
+            _corruption = clampedCorruption;
+            OnCorruptionChanged?.Invoke(_corruption);
+        }
+    }
+
     public CorruptionTier CurrentTier { get; private set; } = CorruptionTier.Low;
 
     private IPlayableCharacter _main;
-    private CorruptionTier     _lastTier = CorruptionTier.Low;
+    private CorruptionTier _lastTier = CorruptionTier.Low;
 
     private readonly IFileService _fileService = new FileService();
     private string _saveDirectory;
 
-    // Valor lido do disco por LoadAsync(), aguardando RestoreState().
     private float _loadedCorruption;
-    private bool  _loadCompleted;
+    private bool _loadCompleted;
 
     // ── Unity lifecycle ───────────────────────────────────────────────────
 
@@ -80,12 +117,16 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     {
         if (_manager != null)
             _manager.OnMainChanged += HandleMainChanged;
+
+        OnCorruptionChanged += HandleCorruptionChanged;
     }
 
     private void OnDisable()
     {
         if (_manager != null)
             _manager.OnMainChanged -= HandleMainChanged;
+
+        OnCorruptionChanged -= HandleCorruptionChanged;
     }
 
     private void Start()
@@ -101,47 +142,35 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
         if (_main == null || _safeAreaCenter == null) return;
 
         UpdateCorruption();
-        UpdateSlider();
         CheckTierTransition();
     }
 
     // ── API pública de IO ─────────────────────────────────────────────────
 
-    /// <summary>
-    /// Lê o arquivo de save e armazena o valor internamente.
-    /// Deve ser aguardado pelo <see cref="ExplorationLoadContext"/> antes de
-    /// chamar <see cref="RestoreState"/>.
-    /// </summary>
     public async Task LoadAsync()
     {
         await LoadFromFileAsync();
         _loadCompleted = true;
     }
 
-    /// <summary>
-    /// Aplica o valor carregado por <see cref="LoadAsync"/>.
-    /// Se LoadAsync não foi chamado ou o arquivo não existia, aplica 0 (default).
-    /// </summary>
     public void RestoreState()
     {
         float value = _loadCompleted ? _loadedCorruption : 0f;
         ApplyCorruption(value, fireEvents: false);
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
-            $"[CORRUPTION] RestoreState: {Corruption:F1}% (Tier: {CurrentTier})",
+            $"[CORRUPTION] RestoreState: {Corruption:F1} (Tier: {CurrentTier})",
             LogCategory.Player);
     }
 
-    /// <summary>Grava o valor atual em disco.</summary>
     public async void SaveState() => await SaveToFileAsync();
 
-    /// <summary>Zera a corrupção e apaga o arquivo em disco (novo jogo).</summary>
     public async void ClearSave() => await ClearSaveAsync();
 
     public async Task ClearSaveAsync()
     {
         _loadedCorruption = 0f;
-        _loadCompleted    = true;
+        _loadCompleted = true;
         ApplyCorruption(0f, fireEvents: false);
 
         try
@@ -157,20 +186,42 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
         }
     }
 
+    private static string ResolveCorruptionCallSiteDescription()
+    {
+        var stackTrace = new System.Diagnostics.StackTrace(false);
+        for (int frameIndex = 0; frameIndex < stackTrace.FrameCount; frameIndex++)
+        {
+            var callingMethod = stackTrace.GetFrame(frameIndex)?.GetMethod();
+            var declaringType = callingMethod?.DeclaringType;
+            if (declaringType != null && declaringType != typeof(ExplorationCorruptionSystem))
+            {
+                return $"{declaringType.Name}.{callingMethod.Name}";
+            }
+        }
+
+        return "desconhecido";
+    }
+
     // ── Handlers ─────────────────────────────────────────────────────────
 
     private void HandleMainChanged(IPlayableCharacter newMain) => _main = newMain;
+
+    private void HandleCorruptionChanged(float corruptionValue) => UpdateSlider();
 
     // ── Lógica de corrupção ───────────────────────────────────────────────
 
     private void UpdateCorruption()
     {
-        float beyond = DistanceBeyondRadius();
-        float delta  = beyond <= 0f
-            ? -_decayPerSecond * Time.deltaTime
-            : (_baseGainPerSecond + _gainPerMeterBeyondRadius * beyond) * Time.deltaTime;
+        float beyondRadius = DistanceBeyondRadius();
 
-        Corruption = Mathf.Clamp(Corruption + delta, 0f, 100f);
+        if (beyondRadius <= 0f)
+        {
+            Corruption -= _decayPerSecond * Time.deltaTime;
+            return;
+        }
+
+        float gainPerSecond = _baseGainPerSecond + _gainPerMeterBeyondRadius * beyondRadius;
+        Corruption += gainPerSecond * Time.deltaTime;
     }
 
     private float DistanceBeyondRadius()
@@ -195,16 +246,18 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
         }
     }
 
-    private static CorruptionTier TierFor(float v) =>
-        v < 50f ? CorruptionTier.Low : v < 75f ? CorruptionTier.Mid : CorruptionTier.High;
+    private CorruptionTier TierFor(float v) =>
+        v < _maxCorruption * 0.5f ? CorruptionTier.Low
+        : v < _maxCorruption * 0.75f ? CorruptionTier.Mid
+        : CorruptionTier.High;
 
     // ── Helpers de aplicação ──────────────────────────────────────────────
 
     private void ApplyCorruption(float value, bool fireEvents)
     {
-        Corruption = Mathf.Clamp(value, 0f, 100f);
-        var tier   = TierFor(Corruption);
-        _lastTier  = CurrentTier = tier;
+        Corruption = value;
+        var tier = TierFor(Corruption);
+        _lastTier = CurrentTier = tier;
 
         if (fireEvents)
             switch (tier)
@@ -223,12 +276,12 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     {
         try
         {
-            var json     = JsonUtility.ToJson(new CorruptionSaveData { Corruption = Corruption }, true);
+            var json = JsonUtility.ToJson(new CorruptionSaveData { Corruption = Corruption }, true);
             var fileData = new FileData(json, _saveFileName, _saveDirectory);
             await _fileService.WriteAsync(fileData);
 
             LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[CORRUPTION] Salvo: {Corruption:F1}%", LogCategory.Player);
+                $"[CORRUPTION] Salvo: {Corruption:F1}", LogCategory.Player);
         }
         catch (Exception ex)
         {
@@ -243,19 +296,19 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
         {
             if (!await _fileService.ExistsAsync(_saveFileName, _saveDirectory))
             {
-                _loadedCorruption = 0f; // default
+                _loadedCorruption = 0f;
                 LoggerService.PrintLogMessage(LogLevel.Debug,
                     "[CORRUPTION] Sem arquivo de save — default 0.", LogCategory.Player);
                 return;
             }
 
             var fileData = await _fileService.ReadAsync(_saveFileName, _saveDirectory);
-            var data     = JsonUtility.FromJson<CorruptionSaveData>(fileData._fileContent);
+            var data = JsonUtility.FromJson<CorruptionSaveData>(fileData._fileContent);
 
-            _loadedCorruption = data != null ? Mathf.Clamp(data.Corruption, 0f, 100f) : 0f;
+            _loadedCorruption = data != null ? Mathf.Clamp(data.Corruption, 0f, _maxCorruption) : 0f;
 
             LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[CORRUPTION] Lido do disco: {_loadedCorruption:F1}%", LogCategory.Player);
+                $"[CORRUPTION] Lido do disco: {_loadedCorruption:F1}", LogCategory.Player);
         }
         catch (Exception ex)
         {
@@ -278,9 +331,9 @@ public sealed class ExplorationCorruptionSystem : MonoBehaviour
     private void UpdateSlider()
     {
         if (_corruptionSlider == null) return;
-        _corruptionSlider.value = Corruption / 100f;
+        _corruptionSlider.value = Corruption / _maxCorruption;
         if (_corruptionNumber != null)
-            _corruptionNumber.text = Mathf.RoundToInt(Corruption).ToString();
+            _corruptionNumber.text = Mathf.RoundToInt(Corruption / _maxCorruption * 100f).ToString();
     }
 
     // ── Gizmos ────────────────────────────────────────────────────────────

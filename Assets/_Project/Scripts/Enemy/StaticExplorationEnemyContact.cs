@@ -66,10 +66,13 @@ public sealed class StaticExplorationEnemyContact : MonoBehaviour
             return;
         }
 
-        _combatTriggered = true;
-        CombatExplorationBridge.Instance?.NotifyStaticCombatContactTriggered();
-        CombatExplorationBridge.Instance?.NotifyEnteringCombat();
-        SceneTransitionHandler.LoadScene(CombatSceneName);
+        if (detectedCollider.tag == "Player" && !IsCombatTriggerBlocked())
+        {
+            _combatTriggered = true;
+            CombatExplorationBridge.Instance?.NotifyStaticCombatContactTriggered();
+            CombatExplorationBridge.Instance?.NotifyEnteringCombat();
+            SceneTransitionHandler.LoadScene(CombatSceneName);
+        }
     }
 
     private void HandleDetectorExit(Collider detectedCollider, string shapeLabel, int shapeIndex)
@@ -90,7 +93,9 @@ public sealed class StaticExplorationEnemyContact : MonoBehaviour
     private static bool IsCombatTriggerBlocked()
     {
         return CombatExplorationBridge.IsCombatReentryBlocked
-            || CombatExplorationBridge.RequiresCombatEntryZoneClearance;
+    || CombatExplorationBridge.AreExplorationCombatContactsBlocked
+    || CombatExplorationBridge.RequiresCombatEntryZoneClearance
+    || ExplorationVillageEvents.IsPlayerInsideVillage;
     }
 
     private static bool IsPlayerCollider(Collider collider)

@@ -1,0 +1,140 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &1568187911151632547
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1725283583272463792, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.08317826
+      objectReference: {fileID: 0}
+    - target: {fileID: 1725283583272463792, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.000008033531
+      objectReference: {fileID: 0}
+    - target: {fileID: 1725283583272463792, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -14.512185
+      objectReference: {fileID: 0}
+    - target: {fileID: 1725283583272463792, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1725283583272463792, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1725283583272463792, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1725283583272463792, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1725283583272463792, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1725283583272463792, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1725283583272463792, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2070143912985818890, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+      propertyPath: m_Name
+      value: HorseBossOverworld Variant
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2070143912985818890, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7502690045336289497}
+    - targetCorrespondingSourceObject: {fileID: 2070143912985818890, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8612045538176291842}
+    - targetCorrespondingSourceObject: {fileID: 2070143912985818890, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8612045538176291843}
+  m_SourcePrefab: {fileID: 100100000, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+--- !u!1 &682843394496903081 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2070143912985818890, guid: 884e38a7959f00c44a173a14300f8f87, type: 3}
+  m_PrefabInstance: {fileID: 1568187911151632547}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7502690045336289497
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 682843394496903081}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7237c1a374dd9b0459eecc7cff243fa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HorseBossOverworldCombatContact
+  _detectionDelay: 4
+--- !u!114 &8612045538176291842
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 682843394496903081}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d4c6307aeeefbf48b6c54dd6a9da949, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DetectionSystem.Core.DetectionComponent
+  shapes:
+  - label: Contact
+    shapeType: 1
+    enabled: 1
+    offset: {x: 0, y: 2.5, z: 0}
+    layerMasks:
+    - serializedVersion: 2
+      m_Bits: 128
+    filterTags:
+    - Player
+    gizmoColor: {r: 1, g: 0.6, b: 0.1, a: 1}
+    solidAlpha: 0.2
+    sphere:
+      radius: 1
+    box:
+      halfExtents: {x: 4, y: 2.5, z: 4}
+    cylinder:
+      radius: 1
+      height: 2
+    cone:
+      distance: 5
+      angle: 45
+    plane:
+      size: {x: 2, y: 2}
+    triangle:
+      a: {x: -1, y: 0, z: 0}
+      b: {x: 1, y: 0, z: 0}
+      c: {x: 0, y: 0, z: 2}
+  drawGizmos: 1
+  showLabels: 1
+--- !u!114 &8612045538176291843
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 682843394496903081}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5832b752548ffd4b981307b23b843a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DetectionSystem.Core.Detector

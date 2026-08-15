@@ -78,13 +78,13 @@ public static class SkillCombatTargetPreviewResolver
 
         foreach (var effect in effects)
         {
-            if (string.Equals(effect.EffectScope, "AllAllies", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(effect.EffectScope, EffectScopes.AllAllies, StringComparison.OrdinalIgnoreCase))
             {
                 affectedCombatants.AddRange(LivingSameSide(battleState, actor));
                 continue;
             }
 
-            if (string.Equals(effect.EffectScope, "AllEnemies", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(effect.EffectScope, EffectScopes.AllEnemies, StringComparison.OrdinalIgnoreCase))
             {
                 affectedCombatants.AddRange(LivingOppositeSide(battleState, actor));
             }

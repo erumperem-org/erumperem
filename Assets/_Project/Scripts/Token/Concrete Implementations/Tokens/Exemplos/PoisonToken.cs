@@ -14,25 +14,44 @@ namespace Core.Tokens
     /// </summary>
     public class PoisonToken : TokenController, IAdditiveSynergy
     {
-        public HashSet<Type> additiveSynergys { get; } = new HashSet<Type> { typeof(PoisonToken) };
-        public int damagePerTick = 5;
+        private const int DefaultDamagePerTick = 5;
 
-        public PoisonToken() : base(
+        private readonly Action<int> applyDamage;
+
+        public HashSet<Type> additiveSynergys { get; } = new HashSet<Type> { typeof(PoisonToken) };
+        public int damagePerTick = DefaultDamagePerTick;
+
+        public PoisonToken() : this(null)
+        { }
+
+        public PoisonToken(
+            Action<int> applyDamage,
+            int damagePerTick = DefaultDamagePerTick) : base(
             typeof(PoisonToken).Name,
             new LinearStackData(0.1f),
             new IOnHitTokenAllocation())
-        { }
+        {
+            this.applyDamage = applyDamage;
+            this.damagePerTick = damagePerTick;
+        }
 
         public AdditiveSynergyContext BuildAdditiveContext(TokenAllocationContext context) =>
             new AdditiveSynergyContext(context.TokenContainerController, this);
 
         public void ApplyAdditiveSynergy(AdditiveSynergyContext context)
         {
-            var existing = TokenContainerController.GetOtherToken<PoisonToken>(context.TokenContainerController, this);
-            if (existing != null)
-                existing.damagePerTick += damagePerTick;
+            PoisonToken existingPoisonToken =
+                TokenContainerController.GetOtherToken<PoisonToken>(
+                    context.TokenContainerController,
+                    this);
+            if (existingPoisonToken != null)
+                existingPoisonToken.damagePerTick += damagePerTick;
         }
 
-        public override void ExecuteTokenEffect() => base.ExecuteTokenEffect();
+        public override void ExecuteTokenEffect()
+        {
+            applyDamage?.Invoke(damagePerTick);
+            base.ExecuteTokenEffect();
+        }
     }
 }

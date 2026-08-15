@@ -52,7 +52,7 @@ public sealed class InventoryPanelView : MonoBehaviour
         Populate();
     }
 
-    private void OnDisable()
+    private void OnDestroy()
     {
         if (_inventory == null) return;
 

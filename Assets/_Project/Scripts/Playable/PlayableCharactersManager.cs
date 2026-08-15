@@ -30,7 +30,7 @@ public sealed class PlayableCharactersManager : MonoBehaviour
         }
     }
 
-    public IPlayableCharacter Main      { get; private set; }
+    public IPlayableCharacter Main { get; private set; }
     public IPlayableCharacter Companion { get; private set; }
 
     public event Action<IPlayableCharacter> OnMainChanged;
@@ -99,9 +99,9 @@ public sealed class PlayableCharactersManager : MonoBehaviour
         {
             switch (newState)
             {
-                case PlayableCharacterState.Main:      PromoteToMain(character);      break;
+                case PlayableCharacterState.Main: PromoteToMain(character); break;
                 case PlayableCharacterState.Companion: PromoteToCompanion(character); break;
-                case PlayableCharacterState.Resting:   PromoteToResting(character);   break;
+                case PlayableCharacterState.Resting: PromoteToResting(character); break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
             }
@@ -146,6 +146,7 @@ public sealed class PlayableCharactersManager : MonoBehaviour
 
         _transitioner.ApplyMain(next, _inputReader);
         next.CurrentState = PlayableCharacterState.Main;
+        next.GetComponent<Collider>().isTrigger = false;
         next.UpdateStateExposed();
         next.DetectionSystem.ClearAvailable();
         Main = next;
@@ -168,6 +169,7 @@ public sealed class PlayableCharactersManager : MonoBehaviour
 
         _transitioner.ApplyCompanion(next);
         next.CurrentState = PlayableCharacterState.Companion;
+        next.GetComponent<Collider>().isTrigger = true;
         next.UpdateStateExposed();
         Companion = next;
         OnCompanionChanged?.Invoke(Companion);
@@ -178,6 +180,66 @@ public sealed class PlayableCharactersManager : MonoBehaviour
         if (character == null) return;
         _transitioner.ApplyResting(character);
         character.CurrentState = PlayableCharacterState.Resting;
+        character.GetComponent<Collider>().isTrigger = false;
         character.UpdateStateExposed();
+    }
+
+    public void SetStateForLoad(PlayableCharacterState newState, PlayableCharacter character, Vector3 loadPosition)
+    {
+        EnsureSceneReferencesResolved();
+
+        if (!_playables.Contains(character))
+            throw new InvalidOperationException(
+                $"[PlayableCharactersManager] '{character.CharacterName}' não pertence à lista gerenciada.");
+
+        character.CurrentState = PlayableCharacterState.None;
+
+        try
+        {
+            switch (newState)
+            {
+                case PlayableCharacterState.Main:
+                    _transitioner.ApplyMain(character, _inputReader);
+                    character.CurrentState = PlayableCharacterState.Main;
+                    character.GetComponent<Collider>().isTrigger = false;
+                    character.UpdateStateExposed();
+                    character.DetectionSystem.ClearAvailable();
+                    Main = character;
+                    OnMainChanged?.Invoke(Main);
+                    if (Companion != null && Companion != character)
+                        _transitioner.ApplyCompanion(Companion as PlayableCharacter);
+                    break;
+
+                case PlayableCharacterState.Companion:
+                    _transitioner.ApplyCompanion(character, loadPosition);
+                    character.CurrentState = PlayableCharacterState.Companion;
+                    character.GetComponent<Collider>().isTrigger = true;
+                    character.UpdateStateExposed();
+                    Companion = character;
+                    OnCompanionChanged?.Invoke(Companion);
+                    break;
+
+                case PlayableCharacterState.Resting:
+                    _transitioner.ApplyResting(character, loadPosition);
+                    character.CurrentState = PlayableCharacterState.Resting;
+                    character.GetComponent<Collider>().isTrigger = false;
+                    character.UpdateStateExposed();
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
+            }
+
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                $"[{character.CharacterName.ToUpper()}] (load) → {newState} @ {loadPosition}.",
+                LogCategory.Player);
+        }
+        catch (Exception e)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Error,
+                $"[{character.CharacterName.ToUpper()}] Falha ao transitar para {newState} (load): {e}",
+                LogCategory.Player);
+            throw;
+        }
     }
 }

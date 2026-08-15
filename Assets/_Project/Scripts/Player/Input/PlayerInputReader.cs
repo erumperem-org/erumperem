@@ -50,6 +50,7 @@ namespace Player
             // Se estiver como "Value/Vector2", troque por WasPressedThisFrame() no Update.
             _interactAction.performed += _ =>
             {
+                if (IsBlocked) return;
                 OnInteract?.Invoke();
             };
             _torchAction.performed += _ => OnTorch?.Invoke();

@@ -68,12 +68,8 @@ namespace Core.Exploration.Character.Movement
 
                 ctx.NavMesh.MoveTo(ctx.Adapter, sampledPoint);
 
-                // Aguarda cálculo do caminho
-                while (ctx.NavMesh.IsPending(ctx.Adapter) && !ct.IsCancellationRequested)
-                {
-                    ct.ThrowIfCancellationRequested();
-                    await Task.Delay(PathPendingDelayMs, ct);
-                }
+                await NavMeshMovementAwaiter.AwaitPathCalculationAsync(
+                    ctx.NavMesh, ctx.Adapter, ct, PathPendingDelayMs);
 
                 if (!ctx.NavMesh.IsPathComplete(ctx.Adapter))
                 {
@@ -85,12 +81,8 @@ namespace Core.Exploration.Character.Movement
                     return;
                 }
 
-                // Aguarda chegada
-                while (!ct.IsCancellationRequested && !ctx.NavMesh.HasReachedDestination(ctx.Adapter))
-                {
-                    ct.ThrowIfCancellationRequested();
-                    await Task.Delay(MovementPollDelayMs, ct);
-                }
+                await NavMeshMovementAwaiter.AwaitDestinationReachedAsync(
+                    ctx.NavMesh, ctx.Adapter, ct, MovementPollDelayMs);
 
                 LoggerService.PrintLogMessage(
                     LogLevel.Debug,

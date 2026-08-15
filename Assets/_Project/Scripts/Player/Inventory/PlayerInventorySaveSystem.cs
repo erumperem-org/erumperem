@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Services.DebugUtilities;
 using Services.IO;
 using UnityEngine;
+using System.Threading.Tasks;
 
 // ── DTO de serialização ───────────────────────────────────────────────────────
 
@@ -10,7 +11,7 @@ using UnityEngine;
 internal sealed class InventoryEntry
 {
     public string ItemId;
-    public int    Amount;
+    public int Amount;
 
     public InventoryEntry(string itemId, int amount)
     {
@@ -30,7 +31,8 @@ internal sealed class InventorySaveData
 /// <summary>
 /// Persiste e restaura o <see cref="PlayerInventorySystem"/> em disco (JSON).
 ///
-/// • <c>Awake</c>  → tenta carregar; se o arquivo não existir, mantém inventário vazio.
+/// • Singleton: acesse via <see cref="Instance"/>.
+/// • <c>Awake</c>      → tenta carregar; se o arquivo não existir, mantém inventário vazio.
 /// • <c>SaveAsync</c>  → serializa o inventário atual e grava em disco.
 /// • <c>LoadAsync</c>  → lê o arquivo e reaplica os itens no inventário.
 /// • <c>ClearSave</c>  → apaga o arquivo e limpa o inventário em memória.
@@ -40,6 +42,10 @@ internal sealed class InventorySaveData
 /// </summary>
 public sealed class PlayerInventorySaveSystem : MonoBehaviour
 {
+    // ── Singleton ─────────────────────────────────────────────────────────
+
+    public static PlayerInventorySaveSystem Instance { get; private set; }
+
     // ── Inspector ─────────────────────────────────────────────────────────
 
     [Header("Referências")]
@@ -49,7 +55,7 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
     [SerializeField] private ItemRegistry _registry;
 
     [Header("IO")]
-    [SerializeField] private string _saveFileName   = "inventory_save.json";
+    [SerializeField] private string _saveFileName = "inventory_save.json";
     [SerializeField] private string _saveFolderName = "Saves";
 
     // ── Serviço de IO ─────────────────────────────────────────────────────
@@ -61,8 +67,24 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Log(LogLevel.Warning, "Instância duplicada detectada — destruindo.");
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+
         _saveDirectory = System.IO.Path.Combine(Application.persistentDataPath, _saveFolderName);
-        _ = LoadAsync(); // fire-and-forget; inventário começa vazio se arquivo não existir
+        _ = LoadAsync();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 
     // ── API pública ───────────────────────────────────────────────────────
@@ -80,8 +102,8 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
 
         try
         {
-            string json     = JsonUtility.ToJson(saveData, prettyPrint: true);
-            var    fileData = new FileData(json, _saveFileName, _saveDirectory);
+            string json = JsonUtility.ToJson(saveData, prettyPrint: true);
+            var fileData = new FileData(json, _saveFileName, _saveDirectory);
             await _fileService.WriteAsync(fileData);
 
             Log(LogLevel.Debug, $"Save gravado em: {fileData.FullPath} ({saveData.Entries.Count} entradas)");
@@ -92,18 +114,55 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Lê o arquivo de save e reaplica os itens no inventário.
-    /// Se o arquivo não existir, mantém o inventário vazio sem erro.
-    /// </summary>
-    public async System.Threading.Tasks.Task LoadAsync()
+    /// <summary>Apaga o arquivo de save.</summary>
+    public async System.Threading.Tasks.Task ClearSave()
+    {
+        try
+        {
+            await _fileService.DeleteAsync(_saveFileName, _saveDirectory);
+            Log(LogLevel.Debug, "Arquivo de save deletado.");
+        }
+        catch (Exception ex)
+        {
+            Log(LogLevel.Warning, $"Falha ao deletar save: {ex.Message}");
+        }
+    }
+    public async void DeletesSave()
+    {
+        try
+        {
+            await _fileService.DeleteAsync(_saveFileName, _saveDirectory);
+            Log(LogLevel.Debug, "Arquivo de save deletado.");
+        }
+        catch (Exception ex)
+        {
+            Log(LogLevel.Warning, $"Falha ao deletar save: {ex.Message}");
+        }
+    }
+
+    /// <summary>Apaga o arquivo de save E limpa o inventário em memória.</summary>
+    public async Task DeletesSaveAsync()
+    {
+        try
+        {
+            _inventory.Clear(); // limpa memória imediatamente
+            await _fileService.DeleteAsync(_saveFileName, _saveDirectory);
+            Log(LogLevel.Debug, "Save de inventário deletado e memória limpa.");
+        }
+        catch (Exception ex)
+        {
+            Log(LogLevel.Warning, $"Falha ao deletar save: {ex.Message}");
+        }
+    }
+
+    public async Task LoadAsync()
     {
         try
         {
             bool exists = await _fileService.ExistsAsync(_saveFileName, _saveDirectory);
             if (!exists)
             {
-                Log(LogLevel.Debug, "Nenhum arquivo de save encontrado — inventário iniciado vazio.");
+                Log(LogLevel.Debug, "Nenhum arquivo de save encontrado — inventário vazio.");
                 return;
             }
 
@@ -112,11 +171,13 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
 
             if (saveData?.Entries == null || saveData.Entries.Count == 0)
             {
-                Log(LogLevel.Debug, "Arquivo de save vazio — inventário iniciado vazio.");
+                Log(LogLevel.Debug, "Arquivo de save vazio — inventário vazio.");
                 return;
             }
 
-            // Reconstrói o dicionário a partir dos ids
+            // CORREÇÃO: limpa antes de restaurar para evitar duplicatas
+            _inventory.Clear();
+
             var toAdd = new Dictionary<IStorageable, int>();
             foreach (var entry in saveData.Entries)
             {
@@ -140,22 +201,54 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
         }
     }
 
-    /// <summary>Apaga o arquivo de save e limpa o inventário em memória.</summary>
-    public async void ClearSave()
-    {
-        try
-        {
-            await _fileService.DeleteAsync(_saveFileName, _saveDirectory);
-            Log(LogLevel.Debug, "Arquivo de save deletado.");
-        }
-        catch (Exception ex)
-        {
-            Log(LogLevel.Warning, $"Falha ao deletar save: {ex.Message}");
-        }
-    }
 
     // ── Helper ────────────────────────────────────────────────────────────
 
     private static void Log(LogLevel level, string msg) =>
         LoggerService.PrintLogMessage(level, $"[InventorySave] {msg}", LogCategory.Inventory);
+
+    // ── Custom Editor (somente no Editor) ────────────────────────────────
+
+#if UNITY_EDITOR
+    [UnityEditor.CustomEditor(typeof(PlayerInventorySaveSystem))]
+    private class PlayerInventorySaveSystemEditor : UnityEditor.Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            DrawDefaultInspector();
+
+            var system = (PlayerInventorySaveSystem)target;
+
+            // Botões só fazem sentido em runtime — FileService e _saveDirectory
+            // só estão inicializados após o Awake.
+            UnityEditor.EditorGUILayout.Space(8);
+            UnityEditor.EditorGUILayout.LabelField("Runtime Controls", UnityEditor.EditorStyles.boldLabel);
+
+            UnityEngine.GUI.enabled = Application.isPlaying;
+
+            if (GUILayout.Button("Save"))
+                system.SaveAsync();
+
+            if (GUILayout.Button("Load"))
+                _ = system.LoadAsync();
+
+            UnityEditor.EditorGUILayout.Space(4);
+
+            // Vermelho para sinalizar que Clear é destrutivo
+            var prevColor = UnityEngine.GUI.backgroundColor;
+            UnityEngine.GUI.backgroundColor = new Color(1f, 0.4f, 0.4f);
+
+            if (GUILayout.Button("Clear Save"))
+                _ = system.ClearSave();
+
+            UnityEngine.GUI.backgroundColor = prevColor;
+            UnityEngine.GUI.enabled = true;
+
+            if (!Application.isPlaying)
+                UnityEditor.EditorGUILayout.HelpBox(
+                    "Entre em Play Mode para usar os controles acima.",
+                    UnityEditor.MessageType.Info);
+        }
+    }
+#endif
 }

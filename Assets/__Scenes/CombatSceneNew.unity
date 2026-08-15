@@ -139,6 +139,28 @@ MonoBehaviour:
   hoverSound: Hover
   clickSound: Press
   dragTickInterval: 0.1
+--- !u!1 &37420431 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5779153611788775055, guid: ead337ffec35f314599de802b8674835, type: 3}
+  m_PrefabInstance: {fileID: 943759217}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &37420433
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 37420431}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79c4f4261e5e7624cb09fa17823cd6f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SaveLifeSystem
+  definitions:
+  - {fileID: 11400000, guid: e2f3a4b5c6478990123456789abcdef0, type: 2}
+  - {fileID: 11400000, guid: f3a4b5c6478990123456789abcdef012, type: 2}
+  - {fileID: 11400000, guid: 0a1b2c3d4e5f6789012345678abcdef0, type: 2}
+  context: {fileID: 635125208}
 --- !u!1 &182163169 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 261191327686501720, guid: 6bfc6449b4a85c148a3365f90e9c0516, type: 3}
@@ -415,6 +437,57 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 8624822272237082430, guid: 88b19323e180ed141988af6348a9d11a, type: 3}
   m_PrefabInstance: {fileID: 560644802}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &635125207
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 635125209}
+  - component: {fileID: 635125208}
+  m_Layer: 0
+  m_Name: ExplorationLoadContext
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &635125208
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 635125207}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b764f35c0e4c924fa76dda608a6c833, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ExplorationLoadContext
+  _explorationSceneName: Overworld
+  _defaultSetups: []
+  _allyCharacterStatCatalog: {fileID: 0}
+  _corruptionSystem: {fileID: 0}
+  _saveFileName: exploration_save.json
+  _saveFolderName: Saves
+  _wulfricResetSpawn: {fileID: 0}
+--- !u!4 &635125209
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 635125207}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 765.8357, y: 355.00165, z: -5.8825}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &649238896 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4918527283113538925, guid: 6bfc6449b4a85c148a3365f90e9c0516, type: 3}
@@ -2399,7 +2472,13 @@ PrefabInstance:
     - {fileID: 2659108366051283895, guid: ead337ffec35f314599de802b8674835, type: 3}
     - {fileID: 2864666780031090928, guid: ead337ffec35f314599de802b8674835, type: 3}
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5779153611788775055, guid: ead337ffec35f314599de802b8674835, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 37420433}
+    - targetCorrespondingSourceObject: {fileID: 3971627305473834851, guid: ead337ffec35f314599de802b8674835, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1977995821}
   m_SourcePrefab: {fileID: 100100000, guid: ead337ffec35f314599de802b8674835, type: 3}
 --- !u!20 &943759218 stripped
 Camera:
@@ -3880,6 +3959,28 @@ MonoBehaviour:
   hoverSound: Hover
   clickSound: Press
   dragTickInterval: 0.1
+--- !u!1 &1977995819 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3971627305473834851, guid: ead337ffec35f314599de802b8674835, type: 3}
+  m_PrefabInstance: {fileID: 943759217}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1977995821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1977995819}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79c4f4261e5e7624cb09fa17823cd6f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SaveLifeSystem
+  definitions:
+  - {fileID: 11400000, guid: e2f3a4b5c6478990123456789abcdef0, type: 2}
+  - {fileID: 11400000, guid: f3a4b5c6478990123456789abcdef012, type: 2}
+  - {fileID: 11400000, guid: 0a1b2c3d4e5f6789012345678abcdef0, type: 2}
+  context: {fileID: 635125208}
 --- !u!1001 &2029629567
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4237,3 +4338,4 @@ SceneRoots:
   - {fileID: 1307155682}
   - {fileID: 1885181363}
   - {fileID: 8770968878794509768}
+  - {fileID: 635125209}

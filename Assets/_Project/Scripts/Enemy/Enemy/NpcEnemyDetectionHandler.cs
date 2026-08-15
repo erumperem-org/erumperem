@@ -15,17 +15,17 @@ using DetectionSystem.Core;
 using Systems.NPC.Enemy.Contracts;
 using Systems.NPC.Enemy.StateMachine;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Systems.NPC.Enemy
 {
     public sealed class NpcEnemyDetectionHandler
     {
         // ── Dependências ──────────────────────────────────────────────────
-
-        private readonly Detector             _detector;
+        private readonly Detector _detector;
         private readonly NpcEnemyStateMachine _stateMachine;
-        private readonly NpcEnemy             _npcEnemy;   // para NotifyPlayerContact
-        private readonly MonoBehaviour        _owner;      // dono das coroutines
+        private readonly NpcEnemy _npcEnemy;   // para NotifyPlayerContact
+        private readonly MonoBehaviour _owner;      // dono das coroutines
 
         // ── Configuração ──────────────────────────────────────────────────
 
@@ -34,6 +34,7 @@ namespace Systems.NPC.Enemy
         // ── Coroutine ─────────────────────────────────────────────────────
 
         private Coroutine _pollingCoroutine;
+        private bool _combatTriggered;
 
         // ── Construtor ────────────────────────────────────────────────────
 
@@ -43,26 +44,50 @@ namespace Systems.NPC.Enemy
             NpcEnemy npcEnemy,
             MonoBehaviour owner)
         {
-            _detector     = detector;
+            _detector = detector;
             _stateMachine = stateMachine;
-            _npcEnemy     = npcEnemy;
-            _owner        = owner;
+            _npcEnemy = npcEnemy;
+            _owner = owner;
         }
 
         // ── Ciclo de vida ─────────────────────────────────────────────────
 
+        public void HandleTorch(bool isActive, DetectionComponent detectionComponent)
+        {
+            switch (isActive)
+            {
+                case true:
+                    foreach (var shape in detectionComponent.Shapes)
+                    {
+                        if (shape.label == "Perception")
+                        {
+                            shape.sphere.radius = 9;
+                        }
+                    }
+                    break;
+                case false:
+                    foreach (var shape in detectionComponent.Shapes)
+                    {
+                        if (shape.label == "Perception")
+                        {
+                            shape.sphere.radius = 3;
+                        }
+                    }
+                    break;
+            }
+        }
         public void StartPolling()
         {
             StopPolling();
             _detector.OnDetectorEnter += OnDetectorEnter;
-            _detector.OnDetectorExit  += OnDetectorExit;
+            _detector.OnDetectorExit += OnDetectorExit;
             _pollingCoroutine = _owner.StartCoroutine(PollingCoroutine());
         }
 
         public void StopPolling()
         {
             _detector.OnDetectorEnter -= OnDetectorEnter;
-            _detector.OnDetectorExit  -= OnDetectorExit;
+            _detector.OnDetectorExit -= OnDetectorExit;
 
             if (_pollingCoroutine == null) return;
             _owner.StopCoroutine(_pollingCoroutine);
@@ -86,17 +111,26 @@ namespace Systems.NPC.Enemy
         private void OnDetectorEnter(Collider detected, string shapeLabel, int shapeIndex)
         {
             if (_stateMachine.Is(NpcEnemyState.ReturningToPool)) return;
-            if (!IsPlayerCollider(detected)) return;
 
-            if (shapeLabel == "Perception" && _stateMachine.Is(NpcEnemyState.Wander))
+            if (shapeLabel == "Perception" && _stateMachine.Is(NpcEnemyState.Wander) && detected.tag == "Player")
                 _stateMachine.ToChase(ResolvePlayerTransform(detected));
+            AudioManager.instance?.PlaySFX("EnemySpot");
 
-            if (shapeLabel == "Contact")
+            if (shapeLabel == "Contact" && detected.tag == "Player")
             {
+                if (_combatTriggered)
+                {
+                    return;
+                }
+
+                _combatTriggered = true;
+                GameObject.FindAnyObjectByType<ExplorationLoadContext>()?.SaveState();
+                GameObject.FindAnyObjectByType<ExplorationCorruptionSystem>()?.SaveState();
+                GameObject.FindAnyObjectByType<PlayerInventorySaveSystem>()?.SaveAsync();
+                SceneManager.LoadScene("CombatScene");
                 _npcEnemy.NotifyPlayerContact();
-                //ScenesManager.Instance.LoadSceneByName("CombatScene");
             }
-                
+
         }
 
         private void OnDetectorExit(Collider detected, string shapeLabel, int shapeIndex)

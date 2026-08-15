@@ -1,0 +1,13 @@
+# Unity Smart Merge — requer merge.unityyamlmerge.driver no Git local.
+# Setup (uma vez por máquina): .\Tools\configure-unity-smart-merge.ps1
+
+*.unity  merge=unityyamlmerge eol=lf
+*.prefab merge=unityyamlmerge eol=lf
+*.asset  merge=unityyamlmerge eol=lf
+
+# Meta partilha GUIDs; conflitos aqui também partem referências.
+*.meta   merge=unityyamlmerge eol=lf text
+
+*.cs     diff=csharp text
+# Garante que arquivos com "Terrain" no nome sejam tratados estritamente como binários
+*Terrain*.asset binary

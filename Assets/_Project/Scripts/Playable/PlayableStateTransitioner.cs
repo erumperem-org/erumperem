@@ -16,33 +16,34 @@ public sealed class PlayableStateTransitioner
 
         character.MovementController.SetInputReader(inputReader);
         character.MovementController.EnableMovement();
-        SetPhysicsLayerRecursively(character.gameObject, LayerMask.NameToLayer("Player"));
+        SetPhysicsLayerRecursively(character.gameObject, LayerMask.NameToLayer("Default"));
         character.DetectionSystem.SetTag("Player");
         character.DetectionSystem.StartScan();
+        character.GetComponent<Collider>().isTrigger = false;
 
         inputReader?.BindDetectionSystem(character.DetectionSystem);
     }
 
-    public void ApplyCompanion(PlayableCharacter character)
+    public void ApplyCompanion(PlayableCharacter character, Vector3? startPosition = null)
     {
         SetPhysicsLayerRecursively(character.gameObject, LayerMask.NameToLayer("Default"));
         character.DetectionSystem.SetTag("Npc");
         character.DetectionSystem.StopScan();
-
+        character.GetComponent<Collider>().isTrigger = true;
         if (MainTransform != null)
-            character.MovementController.EnableFollow(MainTransform);
+            character.MovementController.EnableFollow(MainTransform, startPosition);
         else
             character.MovementController.DisableMovement();
     }
 
-    public void ApplyResting(PlayableCharacter character)
+    public void ApplyResting(PlayableCharacter character, Vector3? startPosition = null)
     {
         SetPhysicsLayerRecursively(character.gameObject, LayerMask.NameToLayer("Default"));
         character.DetectionSystem.SetTag("Npc");
         character.DetectionSystem.StopScan();
 
         if (character.RestingPoint != null)
-            character.MovementController.EnableWalkToPoint(character.RestingPoint.position);
+            character.MovementController.EnableWalkToPoint(character.RestingPoint.position, startPosition);
         else
             character.MovementController.DisableMovement();
     }
