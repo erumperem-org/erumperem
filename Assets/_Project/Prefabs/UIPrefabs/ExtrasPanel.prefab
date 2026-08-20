@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 444141360862419864}
   - component: {fileID: 5726550903268363079}
   - component: {fileID: 393903937727493725}
+  - component: {fileID: 8634799594234292234}
   m_Layer: 5
   m_Name: Features
   m_TagString: Untagged
@@ -38,9 +39,9 @@ RectTransform:
   - {fileID: 256826435870182278}
   m_Father: {fileID: 4462244889102129206}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 150, y: -446.46667}
   m_SizeDelta: {x: 300, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8585724407567342082
@@ -207,6 +208,21 @@ MonoBehaviour:
   hoverSound: Hover
   clickSound: Press
   dragTickInterval: 0.1
+--- !u!114 &8634799594234292234
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1205904263038403790}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
+  hoverSound: Hover
+  clickSound: Press
+  dragTickInterval: 0.1
 --- !u!1 &1655559440808318289
 GameObject:
   m_ObjectHideFlags: 0
@@ -223,6 +239,7 @@ GameObject:
   - component: {fileID: 4921724064671693534}
   - component: {fileID: 495436828346423439}
   - component: {fileID: 2728973977979173409}
+  - component: {fileID: 16524842353147584}
   m_Layer: 5
   m_Name: Help
   m_TagString: Untagged
@@ -245,10 +262,10 @@ RectTransform:
   - {fileID: 8071791889223709276}
   m_Father: {fileID: 4462244889102129206}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 300, y: 100}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 72.898, y: -277.23334}
+  m_SizeDelta: {x: 145.796, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3118777093008085272
 CanvasRenderer:
@@ -377,8 +394,10 @@ MonoBehaviour:
   uiButtonView:
     _defaultEnterEffects: []
     _defaultExitEffects: []
-    _hoverEnterEffects: []
-    _hoverExitEffects: []
+    _hoverEnterEffects:
+    - {fileID: 11400000, guid: b4e519ca65770ab42b9057e8fe8af045, type: 2}
+    _hoverExitEffects:
+    - {fileID: 11400000, guid: 4c1ebc9f27a2b2a43b8622fb2c1dfafe, type: 2}
     _pressedEnterEffects: []
     _pressedExitEffects: []
     _disabledEnterEffects: []
@@ -400,6 +419,21 @@ MonoBehaviour:
   clickSound: Press
   dragTickInterval: 0.1
 --- !u!114 &2728973977979173409
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1655559440808318289}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
+  hoverSound: Hover
+  clickSound: Press
+  dragTickInterval: 0.1
+--- !u!114 &16524842353147584
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -481,8 +515,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: CREDITS
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: a0b2bd5cae12e3f40a7d922bc57aca18, type: 2}
-  m_sharedMaterial: {fileID: -3697718951645565632, guid: a0b2bd5cae12e3f40a7d922bc57aca18, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: e3f5e4430e0e18d4ca478a93deb43ee7, type: 2}
+  m_sharedMaterial: {fileID: 2312043276371045869, guid: e3f5e4430e0e18d4ca478a93deb43ee7, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -618,8 +652,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: HELP
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: a0b2bd5cae12e3f40a7d922bc57aca18, type: 2}
-  m_sharedMaterial: {fileID: -3697718951645565632, guid: a0b2bd5cae12e3f40a7d922bc57aca18, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: e3f5e4430e0e18d4ca478a93deb43ee7, type: 2}
+  m_sharedMaterial: {fileID: 2312043276371045869, guid: e3f5e4430e0e18d4ca478a93deb43ee7, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -705,7 +739,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &791616389719588756
 RectTransform:
   m_ObjectHideFlags: 0
@@ -783,6 +817,7 @@ GameObject:
   - component: {fileID: 4894873161924963869}
   - component: {fileID: 4489640373722081031}
   - component: {fileID: 343825818356304841}
+  - component: {fileID: 882862578065783328}
   m_Layer: 5
   m_Name: Credits
   m_TagString: Untagged
@@ -805,9 +840,9 @@ RectTransform:
   - {fileID: 6609180654069305359}
   m_Father: {fileID: 4462244889102129206}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 150, y: -615.7}
   m_SizeDelta: {x: 300, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5419302864394014195
@@ -974,6 +1009,21 @@ MonoBehaviour:
   hoverSound: Hover
   clickSound: Press
   dragTickInterval: 0.1
+--- !u!114 &882862578065783328
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3692776528391968206}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
+  hoverSound: Hover
+  clickSound: Press
+  dragTickInterval: 0.1
 --- !u!1 &4605874272506579036
 GameObject:
   m_ObjectHideFlags: 0
@@ -1006,9 +1056,9 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 4462244889102129206}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 391.545, y: 0}
   m_SizeDelta: {x: 783.09, y: 158}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &7794896696037274511
@@ -1196,6 +1246,7 @@ GameObject:
   - component: {fileID: 2997863506154985837}
   - component: {fileID: 8455708715545104729}
   - component: {fileID: 2997558418854646256}
+  - component: {fileID: 2260671328135559809}
   m_Layer: 5
   m_Name: Back
   m_TagString: Untagged
@@ -1218,9 +1269,9 @@ RectTransform:
   - {fileID: 8314131738936548188}
   m_Father: {fileID: 4462244889102129206}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 150, y: -834.93335}
   m_SizeDelta: {x: 300, y: 100}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!222 &1172988001826351080
@@ -1437,6 +1488,21 @@ MonoBehaviour:
   hoverSound: Hover
   clickSound: Press
   dragTickInterval: 0.1
+--- !u!114 &2260671328135559809
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5563535816410061270}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
+  hoverSound: Hover
+  clickSound: Press
+  dragTickInterval: 0.1
 --- !u!1 &5874495901502940000
 GameObject:
   m_ObjectHideFlags: 0
@@ -1504,8 +1570,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: FEATURES
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: a0b2bd5cae12e3f40a7d922bc57aca18, type: 2}
-  m_sharedMaterial: {fileID: -3697718951645565632, guid: a0b2bd5cae12e3f40a7d922bc57aca18, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: e3f5e4430e0e18d4ca478a93deb43ee7, type: 2}
+  m_sharedMaterial: {fileID: 2312043276371045869, guid: e3f5e4430e0e18d4ca478a93deb43ee7, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1641,8 +1707,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: BACK
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: a0b2bd5cae12e3f40a7d922bc57aca18, type: 2}
-  m_sharedMaterial: {fileID: -3697718951645565632, guid: a0b2bd5cae12e3f40a7d922bc57aca18, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: e3f5e4430e0e18d4ca478a93deb43ee7, type: 2}
+  m_sharedMaterial: {fileID: 2312043276371045869, guid: e3f5e4430e0e18d4ca478a93deb43ee7, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1861,6 +1927,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -39.9005
       objectReference: {fileID: 0}
+    - target: {fileID: 87483569752604809, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+      propertyPath: m_Size
+      value: 0.08688331
+      objectReference: {fileID: 0}
     - target: {fileID: 285642936819184613, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
       propertyPath: m_Name
       value: CreditsPanel
@@ -1879,7 +1949,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 683834959521674516, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0.689141
+      value: 0.9131167
       objectReference: {fileID: 0}
     - target: {fileID: 974369779715710919, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
       propertyPath: m_Pivot.x
@@ -1961,6 +2031,54 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1067261070120646832, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 4779.299
+      objectReference: {fileID: 0}
+    - target: {fileID: 1067261070120646832, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -2182.0286
+      objectReference: {fileID: 0}
+    - target: {fileID: 2171337993859500274, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+      propertyPath: m_text
+      value: "SUPERVISORS:\n\tLUIS FELIPE GARROCHO\n\tDANIEL PINHEIRO LIMA\n\nPROJECT
+        DIRECTOR:\n\tJO\xC3O HENRIQUE\n\nMANAGERS:\n\tBERNARDO BONES\n\tCAIO FREITAS\n\tERIC
+        CATARINA\n\tJO\xC3O HENRIQUE \n\nMECHANICS PROGRAMMERS:\n\tARTHUR ROQUE\n\tBERNARDO
+        BONES\n\tERIC CATARINA\n\t\nUI PROGRAMMERS:\n\tARTHUR ROQUE\n\tCAIO FREITAS\n\tERIC
+        CATARINA\n\tGUSTAVO MARIZ\n\nSOUNDS PROGRAMMERS:\n\tGABRIEL CHAVE\n\nCONCEPT
+        ART:\n\tARTHUR ROQUE\n\tCAIO FREITAS\n\tCAIO NERES\n\tJO\xC3O HENRIQUE\n\tRODRIGO
+        STEHLING\n\tVICTOR DINIZ\n\nGAME DESIGN REVIEW:\n\tBERNARDO BONES\n\tCAIO
+        FREITAS\n\tJO\xC3O HENRIQUE\n\n2D ASSETS:\n\tCAIO FREITAS\n\tCAIO NERES\n\tJO\xC3O
+        HENRIQUE\n\tVICTOR DINIZ\n\n3D ASSETS:\n\tARTHUR ROQUE\n\tBERNARDO BONES\n\tCAIO
+        FREITAS\n\tCAIO NERES\n\tERIC CATARINA\n\tGABRIEL CHAVE\n\tJO\xC3O HENRIQUE\n\tLUCAS
+        AQUINO\n\tRODRIGO STEHLING\n\tVICTOR DINIZ\n\tVINICIUS AUGUSTO\n\n2D ANIMATIONS:\n\tCAIO
+        FREITAS\n\tJOAO HENRIQUE\n\n3D ANIMATIONS:\n\tBERNARDO BONES\n\tCAIO FREITAS\n\tCAIO
+        NERES\n\tERIC CATARINA\n\tJO\xC3O HENRIQUE\n\tRODRIGO STEHLING\n\tVICTOR
+        DINIZ\n\nVISUAL EFFECTS IN GAME:\n\tCAIO FREITAS\n\tJO\xC3O HENRIQUE\n\nUI
+        ASSETS:\n\tCAIO FREITAS\n\tCAIO NERES\n\tJO\xC3O HENRIQUE\n\tVICTOR DINIZ\n\nUI
+        EFFECTS:\n\tCAIO FREITAS\n\t\nSOUND EFFECTS:\n\tGABRIEL CHAVE\n\tVINICIUS
+        AUGUSTO\n\nMUSIC:\n\tVINICIUS AUGUSTO"
+      objectReference: {fileID: 0}
+    - target: {fileID: 2171337993859500274, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+      propertyPath: m_fontSize
+      value: 45
+      objectReference: {fileID: 0}
+    - target: {fileID: 2171337993859500274, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+    - target: {fileID: 2171337993859500274, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+      propertyPath: m_fontStyle
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2171337993859500274, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+      propertyPath: m_fontSizeBase
+      value: 45
+      objectReference: {fileID: 0}
+    - target: {fileID: 2171337993859500274, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
     - target: {fileID: 3569813276734787865, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
       propertyPath: m_AnchorMax.y
       value: 1
@@ -1977,6 +2095,14 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -1089.676
       objectReference: {fileID: 0}
+    - target: {fileID: 4074023465013047830, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: e3f5e4430e0e18d4ca478a93deb43ee7, type: 2}
+    - target: {fileID: 4074023465013047830, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2312043276371045869, guid: e3f5e4430e0e18d4ca478a93deb43ee7, type: 2}
     - target: {fileID: 5622401976589460412, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
       propertyPath: m_AnchoredPosition.x
       value: 0
@@ -1994,12 +2120,20 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5799013539896368830, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 777.99
+      objectReference: {fileID: 0}
+    - target: {fileID: 5799013539896368830, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 4620.86
+      objectReference: {fileID: 0}
+    - target: {fileID: 5799013539896368830, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 439.01
+      value: 388.995
       objectReference: {fileID: 0}
     - target: {fileID: 5799013539896368830, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -567.432
+      value: -2310.43
       objectReference: {fileID: 0}
     - target: {fileID: 6440840260337869987, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
       propertyPath: m_AnchorMax.y
@@ -2026,18 +2160,24 @@ PrefabInstance:
       value: -49
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 7504072092166690016, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+    - {fileID: 6150632669720091908, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+    - {fileID: 6059458433860592231, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 3349048101143989307, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 37848475022485404}
+      addedObject: {fileID: 7178073197815712915}
     - targetCorrespondingSourceObject: {fileID: 7326866504391357511, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2535613676976721174}
     - targetCorrespondingSourceObject: {fileID: 7326866504391357511, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4462775838905660201}
+    - targetCorrespondingSourceObject: {fileID: 7326866504391357511, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7178683903158143566}
   m_SourcePrefab: {fileID: 100100000, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
 --- !u!1 &1444278931162287829 stripped
 GameObject:
@@ -2054,7 +2194,7 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 3349048101143989307, guid: 37a3a110168f3164d97c5eda927281aa, type: 3}
   m_PrefabInstance: {fileID: 1728769511059275056}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &37848475022485404
+--- !u!114 &7178073197815712915
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2116,6 +2256,21 @@ MonoBehaviour:
   clickSound: Press
   dragTickInterval: 0.1
 --- !u!114 &4462775838905660201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8238087511705045367}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
+  hoverSound: Hover
+  clickSound: Press
+  dragTickInterval: 0.1
+--- !u!114 &7178683903158143566
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2820,11 +2975,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 897555975672848141, guid: 7059670a244d8a34691f04a176060298, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 0.9980937
       objectReference: {fileID: 0}
     - target: {fileID: 897555975672848141, guid: 7059670a244d8a34691f04a176060298, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 0.96578884
       objectReference: {fileID: 0}
     - target: {fileID: 903971071204062738, guid: 7059670a244d8a34691f04a176060298, type: 3}
       propertyPath: m_AnchorMax.y
@@ -3000,7 +3155,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3563448451385054221, guid: 7059670a244d8a34691f04a176060298, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3876698925873310933, guid: 7059670a244d8a34691f04a176060298, type: 3}
       propertyPath: m_Name
@@ -3008,7 +3163,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3876698925873310933, guid: 7059670a244d8a34691f04a176060298, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4209650922457525324, guid: 7059670a244d8a34691f04a176060298, type: 3}
       propertyPath: m_AnchorMax.y
@@ -3028,7 +3183,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4506835295866917072, guid: 7059670a244d8a34691f04a176060298, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 0
+      value: 13935.053
       objectReference: {fileID: 0}
     - target: {fileID: 4506835295866917072, guid: 7059670a244d8a34691f04a176060298, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -3036,7 +3191,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4506835295866917072, guid: 7059670a244d8a34691f04a176060298, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -2497.7354
+      value: -6939.9634
       objectReference: {fileID: 0}
     - target: {fileID: 4744416833839589810, guid: 7059670a244d8a34691f04a176060298, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -3190,6 +3345,14 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 19.431152
       objectReference: {fileID: 0}
+    - target: {fileID: 8629907292451566019, guid: 7059670a244d8a34691f04a176060298, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: e3f5e4430e0e18d4ca478a93deb43ee7, type: 2}
+    - target: {fileID: 8629907292451566019, guid: 7059670a244d8a34691f04a176060298, type: 3}
+      propertyPath: m_hasFontAssetChanged
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: 4293282280761602738, guid: 7059670a244d8a34691f04a176060298, type: 3}
@@ -3227,6 +3390,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2850649702896012105, guid: 7059670a244d8a34691f04a176060298, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6387537282799969690}
+    - targetCorrespondingSourceObject: {fileID: 2850649702896012105, guid: 7059670a244d8a34691f04a176060298, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5822183613159430396}
   m_SourcePrefab: {fileID: 100100000, guid: 7059670a244d8a34691f04a176060298, type: 3}
 --- !u!1 &1566037004436559468 stripped
 GameObject:
@@ -3287,6 +3453,21 @@ MonoBehaviour:
   hoverSound: Hover
   clickSound: Press
   dragTickInterval: 0.1
+--- !u!114 &5822183613159430396
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7745102122934585202}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
+  hoverSound: Hover
+  clickSound: Press
+  dragTickInterval: 0.1
 --- !u!224 &8248577221095349483 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4506835295866917072, guid: 7059670a244d8a34691f04a176060298, type: 3}
@@ -3307,42 +3488,50 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 516223941492391923, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_text
-      value: "Cheats:\r\nTroca de cenas: F1 = Menu; F2 = Overworld (vila + \xE1rea
-        1); F3 = Combate; \r\nF6 = Vencer o combate\nF7 = Perder o Combate\n\nF9
-        = Vida infinita para aliados  (toggle)\nF10= Aliados causam o dobro de dano
-        (toggle)\n\r\nOverworld: Com as teclas W, A, S, D voc\xEA pode mover o personagem.
-        Utilizando a \"barra de espa\xE7o\" voc\xEA pode interagir com ba\xFAs e
-        personagens quando chegar perto o suficiente. Ao entrar em contato com um
-        inimigo voc\xEA entra em combate. Voc\xEA pode ativar e desativar a tocha
-        apertando a tecla Shift. Inimigos v\xE3o te achar mais f\xE1cil com a tocha
-        acesa, por\xE9m com a tocha apagada sua vis\xE3o tamb\xE9m diminui.\r\n\nResumo
-        de comandos no Overworld:\nT       = Skill Tree\nTab   = Mapa\nEsc   = Pause\nI       
-        = Invent\xE1rio\nShift  = Tocha\n\r\nCombate: O HUD de combate mostra de
-        qual dos seus personagens \xE9 o turno, durante seu turno voc\xEA pode clicar
-        nas habilidades na hotbar na parte inferior da tela, ou utilizar os n\xFAmeros
-        no teclado para selecion\xE1-las. Ap\xF3s selecionar uma habilidade, escolha
-        um inimigo como alvo para usar. Passar o mouse por cima de uma habilidade
-        mostra um tooltip contendo algumas informa\xE7\xF5es sobre ela. O objetivo
-        \xE9 derrotar todos os inimigos.\r\n\r\nSkill Tree: Pressione T durante o
-        combate para abrir a skill tree. Voc\xEA pode alocar at\xE9 12 skills, sendo
-        necess\xE1rio alocar as 3 skills passivas, na ordem que desejar, para poder
-        alocar a skill ativa de um mesmo tier. Depois de alocar a skill ativa voc\xEA
-        libera um novo tier, com skills n\xE3o necessariamente mais fortes, mas mais
-        nichadas, portanto tamb\xE9m \xE9 poss\xEDvel espalhar seus pontos entre
-        os 3 galhos do personagem para criar sua pr\xF3pria build.\r\n\r\nPara testar
-        as funcionalidades de skill tree, a capacidade de alocar e desalocar pontos
-        est\xE1 atualmente completamente liberada gratuitamente, como se o personagem
-        j\xE1 estivesse em n\xEDvel m\xE1ximo. Os efeitos das mudan\xE7as na skill
-        tree ser\xE3o ativados no pr\xF3ximo combate.\r\n\r\nNotas: Alguns conte\xFAdos
-        ainda est\xE3o em desenvolvimento: painel de settings, sistema de save. As
-        habilidades de todos personagens, assim como alguns efeitos e \xEDcones,
-        s\xE3o apenas placeholders para testar funcionalidades do sistema. Futuramente
-        o sistema de skill tree funcionar\xE1 da seguinte forma: Voc\xEA pode alocar
-        pontos de skill ganhos ao trocar ess\xEAncias coletados em suas explora\xE7\xF5es
-        com o NPC na vila, ser\xE1 necess\xE1rio usar um item para poder realocar
-        os pontos. Os ba\xFAs na explora\xE7\xE3o ainda n\xE3o est\xE3o dando recompensas
-        e a troca de personagens na explora\xE7\xE3o ainda n\xE3o est\xE1 afetando
-        os personagens que ser\xE3o utilizados em combate."
+      value: "\n- Cheats:\r\nTroca de cenas: F1 = Menu; F2 = Overworld (vila + \xE1rea
+        1); F3 = Combate; \r\nF5 = Reinicia a cena Overworld\r\nF6 = Vencer o combate\r\nF7
+        = Perder o Combate\r\n\r\nF9 = Vida infinita para aliados  (toggle)\r\nF10=
+        Aliados causam o dobro de dano (toggle)\r\n\r\n- Overworld: Com as teclas
+        W, A, S, D voc\xEA pode mover o personagem. Utilizando a \"barra de espa\xE7o\"
+        voc\xEA pode interagir com ba\xFAs e personagens quando chegar perto o suficiente.
+        Ao entrar em contato com um inimigo voc\xEA entra em combate. Voc\xEA pode
+        ativar e desativar a tocha apertando a tecla Shift. Inimigos v\xE3o te achar
+        mais f\xE1cil com a tocha acesa, por\xE9m com a tocha apagada sua vis\xE3o
+        tamb\xE9m diminui.\r\n\r\nResumo de comandos no Overworld:\r\nT       = Visualizar
+        Skill Tree\r\nTab   = Mapa\r\nEsc   = Pause\r\nE        = Invent\xE1rio\r\nShift 
+        = Tocha\r\n\r\n- Combate: O HUD de combate mostra qual dos seus personagens
+        \xE9 o turno, durante seu turno voc\xEA pode clicar nas habilidades na hotbar
+        na parte inferior da tela, ou utilizar os n\xFAmeros no teclado para selecion\xE1-las.
+        Ap\xF3s selecionar uma habilidade, escolha um inimigo como alvo para usar.
+        Passar o mouse por cima de uma habilidade mostra um tooltip contendo algumas
+        informa\xE7\xF5es sobre ela, as informa\xE7\xF5es de skill na parte inferior
+        do HUD mostram as informa\xE7\xF5es das skills mas com efeitos aplicados
+        no alvo. O objetivo \xE9 derrotar todos os inimigos.\r\n\r\n- Skill Tree:
+        Pressione T para visualizar a skill tree. Existe uma skill tree para cada
+        personagem. Para alocar skills voc\xEA deve comprar n\xEDveis com o mercador
+        na vila, gastando \"Artefatos An\xF4malos\" que voc\xEA coleta de combates
+        e ba\xFAs. Voc\xEA pode alocar at\xE9 12 skills, sendo necess\xE1rio alocar
+        as 3 skills passivas, na ordem que desejar, para poder alocar a skill ativa
+        de um mesmo tier. Depois de alocar a skill ativa voc\xEA libera um novo tier,
+        com skills n\xE3o necessariamente mais fortes, mas mais nichadas, portanto
+        tamb\xE9m \xE9 poss\xEDvel espalhar seus pontos entre os 3 galhos do personagem
+        para criar sua pr\xF3pria build. Voc\xEA pode resetar a skill tree gastando
+        o item \"Artifact of Return\" que tamb\xE9m pode ser comprado com o mercador.\r\n\r\nNotas:
+        Alguns conte\xFAdos ainda est\xE3o em desenvolvimento: painel de settings,
+        sistema de save. As habilidades de todos personagens, assim como alguns efeitos
+        e \xEDcones, s\xE3o apenas placeholders para testar funcionalidades do sistema.\r\n"
+      objectReference: {fileID: 0}
+    - target: {fileID: 516223941492391923, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_fontSize
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 516223941492391923, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_fontSizeBase
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 516223941492391923, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_VerticalAlignment
+      value: 256
       objectReference: {fileID: 0}
     - target: {fileID: 546277891549006679, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_Name
@@ -3352,9 +3541,37 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1195546992950036720, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_Color.a
+      value: 0.5529412
+      objectReference: {fileID: 0}
+    - target: {fileID: 1195546992950036720, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_Color.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1195546992950036720, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_Color.g
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1195546992950036720, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_Color.r
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2431373852681572672, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2431373852681572672, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2431373852681572672, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 608.6
+      objectReference: {fileID: 0}
     - target: {fileID: 2431373852681572672, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0.44995117
+      value: -19.02002
       objectReference: {fileID: 0}
     - target: {fileID: 3218222300413977494, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_Pivot.x
@@ -3436,6 +3653,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3949165225142279096, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 116.2516
+      objectReference: {fileID: 0}
     - target: {fileID: 4476631727970759751, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_Size
       value: 0.29591534
@@ -3443,6 +3664,10 @@ PrefabInstance:
     - target: {fileID: 4476631727970759751, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_Value
       value: 0.99999934
+      objectReference: {fileID: 0}
+    - target: {fileID: 4592600635710283302, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_VerticalAlignment
+      value: 512
       objectReference: {fileID: 0}
     - target: {fileID: 6185141909545990844, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_SizeDelta.y
@@ -3457,40 +3682,96 @@ PrefabInstance:
       value: 0.00036621094
       objectReference: {fileID: 0}
     - target: {fileID: 6204580155731757343, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6204580155731757343, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6204580155731757343, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6204580155731757343, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 1.132
+      value: 807.6324
       objectReference: {fileID: 0}
     - target: {fileID: 6204580155731757343, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 1389.44
+      value: 1986.5037
       objectReference: {fileID: 0}
     - target: {fileID: 6204580155731757343, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -2.145996
+      value: 429.1253
       objectReference: {fileID: 0}
     - target: {fileID: 6204580155731757343, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -694.70953
+      value: -993.2411
+      objectReference: {fileID: 0}
+    - target: {fileID: 7331032348606844934, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7331032348606844934, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_Softness.y
+      value: 72
+      objectReference: {fileID: 0}
+    - target: {fileID: 7610607908456467443, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_Color.a
+      value: 0.4392157
+      objectReference: {fileID: 0}
+    - target: {fileID: 7610607908456467443, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_Color.b
+      value: 0.2264151
+      objectReference: {fileID: 0}
+    - target: {fileID: 7610607908456467443, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_Color.g
+      value: 0.2264151
+      objectReference: {fileID: 0}
+    - target: {fileID: 7610607908456467443, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_Color.r
+      value: 0.2264151
       objectReference: {fileID: 0}
     - target: {fileID: 8024184086314249232, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8024184086314249232, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0.9999995
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8024184086314249232, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0.74090004
+      value: 0.6827115
+      objectReference: {fileID: 0}
+    - target: {fileID: 8055065159585810417, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: e3f5e4430e0e18d4ca478a93deb43ee7, type: 2}
+    - target: {fileID: 8055065159585810417, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2312043276371045869, guid: e3f5e4430e0e18d4ca478a93deb43ee7, type: 2}
+    - target: {fileID: 8055065159585810417, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_HorizontalAlignment
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8851831835081944728, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0.43310547
+      value: -27
+      objectReference: {fileID: 0}
+    - target: {fileID: 8851831835081944728, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -122
+      objectReference: {fileID: 0}
+    - target: {fileID: 8958329708213673834, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: -236.9368
       objectReference: {fileID: 0}
     - target: {fileID: 8958329708213673834, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 32.168945
+      value: 2.2164307
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3501,16 +3782,22 @@ PrefabInstance:
       addedObject: {fileID: 7796455764174004403}
     - targetCorrespondingSourceObject: {fileID: 6521630827053315948, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 2676079411357592933}
+      addedObject: {fileID: 3671530477403094459}
     - targetCorrespondingSourceObject: {fileID: 6521630827053315948, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 3671530477403094459}
+      addedObject: {fileID: 7192317893094363364}
+    - targetCorrespondingSourceObject: {fileID: 6521630827053315948, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 723779962639481848}
     - targetCorrespondingSourceObject: {fileID: 4439168474809131894, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3647532686564547256}
     - targetCorrespondingSourceObject: {fileID: 4439168474809131894, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 71311321816568763}
+    - targetCorrespondingSourceObject: {fileID: 4439168474809131894, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8278142738244215870}
   m_SourcePrefab: {fileID: 100100000, guid: 8dbdafc3ab93e7b43859c89aa8d9196a, type: 3}
 --- !u!1 &1702063591996010436 stripped
 GameObject:
@@ -3532,7 +3819,22 @@ MonoBehaviour:
   hoverSound: Hover
   clickSound: Press
   dragTickInterval: 0.1
---- !u!114 &2676079411357592933
+--- !u!114 &3671530477403094459
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1702063591996010436}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
+  hoverSound: Hover
+  clickSound: Press
+  dragTickInterval: 0.1
+--- !u!114 &7192317893094363364
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -3573,7 +3875,7 @@ MonoBehaviour:
     m_DisabledTrigger: Disabled
   m_Interactable: 1
   m_TargetGraphic: {fileID: 0}
---- !u!114 &3671530477403094459
+--- !u!114 &723779962639481848
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -3619,6 +3921,21 @@ MonoBehaviour:
   clickSound: Press
   dragTickInterval: 0.1
 --- !u!114 &71311321816568763
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8107769382013221854}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
+  hoverSound: Hover
+  clickSound: Press
+  dragTickInterval: 0.1
+--- !u!114 &8278142738244215870
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
