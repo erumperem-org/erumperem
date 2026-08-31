@@ -23,233 +23,43 @@ internal sealed class BattleCombatEffectApplicator
         Combatant actor,
         Combatant target,
         SkillDefinition skill,
-        ResolveActionResult result)
+        bool includeDefaultScopedEffects,
+        bool includeNonDefaultScopedEffects)
     {
-        var effects = skill.EffectsOnHit.ToList();
-        var comboBonusWasIncluded =
-            target.Tokens.GetStacks(TokenType.Combo) > 0 && skill.ComboBonus.Count > 0;
-        if (target.Tokens.GetStacks(TokenType.Combo) > 0)
+        foreach (var effect in skill.EffectsOnHit)
         {
-            effects.AddRange(skill.ComboBonus);
-        }
-
-        if (comboBonusWasIncluded)
-        {
-            state.PassiveBus.RaiseComboBonusEffectsIncluded(state, actor, target, skill);
-        }
-
-        foreach (var effect in effects)
-        {
-            if (_random.NextDouble() > effect.Chance) continue;
-            switch (effect.Type)
+            var isDefaultScope = effect.EffectScope == EffectScope.Default;
+            if (isDefaultScope && !includeDefaultScopedEffects)
             {
-                case EffectType.ApplyToken:
-                    if (effect.Token.HasValue)
-                    {
-                        var stacks = Math.Max(1, effect.Stacks);
-                        if (string.Equals(effect.EffectScope, EffectScopes.AllAllies, StringComparison.OrdinalIgnoreCase))
-                        {
-                            foreach (var ally in LivingSameSide(state, actor))
-                            {
-                                ally.Tokens.Add(effect.Token.Value, stacks);
-                                state.PassiveBus.RaiseTokenStacksChanged(
-                                    state,
-                                    actor,
-                                    ally,
-                                    skill,
-                                    effect.Token.Value,
-                                    stacks);
-                                _eventEmitter.Emit(
-                                    state,
-                                    BattleEventType.TokenApplied,
-                                    actorId: actor.Identity.Id,
-                                    targetId: ally.Identity.Id,
-                                    skillId: skill.Id,
-                                    tokenType: effect.Token.Value.ToString(),
-                                    tokenDelta: stacks);
-                            }
-                        }
-                        else if (string.Equals(effect.EffectScope, EffectScopes.Self, StringComparison.OrdinalIgnoreCase))
-                        {
-                            actor.Tokens.Add(effect.Token.Value, stacks);
-                            state.PassiveBus.RaiseTokenStacksChanged(
-                                state,
-                                actor,
-                                actor,
-                                skill,
-                                effect.Token.Value,
-                                stacks);
-                            _eventEmitter.Emit(
-                                state,
-                                BattleEventType.TokenApplied,
-                                actorId: actor.Identity.Id,
-                                targetId: actor.Identity.Id,
-                                skillId: skill.Id,
-                                tokenType: effect.Token.Value.ToString(),
-                                tokenDelta: stacks);
-                        }
-                        else
-                        {
-                            target.Tokens.Add(effect.Token.Value, stacks);
-                            state.PassiveBus.RaiseTokenStacksChanged(
-                                state,
-                                actor,
-                                target,
-                                skill,
-                                effect.Token.Value,
-                                stacks);
-                            _eventEmitter.Emit(
-                                state,
-                                BattleEventType.TokenApplied,
-                                actorId: actor.Identity.Id,
-                                targetId: target.Identity.Id,
-                                skillId: skill.Id,
-                                tokenType: effect.Token.Value.ToString(),
-                                tokenDelta: stacks);
-                        }
-                    }
-
-                    break;
-                case EffectType.ApplyDot:
-                    if (effect.Dot.HasValue && EffectPassesResistance(target, effect.Dot.Value, state))
-                    {
-                        var elementalMultiplier = CombatDamageCalculator.GetElementalMultiplier(state, actor, target, skill);
-                        var potency = (int)Math.Round(Math.Max(1, effect.Potency) * elementalMultiplier);
-                        var baseDuration = Math.Max(1, effect.Duration);
-                        var duration = state.PassiveBus.AdjustDotDuration(state, actor, effect.Dot.Value, baseDuration);
-                        target.Dots.ActiveDots.Add(new DotInstance
-                        {
-                            Type = effect.Dot.Value,
-                            Potency = potency,
-                            RemainingTurns = duration,
-                            AppliedById = actor.Identity.Id,
-                        });
-                        _eventEmitter.Emit(
-                            state,
-                            BattleEventType.DotInflicted,
-                            actorId: actor.Identity.Id,
-                            targetId: target.Identity.Id,
-                            skillId: skill.Id,
-                            dotType: effect.Dot.Value.ToString(),
-                            dotAmount: potency,
-                            dotDurationTurns: duration);
-                    }
-
-                    break;
-                case EffectType.ApplyRandomDot:
-                {
-                    var randomDotCandidates = new[] { DotType.Burn, DotType.Blight, DotType.Bleed };
-                    var chosenDotType = randomDotCandidates[_random.Next(0, randomDotCandidates.Length)];
-                    if (EffectPassesResistance(target, chosenDotType, state))
-                    {
-                        var elementalMultiplier = CombatDamageCalculator.GetElementalMultiplier(state, actor, target, skill);
-                        var potency = (int)Math.Round(Math.Max(1, effect.Potency) * elementalMultiplier);
-                        var baseDuration = Math.Max(1, effect.Duration);
-                        var duration = state.PassiveBus.AdjustDotDuration(state, actor, chosenDotType, baseDuration);
-                        target.Dots.ActiveDots.Add(new DotInstance
-                        {
-                            Type = chosenDotType,
-                            Potency = potency,
-                            RemainingTurns = duration,
-                            AppliedById = actor.Identity.Id,
-                        });
-                        _eventEmitter.Emit(
-                            state,
-                            BattleEventType.DotInflicted,
-                            actorId: actor.Identity.Id,
-                            targetId: target.Identity.Id,
-                            skillId: skill.Id,
-                            dotType: chosenDotType.ToString(),
-                            dotAmount: potency,
-                            dotDurationTurns: duration);
-                    }
-
-                    break;
-                }
-                case EffectType.Push:
-                    MoveTarget(state, target, +Math.Abs(effect.Steps));
-                    break;
-                case EffectType.Pull:
-                    MoveTarget(state, target, -Math.Abs(effect.Steps));
-                    break;
-                case EffectType.HealHp:
-                {
-                    var blockedHealTarget = skill.TargetKind == SkillTargetKind.Enemy ? actor : target;
-                    var healPotency = Math.Max(0, effect.Potency);
-                    if (healPotency > 0)
-                    {
-                        HealDebugTrace.Log(
-                            $"[FORBIDDEN] [COMBAT] HealHp ignorado skill='{skill.Id}' actor='{actor.Identity.Id}' " +
-                            $"target='{blockedHealTarget.Identity.Id}' potency={healPotency}. " +
-                            "Cura de HP só é permitida pelo Main após 3s na vila.");
-                    }
-                    break;
-                }
-                case EffectType.HealHpPercent:
-                {
-                    var blockedHealTarget = skill.TargetKind == SkillTargetKind.Enemy ? actor : target;
-                    var healPercent = Math.Max(0, effect.Potency);
-                    if (healPercent > 0)
-                    {
-                        HealDebugTrace.Log(
-                            $"[FORBIDDEN] [COMBAT] HealHpPercent ignorado skill='{skill.Id}' actor='{actor.Identity.Id}' " +
-                            $"target='{blockedHealTarget.Identity.Id}' percent={healPercent}. " +
-                            "Cura de HP só é permitida pelo Main após 3s na vila.");
-                    }
-                    break;
-                }
-                case EffectType.ApplyStun:
-                    if (_random.NextDouble() >= target.Resistances.StunRes)
-                    {
-                        var stunStacks = Math.Max(1, effect.Stacks);
-                        target.Tokens.Add(TokenType.Stun, stunStacks);
-                        state.PassiveBus.RaiseTokenStacksChanged(
-                            state,
-                            actor,
-                            target,
-                            skill,
-                            TokenType.Stun,
-                            stunStacks);
-                        _eventEmitter.Emit(
-                            state,
-                            BattleEventType.TokenApplied,
-                            actorId: actor.Identity.Id,
-                            targetId: target.Identity.Id,
-                            skillId: skill.Id,
-                            tokenType: TokenType.Stun.ToString(),
-                            tokenDelta: stunStacks);
-                    }
-                    break;
+                continue;
             }
-        }
 
-        if (comboBonusWasIncluded && target.Tokens.ConsumeOne(TokenType.Combo))
-        {
-            state.PassiveBus.RaiseComboConsumed(state, actor, target, skill);
-        }
-
-        var postSkillPassiveNotes = new List<PassiveCombatNote>();
-        state.PassiveBus.ApplyPostSkillPassiveExtras(state, actor, target, skill, postSkillPassiveNotes);
-        foreach (var note in postSkillPassiveNotes)
-        {
-            if (note.EffectKind == PassiveEffectKind.ExtraTokenOnSelfSkill &&
-                !string.IsNullOrEmpty(note.TokenTypeName))
+            if (!isDefaultScope && !includeNonDefaultScopedEffects)
             {
-                _eventEmitter.Emit(
-                    state,
-                    BattleEventType.TokenApplied,
-                    actorId: actor.Identity.Id,
-                    targetId: actor.Identity.Id,
-                    skillId: skill.Id,
-                    tokenType: note.TokenTypeName,
-                    tokenDelta: note.TokenDelta);
+                continue;
             }
-            else if (note.EffectKind == PassiveEffectKind.ExtraHealPercentOnSelfSkill)
-            {
-                _eventEmitter.EmitPassiveCombatNarrativeEvent(state, note, actor.Identity.Id, actor.Identity.Id, skill.Id);
-            }
-        }
 
+            if (_random.NextDouble() > effect.Chance)
+            {
+                continue;
+            }
+
+            var effectRecipients = SkillTargetResolver.ResolveEffectRecipients(
+                state,
+                actor,
+                target,
+                effect.EffectScope);
+
+            ApplyEffectToRecipients(state, actor, skill, effect, effectRecipients);
+        }
+    }
+
+    public void ApplyPassiveExtraDotsAfterEnemySkill(
+        BattleState state,
+        Combatant actor,
+        Combatant target,
+        SkillDefinition skill)
+    {
         var passiveExtraDotNotes = new List<PassiveCombatNote>();
         state.PassiveBus.ApplyPassiveExtraDotsAfterEnemySkill(
             state,
@@ -274,7 +84,198 @@ internal sealed class BattleCombatEffectApplicator
                 passiveRelatedSkillId: note.RelatedSkillId ?? string.Empty,
                 dotDurationTurns: note.DotDurationTurns);
         }
+    }
+
+    public void ApplyPostSkillPassiveExtras(
+        BattleState state,
+        Combatant actor,
+        Combatant target,
+        SkillDefinition skill)
+    {
+        var postSkillPassiveNotes = new List<PassiveCombatNote>();
+        state.PassiveBus.ApplyPostSkillPassiveExtras(state, actor, target, skill, postSkillPassiveNotes);
+        foreach (var note in postSkillPassiveNotes)
+        {
+            if (note.EffectKind == PassiveEffectKind.ExtraTokenOnSelfSkill &&
+                !string.IsNullOrEmpty(note.TokenTypeName))
+            {
+                _eventEmitter.Emit(
+                    state,
+                    BattleEventType.TokenApplied,
+                    actorId: actor.Identity.Id,
+                    targetId: actor.Identity.Id,
+                    skillId: skill.Id,
+                    tokenType: note.TokenTypeName,
+                    tokenDelta: note.TokenDelta);
+            }
+            else if (note.EffectKind == PassiveEffectKind.ExtraHealPercentOnSelfSkill)
+            {
+                _eventEmitter.EmitPassiveCombatNarrativeEvent(state, note, actor.Identity.Id, actor.Identity.Id, skill.Id);
+            }
+        }
+
         state.PassiveBus.RaiseAfterSkillResolved(state, actor, target, skill);
+    }
+
+    private void ApplyEffectToRecipients(
+        BattleState state,
+        Combatant actor,
+        SkillDefinition skill,
+        EffectSpec effect,
+        IReadOnlyList<Combatant> effectRecipients)
+    {
+        switch (effect.Type)
+        {
+            case EffectType.ApplyToken:
+                if (!effect.Token.HasValue)
+                {
+                    return;
+                }
+
+                var stacks = Math.Max(1, effect.Stacks);
+                foreach (var recipient in effectRecipients)
+                {
+                    ApplyTokenToCombatant(state, actor, recipient, skill, effect.Token.Value, stacks);
+                }
+
+                break;
+            case EffectType.ApplyDot:
+                if (!effect.Dot.HasValue)
+                {
+                    return;
+                }
+
+                foreach (var recipient in effectRecipients)
+                {
+                    TryApplyDotToCombatant(state, actor, recipient, skill, effect.Dot.Value, effect.Potency, effect.Duration);
+                }
+
+                break;
+            case EffectType.ApplyRandomDot:
+            {
+                var randomDotCandidates = new[] { DotType.Burn, DotType.Blight, DotType.Bleed };
+                var chosenDotType = randomDotCandidates[_random.Next(0, randomDotCandidates.Length)];
+                foreach (var recipient in effectRecipients)
+                {
+                    TryApplyDotToCombatant(state, actor, recipient, skill, chosenDotType, effect.Potency, effect.Duration);
+                }
+
+                break;
+            }
+            case EffectType.Push:
+                foreach (var recipient in effectRecipients)
+                {
+                    MoveTarget(state, recipient, +Math.Abs(effect.Steps));
+                }
+
+                break;
+            case EffectType.Pull:
+                foreach (var recipient in effectRecipients)
+                {
+                    MoveTarget(state, recipient, -Math.Abs(effect.Steps));
+                }
+
+                break;
+            case EffectType.HealHp:
+                LogForbiddenCombatHeal(actor, skill, effectRecipients, "HealHp", Math.Max(0, effect.Potency));
+                break;
+            case EffectType.HealHpPercent:
+                LogForbiddenCombatHeal(actor, skill, effectRecipients, "HealHpPercent", Math.Max(0, effect.Potency));
+                break;
+            case EffectType.ApplyStun:
+                foreach (var recipient in effectRecipients)
+                {
+                    if (_random.NextDouble() >= recipient.Resistances.StunRes)
+                    {
+                        var stunStacks = Math.Max(1, effect.Stacks);
+                        ApplyTokenToCombatant(state, actor, recipient, skill, TokenType.Stun, stunStacks);
+                    }
+                }
+
+                break;
+        }
+    }
+
+    private void ApplyTokenToCombatant(
+        BattleState state,
+        Combatant actor,
+        Combatant recipient,
+        SkillDefinition skill,
+        TokenType tokenType,
+        int stacks)
+    {
+        recipient.Tokens.Add(tokenType, stacks);
+        state.PassiveBus.RaiseTokenStacksChanged(
+            state,
+            actor,
+            recipient,
+            skill,
+            tokenType,
+            stacks);
+        _eventEmitter.Emit(
+            state,
+            BattleEventType.TokenApplied,
+            actorId: actor.Identity.Id,
+            targetId: recipient.Identity.Id,
+            skillId: skill.Id,
+            tokenType: tokenType.ToString(),
+            tokenDelta: stacks);
+    }
+
+    private void TryApplyDotToCombatant(
+        BattleState state,
+        Combatant actor,
+        Combatant recipient,
+        SkillDefinition skill,
+        DotType dotType,
+        int potency,
+        int durationTurns)
+    {
+        if (!EffectPassesResistance(recipient, dotType, state))
+        {
+            return;
+        }
+
+        var elementalMultiplier = CombatDamageCalculator.GetElementalMultiplier(state, actor, recipient, skill);
+        var resolvedPotency = (int)Math.Round(Math.Max(1, potency) * elementalMultiplier);
+        var baseDuration = Math.Max(1, durationTurns);
+        var duration = state.PassiveBus.AdjustDotDuration(state, actor, dotType, baseDuration);
+        recipient.Dots.ActiveDots.Add(new DotInstance
+        {
+            Type = dotType,
+            Potency = resolvedPotency,
+            RemainingTurns = duration,
+            AppliedById = actor.Identity.Id,
+        });
+        _eventEmitter.Emit(
+            state,
+            BattleEventType.DotInflicted,
+            actorId: actor.Identity.Id,
+            targetId: recipient.Identity.Id,
+            skillId: skill.Id,
+            dotType: dotType.ToString(),
+            dotAmount: resolvedPotency,
+            dotDurationTurns: duration);
+    }
+
+    private static void LogForbiddenCombatHeal(
+        Combatant actor,
+        SkillDefinition skill,
+        IReadOnlyList<Combatant> effectRecipients,
+        string healEffectTypeName,
+        int potencyOrPercent)
+    {
+        if (potencyOrPercent <= 0)
+        {
+            return;
+        }
+
+        var blockedHealTarget = effectRecipients.Count > 0 ? effectRecipients[0] : actor;
+        HealDebugTrace.Log(
+            $"[FORBIDDEN] [COMBAT] {healEffectTypeName} ignorado skill='{skill.Id}' actor='{actor.Identity.Id}' " +
+            $"target='{blockedHealTarget.Identity.Id}' potency={potencyOrPercent}. " +
+            "Cura de HP só é permitida pelo Main após 3s na vila. " +
+            "Gancho: CombatHealUnlock.ApplyHealHpToRecipient quando IsCombatHealingUnlocked.");
     }
 
     private bool EffectPassesResistance(Combatant target, DotType dotType, BattleState state)
@@ -307,11 +308,5 @@ internal sealed class BattleCombatEffectApplicator
             unit.Position.FrontRank = nextRank;
             nextRank += unit.Position.Size;
         }
-    }
-
-    private static IEnumerable<Combatant> LivingSameSide(BattleState state, Combatant actor)
-    {
-        var roster = actor.Position.Side == Side.Allies ? state.Allies : state.Enemies;
-        return roster.Where(combatant => !combatant.Health.IsDead);
     }
 }

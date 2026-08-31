@@ -52,11 +52,31 @@ public enum EffectType
     ApplyRandomDot = 7,
 }
 
+/// <summary>
+/// Who the player/AI selects and who receives primary hit/damage.
+/// Integer values 0–2 keep Unity ScriptableObjects compatible with the old Enemy/Ally/Self assets.
+/// </summary>
 public enum SkillTargetKind
 {
-    Enemy = 0,
-    Ally = 1,
+    OneEnemy = 0,
+    OneAlly = 1,
     Self = 2,
+    UpToThreeEnemies = 3,
+    AllEnemies = 4,
+    SelfOrAlly = 5,
+    SelfAndAlly = 6,
+}
+
+/// <summary>
+/// Who receives a given on-hit effect relative to the hit.
+/// Distinct from <see cref="SkillTargetKind"/> (selection / primary damage).
+/// </summary>
+public enum EffectScope
+{
+    Default = 0,
+    Self = 1,
+    AllAllies = 2,
+    AllEnemies = 3,
 }
 
 public enum ActionType

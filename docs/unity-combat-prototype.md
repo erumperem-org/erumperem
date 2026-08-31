@@ -44,9 +44,10 @@ O protótipo lê com `Application.streamingAssetsPath + "/Data/..."`. Se faltare
 ### Jogar
 
 - **Clique** numa unidade **aliada** (collider + tag) para imprimir no **Console** a hotbar simplificada `[1]`–`[7]` (nome, dano, alvo, efeitos).
-- **Clique** numa unidade **inimiga** (raycast) para definir alvo de skills `Enemy`.
+- **Clique** numa unidade **inimiga** (raycast) para definir alvo de skills `OneEnemy` / `UpToThreeEnemies`.
 - Teclas **1–7**: primeira a sétima skill do **loadout** do herói cuja vez é (apenas as que existem em `skills.json` e estão equipadas; até 7 slots).
-- Skills **Self** / **Ally** não exigem inimigo selecionado (alvo aliado usa regras do `PlayerActionBuilder`; por defeito o próprio actor para aliados).
+- Skills **Self** / **SelfAndAlly** / **AllEnemies** não exigem um segundo clique. **SelfOrAlly** aceita self ou aliado e rejeita inimigo. **UpToThreeEnemies** = inimigo selecionado + até 2 outros vivos válidos na ordem de ranks (esquerda→direita), sem segundo clique.
+- Alvos e marcadores vêm de `SkillTargetResolver` (Taunt, Stealth, mortos). Ver `docs/skill-authoring.md`.
 - **Inimigos** resolvem turnos com a mesma AI que a simulação até ser vez de um herói.
 
 ### Scripts principais

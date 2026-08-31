@@ -189,7 +189,7 @@ public static class BuckSkillDataCloner
             }
         }
 
-        foreach (var effectListName in new[] { "effectsOnHit", "comboBonus" })
+        foreach (var effectListName in new[] { "effectsOnHit" })
         {
             if (skillNode[effectListName] is not JsonArray effectsArray)
             {

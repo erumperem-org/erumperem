@@ -5,15 +5,14 @@
     "corruptionCost": 1,
     "element": "Fire",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 5,
       "max": 9
     },
     "baseCritChance": 0.1,
     "accuracy": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "wulfric_innate_shove",
@@ -21,15 +20,14 @@
     "corruptionCost": 1,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 2,
       "max": 5
     },
     "baseCritChance": 0.05,
     "accuracy": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "wulfric_innate_guard",
@@ -57,8 +55,7 @@
         "stacks": 1,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "f_t1_a1",
@@ -66,7 +63,7 @@
     "corruptionCost": 1,
     "element": "Fire",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 6,
       "max": 10
@@ -81,8 +78,7 @@
         "duration": 3,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "f_t2_a1",
@@ -90,7 +86,7 @@
     "corruptionCost": 6,
     "element": "Fire",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 8,
       "max": 12
@@ -105,23 +101,21 @@
         "duration": 2,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "f_t3_a1",
     "name": "Execu\u00E7\u00E3o de leil\u00E3o",
     "element": "Fire",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 10,
       "max": 16
     },
     "baseCritChance": 0.12,
     "accuracy": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "m_t1_a1",
@@ -129,7 +123,7 @@
     "corruptionCost": 1,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Ally",
+    "targetKind": "OneAlly",
     "baseDamage": {
       "min": 0,
       "max": 0
@@ -148,8 +142,7 @@
         "stacks": 1,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "m_t2_a1",
@@ -186,8 +179,7 @@
         "effectScope": "AllAllies",
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "m_t3_a1",
@@ -195,7 +187,7 @@
     "corruptionCost": -6,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Ally",
+    "targetKind": "OneAlly",
     "baseDamage": {
       "min": 0,
       "max": 0
@@ -209,8 +201,7 @@
         "stacks": 2,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "a_t1_a1",
@@ -218,7 +209,7 @@
     "corruptionCost": 4,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 3,
       "max": 6
@@ -233,8 +224,7 @@
         "duration": 3,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "a_t2_a1",
@@ -242,7 +232,7 @@
     "corruptionCost": 1,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 4,
       "max": 7
@@ -264,8 +254,7 @@
         "effectScope": "Self",
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "a_t3_a1",
@@ -273,7 +262,7 @@
     "corruptionCost": 13,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 5,
       "max": 9
@@ -288,8 +277,7 @@
         "duration": 3,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "corrupted_miner_punch",
@@ -297,7 +285,7 @@
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 4,
       "max": 7
@@ -305,8 +293,7 @@
     "baseCritChance": 0.05,
     "accuracy": 0.9,
     "chanceToUse": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "corrupted_miner_throw_rock",
@@ -314,7 +301,7 @@
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 3,
       "max": 8
@@ -322,8 +309,7 @@
     "baseCritChance": 0.18,
     "accuracy": 0.85,
     "chanceToUse": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "corrupted_miner_lightning_rod",
@@ -357,8 +343,7 @@
         "stacks": 1,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "corrupted_miner_distorted_laser",
@@ -366,7 +351,7 @@
     "corruptionCost": 0,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 2,
       "max": 3
@@ -381,8 +366,7 @@
         "stacks": 1,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "corrupted_miner_amethist_giro_turbina",
@@ -390,7 +374,7 @@
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 7,
       "max": 10
@@ -399,8 +383,7 @@
     "accuracy": 0.95,
     "chanceToUse": 0.2,
     "selfHpPercentBelow": 0.15,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "corrupted_miner_aghata_giro_turbina",
@@ -408,7 +391,7 @@
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 6,
       "max": 9
@@ -417,8 +400,7 @@
     "accuracy": 0.95,
     "chanceToUse": 0.2,
     "selfHpPercentBelow": 0.15,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "corrupted_miner_citrine_giro_turbina",
@@ -426,7 +408,7 @@
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 6,
       "max": 8
@@ -435,8 +417,7 @@
     "accuracy": 0.95,
     "chanceToUse": 0.2,
     "selfHpPercentBelow": 0.15,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "corrupted_miner_emerald_giro_turbina",
@@ -444,7 +425,7 @@
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 8,
       "max": 11
@@ -453,8 +434,7 @@
     "accuracy": 0.95,
     "chanceToUse": 0.2,
     "selfHpPercentBelow": 0.15,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "beacon_of_desire_iron_lash",
@@ -462,7 +442,7 @@
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 3,
       "max": 7
@@ -470,8 +450,7 @@
     "baseCritChance": 0.08,
     "accuracy": 0.92,
     "chanceToUse": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "beacon_of_desire_hypnotic_glare",
@@ -479,7 +458,7 @@
     "corruptionCost": 0,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 1,
       "max": 3
@@ -494,8 +473,7 @@
         "stacks": 1,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "beacon_of_desire_addiction_whisper",
@@ -503,7 +481,7 @@
     "corruptionCost": 0,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 2,
       "max": 4
@@ -519,8 +497,7 @@
         "duration": 3,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "beacon_of_desire_armor_collapse",
@@ -555,8 +532,7 @@
         "stacks": 1,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "enemy_claw",
@@ -564,15 +540,14 @@
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 3,
       "max": 6
     },
     "baseCritChance": 0.06,
     "accuracy": 0.88,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "spider_bite",
@@ -580,7 +555,7 @@
     "corruptionCost": 0,
     "element": "Fire",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 2,
       "max": 4
@@ -595,8 +570,7 @@
         "duration": 2,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "spider_web",
@@ -604,7 +578,7 @@
     "corruptionCost": 0,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 1,
       "max": 2
@@ -625,8 +599,7 @@
         "duration": 2,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "buck_innate_cleave",
@@ -634,15 +607,14 @@
     "corruptionCost": 1,
     "element": "Fire",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 6,
       "max": 11
     },
     "baseCritChance": 0.1,
     "accuracy": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "buck_innate_shove",
@@ -650,15 +622,14 @@
     "corruptionCost": 1,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 3,
       "max": 7
     },
     "baseCritChance": 0.05,
     "accuracy": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "buck_innate_guard",
@@ -686,8 +657,7 @@
         "stacks": 1,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "b_f_t1_a1",
@@ -695,7 +665,7 @@
     "corruptionCost": 1,
     "element": "Fire",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 7,
       "max": 12
@@ -710,8 +680,7 @@
         "duration": 3,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "b_f_t2_a1",
@@ -719,7 +688,7 @@
     "corruptionCost": 6,
     "element": "Fire",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 9,
       "max": 14
@@ -734,23 +703,21 @@
         "duration": 2,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "b_f_t3_a1",
     "name": "Execu\u00E7\u00E3o do pistoleiro",
     "element": "Fire",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 11,
       "max": 18
     },
     "baseCritChance": 0.12,
     "accuracy": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "b_m_t1_a1",
@@ -758,7 +725,7 @@
     "corruptionCost": 1,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Ally",
+    "targetKind": "OneAlly",
     "baseDamage": {
       "min": 1,
       "max": 2
@@ -777,8 +744,7 @@
         "stacks": 1,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "b_m_t2_a1",
@@ -815,8 +781,7 @@
         "effectScope": "AllAllies",
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "b_m_t3_a1",
@@ -824,7 +789,7 @@
     "corruptionCost": -6,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Ally",
+    "targetKind": "OneAlly",
     "baseDamage": {
       "min": 1,
       "max": 2
@@ -838,8 +803,7 @@
         "stacks": 2,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "b_a_t1_a1",
@@ -847,7 +811,7 @@
     "corruptionCost": 4,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 4,
       "max": 8
@@ -862,8 +826,7 @@
         "duration": 3,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "b_a_t2_a1",
@@ -871,7 +834,7 @@
     "corruptionCost": 1,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 5,
       "max": 9
@@ -893,8 +856,7 @@
         "effectScope": "Self",
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "b_a_t3_a1",
@@ -902,7 +864,7 @@
     "corruptionCost": 13,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 6,
       "max": 11
@@ -917,8 +879,7 @@
         "duration": 3,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "horse_boss_sharp_claws",
@@ -926,7 +887,7 @@
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 5,
       "max": 9
@@ -943,8 +904,7 @@
         "duration": 3,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "horse_boss_painful_bite",
@@ -952,7 +912,7 @@
     "corruptionCost": 0,
     "element": "Fire",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 16,
       "max": 24
@@ -961,8 +921,7 @@
     "accuracy": 0.85,
     "chanceToUse": 0.4,
     "selfHpPercentBelow": 0.5,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "horse_boss_chilling_howl",
@@ -970,7 +929,7 @@
     "corruptionCost": 0,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 0,
       "max": 2
@@ -986,8 +945,7 @@
         "duration": 3,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "horse_boss_blinding_vomit",
@@ -995,7 +953,7 @@
     "corruptionCost": 0,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 3,
       "max": 7
@@ -1018,7 +976,6 @@
         "duration": 3,
         "chance": 1.0
       }
-    ],
-    "comboBonus": []
+    ]
   }
 ]

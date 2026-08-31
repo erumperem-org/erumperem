@@ -22,9 +22,6 @@ public enum PassiveTrigger
 
     TokenStacksChanged = 8,
 
-    /// <summary>Skill incluiu <see cref="SkillDefinition.ComboBonus"/> porque o alvo tinha Combo.</summary>
-    ComboBonusEffectsIncluded = 9,
-
     /// <summary>Combatente eliminado (dano directo ou DOT); <see cref="CombatPassiveEventContext.Killer"/> pode ser null (DOT sem applier).</summary>
     CombatantSlain = 10,
 
@@ -33,9 +30,6 @@ public enum PassiveTrigger
 
     /// <summary>Destinatário distinto do actor da skill; apenas quando <c>delta &gt; 0</c>.</summary>
     TokenAppliedToOther = 12,
-
-    /// <summary>Uma carga de Combo foi gasta no alvo após resolver efeitos de <see cref="SkillDefinition.ComboBonus"/>.</summary>
-    ComboConsumed = 13,
 
     /// <summary>HP atual atravessou um limiar em <see cref="CombatPassiveEventBus.MonitoredHpPercentBarriers"/> (subida ou descida).</summary>
     HpPercentThresholdCrossed = 14,

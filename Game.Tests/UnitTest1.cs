@@ -399,7 +399,7 @@ public class UnitTest1
             BaseDamage = new DamageRange { Min = 100, Max = 100 },
             BaseCritChance = 0,
             Accuracy = 1.0,
-            TargetKind = SkillTargetKind.Enemy,
+            TargetKind = SkillTargetKind.OneEnemy,
         };
         var passive = new PassiveDefinition
         {
@@ -646,7 +646,7 @@ public class UnitTest1
             Name = "NB",
             Element = ElementType.Fire,
             Type = "Active",
-            TargetKind = SkillTargetKind.Enemy,
+            TargetKind = SkillTargetKind.OneEnemy,
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
@@ -686,7 +686,7 @@ public class UnitTest1
             Name = "Zero cost",
             Element = ElementType.Fire,
             Type = "Active",
-            TargetKind = SkillTargetKind.Enemy,
+            TargetKind = SkillTargetKind.OneEnemy,
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
@@ -724,7 +724,7 @@ public class UnitTest1
             Name = "Purify tap",
             Element = ElementType.Metal,
             Type = "Active",
-            TargetKind = SkillTargetKind.Enemy,
+            TargetKind = SkillTargetKind.OneEnemy,
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
@@ -763,7 +763,7 @@ public class UnitTest1
             Name = "Tier cross",
             Element = ElementType.Fire,
             Type = "Active",
-            TargetKind = SkillTargetKind.Enemy,
+            TargetKind = SkillTargetKind.OneEnemy,
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
@@ -803,7 +803,7 @@ public class UnitTest1
             Name = "Same tier",
             Element = ElementType.Fire,
             Type = "Active",
-            TargetKind = SkillTargetKind.Enemy,
+            TargetKind = SkillTargetKind.OneEnemy,
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
@@ -842,7 +842,7 @@ public class UnitTest1
             Name = "Big gain",
             Element = ElementType.Fire,
             Type = "Active",
-            TargetKind = SkillTargetKind.Enemy,
+            TargetKind = SkillTargetKind.OneEnemy,
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
@@ -982,7 +982,7 @@ public class UnitTest1
         var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(guardSkill);
 
         Assert.Equal(
-            "Postura de lobo: ti (auto) | sem dano direto | +1 Bloqueio, +1 Provocação | sem corrupção.",
+            "Wolf Stance: self | no direct damage | +1 Block, +1 Taunt | no corruption.",
             summary);
         Assert.DoesNotContain("crít", summary, StringComparison.OrdinalIgnoreCase);
     }
@@ -995,7 +995,7 @@ public class UnitTest1
         var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(executionSkill);
 
         Assert.Equal(
-            "Execução de leilão: 1 alvo | 10–16 de dano | 12% de crít | +1 corrupção.",
+            "Auction Execution: 1 target | 10–16 damage | 12% crit | +1 corruption.",
             summary);
     }
 
@@ -1006,9 +1006,9 @@ public class UnitTest1
 
         var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(bleedSkill);
 
-        Assert.Contains("6–10 de dano", summary, StringComparison.Ordinal);
-        Assert.Contains("Sangramento (3 de dano por 3 turnos)", summary, StringComparison.Ordinal);
-        Assert.Contains("+1 corrupção", summary, StringComparison.Ordinal);
+        Assert.Contains("6–10 damage", summary, StringComparison.Ordinal);
+        Assert.Contains("Bleed (3 damage for 3 turns)", summary, StringComparison.Ordinal);
+        Assert.Contains("+1 corruption", summary, StringComparison.Ordinal);
     }
 
     [Fact]

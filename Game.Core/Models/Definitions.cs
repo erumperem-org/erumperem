@@ -22,8 +22,11 @@ public sealed class EffectSpec
     public int Steps { get; init; }
     public double Chance { get; init; } = 1.0;
 
-    /// <summary>Default = single target; AllAllies = same-side party (e.g. Muralha Block on everyone).</summary>
-    public string EffectScope { get; init; } = EffectScopes.Default;
+    /// <summary>
+    /// Who receives this effect relative to the hit.
+    /// Default = the primary hit target; Self = caster; AllAllies / AllEnemies = living combatants on that side.
+    /// </summary>
+    public EffectScope EffectScope { get; init; } = EffectScope.Default;
 }
 
 public sealed class SkillDefinition
@@ -35,9 +38,8 @@ public sealed class SkillDefinition
     public required DamageRange BaseDamage { get; init; }
     public required double BaseCritChance { get; init; }
     public required double Accuracy { get; init; }
-    public SkillTargetKind TargetKind { get; init; } = SkillTargetKind.Enemy;
+    public SkillTargetKind TargetKind { get; init; } = SkillTargetKind.OneEnemy;
     public IReadOnlyList<EffectSpec> EffectsOnHit { get; init; } = [];
-    public IReadOnlyList<EffectSpec> ComboBonus { get; init; } = [];
 
     /// <summary>
     /// Probabilidade absoluta (0..1) de a IA considerar esta skill quando ela é elegível. Default 1.0 (sempre considerada).

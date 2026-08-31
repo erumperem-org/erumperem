@@ -232,60 +232,51 @@ public sealed class BattleSimulator
     public void ResolveChosenAction(BattleState state, ChosenAction action)
     {
         var actor = action.Actor;
-        var target = action.Target;
         var skill = action.Skill;
+        var primaryTargets = SkillTargetResolver.ResolvePrimaryTargets(state, actor, skill, action.Target);
+        var actionUsedTargetId = primaryTargets.Count > 0
+            ? primaryTargets[0].Identity.Id
+            : action.Target.Identity.Id;
+
         _eventEmitter.Emit(
             state,
             BattleEventType.ActionUsed,
             actorId: actor.Identity.Id,
-            targetId: target.Identity.Id,
+            targetId: actionUsedTargetId,
             skillId: skill.Id,
             element: skill.Element);
 
-        ResolveActionResult result;
-        if (skill.TargetKind == SkillTargetKind.Enemy)
+        var hasDirectDamage = skill.BaseDamage.Min != 0 || skill.BaseDamage.Max != 0;
+        var hasAppliedSkillWideEffects = false;
+        Combatant? lastSuccessfulHitTarget = null;
+
+        foreach (var primaryTarget in primaryTargets)
         {
-            result = ResolveHitAndDamage(state, actor, target, skill);
-            EmitHitResolved(state, actor, target, skill, result);
-            if (result.IsHit)
+            var result = hasDirectDamage
+                ? ResolveHitAndDamage(state, actor, primaryTarget, skill)
+                : new ResolveActionResult { IsHit = true, IsCrit = false, DamageApplied = 0 };
+
+            EmitHitResolved(state, actor, primaryTarget, skill, result);
+            if (!result.IsHit)
             {
-                _effectApplicator.ApplyEffects(state, actor, target, skill, result);
-            }
-        }
-        else if (skill.TargetKind == SkillTargetKind.Ally)
-        {
-            if (skill.BaseDamage.Max > 0)
-            {
-                result = ResolveHitAndDamage(state, actor, target, skill);
-            }
-            else
-            {
-                result = new ResolveActionResult { IsHit = true, IsCrit = false, DamageApplied = 0 };
+                continue;
             }
 
-            EmitHitResolved(state, actor, target, skill, result);
-            if (result.IsHit)
-            {
-                _effectApplicator.ApplyEffects(state, actor, target, skill, result);
-            }
+            _effectApplicator.ApplyEffects(
+                state,
+                actor,
+                primaryTarget,
+                skill,
+                includeDefaultScopedEffects: true,
+                includeNonDefaultScopedEffects: !hasAppliedSkillWideEffects);
+            hasAppliedSkillWideEffects = true;
+            _effectApplicator.ApplyPassiveExtraDotsAfterEnemySkill(state, actor, primaryTarget, skill);
+            lastSuccessfulHitTarget = primaryTarget;
         }
-        else
+
+        if (lastSuccessfulHitTarget != null)
         {
-            if (skill.BaseDamage.Max == 0 && skill.BaseDamage.Min == 0)
-            {
-                result = new ResolveActionResult { IsHit = true, IsCrit = false, DamageApplied = 0 };
-                EmitHitResolved(state, actor, target, skill, result);
-                _effectApplicator.ApplyEffects(state, actor, target, skill, result);
-            }
-            else
-            {
-                result = ResolveHitAndDamage(state, actor, target, skill);
-                EmitHitResolved(state, actor, target, skill, result);
-                if (result.IsHit)
-                {
-                    _effectApplicator.ApplyEffects(state, actor, target, skill, result);
-                }
-            }
+            _effectApplicator.ApplyPostSkillPassiveExtras(state, actor, lastSuccessfulHitTarget, skill);
         }
 
         if (action.ActionType == ActionType.Skill && actor.Identity.Faction == Faction.Player)
