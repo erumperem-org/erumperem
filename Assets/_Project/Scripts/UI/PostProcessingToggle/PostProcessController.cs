@@ -17,7 +17,7 @@ public class PostProcessController : MonoBehaviour
         {
             chromatic.active = true;
             chromatic.intensity.overrideState = true;
-            chromatic.intensity.value = enabled ? 0.1f : 0f;
+            chromatic.intensity.value = enabled ? 0.1f : 0f;    
             Debug.Log("Chromatic Aberration: " + enabled);
         }
     }
