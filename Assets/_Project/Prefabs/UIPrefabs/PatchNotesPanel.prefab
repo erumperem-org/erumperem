@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 9165176813024398426}
   - component: {fileID: 5402202709383825002}
   - component: {fileID: 1134952987731177860}
+  - component: {fileID: 5787251824122967052}
   m_Layer: 5
   m_Name: Scrollbar Vertical
   m_TagString: Untagged
@@ -67,8 +68,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: aea15414e765645468a63bbf40533bb0, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: -282841704, guid: 7f2813ffabeaf664da04207330655d2a, type: 3}
+  m_Type: 2
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -121,11 +122,33 @@ MonoBehaviour:
   m_HandleRect: {fileID: 3448943954876714145}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.594409
+  m_Size: 0.027
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!95 &5787251824122967052
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 36992426956494522}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 943695edf5cb66b4991dc9df202251f9, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &356099067018557927
 GameObject:
   m_ObjectHideFlags: 0
@@ -139,7 +162,7 @@ GameObject:
   - component: {fileID: 2651862438771979857}
   - component: {fileID: 5579091511463178499}
   m_Layer: 5
-  m_Name: CreditsView
+  m_Name: PatchView
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -379,7 +402,7 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1632049316418930549}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.405591}
+  m_AnchorMin: {x: 0, y: 0.40559095}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 20}
@@ -412,8 +435,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Sprite: {fileID: 21300000, guid: 43bc6f337981c184dbff138e1991bb73, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4

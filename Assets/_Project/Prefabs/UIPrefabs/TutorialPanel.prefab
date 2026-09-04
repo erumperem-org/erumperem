@@ -85,19 +85,69 @@ MonoBehaviour:
 
     accuracy: 80%
 
-    effects
-    on hit: none
+    effects on
+    hit: none
 
-    
 
-    
+
+
 
     ACTIVE SKILL - 1
 
     id: wulfricTaunt
 
+    name: Taunt
+
+    corruption
+    cost: 2
+
+    element: metal
+
+    target kind: self
+
+    base damage: 0
+
+    base
+    crit chance: 0
+
+    accuracy: 100%
+
+    effects on hit: Apply 1 taunt token and
+    apply 2 controlled instability
+
+
+
+    ACTIVE SKILL - 2
+
+    id: wulfricAreaAttack
+
     name:
-    Taunt
+    Iron Maiden
+
+    corruption cost: 3
+
+    element: metal
+
+    target kind: 3 enemies
+
+    base
+    damage: 5 to 8
+
+    base crit chance: 3%
+
+    accuracy: 70%
+
+    effects on hit:
+    Applies 2 destabilization tokens
+
+
+
+    ACTIVE SKILL - 3:
+
+    id: wulfricRaiseShield
+
+    name:
+    Raise Shield
 
     corruption cost: 2
 
@@ -112,59 +162,8 @@ MonoBehaviour:
 
     accuracy: 100%
 
-    effects on hit:
-    Apply 1 taunt token and apply 2 controlled instability
-
-    
-
-    ACTIVE SKILL
-    - 2
-
-    id: wulfricAreaAttack
-
-    name: Iron Maiden
-
-    corruption cost:
-    3
-
-    element: metal
-
-    target kind: 3 enemies
-
-    base damage: 5 to 8
-
-    base
-    crit chance: 3%
-
-    accuracy: 70%
-
-    effects on hit: Applies 2 destabilization
-    tokens
-
-    
-
-    ACTIVE SKILL - 3:
-
-    id: wulfricRaiseShield
-
-    name:
-    Raise Shield
-
-    corruption cost: 2
-
-    element: metal
-
-    target kind:
-    self
-
-    base damage: 0
-
-    base crit chance: 0
-
-    accuracy: 100%
-
-    effects
-    on hit: Apply 3 defense token
+    effects on hit: Apply
+    3 defense token
 
 '
   m_isRightToLeft: 0
@@ -1248,6 +1247,7 @@ GameObject:
   - component: {fileID: 142076333726511014}
   - component: {fileID: 5400420379276471514}
   - component: {fileID: 3440650910226382984}
+  - component: {fileID: 8399517553849190871}
   m_Layer: 5
   m_Name: Scrollbar Vertical
   m_TagString: Untagged
@@ -1303,8 +1303,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: aea15414e765645468a63bbf40533bb0, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: -282841704, guid: 7f2813ffabeaf664da04207330655d2a, type: 3}
+  m_Type: 2
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -1362,6 +1362,28 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!95 &8399517553849190871
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1654716246605643738}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 943695edf5cb66b4991dc9df202251f9, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &1732074257985537073
 GameObject:
   m_ObjectHideFlags: 0
@@ -1998,8 +2020,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Sprite: {fileID: 21300000, guid: 43bc6f337981c184dbff138e1991bb73, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -2128,6 +2150,7 @@ GameObject:
   - component: {fileID: 3921327028026000528}
   - component: {fileID: 3735048934546008642}
   - component: {fileID: 7928061910311628633}
+  - component: {fileID: 4092095832308335662}
   m_Layer: 5
   m_Name: Scrollbar Vertical
   m_TagString: Untagged
@@ -2183,8 +2206,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: aea15414e765645468a63bbf40533bb0, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: -282841704, guid: 7f2813ffabeaf664da04207330655d2a, type: 3}
+  m_Type: 2
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -2242,6 +2265,28 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!95 &4092095832308335662
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3129733176297466982}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 943695edf5cb66b4991dc9df202251f9, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &3662208960432113465
 GameObject:
   m_ObjectHideFlags: 0
@@ -2848,8 +2893,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Sprite: {fileID: 21300000, guid: 43bc6f337981c184dbff138e1991bb73, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -2870,6 +2915,7 @@ GameObject:
   - component: {fileID: 9201686259203889916}
   - component: {fileID: 8737579923879242145}
   - component: {fileID: 5734749660532865114}
+  - component: {fileID: 8921847256174244371}
   m_Layer: 5
   m_Name: Scrollbar Vertical
   m_TagString: Untagged
@@ -2925,8 +2971,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: aea15414e765645468a63bbf40533bb0, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: -282841704, guid: 7f2813ffabeaf664da04207330655d2a, type: 3}
+  m_Type: 2
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -2984,6 +3030,28 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!95 &8921847256174244371
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5281277647740142110}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 943695edf5cb66b4991dc9df202251f9, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &5404340628270344145
 GameObject:
   m_ObjectHideFlags: 0
@@ -4163,8 +4231,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Sprite: {fileID: 21300000, guid: 43bc6f337981c184dbff138e1991bb73, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -4238,8 +4306,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Sprite: {fileID: 21300000, guid: 43bc6f337981c184dbff138e1991bb73, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -4732,6 +4800,7 @@ GameObject:
   - component: {fileID: 6787986984104674261}
   - component: {fileID: 259233096890931235}
   - component: {fileID: 1042325484017875441}
+  - component: {fileID: 6122220534190762151}
   m_Layer: 5
   m_Name: Scrollbar Vertical
   m_TagString: Untagged
@@ -4787,8 +4856,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: aea15414e765645468a63bbf40533bb0, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: -282841704, guid: 7f2813ffabeaf664da04207330655d2a, type: 3}
+  m_Type: 2
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -4846,6 +4915,28 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!95 &6122220534190762151
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6918424685753191621}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 943695edf5cb66b4991dc9df202251f9, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &6922434000932688300
 GameObject:
   m_ObjectHideFlags: 0
@@ -5822,8 +5913,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Sprite: {fileID: 21300000, guid: 43bc6f337981c184dbff138e1991bb73, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -6316,6 +6407,7 @@ GameObject:
   - component: {fileID: 2082197608975239202}
   - component: {fileID: 6062701480426005118}
   - component: {fileID: 5713236365520412135}
+  - component: {fileID: 187296918266115448}
   m_Layer: 5
   m_Name: Scrollbar Vertical
   m_TagString: Untagged
@@ -6371,8 +6463,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: aea15414e765645468a63bbf40533bb0, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: -282841704, guid: 7f2813ffabeaf664da04207330655d2a, type: 3}
+  m_Type: 2
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -6430,6 +6522,28 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!95 &187296918266115448
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8646903266347602222}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 943695edf5cb66b4991dc9df202251f9, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &8695384755691949052
 GameObject:
   m_ObjectHideFlags: 0
