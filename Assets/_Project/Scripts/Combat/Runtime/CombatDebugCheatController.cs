@@ -10,6 +10,9 @@ namespace Erumperem.Combat.Runtime
     /// </summary>
     public sealed class CombatDebugCheatController
     {
+        public static event Action<string, bool> OnCheatToggled;
+        public static event Action<string> OnCheatExecuted;
+
         private readonly CombatSessionRuntime _session;
         private readonly CombatUnitVisualSynchronizer _unitVisualSynchronizer;
         private readonly float _enemyDeathClipMarginSeconds;
@@ -49,6 +52,7 @@ namespace Erumperem.Combat.Runtime
             _session.IsInfiniteAllyHealthCheatActive = true;
             _session.State.AlliesHaveInfiniteHealth = true;
             Debug.Log("Cheat F9: vida infinita dos aliados LIGADA.");
+            OnCheatToggled?.Invoke("Vida Infinita", true);
         }
 
         public void ToggleDoubleAllyDamageCheat()
@@ -76,6 +80,7 @@ namespace Erumperem.Combat.Runtime
             _session.IsDoubleAllyDamageCheatActive = true;
             _session.State.AllyOutgoingDamageMultiplier = 2.0;
             Debug.Log("Cheat F10: dano ×2 dos aliados LIGADO.");
+            OnCheatToggled?.Invoke("Dano Dobrado (x2)", true);
         }
 
         public void DebugKillAllEnemiesInstantly(Action clearSkillBarSelection)
@@ -120,6 +125,7 @@ namespace Erumperem.Combat.Runtime
             }
 
             Debug.Log("Cheat F6 acionado: inimigos mortos instantaneamente para testar a tela de vitória.");
+            OnCheatExecuted?.Invoke("Eliminar Todos os Inimigos");
             _session.NeedsPlayerInput = false;
             _session.PendingPlayerActor = null;
             clearSkillBarSelection?.Invoke();
@@ -167,6 +173,7 @@ namespace Erumperem.Combat.Runtime
             }
 
             Debug.Log("Cheat F7 acionado: aliados mortos instantaneamente para testar a tela de derrota.");
+            OnCheatExecuted?.Invoke("Eliminar Todos os Aliados");
             _session.NeedsPlayerInput = false;
             _session.PendingPlayerActor = null;
             clearSkillBarSelection?.Invoke();
@@ -190,6 +197,7 @@ namespace Erumperem.Combat.Runtime
 
         private void DisableInfiniteAllyHealthCheat(bool restoreSavedHealth)
         {
+            bool wasActive = _session.IsInfiniteAllyHealthCheatActive;
             _session.IsInfiniteAllyHealthCheatActive = false;
             if (_session.State != null)
             {
@@ -216,14 +224,25 @@ namespace Erumperem.Combat.Runtime
 
             _session.AllyHealthBeforeInfiniteHealthCheat.Clear();
             InvalidateAllyHealthBarDisplays();
+
+            if (wasActive)
+            {
+                OnCheatToggled?.Invoke("Vida Infinita", false);
+            }
         }
 
         private void DisableDoubleAllyDamageCheat()
         {
+            bool wasActive = _session.IsDoubleAllyDamageCheatActive;
             _session.IsDoubleAllyDamageCheatActive = false;
             if (_session.State != null)
             {
                 _session.State.AllyOutgoingDamageMultiplier = 1.0;
+            }
+
+            if (wasActive)
+            {
+                OnCheatToggled?.Invoke("Dano Dobrado (x2)", false);
             }
         }
 
