@@ -71,8 +71,7 @@ namespace Erumperem.Combat.Runtime
 
             if (_session.IsDoubleAllyDamageCheatActive)
             {
-                _session.IsDoubleAllyDamageCheatActive = false;
-                _session.State.AllyOutgoingDamageMultiplier = 1.0;
+                DisableDoubleAllyDamageCheat();
                 Debug.Log("Cheat F10: dano ×2 dos aliados DESLIGADO.");
                 return;
             }
