@@ -71,6 +71,53 @@ namespace Erumperem.UI
             ["Aranha Stunadora"] = "Stunner Spider"
         };
 
+        private static readonly Dictionary<string, string> SkillIdToDisplayName = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["wulfric_innate_cleave"] = "Talho direto",
+            ["wulfric_innate_shove"] = "Empurrão brutal",
+            ["wulfric_innate_guard"] = "Postura de lobo",
+            ["f_t1_a1"] = "Rasgar tendão",
+            ["f_t2_a1"] = "Fio candente",
+            ["f_t3_a1"] = "Execução de leilão",
+            ["m_t1_a1"] = "Remendar couraça",
+            ["m_t2_a1"] = "Muralha",
+            ["m_t3_a1"] = "Salvaguarda",
+            ["a_t1_a1"] = "Fio da anomalia",
+            ["a_t2_a1"] = "Puxar o véu",
+            ["a_t3_a1"] = "Abrir o vão",
+            ["corrupted_miner_punch"] = "Soco Normal",
+            ["corrupted_miner_throw_rock"] = "Lança Pedra",
+            ["corrupted_miner_lightning_rod"] = "Para-raio",
+            ["corrupted_miner_distorted_laser"] = "Laser Distorcido",
+            ["corrupted_miner_amethist_giro_turbina"] = "Giro Turbina (Ametista)",
+            ["corrupted_miner_aghata_giro_turbina"] = "Giro Turbina (Ágata)",
+            ["corrupted_miner_citrine_giro_turbina"] = "Giro Turbina (Citrino)",
+            ["corrupted_miner_emerald_giro_turbina"] = "Giro Turbina (Esmeralda)",
+            ["beacon_of_desire_iron_lash"] = "Açoite Metálico",
+            ["beacon_of_desire_hypnotic_glare"] = "Brilho Hipnótico",
+            ["beacon_of_desire_addiction_whisper"] = "Sussurro do Vício",
+            ["beacon_of_desire_armor_collapse"] = "Colapso da Armadura",
+            ["enemy_claw"] = "Garra",
+            ["spider_bite"] = "Bite",
+            ["spider_web"] = "Web",
+            ["buck_innate_cleave"] = "Disparo rápido",
+            ["buck_innate_shove"] = "Empurrão do coldre",
+            ["buck_innate_guard"] = "Postura do duelista",
+            ["b_f_t1_a1"] = "Tiro incendiário",
+            ["b_f_t2_a1"] = "Rajada flamejante",
+            ["b_f_t3_a1"] = "Execução do pistoleiro",
+            ["b_m_t1_a1"] = "Reforço de couro",
+            ["b_m_t2_a1"] = "Barricada",
+            ["b_m_t3_a1"] = "Último recurso",
+            ["b_a_t1_a1"] = "Fio do revólver",
+            ["b_a_t2_a1"] = "Puxar o gatilho",
+            ["b_a_t3_a1"] = "Abrir fogo",
+            ["horse_boss_sharp_claws"] = "Garras afiadas",
+            ["horse_boss_painful_bite"] = "Mordida dilacerante",
+            ["horse_boss_chilling_howl"] = "Uivo gelado",
+            ["horse_boss_blinding_vomit"] = "Vómito cegante",
+        };
+
         public static string FormatCombatantName(string name)
         {
             if (string.IsNullOrEmpty(name)) return string.Empty;
@@ -235,7 +282,9 @@ namespace Erumperem.UI
                 return $"Passive «{passiveLabel}» activated.";
             }
 
-            var relatedSkill = NodeOrSkillDisplayName(combatEvent.PassiveRelatedSkillId);
+            var relatedSkillRef = string.IsNullOrEmpty(combatEvent.PassiveRelatedSkillId)
+                ? string.Empty
+                : FormatSkillReference(combatEvent.PassiveRelatedSkillId);
             var bonusPct = FormatPercentFromFraction(combatEvent.PassiveMagnitude);
 
             return kind switch
@@ -246,7 +295,7 @@ namespace Erumperem.UI
                     PassiveEffectKind.OutgoingDamageAfterPrerequisiteSkill or
                     PassiveEffectKind.OutgoingDamageVsSkillIfTargetHasDot =>
                     $"Passive «{passiveLabel}»: +{bonusPct} damage on this hit " +
-                    $"{(string.IsNullOrEmpty(relatedSkill) ? string.Empty : $"(skill «{relatedSkill}»)")}.",
+                    $"{(string.IsNullOrEmpty(relatedSkillRef) ? string.Empty : $"(skill {relatedSkillRef})")}.",
                 PassiveEffectKind.IncomingDamageMultiplierWhenHpBelow =>
                     $"Passive «{passiveLabel}»: incoming damage ×{FormatMultiplier(combatEvent.PassiveMagnitude)} (low HP).",
                 PassiveEffectKind.ExtraHealPercentOnSelfSkill when combatEvent.PassiveAuxInt > 0 =>
@@ -317,9 +366,35 @@ namespace Erumperem.UI
 
         private static string NodeOrSkillDisplayName(string nodeOrSkillId)
         {
-            if (string.IsNullOrEmpty(nodeOrSkillId)) return string.Empty;
+            if (string.IsNullOrEmpty(nodeOrSkillId))
+            {
+                return string.Empty;
+            }
+
+            if (SkillIdToDisplayName.TryGetValue(nodeOrSkillId, out var skillDisplayName))
+            {
+                return TranslateToEnglish(skillDisplayName);
+            }
+
             EnsureNodeNameCache();
-            return _nodeIdToDisplayName.TryGetValue(nodeOrSkillId, out var name) ? name : TranslateToEnglish(nodeOrSkillId);
+            return _nodeIdToDisplayName.TryGetValue(nodeOrSkillId, out var name)
+                ? name
+                : TranslateToEnglish(nodeOrSkillId);
+        }
+
+        private static string FormatTechnicalIdentifierForUi(string technicalId)
+        {
+            if (string.IsNullOrEmpty(technicalId))
+            {
+                return string.Empty;
+            }
+
+            if (SkillIdToDisplayName.ContainsKey(technicalId))
+            {
+                return FormatSkillReference(technicalId);
+            }
+
+            return NodeOrSkillDisplayName(technicalId);
         }
 
         private static string PresentLine(string line, BattleState battleContext)
@@ -345,12 +420,12 @@ namespace Erumperem.UI
             trimmed = Regex.Replace(
                 trimmed,
                 @"(?i)\bskill\s*:\s*(\S+)",
-                match => $"Skill: '{NodeOrSkillDisplayName(match.Groups[1].Value)}'");
+                match => $"Skill: {FormatSkillReference(match.Groups[1].Value)}");
 
             trimmed = Regex.Replace(
                 trimmed,
                 @"\b([a-z]+_[a-z0-9_]+)\b",
-                match => NodeOrSkillDisplayName(match.Groups[1].Value));
+                match => FormatTechnicalIdentifierForUi(match.Groups[1].Value));
 
             trimmed = Regex.Replace(
                 trimmed,
@@ -443,7 +518,7 @@ namespace Erumperem.UI
                 return "this skill";
             }
 
-            return $"«{NodeOrSkillDisplayName(skillId)}»";
+            return $"[c buff]{NodeOrSkillDisplayName(skillId)}[/c]";
         }
 
         private static string FormatIncomingDamageMultiplierBelowHp(double multiplier, string hpThresholdPercent)
