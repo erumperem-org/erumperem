@@ -1760,6 +1760,7 @@ GameObject:
   - component: {fileID: 1448326833556940288}
   - component: {fileID: 9214696309875456041}
   - component: {fileID: 4039883378400202339}
+  - component: {fileID: 6351743023494948353}
   m_Layer: 5
   m_Name: PausePanel
   m_TagString: Untagged
@@ -1838,6 +1839,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a564c1efc7fe0444bb856528b84d37f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Panel
+--- !u!114 &6351743023494948353
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5282935465979357104}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0270a85c63657a247946dfe0f43ced52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Systems.Audio.UIMenuAudio
+  onOpenSound: MenuOpen
+  onCloseSound: MenuClose
 --- !u!1 &7432530787520420135
 GameObject:
   m_ObjectHideFlags: 0

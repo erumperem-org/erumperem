@@ -989,6 +989,7 @@ GameObject:
   - component: {fileID: 2661120519215755275}
   - component: {fileID: 2447139095410991701}
   - component: {fileID: 7264914518478685754}
+  - component: {fileID: -4715240015367460900}
   m_Layer: 0
   m_Name: CorruptedMiner_Aghata
   m_TagString: Untagged
@@ -1071,7 +1072,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.EnemyAnimationController
   unitAnimator: {fileID: 2661120519215755275}
-  idleStateName: Idle
+  _idleStateName: Idle
   attackStateName: Attack
   hitTakenStateName: HitTaken
   deathStateName: Death
@@ -1088,6 +1089,22 @@ MonoBehaviour:
   hitTakenVfxOffset: {x: 0, y: 0, z: 0}
   destroySpawnedHitVfx: 1
   destroyHitVfxAfterSeconds: 5
+--- !u!114 &-4715240015367460900
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4068692333910293207}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e2fa43ff361f14438625a701d6826f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Systems.Audio.CombatantSkillAudio
+  sfxMixerGroup: {fileID: 0}
+  skillSounds: []
+  minDistance: 2
+  maxDistance: 20
 --- !u!1 &4141668330505122431
 GameObject:
   m_ObjectHideFlags: 0

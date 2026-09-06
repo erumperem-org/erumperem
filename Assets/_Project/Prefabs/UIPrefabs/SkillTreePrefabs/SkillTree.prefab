@@ -115,6 +115,7 @@ GameObject:
   - component: {fileID: 68952242543117545}
   - component: {fileID: 8804527080730912356}
   - component: {fileID: 6503371903239001636}
+  - component: {fileID: 4152845425543956232}
   m_Layer: 5
   m_Name: SkillTree
   m_TagString: Untagged
@@ -223,6 +224,20 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &4152845425543956232
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2301090306540824862}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0270a85c63657a247946dfe0f43ced52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Systems.Audio.UIMenuAudio
+  onOpenSound: OpenSkillTree
+  onCloseSound: CloseSkillTree
 --- !u!1 &3289819725742245436
 GameObject:
   m_ObjectHideFlags: 0
