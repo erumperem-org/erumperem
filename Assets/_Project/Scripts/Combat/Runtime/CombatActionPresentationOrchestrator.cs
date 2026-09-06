@@ -89,11 +89,17 @@ namespace Erumperem.Combat.Runtime
                 sequence.Append(unitRoot.DOScaleY(targetY, _settings.DamageShrinkDuration).SetEase(Ease.OutCubic));
             }
 
+            // Aplica a escala de velocidade do combate à sequência de feedback de dano
+            sequence.timeScale = CombatSpeedSettings.SpeedMultiplier;
             sequence.OnComplete(() => _session.DamageFeedbackBusy.Remove(targetCombatantId));
         }
 
         private IEnumerator PresentActionRoutine(ChosenAction action, Action onStepComplete)
         {
+            Animator actorAnimator = null;
+            Animator targetAnimator = null;
+            float speedMultiplier = CombatSpeedSettings.SpeedMultiplier;
+
             try
             {
                 StopActorActionRock();
@@ -108,6 +114,29 @@ namespace Erumperem.Combat.Runtime
                     var attackHoldSeconds = enemyActorVisual.ComputeAttackPresentationDurationSeconds(
                         _settings.EnemyAttackClipMarginSeconds);
                     playSeconds = Mathf.Max(playSeconds, attackHoldSeconds);
+                }
+
+                // Ajusta as durações de espera de acordo com a velocidade de combate
+                playSeconds /= speedMultiplier;
+                postPauseSeconds /= speedMultiplier;
+
+                // Captura e acelera dinamicamente os Animators do atacante e do defensor
+                if (_session.UnitVisualRootsByCombatantId.TryGetValue(action.Actor.Identity.Id, out var actorRoot) && actorRoot != null)
+                {
+                    actorAnimator = actorRoot.GetComponent<Animator>() ?? actorRoot.GetComponentInChildren<Animator>();
+                    if (actorAnimator != null)
+                    {
+                        actorAnimator.speed = speedMultiplier;
+                    }
+                }
+
+                if (_session.UnitVisualRootsByCombatantId.TryGetValue(action.Target.Identity.Id, out var targetRoot) && targetRoot != null)
+                {
+                    targetAnimator = targetRoot.GetComponent<Animator>() ?? targetRoot.GetComponentInChildren<Animator>();
+                    if (targetAnimator != null)
+                    {
+                        targetAnimator.speed = speedMultiplier;
+                    }
                 }
 
                 _sessionHub?.RaiseActionPresentationStarted();
@@ -202,6 +231,16 @@ namespace Erumperem.Combat.Runtime
             }
             finally
             {
+                // Restaura a velocidade padrão dos animators ao encerrar o turno
+                if (actorAnimator != null)
+                {
+                    actorAnimator.speed = 1.0f;
+                }
+                if (targetAnimator != null)
+                {
+                    targetAnimator.speed = 1.0f;
+                }
+
                 _sessionHub?.RaiseCinemachineFocusEnded();
                 StopActorActionRock();
                 _session.OngoingPresentationActorCombatantId = string.Empty;
@@ -235,7 +274,7 @@ namespace Erumperem.Combat.Runtime
 
             _actionRockTransform = actorRoot;
             _actionRockBaseLocalPosition = actorRoot.localPosition;
-            actorRoot.DOPunchPosition(
+            var punch = actorRoot.DOPunchPosition(
                     _settings.ActorActionRockPunch,
                     totalDurationSeconds,
                     _settings.ActorActionRockVibrato,
@@ -245,6 +284,9 @@ namespace Erumperem.Combat.Runtime
                 .SetTarget(actorRoot)
                 .OnKill(RestoreActorActionRockLocal)
                 .OnComplete(RestoreActorActionRockLocal);
+
+            // Aplica escala de velocidade do combate ao Tween de rocking
+            punch.timeScale = CombatSpeedSettings.SpeedMultiplier;
         }
 
         private void RestoreActorActionRockLocal()
@@ -291,13 +333,16 @@ namespace Erumperem.Combat.Runtime
             }
 
             DOTween.Kill(CorruptionPulseTweenId, false);
-            _settings.CorruptionIncreaseFeedbackRoot.DOPunchScale(
+            var punch = _settings.CorruptionIncreaseFeedbackRoot.DOPunchScale(
                     _settings.CorruptionPulseScale,
                     _settings.CorruptionPulseDuration,
                     _settings.CorruptionPulseVibrato,
                     _settings.CorruptionPulseElasticity)
                 .SetId(CorruptionPulseTweenId)
                 .SetLink(_settings.CorruptionIncreaseFeedbackRoot.gameObject);
+
+            // Aplica escala de velocidade do combate ao Tween de corrupção
+            punch.timeScale = CombatSpeedSettings.SpeedMultiplier;
         }
 
         private void GetTimingForSkill(string skillId, out float playSeconds, out float postPauseSeconds)
