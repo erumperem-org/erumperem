@@ -21,7 +21,7 @@ internal sealed class SkillTargetKindJsonConverter : JsonConverter<SkillTargetKi
         }
 
         if (Enum.TryParse(rawValue, ignoreCase: true, out SkillTargetKind parsedTargetKind) &&
-            Enum.IsDefined(parsedTargetKind))
+            Enum.IsDefined(typeof(SkillTargetKind), parsedTargetKind))
         {
             return parsedTargetKind;
         }

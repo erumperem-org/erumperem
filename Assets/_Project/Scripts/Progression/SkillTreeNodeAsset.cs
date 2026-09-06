@@ -29,7 +29,8 @@ namespace Erumperem.Progression
             public int Potency;
             public int Duration;
             public int Steps;
-            public string EffectScope = "Default";
+            [FormerlySerializedAs("EffectScope")]
+            public string EffectScopeName = "Default";
             public bool UseToken;
             public TokenType Token;
             public bool UseDot;
@@ -37,7 +38,6 @@ namespace Erumperem.Progression
 
             public EffectSpec ToRuntimeSpec()
             {
-                var effectScopeName = EffectScope;
                 return new()
                 {
                     Type = Type,
@@ -46,7 +46,7 @@ namespace Erumperem.Progression
                     Potency = Potency,
                     Duration = Duration,
                     Steps = Steps,
-                    EffectScope = ParseEffectScope(effectScopeName),
+                    EffectScope = ParseEffectScope(EffectScopeName),
                     Token = UseToken ? Token : null,
                     Dot = UseDot ? Dot : null,
                 };

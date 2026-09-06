@@ -246,15 +246,11 @@ namespace Erumperem.Combat.HealthBars
             }
 
             var selectedSkill = battleState.SkillsById[skillIds[zeroBasedSlot]];
-            Combatant? preferredCombatant = null;
+            Combatant? preferredCombatant = _combatSession.CurrentSelectedEnemy;
             if (skillButtonBarUIManager != null &&
-                skillButtonBarUIManager.TryGetHoveredLivingCombatant(out var hoveredCombatant))
+                skillButtonBarUIManager.TryGetHoveredLivingCombatant(out var hoveredPreferredCombatant))
             {
-                preferredCombatant = hoveredCombatant;
-            }
-            else
-            {
-                preferredCombatant = _combatSession.CurrentSelectedEnemy;
+                preferredCombatant = hoveredPreferredCombatant;
             }
 
             var resolvedSelection = SkillTargetResolver.ResolvePreferredSelection(

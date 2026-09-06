@@ -713,7 +713,7 @@ public class UnitTest1
     }
 
     [Fact]
-    public void PlayerSkill_NegativeCorruptionCost_ReducesCorruption()
+    public void PlayerSkill_NegativeCorruptionCost_RemainsForbiddenInCombat()
     {
         var random = new SeededRandomSource(22);
         var collector = new CombatEventCollector();
@@ -746,9 +746,8 @@ public class UnitTest1
                 ActionType = ActionType.Skill,
             });
 
-        Assert.Equal(16, battle.CorruptionValue);
-        var corruptionEvent = Assert.Single(collector.Events.Where(e => e.EventType == BattleEventType.CorruptionAdjusted));
-        Assert.Equal(-4, corruptionEvent.CorruptionDelta);
+        Assert.Equal(20, battle.CorruptionValue);
+        Assert.DoesNotContain(collector.Events, combatEvent => combatEvent.EventType == BattleEventType.CorruptionAdjusted);
     }
 
     [Fact]

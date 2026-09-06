@@ -148,14 +148,14 @@ public static class CombatDataLoader
                 throw new InvalidDataException($"Skill {skill.Id}: corruptionCost must be a finite number.");
             }
 
-            if (!Enum.IsDefined(skill.TargetKind))
+            if (!Enum.IsDefined(typeof(SkillTargetKind), skill.TargetKind))
             {
                 throw new InvalidDataException($"Skill {skill.Id}: unknown targetKind.");
             }
 
             foreach (var effect in skill.EffectsOnHit)
             {
-                if (!Enum.IsDefined(effect.EffectScope))
+                if (!Enum.IsDefined(typeof(EffectScope), effect.EffectScope))
                 {
                     throw new InvalidDataException($"Skill {skill.Id}: unknown effectScope.");
                 }

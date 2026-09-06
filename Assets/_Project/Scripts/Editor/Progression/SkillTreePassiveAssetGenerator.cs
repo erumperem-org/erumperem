@@ -214,7 +214,7 @@ namespace Erumperem.Editor.Progression
                 elementProperty.FindPropertyRelative("Potency").intValue = specification.Potency;
                 elementProperty.FindPropertyRelative("Duration").intValue = specification.Duration;
                 elementProperty.FindPropertyRelative("Steps").intValue = specification.Steps;
-                elementProperty.FindPropertyRelative("EffectScope").stringValue =
+                elementProperty.FindPropertyRelative("EffectScopeName").stringValue =
                     specification.EffectScope.ToString();
                 elementProperty.FindPropertyRelative("UseToken").boolValue = specification.Token.HasValue;
                 if (specification.Token.HasValue)
