@@ -68,6 +68,15 @@ public static class CombatDamageCalculator
             baseChance += tierModifiers.EnemyCritBonusAgainstPlayer;
         }
 
+        baseChance += CombatStatusRules.CritChanceBonusFromAttackerTokens(actor.Tokens);
+        baseChance += CombatStatusRules.CritChanceBonusFromDefenderTokens(target.Tokens);
+
+        if (skill.ComputeFromDebuffTypesOnTarget)
+        {
+            var distinctDebuffCount = CombatStatusRules.CountDistinctDebuffTypes(target.Tokens);
+            baseChance += skill.CritChancePerDistinctDebuffType * distinctDebuffCount;
+        }
+
         return Math.Clamp(baseChance, 0, 1);
     }
 
@@ -123,7 +132,7 @@ public static class CombatDamageCalculator
 
         if (isCriticalStrike)
         {
-            damage *= CorruptionRules.BaseCriticalStrikeDamageMultiplier;
+            damage *= CombatStatusRules.CritDamageMultiplierFromDefenderMark(target.Tokens);
             if (actor.Identity.Faction == Faction.Enemy &&
                 target.Identity.Faction == Faction.Player)
             {
@@ -133,6 +142,8 @@ public static class CombatDamageCalculator
         }
 
         damage *= CorruptionDamageMultiplier(state, actor, target);
+        damage *= CombatStatusRules.OutgoingDamageMultiplierFromTokens(actor.Tokens);
+        damage *= CombatStatusRules.IncomingDamageMultiplierFromTokens(target.Tokens);
 
         var shouldClearImpetoCleaveBonus = false;
         if (damage > 0 && target.Identity.Id != actor.Identity.Id)
@@ -231,5 +242,53 @@ public static class CombatDamageCalculator
             target,
             damageBeforeMitigation.DamageBeforeMitigation,
             consumeMitigationTokens);
+    }
+
+    public static double ComputeEffectiveHitChanceFraction(
+        BattleState state,
+        Combatant actor,
+        Combatant target,
+        SkillDefinition skill)
+    {
+        var hitChance = skill.Accuracy * actor.Stats.Accuracy;
+        hitChance += CombatStatusRules.AccuracyModifierFromActorTokens(actor.Tokens);
+        hitChance += CombatStatusRules.AccuracyBonusFromTargetExposition(target.Tokens);
+
+        if (skill.AccuracyPenaltyPerLivingEnemy > 0)
+        {
+            var livingEnemyCount = state.GetAllCombatants().Count(combatant =>
+                !combatant.Health.IsDead &&
+                combatant.Position.Side != actor.Position.Side);
+            hitChance -= skill.AccuracyPenaltyPerLivingEnemy * livingEnemyCount;
+        }
+
+        if (skill.ComputeFromDebuffTypesOnTarget)
+        {
+            var distinctDebuffCount = CombatStatusRules.CountDistinctDebuffTypes(target.Tokens);
+            hitChance += skill.AccuracyPerDistinctDebuffType * distinctDebuffCount;
+        }
+
+        return Math.Max(0, hitChance);
+    }
+
+    public static int ComputeBonusDamageFromSkillTokens(
+        Combatant actor,
+        Combatant target,
+        SkillDefinition skill)
+    {
+        var bonusDamage = 0;
+        if (skill.BonusDamagePerOwnToken.HasValue)
+        {
+            var ownTokenStacks = actor.Tokens.GetStacks(skill.BonusDamagePerOwnToken.Value);
+            bonusDamage += ownTokenStacks * Math.Max(1, skill.BonusDamagePerOwnTokenStacks);
+        }
+
+        if (skill.ComputeFromDebuffTypesOnTarget)
+        {
+            var distinctDebuffCount = CombatStatusRules.CountDistinctDebuffTypes(target.Tokens);
+            bonusDamage += distinctDebuffCount * Math.Max(0, skill.DamagePerDistinctDebuffType);
+        }
+
+        return bonusDamage;
     }
 }

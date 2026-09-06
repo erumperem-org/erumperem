@@ -297,18 +297,19 @@ public sealed class SkillContractValidationTests
     public void CanonicalSkillsJson_LoadsWithoutComboBonus()
     {
         var skills = CombatDataLoader.LoadSkills(CombatDataLoader.ResolveDefaultSkillsPath());
-        Assert.Contains(skills, skill => skill.Id == "m_t2_a1" && skill.TargetKind == SkillTargetKind.Self);
+        Assert.Contains(skills, skill => skill.Id == "wulfricBasicHit" && skill.TargetKind == SkillTargetKind.OneEnemy);
+        Assert.Contains(skills, skill => skill.Id == "wulfricAreaAttack" && skill.TargetKind == SkillTargetKind.UpToThreeEnemies);
+        Assert.Contains(skills, skill => skill.Id == "mariaHealVoice" && skill.TargetKind == SkillTargetKind.SelfOrAlly);
         Assert.Contains(skills, skill => skill.Id == "wulfric_innate_cleave" && skill.TargetKind == SkillTargetKind.OneEnemy);
-        Assert.Contains(skills, skill => skill.Id == "m_t1_a1" && skill.TargetKind == SkillTargetKind.OneAlly);
     }
 }
 
 public sealed class CombatHealUnlockTests
 {
     [Fact]
-    public void HealHp_RemainsForbiddenInCombat_HookAppliesWhenCalledDirectly()
+    public void HealHp_AppliesInCombat_WhenUnlocked()
     {
-        Assert.False(CombatHealUnlock.IsCombatHealingUnlocked);
+        Assert.True(CombatHealUnlock.IsCombatHealingUnlocked);
 
         var healSkill = new SkillDefinition
         {
@@ -349,10 +350,6 @@ public sealed class CombatHealUnlockTests
                 ActionType = ActionType.Skill,
             });
 
-        Assert.Equal(10, actor.Health.CurrentHp);
-
-        var healedAmount = CombatHealUnlock.ApplyHealHpToRecipient(actor, potency: 10);
-        Assert.Equal(10, healedAmount);
         Assert.Equal(20, actor.Health.CurrentHp);
     }
 }

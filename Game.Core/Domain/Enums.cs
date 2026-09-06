@@ -31,6 +31,22 @@ public enum TokenType
     Stealth = 5,
     Combo = 6,
     Stun = 7,
+    ControlledInstability = 8,
+    Destabilization = 9,
+    Strength = 10,
+    Defense = 11,
+    Weaken = 12,
+    Vulnerability = 13,
+    Confusion = 14,
+    Bleeding = 15,
+    LuckyShot = 16,
+    Dexterity = 17,
+    Exposition = 18,
+    Corrosion = 19,
+    Mark = 20,
+    Regeneration = 21,
+    Clumsy = 22,
+    BonusAction = 23,
 }
 
 public enum DotType
@@ -50,6 +66,12 @@ public enum EffectType
     ApplyStun = 5,
     HealHpPercent = 6,
     ApplyRandomDot = 7,
+    RemoveAllDebuffTokens = 8,
+    ConsumeAllTokenStacksDealDamagePerStack = 9,
+    ConsumeAllTokenStacksHealPerStack = 10,
+    SelfDamageFlat = 11,
+    TriggerDestabilizationOnTargets = 12,
+    ApplyBonusAction = 13,
 }
 
 /// <summary>

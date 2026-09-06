@@ -366,5 +366,528 @@
     "effectKind": "SummonEnemyAtTurnStartWhenHpBelowTiered",
     "skillId": "CorruptedFairy",
     "intValue": 1
+  },
+  {
+    "id": "w_us_t1_p1",
+    "effectKind": "ExtraTokenOnSelfSkill",
+    "skillId": "wulfricTaunt",
+    "tokenType": "ControlledInstability",
+    "intValue": 1
+  },
+  {
+    "id": "w_us_t1_p2",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "wulfricBasicHit",
+    "additive": 0.1
+  },
+  {
+    "id": "w_us_t1_p3",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "wulfricUnstable",
+    "additive": 0.08
+  },
+  {
+    "id": "w_us_t2_p1",
+    "effectKind": "ExtraTokenOnSelfSkill",
+    "skillId": "wulfricStabilize",
+    "tokenType": "Defense",
+    "intValue": 1
+  },
+  {
+    "id": "w_us_t2_p2",
+    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
+    "prerequisiteSkillId": "wulfricUnstable",
+    "skillId": "wulfricStabilize",
+    "additive": 0.15
+  },
+  {
+    "id": "w_us_t2_p3",
+    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
+    "hpBelowPercent": 0.45,
+    "additive": 0.9
+  },
+  {
+    "id": "w_us_t3_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "wulfricNocontrol",
+    "additive": 0.12
+  },
+  {
+    "id": "w_us_t3_p2",
+    "effectKind": "GrantTokenAtTurnStartIfCondition",
+    "grantTokenType": "ControlledInstability",
+    "intValue": 1
+  },
+  {
+    "id": "w_us_t3_p3",
+    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
+    "prerequisiteSkillId": "wulfricStabilize",
+    "skillId": "wulfricNocontrol",
+    "additive": 0.2
+  },
+  {
+    "id": "w_dz_t1_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "wulfricWhip",
+    "additive": 0.1
+  },
+  {
+    "id": "w_dz_t1_p2",
+    "effectKind": "OutgoingDamageVsDotOnTarget",
+    "dotType": "Bleed",
+    "additive": 0.05,
+    "additivePerStack": 0.03,
+    "cap": 0.12
+  },
+  {
+    "id": "w_dz_t1_p3",
+    "effectKind": "ApplyExtraDotAfterSkillIfTargetHasDot",
+    "skillId": "wulfricWhip",
+    "dotType": "Bleed",
+    "intValue": 2,
+    "intValue2": 2
+  },
+  {
+    "id": "w_dz_t2_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "wulfricBigSword",
+    "additive": 0.12
+  },
+  {
+    "id": "w_dz_t2_p2",
+    "effectKind": "OutgoingDamageVsSkillIfTargetHasDot",
+    "skillId": "wulfricBigSword",
+    "dotType": "Bleed",
+    "additive": 0.1
+  },
+  {
+    "id": "w_dz_t2_p3",
+    "effectKind": "DotDurationBonus",
+    "dotType": "Bleed",
+    "intValue": 1,
+    "intValue2": 6
+  },
+  {
+    "id": "w_dz_t3_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "wulfricForceExplosion",
+    "additive": 0.15
+  },
+  {
+    "id": "w_dz_t3_p2",
+    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
+    "prerequisiteSkillId": "wulfricWhip",
+    "skillId": "wulfricForceExplosion",
+    "additive": 0.2
+  },
+  {
+    "id": "w_dz_t3_p3",
+    "effectKind": "DotTickDamageBonusWhenTargetHpBelow",
+    "dotType": "Bleed",
+    "hpBelowPercent": 0.4,
+    "additive": 0.2
+  },
+  {
+    "id": "w_ft_t1_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "wulfricShieldAttack",
+    "additive": 0.1
+  },
+  {
+    "id": "w_ft_t1_p2",
+    "effectKind": "ExtraTokenOnSelfSkill",
+    "skillId": "wulfricRaiseShield",
+    "tokenType": "Defense",
+    "intValue": 1
+  },
+  {
+    "id": "w_ft_t1_p3",
+    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
+    "hpBelowPercent": 0.5,
+    "additive": 0.88
+  },
+  {
+    "id": "w_ft_t2_p1",
+    "effectKind": "GrantTokenAtTurnStartIfCondition",
+    "grantTokenType": "Defense",
+    "intValue": 1
+  },
+  {
+    "id": "w_ft_t2_p2",
+    "effectKind": "ExtraHealPercentOnSelfSkill",
+    "skillId": "wulfricDefendAlly",
+    "additive": 5
+  },
+  {
+    "id": "w_ft_t2_p3",
+    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
+    "hpBelowPercent": 0.35,
+    "additive": 0.9
+  },
+  {
+    "id": "w_ft_t3_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "wulfricFrenzy",
+    "additive": 0.12
+  },
+  {
+    "id": "w_ft_t3_p2",
+    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
+    "hpBelowPercent": 0.25,
+    "additive": 0.82
+  },
+  {
+    "id": "w_ft_t3_p3",
+    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
+    "prerequisiteSkillId": "wulfricDefendAlly",
+    "skillId": "wulfricFrenzy",
+    "additive": 0.2
+  },
+  {
+    "id": "b_ar_t1_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "buckPistol",
+    "additive": 0.1
+  },
+  {
+    "id": "b_ar_t1_p2",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "buckRevolver",
+    "additive": 0.08
+  },
+  {
+    "id": "b_ar_t1_p3",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "buckSpiderHands",
+    "additive": 0.1
+  },
+  {
+    "id": "b_ar_t2_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "buckRifle",
+    "additive": 0.1
+  },
+  {
+    "id": "b_ar_t2_p2",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "buckAllGuns",
+    "additive": 0.12
+  },
+  {
+    "id": "b_ar_t2_p3",
+    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
+    "prerequisiteSkillId": "buckSpiderHands",
+    "skillId": "buckAllGuns",
+    "additive": 0.15
+  },
+  {
+    "id": "b_ar_t3_p1",
+    "effectKind": "GrantTokenAtTurnStartIfCondition",
+    "grantTokenType": "BonusAction",
+    "intValue": 1
+  },
+  {
+    "id": "b_ar_t3_p2",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "buckJuggle",
+    "additive": 0.08
+  },
+  {
+    "id": "b_ar_t3_p3",
+    "effectKind": "ExtraTokenOnSelfSkill",
+    "skillId": "buckJuggle",
+    "tokenType": "BonusAction",
+    "intValue": 1
+  },
+  {
+    "id": "b_sn_t1_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "buckSnakeVision",
+    "additive": 0.1
+  },
+  {
+    "id": "b_sn_t1_p2",
+    "effectKind": "OutgoingDamageVsDotOnTarget",
+    "dotType": "Blight",
+    "additive": 0.05,
+    "additivePerStack": 0.03,
+    "cap": 0.12
+  },
+  {
+    "id": "b_sn_t1_p3",
+    "effectKind": "GrantTokenAtTurnStartIfCondition",
+    "grantTokenType": "Dexterity",
+    "intValue": 1
+  },
+  {
+    "id": "b_sn_t2_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "buckSnakeBite",
+    "additive": 0.12
+  },
+  {
+    "id": "b_sn_t2_p2",
+    "effectKind": "OutgoingDamageVsSkillIfTargetHasDot",
+    "skillId": "buckSnakeBite",
+    "dotType": "Blight",
+    "additive": 0.1
+  },
+  {
+    "id": "b_sn_t2_p3",
+    "effectKind": "ApplyExtraDotAfterSkillIfTargetHasDot",
+    "skillId": "buckSnakeBite",
+    "dotType": "Blight",
+    "intValue": 2,
+    "intValue2": 2
+  },
+  {
+    "id": "b_sn_t3_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "buckSnakeTail",
+    "additive": 0.15
+  },
+  {
+    "id": "b_sn_t3_p2",
+    "effectKind": "DotDurationBonus",
+    "dotType": "Blight",
+    "intValue": 1,
+    "intValue2": 5
+  },
+  {
+    "id": "b_sn_t3_p3",
+    "effectKind": "DotTickDamageBonusWhenTargetHpBelow",
+    "dotType": "Blight",
+    "hpBelowPercent": 0.4,
+    "additive": 0.18
+  },
+  {
+    "id": "b_du_t1_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "buckMark",
+    "additive": 0.1
+  },
+  {
+    "id": "b_du_t1_p2",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "buckPistol",
+    "additive": 0.08
+  },
+  {
+    "id": "b_du_t1_p3",
+    "effectKind": "GrantTokenAtTurnStartIfCondition",
+    "grantTokenType": "LuckyShot",
+    "intValue": 1
+  },
+  {
+    "id": "b_du_t2_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "buckPistolHeadShot",
+    "additive": 0.15
+  },
+  {
+    "id": "b_du_t2_p2",
+    "effectKind": "OutgoingDamageVsSkillIfTargetHasDot",
+    "skillId": "buckPistolHeadShot",
+    "dotType": "Burn",
+    "additive": 0.1
+  },
+  {
+    "id": "b_du_t2_p3",
+    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
+    "prerequisiteSkillId": "buckMark",
+    "skillId": "buckPistolHeadShot",
+    "additive": 0.2
+  },
+  {
+    "id": "b_du_t3_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "buckLuckManipulation",
+    "additive": 0.1
+  },
+  {
+    "id": "b_du_t3_p2",
+    "effectKind": "GrantTokenAtTurnStartIfCondition",
+    "grantTokenType": "LuckyShot",
+    "intValue": 2
+  },
+  {
+    "id": "b_du_t3_p3",
+    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
+    "prerequisiteSkillId": "buckPistolHeadShot",
+    "skillId": "buckLuckManipulation",
+    "additive": 0.18
+  },
+  {
+    "id": "m_lf_t1_p1",
+    "effectKind": "ExtraHealPercentOnSelfSkill",
+    "skillId": "mariaHealVoice",
+    "additive": 5
+  },
+  {
+    "id": "m_lf_t1_p2",
+    "effectKind": "ExtraHealPercentOnSelfSkill",
+    "skillId": "mariaEchoHeal",
+    "additive": 5
+  },
+  {
+    "id": "m_lf_t1_p3",
+    "effectKind": "GrantTokenAtTurnStartIfCondition",
+    "grantTokenType": "Regeneration",
+    "intValue": 1
+  },
+  {
+    "id": "m_lf_t2_p1",
+    "effectKind": "ExtraHealPercentOnSelfSkill",
+    "skillId": "mariaCleanse",
+    "additive": 3
+  },
+  {
+    "id": "m_lf_t2_p2",
+    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
+    "hpBelowPercent": 0.5,
+    "additive": 0.92
+  },
+  {
+    "id": "m_lf_t2_p3",
+    "effectKind": "ExtraTokenOnSelfSkill",
+    "skillId": "mariaCleanse",
+    "tokenType": "Defense",
+    "intValue": 1
+  },
+  {
+    "id": "m_lf_t3_p1",
+    "effectKind": "ExtraHealPercentOnSelfSkill",
+    "skillId": "mariaResurrection",
+    "additive": 8
+  },
+  {
+    "id": "m_lf_t3_p2",
+    "effectKind": "GrantTokenAtTurnStartIfCondition",
+    "grantTokenType": "Regeneration",
+    "intValue": 2
+  },
+  {
+    "id": "m_lf_t3_p3",
+    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
+    "hpBelowPercent": 0.3,
+    "additive": 0.88
+  },
+  {
+    "id": "m_bh_t1_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "mariaBasicHit",
+    "additive": 0.08
+  },
+  {
+    "id": "m_bh_t1_p2",
+    "effectKind": "GrantTokenAtTurnStartIfCondition",
+    "grantTokenType": "LuckyShot",
+    "intValue": 1
+  },
+  {
+    "id": "m_bh_t1_p3",
+    "effectKind": "ExtraTokenOnSelfSkill",
+    "skillId": "mariaChanceBuff",
+    "tokenType": "LuckyShot",
+    "intValue": 1
+  },
+  {
+    "id": "m_bh_t2_p1",
+    "effectKind": "GrantTokenAtTurnStartIfCondition",
+    "grantTokenType": "Defense",
+    "intValue": 1
+  },
+  {
+    "id": "m_bh_t2_p2",
+    "effectKind": "ExtraTokenOnSelfSkill",
+    "skillId": "mariaDefenseBuff",
+    "tokenType": "Defense",
+    "intValue": 1
+  },
+  {
+    "id": "m_bh_t2_p3",
+    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
+    "hpBelowPercent": 0.45,
+    "additive": 0.9
+  },
+  {
+    "id": "m_bh_t3_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "mariaShow",
+    "additive": 0.1
+  },
+  {
+    "id": "m_bh_t3_p2",
+    "effectKind": "GrantTokenAtTurnStartIfCondition",
+    "grantTokenType": "Strength",
+    "intValue": 1
+  },
+  {
+    "id": "m_bh_t3_p3",
+    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
+    "prerequisiteSkillId": "mariaDefenseBuff",
+    "skillId": "mariaShow",
+    "additive": 0.15
+  },
+  {
+    "id": "m_ds_t1_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "mariaScreamAttack",
+    "additive": 0.1
+  },
+  {
+    "id": "m_ds_t1_p2",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "mariaScreechNoise",
+    "additive": 0.1
+  },
+  {
+    "id": "m_ds_t1_p3",
+    "effectKind": "OutgoingDamageVsDotOnTarget",
+    "dotType": "Blight",
+    "additive": 0.06,
+    "additivePerStack": 0.03,
+    "cap": 0.12
+  },
+  {
+    "id": "m_ds_t2_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "mariaPiercingYell",
+    "additive": 0.12
+  },
+  {
+    "id": "m_ds_t2_p2",
+    "effectKind": "OutgoingDamageVsSkillIfTargetHasDot",
+    "skillId": "mariaPiercingYell",
+    "dotType": "Blight",
+    "additive": 0.1
+  },
+  {
+    "id": "m_ds_t2_p3",
+    "effectKind": "ApplyExtraDotAfterSkillIfTargetHasDot",
+    "skillId": "mariaScreechNoise",
+    "dotType": "Blight",
+    "intValue": 2,
+    "intValue2": 2
+  },
+  {
+    "id": "m_ds_t3_p1",
+    "effectKind": "OutgoingDamageVsSkillId",
+    "skillId": "mariaChaosMelody",
+    "additive": 0.15
+  },
+  {
+    "id": "m_ds_t3_p2",
+    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
+    "prerequisiteSkillId": "mariaPiercingYell",
+    "skillId": "mariaChaosMelody",
+    "additive": 0.2
+  },
+  {
+    "id": "m_ds_t3_p3",
+    "effectKind": "DotTickDamageBonusWhenTargetHpBelow",
+    "dotType": "Blight",
+    "hpBelowPercent": 0.4,
+    "additive": 0.2
   }
 ]

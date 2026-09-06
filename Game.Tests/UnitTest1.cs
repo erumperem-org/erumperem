@@ -373,8 +373,8 @@ public class UnitTest1
 
         var unlocked = new Dictionary<string, bool>(StringComparer.Ordinal)
         {
-            ["f_t1_p1"] = true,
-            ["f_t1_a1"] = true,
+            ["w_us_t1_p1"] = true,
+            ["wulfricUnstable"] = true,
         };
 
         var loadout = SkillTreeLookup.BuildPlayerSkillLoadout(
@@ -382,9 +382,9 @@ public class UnitTest1
             unlocked,
             BattleFactory.WulfricInnateSkillIds);
 
-        Assert.Contains("wulfric_innate_cleave", loadout);
-        Assert.Contains("f_t1_a1", loadout);
-        Assert.DoesNotContain("f_t2_a1", loadout);
+        Assert.Contains("wulfricBasicHit", loadout);
+        Assert.Contains("wulfricUnstable", loadout);
+        Assert.DoesNotContain("wulfricStabilize", loadout);
     }
 
     [Fact]
@@ -968,9 +968,9 @@ public class UnitTest1
         var trees = CombatDataLoader.LoadSkillTrees(CombatDataLoader.ResolveDefaultSkillTreesPath());
         var wulfric = SimulationSkillTreeSetup.GetCharacter(trees);
         var ids = SimulationSkillTreeSetup.GetNodeIdsForTreeMaxTier(wulfric, treeIndex1Based: 1, maxTierInclusive: 3);
-        Assert.Contains("f_t3_a1", ids);
-        Assert.Contains("f_t1_p1", ids);
-        Assert.DoesNotContain("m_t1_p1", ids);
+        Assert.Contains("wulfricNocontrol", ids);
+        Assert.Contains("w_us_t1_p1", ids);
+        Assert.DoesNotContain("w_dz_t1_p1", ids);
     }
 
     [Fact]

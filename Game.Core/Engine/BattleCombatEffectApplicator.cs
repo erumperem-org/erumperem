@@ -133,6 +133,13 @@ internal sealed class BattleCombatEffectApplicator
                 }
 
                 var stacks = Math.Max(1, effect.Stacks);
+                if (effect.ScaleFromToken.HasValue && effect.ScaleStacksPerSourceStack != 0)
+                {
+                    var sourceStacks = actor.Tokens.GetStacks(effect.ScaleFromToken.Value);
+                    var divisor = Math.Max(1, effect.ScaleStacksSourceDivisor);
+                    stacks += (sourceStacks * effect.ScaleStacksPerSourceStack) / divisor;
+                }
+
                 foreach (var recipient in effectRecipients)
                 {
                     ApplyTokenToCombatant(state, actor, recipient, skill, effect.Token.Value, stacks);
@@ -177,10 +184,10 @@ internal sealed class BattleCombatEffectApplicator
 
                 break;
             case EffectType.HealHp:
-                LogForbiddenCombatHeal(actor, skill, effectRecipients, "HealHp", Math.Max(0, effect.Potency));
+                ApplyHealHpEffect(state, actor, skill, effect, effectRecipients);
                 break;
             case EffectType.HealHpPercent:
-                LogForbiddenCombatHeal(actor, skill, effectRecipients, "HealHpPercent", Math.Max(0, effect.Potency));
+                ApplyHealHpPercentEffect(state, actor, skill, effect, effectRecipients);
                 break;
             case EffectType.ApplyStun:
                 foreach (var recipient in effectRecipients)
@@ -193,7 +200,236 @@ internal sealed class BattleCombatEffectApplicator
                 }
 
                 break;
+            case EffectType.RemoveAllDebuffTokens:
+                foreach (var recipient in effectRecipients)
+                {
+                    recipient.Tokens.ClearDebuffTokens();
+                    state.PassiveBus.RaiseTokenStacksChanged(
+                        state,
+                        actor,
+                        recipient,
+                        skill,
+                        TokenType.Weaken,
+                        delta: 0);
+                }
+
+                break;
+            case EffectType.ConsumeAllTokenStacksDealDamagePerStack:
+                ApplyConsumeAllTokenStacksDealDamage(state, actor, skill, effect, effectRecipients);
+                break;
+            case EffectType.ConsumeAllTokenStacksHealPerStack:
+                ApplyConsumeAllTokenStacksHeal(state, actor, skill, effect, effectRecipients);
+                break;
+            case EffectType.SelfDamageFlat:
+                ApplySelfDamageFlat(state, actor, skill, effect);
+                break;
+            case EffectType.TriggerDestabilizationOnTargets:
+                foreach (var recipient in effectRecipients)
+                {
+                    BattleCombatStatusTicker.TriggerDestabilizationExplosion(
+                        state,
+                        recipient,
+                        _eventEmitter,
+                        skill.Id,
+                        actor.Identity.Id);
+                }
+
+                break;
+            case EffectType.ApplyBonusAction:
+                foreach (var recipient in effectRecipients)
+                {
+                    var bonusActionStacks = Math.Max(1, effect.Stacks);
+                    ApplyTokenToCombatant(state, actor, recipient, skill, TokenType.BonusAction, bonusActionStacks);
+                }
+
+                break;
         }
+    }
+
+    private void ApplyHealHpEffect(
+        BattleState state,
+        Combatant actor,
+        SkillDefinition skill,
+        EffectSpec effect,
+        IReadOnlyList<Combatant> effectRecipients)
+    {
+        var potencyMin = Math.Max(0, effect.Potency);
+        if (potencyMin <= 0)
+        {
+            return;
+        }
+
+        if (!CombatHealUnlock.IsCombatHealingUnlocked)
+        {
+            LogForbiddenCombatHeal(actor, skill, effectRecipients, "HealHp", potencyMin);
+            return;
+        }
+
+        var potencyMax = effect.AmountMax > potencyMin ? effect.AmountMax : potencyMin;
+        foreach (var recipient in effectRecipients)
+        {
+            var healRoll = potencyMin == potencyMax
+                ? potencyMin
+                : _random.Next(potencyMin, potencyMax + 1);
+            CombatHealUnlock.ApplyHealHpToRecipient(recipient, healRoll);
+        }
+    }
+
+    private void ApplyHealHpPercentEffect(
+        BattleState state,
+        Combatant actor,
+        SkillDefinition skill,
+        EffectSpec effect,
+        IReadOnlyList<Combatant> effectRecipients)
+    {
+        var percentOfMaxHp = Math.Max(0, effect.Potency);
+        if (percentOfMaxHp <= 0)
+        {
+            return;
+        }
+
+        if (!CombatHealUnlock.IsCombatHealingUnlocked)
+        {
+            LogForbiddenCombatHeal(actor, skill, effectRecipients, "HealHpPercent", percentOfMaxHp);
+            return;
+        }
+
+        foreach (var recipient in effectRecipients)
+        {
+            CombatHealUnlock.ApplyHealHpPercentToRecipient(recipient, percentOfMaxHp);
+        }
+    }
+
+    private void ApplyConsumeAllTokenStacksDealDamage(
+        BattleState state,
+        Combatant actor,
+        SkillDefinition skill,
+        EffectSpec effect,
+        IReadOnlyList<Combatant> effectRecipients)
+    {
+        if (!effect.Token.HasValue)
+        {
+            return;
+        }
+
+        var removedStacks = actor.Tokens.ConsumeAllStacks(effect.Token.Value);
+        if (removedStacks <= 0)
+        {
+            return;
+        }
+
+        state.PassiveBus.RaiseTokenStacksChanged(
+            state,
+            actor,
+            actor,
+            skill,
+            effect.Token.Value,
+            delta: -removedStacks);
+
+        var damagePerTarget = Math.Max(0, effect.Potency) * removedStacks;
+        if (damagePerTarget <= 0)
+        {
+            return;
+        }
+
+        var damageTargets = effectRecipients.Count > 0
+            ? effectRecipients
+            : SkillTargetResolver.ResolveEffectRecipients(state, actor, actor, EffectScope.AllEnemies);
+
+        foreach (var damageTarget in damageTargets)
+        {
+            if (damageTarget.Health.IsDead)
+            {
+                continue;
+            }
+
+            BattleCombatStatusTicker.ApplyDirectHpLoss(
+                state,
+                damageTarget,
+                damagePerTarget,
+                _eventEmitter,
+                actor.Identity.Id,
+                skill.Id,
+                markDeath: true);
+        }
+
+        // Loss of control also deals 1 self damage per token when Potency of a paired SelfDamageFlat is used;
+        // optional: if Steps > 0, treat Steps as self-damage-per-stack.
+        if (effect.Steps > 0)
+        {
+            var selfDamage = effect.Steps * removedStacks;
+            BattleCombatStatusTicker.ApplyDirectHpLoss(
+                state,
+                actor,
+                selfDamage,
+                _eventEmitter,
+                actor.Identity.Id,
+                skill.Id,
+                markDeath: true);
+        }
+    }
+
+    private void ApplyConsumeAllTokenStacksHeal(
+        BattleState state,
+        Combatant actor,
+        SkillDefinition skill,
+        EffectSpec effect,
+        IReadOnlyList<Combatant> effectRecipients)
+    {
+        if (!effect.Token.HasValue)
+        {
+            return;
+        }
+
+        var removedStacks = actor.Tokens.ConsumeAllStacks(effect.Token.Value);
+        if (removedStacks <= 0)
+        {
+            return;
+        }
+
+        state.PassiveBus.RaiseTokenStacksChanged(
+            state,
+            actor,
+            actor,
+            skill,
+            effect.Token.Value,
+            delta: -removedStacks);
+
+        if (!CombatHealUnlock.IsCombatHealingUnlocked)
+        {
+            LogForbiddenCombatHeal(actor, skill, effectRecipients, "ConsumeAllTokenStacksHealPerStack", removedStacks);
+            return;
+        }
+
+        var healPerStack = Math.Max(1, effect.Potency);
+        var healAmount = healPerStack * removedStacks;
+        var healRecipients = effectRecipients.Count > 0 ? effectRecipients : new[] { actor };
+        foreach (var recipient in healRecipients)
+        {
+            CombatHealUnlock.ApplyHealHpToRecipient(recipient, healAmount);
+        }
+    }
+
+    private void ApplySelfDamageFlat(
+        BattleState state,
+        Combatant actor,
+        SkillDefinition skill,
+        EffectSpec effect)
+    {
+        var selfDamage = Math.Max(0, effect.Potency);
+        if (selfDamage <= 0)
+        {
+            return;
+        }
+
+        BattleCombatStatusTicker.ApplyDirectHpLoss(
+            state,
+            actor,
+            selfDamage,
+            _eventEmitter,
+            actor.Identity.Id,
+            skill.Id,
+            markDeath: true);
     }
 
     private void ApplyTokenToCombatant(

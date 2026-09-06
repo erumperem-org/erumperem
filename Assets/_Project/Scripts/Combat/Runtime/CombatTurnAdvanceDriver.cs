@@ -71,6 +71,14 @@ namespace Erumperem.Combat.Runtime
                     chosenAiAction,
                     () =>
                     {
+                        if (BattleSimulator.ShouldActorRetainTurn(actor))
+                        {
+                            actor.PassiveRuntime.ShouldRetainTurnForBonusAction = false;
+                            actor.Tokens.ConsumeOne(TokenType.BonusAction);
+                            session.PreparedThisStep = true;
+                            return;
+                        }
+
                         session.ActorIndex++;
                         session.PreparedThisStep = false;
                     });

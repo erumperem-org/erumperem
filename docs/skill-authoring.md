@@ -34,35 +34,56 @@ Distinto de `targetKind`. O dano primário segue `targetKind`; cada entrada em `
 
 Scopes não-`Default` aplicam-se **uma vez** por skill (no primeiro hit que acertar), para não duplicar Block/DoT em área.
 
-### Três exemplos
+### Campos opcionais em `SkillDefinition`
 
-1. **Postura de lobo** (análogo a Raise Shield): `targetKind: Self`, tokens Block+Taunt com `effectScope: Default` → o caster.
-2. **Muralha**: `targetKind: Self`; Taunt+BlockPlus em `Default` (self); Block com `effectScope: AllAllies` (o grupo).
-3. **Iron Maiden** (padrão): `targetKind: UpToThreeEnemies`; dano e efeitos `Default` nos até 3 inimigos do hit. Sem segundo clique.
+| Campo | Uso |
+|---|---|
+| `hitCount` | Hits independentes por alvo (Unload=3, Frenzy=5). Default 1. |
+| `chanceToNotEndTurn` | 0..1; em sucesso concede `BonusAction`. |
+| `followUpSkillIds` | Resolve skills em sequência (Guns for all). |
+| `grantsBonusActionsToAllies` | Juggling: `BonusAction` em self+aliados. |
+| `accuracyPenaltyPerLivingEnemy` | Juggling −10% por inimigo vivo. |
+| `bonusDamagePerOwnToken` / `bonusDamagePerOwnTokenStacks` | Shield Charge +1 por Defense. |
+| `computeFromDebuffTypesOnTarget` + `damagePerDistinctDebuffType` / crit / accuracy | Strangle. |
+| `canTargetDeadAllies` | Resurrection Hymn inclui cadáveres no pool. |
+
+### Campos opcionais em `EffectSpec`
+
+| Campo | Uso |
+|---|---|
+| `amountMax` | HealHp: roll `[potency, amountMax]`. |
+| `scaleFromToken` / `scaleStacksPerSourceStack` / `scaleStacksSourceDivisor` | Stacks extras (Whip Sword, Protect The Weak). |
+| `steps` em `ConsumeAllTokenStacksDealDamagePerStack` | Self-damage por stack consumido (Loss of control). |
 
 ## `effectsOnHit`
 
-Única lista de efeitos. Tipos: `ApplyToken`, `ApplyDot`, `ApplyRandomDot`, `Push`, `Pull`, `ApplyStun`, `HealHp`, `HealHpPercent`.
+Tipos: `ApplyToken`, `ApplyDot`, `ApplyRandomDot`, `Push`, `Pull`, `ApplyStun`, `HealHp`, `HealHpPercent`, `RemoveAllDebuffTokens`, `ConsumeAllTokenStacksDealDamagePerStack`, `ConsumeAllTokenStacksHealPerStack`, `SelfDamageFlat`, `TriggerDestabilizationOnTargets`, `ApplyBonusAction`.
 
 ### Combo (removido)
 
-`comboBonus` **já não existe**. Se reaparecer no JSON, o load **falha**. Efeitos extra vão para `effectsOnHit`. `TokenType.Combo` continua a existir como token aplicável (ex.: Para-raio, teias); não há payoff automático de combo na skill.
+`comboBonus` **já não existe**. Se reaparecer no JSON, o load **falha**. `TokenType.Combo` continua aplicável; sem payoff automático.
 
 ### Cura (`HealHp` / `HealHpPercent`)
 
-O tipo existe no contrato. **Em combate o applicator está FORBIDDEN** (não altera HP; log `[FORBIDDEN]`). Gancho futuro: `CombatHealUnlock.IsCombatHealingUnlocked` + `CombatHealUnlock.ApplyHealHpToRecipient`. Desbloqueio previsto: Main na vila após 3s. Não ligues cura no applicator nesta fase.
+**Desbloqueada** via `CombatHealUnlock.IsCombatHealingUnlocked = true`. O applicator cura HP (e pode reviver com `canTargetDeadAllies`). Se `IsCombatHealingUnlocked` for false, volta ao log `[FORBIDDEN]`.
 
-### Fora desta PR
+## Hero kits MVP notes
 
-`ranks` / `cooldown` / `selfMove` **não existem** no JSON nem no modelo actual. Não os reintroduziste; se precisares deles, é trabalho futuro — o loader não os lê.
+- **Confusion:** MVP retarget — 33% chance de escolher inimigo válido aleatório em skills inimigas; não troca Ally↔Enemy nem Self→None.
+- **Juggling / ChanceToNotEndTurn:** usam `TokenType.BonusAction` + `ShouldRetainTurnForBonusAction` (Simulate + Unity turn driver).
+- **Resurrection Hymn:** revive/cura aliados mortos se `canTargetDeadAllies`; não modela cutscene.
+- **Passivas de árvore novas:** best-effort com `PassiveEffectKind` existentes; muitas entradas GDD (leader/companion/corruption, “+25% Defense tokens”) não têm kind dedicado — ver `passives.json` ids `w_us_*`, `b_ar_*`, `m_lf_*`, etc.
+- **Bleeding token** vs `DotType.Bleed`: kits novos usam `TokenType.Bleeding` (5% MaxHp EOT); conteúdo antigo de inimigos pode manter DoT Bleed.
+- **ControlledInstability / Destabilization** não decaem EOT; só consomem / disparam.
+- Skills legado (`wulfric_innate_*`, `f_t*_a1`, …) permanecem no JSON para testes/inimigos; hotbar de protótipo usa innates novos via `BattleFactory`.
 
 ## Passos para uma skill nova
 
-1. Acrescenta um objecto em `Game.Simulations/Data/skills.json` (`id`, `name`, `element`, `type`, `targetKind`, `baseDamage`, `baseCritChance`, `accuracy`, `effectsOnHit`, opcional `corruptionCost`, `chanceToUse`, `selfHpPercentBelow`).
-2. Escolhe `targetKind` da tabela acima. Não inventes strings.
-3. Para cada efeito, define `effectScope` se não for o alvo do hit (`Default`).
-4. Corre `dotnet test Game.Tests/Game.Tests.csproj`. O loader rejeita `comboBonus`, `targetKind` obsoleto (`Enemy`/`Ally`) e `effectScope` desconhecido.
-5. Publica para Unity: `powershell -ExecutionPolicy Bypass -File tools/PublishGameCoreForUnity.ps1`.
-6. Opcional: regenera ScriptableObjects (`Erumperem/Generate Skill Tree + Passive Assets From JSON`). O inspector de `SkillTreeNodeAsset` usa os mesmos `SkillTargetKind`; o campo ComboBonus foi removido.
+1. Acrescenta em `Game.Simulations/Data/skills.json`.
+2. Escolhe `targetKind` da tabela. Não inventes strings.
+3. Define `effectScope` se não for o alvo do hit.
+4. `dotnet test Game.Tests/Game.Tests.csproj`.
+5. `powershell -ExecutionPolicy Bypass -File tools/PublishGameCoreForUnity.ps1`.
+6. Opcional: regenera ScriptableObjects (`Erumperem/Generate Skill Tree + Passive Assets From JSON`).
 
-A resolução de alvos é sempre `SkillTargetResolver` (player, IA, preview, HUD). O `BattleSimulator` faz loop de dano + efeitos em cada alvo primário, **sem** ramificar por `TargetKind`.
+A resolução de alvos é sempre `SkillTargetResolver`. O `BattleSimulator` faz loop de dano + efeitos (e `hitCount`) sem ramificar por `TargetKind`.

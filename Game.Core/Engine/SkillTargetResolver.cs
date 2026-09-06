@@ -33,7 +33,7 @@ public static class SkillTargetResolver
             SkillTargetKind.Self => new[] { actor },
             SkillTargetKind.OneAlly => ResolveOneAlly(battleState, actor, selectedCombatant),
             SkillTargetKind.SelfOrAlly => ResolveSelfOrAlly(battleState, actor, selectedCombatant),
-            SkillTargetKind.SelfAndAlly => ResolveSelfAndAlly(battleState, actor),
+            SkillTargetKind.SelfAndAlly => ResolveSelfAndAlly(battleState, actor, skill),
             SkillTargetKind.OneEnemy => ResolveOneEnemy(battleState, actor, selectedCombatant),
             SkillTargetKind.UpToThreeEnemies => ResolveUpToThreeEnemies(battleState, actor, selectedCombatant),
             SkillTargetKind.AllEnemies => OrderByPresentation(
@@ -200,15 +200,18 @@ public static class SkillTargetResolver
         return new[] { selectedCombatant };
     }
 
-    private static IReadOnlyList<Combatant> ResolveSelfAndAlly(BattleState battleState, Combatant actor)
+    private static IReadOnlyList<Combatant> ResolveSelfAndAlly(BattleState battleState, Combatant actor, SkillDefinition skill)
     {
-        var livingSameSide = LivingCombatantsOnRoster(SameSideRoster(battleState, actor));
-        if (livingSameSide.Count == 0)
+        var sameSideRoster = SameSideRoster(battleState, actor);
+        var sameSideCombatants = skill.CanTargetDeadAllies
+            ? sameSideRoster.ToList()
+            : LivingCombatantsOnRoster(sameSideRoster);
+        if (sameSideCombatants.Count == 0)
         {
             return Array.Empty<Combatant>();
         }
 
-        var orderedSameSide = OrderByPresentation(livingSameSide, SameSideRoster(battleState, actor));
+        var orderedSameSide = OrderByPresentation(sameSideCombatants, sameSideRoster);
         if (!orderedSameSide.Contains(actor))
         {
             return orderedSameSide;
