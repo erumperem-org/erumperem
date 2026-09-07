@@ -32,22 +32,56 @@ public static class PlayerActionBuilder
             return null;
         }
 
-        var primaryTargets = SkillTargetResolver.ResolvePrimaryTargets(state, actor, skill, selectedTarget);
-        if (primaryTargets.Count == 0)
+        Combatant target;
+        if (skill.TargetKind == SkillTargetKind.Self)
         {
-            return null;
+            target = actor;
         }
+        else if (skill.TargetKind == SkillTargetKind.Ally)
+        {
+            var sameSide = actor.Position.Side == Side.Allies ? state.Allies : state.Enemies;
+            var allies = sameSide.Where(combatant => !combatant.Health.IsDead).ToList();
+            var pick = selectedTarget is not null && allies.Contains(selectedTarget) ? selectedTarget : actor;
+            if (!allies.Contains(pick))
+            {
+                return null;
+            }
 
-        var chosenTarget = selectedTarget != null &&
-            primaryTargets.Any(combatant =>
-                string.Equals(combatant.Identity.Id, selectedTarget.Identity.Id, StringComparison.Ordinal))
-            ? selectedTarget
-            : primaryTargets[0];
+            if (pick.Tokens.GetStacks(TokenType.Stealth) > 0)
+            {
+                return null;
+            }
+
+            target = pick;
+        }
+        else
+        {
+            var enemies = actor.Position.Side == Side.Allies ? state.Enemies : state.Allies;
+            var living = enemies.Where(enemy => !enemy.Health.IsDead).ToList();
+            if (selectedTarget is null || !living.Contains(selectedTarget))
+            {
+                return null;
+            }
+
+            var taunt = living.Where(enemy => enemy.Tokens.GetStacks(TokenType.Taunt) > 0).ToList();
+            var pool = taunt.Count > 0 ? taunt : living;
+            if (!pool.Contains(selectedTarget))
+            {
+                return null;
+            }
+
+            if (selectedTarget.Tokens.GetStacks(TokenType.Stealth) > 0)
+            {
+                return null;
+            }
+
+            target = selectedTarget;
+        }
 
         return new ChosenAction
         {
             Actor = actor,
-            Target = chosenTarget,
+            Target = target,
             Skill = skill,
             ActionType = ActionType.Skill,
         };

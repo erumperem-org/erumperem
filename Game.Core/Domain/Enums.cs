@@ -31,22 +31,6 @@ public enum TokenType
     Stealth = 5,
     Combo = 6,
     Stun = 7,
-    ControlledInstability = 8,
-    Destabilization = 9,
-    Strength = 10,
-    Defense = 11,
-    Weaken = 12,
-    Vulnerability = 13,
-    Confusion = 14,
-    Bleeding = 15,
-    LuckyShot = 16,
-    Dexterity = 17,
-    Exposition = 18,
-    Corrosion = 19,
-    Mark = 20,
-    Regeneration = 21,
-    Clumsy = 22,
-    BonusAction = 23,
 }
 
 public enum DotType
@@ -66,39 +50,13 @@ public enum EffectType
     ApplyStun = 5,
     HealHpPercent = 6,
     ApplyRandomDot = 7,
-    RemoveAllDebuffTokens = 8,
-    ConsumeAllTokenStacksDealDamagePerStack = 9,
-    ConsumeAllTokenStacksHealPerStack = 10,
-    SelfDamageFlat = 11,
-    TriggerDestabilizationOnTargets = 12,
-    ApplyBonusAction = 13,
 }
 
-/// <summary>
-/// Who the player/AI selects and who receives primary hit/damage.
-/// Integer values 0–2 keep Unity ScriptableObjects compatible with the old Enemy/Ally/Self assets.
-/// </summary>
 public enum SkillTargetKind
 {
-    OneEnemy = 0,
-    OneAlly = 1,
+    Enemy = 0,
+    Ally = 1,
     Self = 2,
-    UpToThreeEnemies = 3,
-    AllEnemies = 4,
-    SelfOrAlly = 5,
-    SelfAndAlly = 6,
-}
-
-/// <summary>
-/// Who receives a given on-hit effect relative to the hit.
-/// Distinct from <see cref="SkillTargetKind"/> (selection / primary damage).
-/// </summary>
-public enum EffectScope
-{
-    Default = 0,
-    Self = 1,
-    AllAllies = 2,
-    AllEnemies = 3,
 }
 
 public enum ActionType

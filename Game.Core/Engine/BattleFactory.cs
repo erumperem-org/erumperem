@@ -6,33 +6,22 @@ namespace Game.Core.Engine;
 
 public static class BattleFactory
 {
-    public static readonly string[] DefaultAllySkillIds = ["wulfricBasicHit"];
+    public static readonly string[] DefaultAllySkillIds = ["wulfric_innate_cleave"];
 
     /// <summary>Skills always on Wulfric regardless of tree (innates).</summary>
     public static readonly string[] WulfricInnateSkillIds =
     [
-        "wulfricBasicHit",
-        "wulfricTaunt",
-        "wulfricAreaAttack",
-        "wulfricRaiseShield",
+        "wulfric_innate_cleave",
+        "wulfric_innate_shove",
+        "wulfric_innate_guard",
     ];
 
-    /// <summary>Innate loadout for Buck.</summary>
+    /// <summary>Placeholder innates for Buck (cloned from Wulfric).</summary>
     public static readonly string[] BuckInnateSkillIds =
     [
-        "buckBasicHit",
-        "buckPistol",
-        "buckRevolver",
-        "buckRifle",
-    ];
-
-    /// <summary>Innate loadout for Maria.</summary>
-    public static readonly string[] MariaInnateSkillIds =
-    [
-        "mariaBasicHit",
-        "mariaHealVoice",
-        "mariaScreamAttack",
-        "mariaDamageBuff",
+        "buck_innate_cleave",
+        "buck_innate_shove",
+        "buck_innate_guard",
     ];
 
     public static IReadOnlyList<string> ResolveInnateSkillIds(string progressionCharacterId)
@@ -40,11 +29,6 @@ public static class BattleFactory
         if (string.Equals(progressionCharacterId, "buck", StringComparison.OrdinalIgnoreCase))
         {
             return BuckInnateSkillIds;
-        }
-
-        if (string.Equals(progressionCharacterId, "maria", StringComparison.OrdinalIgnoreCase))
-        {
-            return MariaInnateSkillIds;
         }
 
         if (string.Equals(progressionCharacterId, "wulfric", StringComparison.OrdinalIgnoreCase))
@@ -57,26 +41,10 @@ public static class BattleFactory
 
     public static readonly string[] WulfricFullSkillLoadout =
     [
-        "wulfricBasicHit", "wulfricTaunt", "wulfricAreaAttack", "wulfricRaiseShield",
-        "wulfricUnstable", "wulfricStabilize", "wulfricNocontrol",
-        "wulfricWhip", "wulfricBigSword", "wulfricForceExplosion",
-        "wulfricShieldAttack", "wulfricDefendAlly", "wulfricFrenzy",
-    ];
-
-    public static readonly string[] BuckFullSkillLoadout =
-    [
-        "buckBasicHit", "buckPistol", "buckRevolver", "buckRifle",
-        "buckSpiderHands", "buckAllGuns", "buckJuggle",
-        "buckSnakeVision", "buckSnakeBite", "buckSnakeTail",
-        "buckMark", "buckPistolHeadShot", "buckLuckManipulation",
-    ];
-
-    public static readonly string[] MariaFullSkillLoadout =
-    [
-        "mariaBasicHit", "mariaHealVoice", "mariaScreamAttack", "mariaDamageBuff",
-        "mariaEchoHeal", "mariaCleanse", "mariaResurrection",
-        "mariaChanceBuff", "mariaDefenseBuff", "mariaShow",
-        "mariaScreechNoise", "mariaPiercingYell", "mariaChaosMelody",
+        "wulfric_innate_cleave", "wulfric_innate_shove", "wulfric_innate_guard",
+        "f_t1_a1", "f_t2_a1", "f_t3_a1",
+        "m_t1_a1", "m_t2_a1", "m_t3_a1",
+        "a_t1_a1", "a_t2_a1", "a_t3_a1",
     ];
 
     public static readonly string[] DefaultEnemySkillIds = ["spider_bite", "spider_web", "enemy_claw"];

@@ -29,40 +29,24 @@ namespace Erumperem.Progression
             public int Potency;
             public int Duration;
             public int Steps;
-            [FormerlySerializedAs("EffectScope")]
-            public string EffectScopeName = "Default";
+            public string EffectScope = "Default";
             public bool UseToken;
             public TokenType Token;
             public bool UseDot;
             public DotType Dot;
 
-            public EffectSpec ToRuntimeSpec()
+            public EffectSpec ToRuntimeSpec() => new()
             {
-                return new()
-                {
-                    Type = Type,
-                    Chance = Chance,
-                    Stacks = Stacks,
-                    Potency = Potency,
-                    Duration = Duration,
-                    Steps = Steps,
-                    EffectScope = ParseEffectScope(EffectScopeName),
-                    Token = UseToken ? Token : null,
-                    Dot = UseDot ? Dot : null,
-                };
-            }
-
-            private static EffectScope ParseEffectScope(string effectScopeName)
-            {
-                if (string.IsNullOrEmpty(effectScopeName))
-                {
-                    return EffectScope.Default;
-                }
-
-                return Enum.TryParse(effectScopeName, ignoreCase: true, out EffectScope parsedScope)
-                    ? parsedScope
-                    : EffectScope.Default;
-            }
+                Type = Type,
+                Chance = Chance,
+                Stacks = Stacks,
+                Potency = Potency,
+                Duration = Duration,
+                Steps = Steps,
+                EffectScope = string.IsNullOrEmpty(EffectScope) ? "Default" : EffectScope,
+                Token = UseToken ? Token : null,
+                Dot = UseDot ? Dot : null,
+            };
         }
 
         // -------------------------------------------------------------------------
@@ -122,9 +106,9 @@ namespace Erumperem.Progression
         [FormerlySerializedAs("_accuracy")]
         [SerializeField] private double _baseHitAccuracyFraction = 1.0;
 
-        [Tooltip("Who can be selected as target: OneEnemy, UpToThreeEnemies, AllEnemies, Self, OneAlly, SelfOrAlly, SelfAndAlly.")]
+        [Tooltip("Who can be selected as target for this skill (Enemy / Ally / Self).")]
         [FormerlySerializedAs("_targetKind")]
-        [SerializeField] private SkillTargetKind _targetSelectionKind = SkillTargetKind.OneEnemy;
+        [SerializeField] private SkillTargetKind _targetSelectionKind = SkillTargetKind.Enemy;
 
         [Tooltip("Absolute probability (0..1) that the AI picks this skill when it is eligible. " +
                  "Default 1.0 = always picks if eligible. Lower values create variation between equally valid skills.")]
@@ -146,6 +130,11 @@ namespace Erumperem.Progression
         [Tooltip("Effects applied to the target after a successful hit (DOTs, tokens, push/pull, heals, stuns).")]
         [FormerlySerializedAs("_effectsOnHit")]
         [SerializeField] private List<SerializableEffectSpec> _effectsAppliedAfterSuccessfulHit = new();
+
+        [Tooltip("Extra effects appended to Effects On Hit when the target carries at least one Combo token. " +
+                 "After resolution, one Combo stack is consumed.")]
+        [FormerlySerializedAs("_comboBonus")]
+        [SerializeField] private List<SerializableEffectSpec> _extraEffectsWhenTargetHasComboToken = new();
 
         // -------------------------------------------------------------------------
         // 4) Passive — combate (Game.Core) — ignorado se activa
@@ -326,6 +315,9 @@ namespace Erumperem.Progression
                 Accuracy = _baseHitAccuracyFraction,
                 TargetKind = _targetSelectionKind,
                 EffectsOnHit = (_effectsAppliedAfterSuccessfulHit ?? Enumerable.Empty<SerializableEffectSpec>())
+                    .Select(spec => spec.ToRuntimeSpec())
+                    .ToList(),
+                ComboBonus = (_extraEffectsWhenTargetHasComboToken ?? Enumerable.Empty<SerializableEffectSpec>())
                     .Select(spec => spec.ToRuntimeSpec())
                     .ToList(),
                 ChanceToUse = _aiAbsoluteChanceToConsiderWhenEligible,

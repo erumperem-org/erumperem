@@ -229,6 +229,22 @@ public sealed class CombatPassiveEventBus
         }
     }
 
+    public void RaiseComboBonusEffectsIncluded(BattleState state, Combatant actor, Combatant target, SkillDefinition skill)
+    {
+        Dispatch(
+            PassiveTrigger.ComboBonusEffectsIncluded,
+            state,
+            new CombatPassiveEventContext { Self = actor, Other = target, Skill = skill });
+    }
+
+    public void RaiseComboConsumed(BattleState state, Combatant actor, Combatant target, SkillDefinition skill)
+    {
+        Dispatch(
+            PassiveTrigger.ComboConsumed,
+            state,
+            new CombatPassiveEventContext { Self = target, Other = actor, Skill = skill });
+    }
+
     public void RaiseCombatantSlain(BattleState state, Combatant? killer, Combatant victim)
     {
         Dispatch(

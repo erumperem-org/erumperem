@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Game.Core.Domain;
 using Game.Core.Engine;
@@ -38,7 +39,7 @@ namespace Erumperem.Combat
                 return true;
             }
 
-            if (!SkillTargetKindRules.DirectsPrimaryDamageAtEnemies(skill.TargetKind))
+            if (skill.TargetKind != SkillTargetKind.Enemy)
             {
                 return false;
             }
@@ -52,7 +53,14 @@ namespace Erumperem.Combat
             Combatant actor,
             int hotkeyIndexZeroBased)
         {
-            foreach (var candidate in SkillTargetResolver.GetValidEnemyPool(state, actor))
+            var enemies = actor.Position.Side == Side.Allies ? state.Enemies : state.Allies;
+            var living = enemies.Where(c => !c.Health.IsDead).ToList();
+            if (living.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var candidate in GetEnemyIntentPoolForUiProbe(living))
             {
                 if (PlayerActionBuilder.TryCreate(state, simulator, actor, hotkeyIndexZeroBased, candidate) != null)
                 {
@@ -61,6 +69,12 @@ namespace Erumperem.Combat
             }
 
             return false;
+        }
+
+        private static List<Combatant> GetEnemyIntentPoolForUiProbe(IReadOnlyList<Combatant> living)
+        {
+            var taunt = living.Where(c => c.Tokens.GetStacks(TokenType.Taunt) > 0).ToList();
+            return taunt.Count > 0 ? taunt : living.ToList();
         }
     }
 }

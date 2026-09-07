@@ -4,11 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace Game.Simulations;
 
-/// <summary>
-/// Legacy one-shot utility: clones Wulfric skill tree JSON into Buck placeholder entries.
-/// Buck now has a dedicated kit in skills.json / skill_trees.json; prefer editing those directly.
-/// Remaps remaining <c>wulfric_innate_*</c> ids to <c>buck_innate_*</c> if still present.
-/// </summary>
+/// <summary>One-shot utility: clones Wulfric skill tree JSON into Buck placeholder entries.</summary>
 public static class BuckSkillDataCloner
 {
     private static readonly JsonSerializerOptions JsonWriteOptions = new() { WriteIndented = true };
@@ -193,7 +189,7 @@ public static class BuckSkillDataCloner
             }
         }
 
-        foreach (var effectListName in new[] { "effectsOnHit" })
+        foreach (var effectListName in new[] { "effectsOnHit", "comboBonus" })
         {
             if (skillNode[effectListName] is not JsonArray effectsArray)
             {

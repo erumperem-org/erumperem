@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Erumperem.Combat.Runtime;
+using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
 using Game.Core.Presentation;
@@ -201,7 +202,7 @@ namespace Erumperem.Combat
             var displaySignature = BuildDisplaySignature(
                 ownerCombatantId,
                 zeroBasedSlotIndex,
-                previewTarget?.Identity.Id ?? string.Empty,
+                previewTarget?.Identity.Id,
                 _combatSession.BattleState.CorruptionTier);
 
             if (string.Equals(_lastRenderedDisplaySignature, displaySignature, StringComparison.Ordinal))
@@ -304,29 +305,65 @@ namespace Erumperem.Combat
             return battleState.SkillsById.TryGetValue(skillIds[zeroBasedSlotIndex], out skillDefinition);
         }
 
-        private Combatant? ResolvePreviewTarget(
+        private Combatant ResolvePreviewTarget(
             Combatant actingCombatant,
             SkillDefinition skillDefinition,
             int zeroBasedSlotIndex)
         {
             var battleState = _combatSession.BattleState;
 
-            Combatant? preferredCombatant = null;
             if (skillButtonBarUIManager != null &&
-                skillButtonBarUIManager.TryGetHoveredLivingCombatant(out var hoveredCombatant))
+                skillButtonBarUIManager.TryGetHoveredLivingCombatant(out var hoveredCombatant) &&
+                PlayerActionBuilder.TryCreate(
+                    battleState,
+                    _combatSession.BattleSimulator,
+                    actingCombatant,
+                    zeroBasedSlotIndex,
+                    hoveredCombatant) != null)
             {
-                preferredCombatant = hoveredCombatant;
-            }
-            else
-            {
-                preferredCombatant = _combatSession.CurrentSelectedEnemy;
+                return hoveredCombatant;
             }
 
-            return SkillTargetResolver.ResolvePreferredSelection(
-                battleState,
-                actingCombatant,
-                skillDefinition,
-                preferredCombatant);
+            switch (skillDefinition.TargetKind)
+            {
+                case SkillTargetKind.Self:
+                    return actingCombatant;
+
+                case SkillTargetKind.Ally:
+                    var allyTarget = battleState.Allies.FirstOrDefault(allyCandidate =>
+                        !allyCandidate.Health.IsDead &&
+                        PlayerActionBuilder.TryCreate(
+                            battleState,
+                            _combatSession.BattleSimulator,
+                            actingCombatant,
+                            zeroBasedSlotIndex,
+                            allyCandidate) != null);
+                    return allyTarget ?? actingCombatant;
+
+                case SkillTargetKind.Enemy:
+                default:
+                    var selectedEnemy = _combatSession.CurrentSelectedEnemy;
+                    if (selectedEnemy != null &&
+                        !selectedEnemy.Health.IsDead &&
+                        PlayerActionBuilder.TryCreate(
+                            battleState,
+                            _combatSession.BattleSimulator,
+                            actingCombatant,
+                            zeroBasedSlotIndex,
+                            selectedEnemy) != null)
+                    {
+                        return selectedEnemy;
+                    }
+
+                    return battleState.Enemies.FirstOrDefault(enemyCandidate =>
+                        !enemyCandidate.Health.IsDead &&
+                        PlayerActionBuilder.TryCreate(
+                            battleState,
+                            _combatSession.BattleSimulator,
+                            actingCombatant,
+                            zeroBasedSlotIndex,
+                            enemyCandidate) != null);
+            }
         }
 
         private static string BuildDisplaySignature(

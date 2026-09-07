@@ -112,6 +112,7 @@ namespace Erumperem.Editor.Progression
         private static void ClearActiveFieldsForPassive(SerializedObject nodeSo)
         {
             nodeSo.FindProperty("_effectsAppliedAfterSuccessfulHit").ClearArray();
+            nodeSo.FindProperty("_extraEffectsWhenTargetHasComboToken").ClearArray();
             nodeSo.FindProperty("_baseDamageMinimum").intValue = 0;
             nodeSo.FindProperty("_baseDamageMaximum").intValue = 0;
             nodeSo.FindProperty("_baseCriticalHitChanceFraction").doubleValue = 0;
@@ -193,6 +194,7 @@ namespace Erumperem.Editor.Progression
             nodeSo.FindProperty("_corruptionCostAddedWhenPlayerCasts").doubleValue = skillDefinition.CorruptionCost;
 
             WriteEffectList(nodeSo.FindProperty("_effectsAppliedAfterSuccessfulHit"), skillDefinition.EffectsOnHit);
+            WriteEffectList(nodeSo.FindProperty("_extraEffectsWhenTargetHasComboToken"), skillDefinition.ComboBonus);
         }
 
         private static void WriteEffectList(SerializedProperty listProperty, IReadOnlyList<EffectSpec> specs)
@@ -214,8 +216,8 @@ namespace Erumperem.Editor.Progression
                 elementProperty.FindPropertyRelative("Potency").intValue = specification.Potency;
                 elementProperty.FindPropertyRelative("Duration").intValue = specification.Duration;
                 elementProperty.FindPropertyRelative("Steps").intValue = specification.Steps;
-                elementProperty.FindPropertyRelative("EffectScopeName").stringValue =
-                    specification.EffectScope.ToString();
+                elementProperty.FindPropertyRelative("EffectScope").stringValue =
+                    specification.EffectScope ?? "Default";
                 elementProperty.FindPropertyRelative("UseToken").boolValue = specification.Token.HasValue;
                 if (specification.Token.HasValue)
                 {

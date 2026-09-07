@@ -18,32 +18,12 @@ public sealed class EffectSpec
     public DotType? Dot { get; init; }
     public int Stacks { get; init; }
     public int Potency { get; init; }
-
-    /// <summary>
-    /// When &gt; <see cref="Potency"/> for <see cref="EffectType.HealHp"/>, heal amount rolls in [Potency, AmountMax].
-    /// </summary>
-    public int AmountMax { get; init; }
-
     public int Duration { get; init; }
     public int Steps { get; init; }
     public double Chance { get; init; } = 1.0;
 
-    /// <summary>
-    /// Who receives this effect relative to the hit.
-    /// Default = the primary hit target; Self = caster; AllAllies / AllEnemies = living combatants on that side.
-    /// </summary>
-    public EffectScope EffectScope { get; init; } = EffectScope.Default;
-
-    /// <summary>
-    /// Optional: extra stacks from actor token count when applying ApplyToken.
-    /// Final stacks = Stacks + (GetStacks(ScaleFromToken) * ScaleStacksPerSourceStack) / max(1, ScaleStacksSourceDivisor).
-    /// </summary>
-    public TokenType? ScaleFromToken { get; init; }
-
-    public int ScaleStacksPerSourceStack { get; init; }
-
-    /// <summary>Divisor for <see cref="ScaleFromToken"/> (e.g. +1 Defense per 2 ControlledInstability → divisor 2).</summary>
-    public int ScaleStacksSourceDivisor { get; init; } = 1;
+    /// <summary>Default = single target; AllAllies = same-side party (e.g. Muralha Block on everyone).</summary>
+    public string EffectScope { get; init; } = EffectScopes.Default;
 }
 
 public sealed class SkillDefinition
@@ -55,8 +35,9 @@ public sealed class SkillDefinition
     public required DamageRange BaseDamage { get; init; }
     public required double BaseCritChance { get; init; }
     public required double Accuracy { get; init; }
-    public SkillTargetKind TargetKind { get; init; } = SkillTargetKind.OneEnemy;
+    public SkillTargetKind TargetKind { get; init; } = SkillTargetKind.Enemy;
     public IReadOnlyList<EffectSpec> EffectsOnHit { get; init; } = [];
+    public IReadOnlyList<EffectSpec> ComboBonus { get; init; } = [];
 
     /// <summary>
     /// Probabilidade absoluta (0..1) de a IA considerar esta skill quando ela é elegível. Default 1.0 (sempre considerada).
@@ -76,38 +57,6 @@ public sealed class SkillDefinition
     /// Omitted in JSON defaults to <see cref="CorruptionRules.DefaultSkillCorruptionCost"/>.
     /// </summary>
     public double CorruptionCost { get; init; } = CorruptionRules.DefaultSkillCorruptionCost;
-
-    /// <summary>How many independent hit/damage rolls against each primary target (Unload=3, Frenzy=5).</summary>
-    public int HitCount { get; init; } = 1;
-
-    /// <summary>0..1 chance the actor keeps their turn (grants <see cref="TokenType.BonusAction"/>).</summary>
-    public double ChanceToNotEndTurn { get; init; }
-
-    /// <summary>Skills resolved immediately after this one, same selected target (Guns for all).</summary>
-    public IReadOnlyList<string> FollowUpSkillIds { get; init; } = [];
-
-    /// <summary>When true, applies <see cref="TokenType.BonusAction"/> to self and living allies after a successful cast.</summary>
-    public bool GrantsBonusActionsToAllies { get; init; }
-
-    /// <summary>Subtracted from accuracy once per living enemy on the opposite side (Juggling).</summary>
-    public double AccuracyPenaltyPerLivingEnemy { get; init; }
-
-    /// <summary>Flat bonus damage per stack of this token on the caster (Shield Charge + Defense).</summary>
-    public TokenType? BonusDamagePerOwnToken { get; init; }
-
-    public int BonusDamagePerOwnTokenStacks { get; init; } = 1;
-
-    /// <summary>When true, Strangle-style: damage/crit/accuracy scale with distinct debuff types on the target.</summary>
-    public bool ComputeFromDebuffTypesOnTarget { get; init; }
-
-    public int DamagePerDistinctDebuffType { get; init; }
-
-    public double CritChancePerDistinctDebuffType { get; init; }
-
-    public double AccuracyPerDistinctDebuffType { get; init; }
-
-    /// <summary>Allow SelfAndAlly / OneAlly pools to include dead allies (Resurrection Hymn MVP).</summary>
-    public bool CanTargetDeadAllies { get; init; }
 }
 
 public sealed class EnemyDefinition

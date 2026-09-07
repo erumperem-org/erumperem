@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
 using UnityEngine;
@@ -192,20 +191,6 @@ namespace Erumperem.Combat.Runtime
                 action,
                 () =>
                 {
-                    if (BattleSimulator.ShouldActorRetainTurn(action.Actor))
-                    {
-                        action.Actor.PassiveRuntime.ShouldRetainTurnForBonusAction = false;
-                        if (action.Actor.Tokens.ConsumeOne(TokenType.BonusAction))
-                        {
-                            // Extra action without re-ticking turn-start DOTs.
-                        }
-
-                        _session.PreparedThisStep = true;
-                        _session.NeedsPlayerInput = true;
-                        _session.PendingPlayerActor = action.Actor;
-                        return;
-                    }
-
                     _session.ActorIndex++;
                     _session.PreparedThisStep = false;
                 });

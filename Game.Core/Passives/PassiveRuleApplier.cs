@@ -326,7 +326,7 @@ public static class PassiveRuleApplier
         Func<Combatant, DotType, bool> dotApplicationPassesResistanceCheck,
         List<PassiveCombatNote>? narrativeNotes = null)
     {
-        if (!SkillTargetKindRules.DirectsPrimaryDamageAtEnemies(skill.TargetKind)) return;
+        if (skill.TargetKind != SkillTargetKind.Enemy) return;
         foreach (var def in EnumerateActivePassives(actor, state))
         {
             if (def.EffectKind != PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot) continue;

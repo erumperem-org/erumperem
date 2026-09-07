@@ -17,106 +17,53 @@ internal sealed class BattleAiActionChooser
     public ChosenAction? ChooseAiAction(BattleState state, Combatant actor, Func<Combatant, SkillDefinition, bool> isSkillUsable)
     {
         var enemies = actor.Position.Side == Side.Allies ? state.Enemies : state.Allies;
-        var availableEnemyTargets = enemies.Where(enemy => !enemy.Health.IsDead).ToList();
-        if (availableEnemyTargets.Count == 0)
-        {
-            return null;
-        }
+        var availableTargets = enemies.Where(enemy => !enemy.Health.IsDead).ToList();
+        if (availableTargets.Count == 0) return null;
 
         var availableSkills = actor.SkillLoadout.Skills
             .Where(id => state.SkillsById.ContainsKey(id))
             .Select(id => state.SkillsById[id])
             .Where(skill => isSkillUsable(actor, skill))
-            .Where(skill =>
-                actor.AI is null || SkillTargetKindRules.DirectsPrimaryDamageAtEnemies(skill.TargetKind))
+            .Where(skill => actor.AI is null || skill.TargetKind == SkillTargetKind.Enemy)
             .ToList();
 
-        if (availableSkills.Count == 0)
-        {
-            return null;
-        }
+        if (availableSkills.Count == 0) return null;
 
         SkillDefinition selectedSkill;
         if (actor.AI?.DecisionPolicyId == "KillThenWeighted")
         {
-            selectedSkill = ChooseEnemySkillForAi(state, actor, availableEnemyTargets, availableSkills);
+            selectedSkill = ChooseEnemySkillForAi(state, actor, availableTargets, availableSkills);
         }
         else
         {
             selectedSkill = availableSkills[_random.Next(0, availableSkills.Count)];
         }
 
-        var preferredSelection = PickPreferredSelection(state, actor, selectedSkill);
-        var primaryTargets = SkillTargetResolver.ResolvePrimaryTargets(
-            state,
-            actor,
-            selectedSkill,
-            preferredSelection);
-        if (primaryTargets.Count == 0)
+        Combatant? target;
+        if (selectedSkill.TargetKind == SkillTargetKind.Self)
         {
-            return null;
+            target = actor;
+        }
+        else if (selectedSkill.TargetKind == SkillTargetKind.Ally)
+        {
+            var roster = actor.Position.Side == Side.Allies ? state.Allies : state.Enemies;
+            var allies = roster.Where(combatant => !combatant.Health.IsDead).ToList();
+            target = SelectAllyTarget(actor, allies, selectedSkill);
+            if (target is null) return null;
+        }
+        else
+        {
+            target = SelectTarget(actor, availableTargets, selectedSkill);
+            if (target is null) return null;
         }
 
         return new ChosenAction
         {
             Actor = actor,
-            Target = preferredSelection ?? primaryTargets[0],
+            Target = target,
             Skill = selectedSkill,
             ActionType = ActionType.Skill,
         };
-    }
-
-    private Combatant? PickPreferredSelection(BattleState state, Combatant actor, SkillDefinition selectedSkill)
-    {
-        if (SkillTargetKindRules.IsSelfOnly(selectedSkill.TargetKind) ||
-            selectedSkill.TargetKind == SkillTargetKind.SelfAndAlly)
-        {
-            return actor;
-        }
-
-        if (selectedSkill.TargetKind == SkillTargetKind.OneAlly)
-        {
-            return SelectRandomVisibleAlly(state, actor, includeActor: false) ?? actor;
-        }
-
-        if (selectedSkill.TargetKind == SkillTargetKind.SelfOrAlly)
-        {
-            return SelectRandomVisibleAlly(state, actor, includeActor: true) ?? actor;
-        }
-
-        if (selectedSkill.TargetKind == SkillTargetKind.AllEnemies)
-        {
-            var validEnemies = SkillTargetResolver.GetValidEnemyPool(state, actor);
-            return validEnemies.Count > 0 ? validEnemies[0] : null;
-        }
-
-        var selectableEnemies = SkillTargetResolver.GetValidEnemyPool(state, actor);
-        if (selectableEnemies.Count == 0)
-        {
-            return null;
-        }
-
-        return selectableEnemies[_random.Next(0, selectableEnemies.Count)];
-    }
-
-    private Combatant? SelectRandomVisibleAlly(BattleState state, Combatant actor, bool includeActor)
-    {
-        var sameSideRoster = actor.Position.Side == Side.Allies ? state.Allies : state.Enemies;
-        var visibleAllies = sameSideRoster
-            .Where(ally => !ally.Health.IsDead && ally.Tokens.GetStacks(TokenType.Stealth) == 0)
-            .Where(ally => includeActor || !string.Equals(ally.Identity.Id, actor.Identity.Id, StringComparison.Ordinal))
-            .ToList();
-        if (includeActor && visibleAllies.Count == 0)
-        {
-            return actor.Health.IsDead ? null : actor;
-        }
-
-        if (visibleAllies.Count == 0)
-        {
-            return null;
-        }
-
-        return visibleAllies[_random.Next(0, visibleAllies.Count)];
     }
 
     private SkillDefinition ChooseEnemySkillForAi(
@@ -154,6 +101,38 @@ internal sealed class BattleAiActionChooser
         var finalPool = rolledCandidates.Count > 0 ? rolledCandidates : skillPool;
         var pickedIndex = _random.Next(0, finalPool.Count);
         return finalPool[pickedIndex];
+    }
+
+    private Combatant? SelectAllyTarget(
+        Combatant _actor,
+        IReadOnlyList<Combatant> allies,
+        SkillDefinition _skill)
+    {
+        var visible = allies
+            .Where(ally => ally.Tokens.GetStacks(TokenType.Stealth) == 0)
+            .ToList();
+        if (visible.Count == 0) return null;
+
+        return visible[_random.Next(0, visible.Count)];
+    }
+
+    private Combatant? SelectTarget(
+        Combatant _actor,
+        IReadOnlyList<Combatant> availableTargets,
+        SkillDefinition _skill)
+    {
+        var tauntTargets = availableTargets.Where(enemy => enemy.Tokens.GetStacks(TokenType.Taunt) > 0).ToList();
+        var candidateTargets = tauntTargets.Count > 0 ? tauntTargets : availableTargets.ToList();
+
+        var visibleTargets = candidateTargets
+            .Where(enemy => enemy.Tokens.GetStacks(TokenType.Stealth) == 0)
+            .ToList();
+        if (visibleTargets.Count == 0)
+        {
+            return null;
+        }
+
+        return visibleTargets[_random.Next(0, visibleTargets.Count)];
     }
 
     private static int EstimateDamage(BattleState state, Combatant actor, Combatant target, SkillDefinition skill) =>
