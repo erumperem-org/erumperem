@@ -33,10 +33,12 @@ namespace Erumperem.Combat
 
         [SerializeField] private string descriptionPanelName = DefaultDescriptionPanelName;
         [SerializeField] private string descriptionTextName = DefaultDescriptionTextName;
+
         [Tooltip("CanvasGroup (fade) no painel; se faltar, é criada em runtime.")]
         [SerializeField] private bool ensureCanvasGroupOnDescriptionPanel = true;
 
         [Header("Animação (só neste painel)")]
+
         [Tooltip("Aplicado no root do painel; depois de tweens, repõe valores capturados no Start.")]
         [SerializeField] private bool useSelectionScaleTween = true;
 
@@ -90,12 +92,14 @@ namespace Erumperem.Combat
         {
             EnsureButtonReferencesResolved();
             _zeroBasedSlotIndex = zeroBasedSlotIndex;
+
             if (_skillButton == null)
             {
                 return;
             }
 
             _skillButton.onClick.RemoveAllListeners();
+
             _skillButton.onClick.AddListener(() =>
             {
                 if (!_skillButton.interactable)
@@ -108,12 +112,14 @@ namespace Erumperem.Combat
             });
 
             _pointerRelay = _skillButton.gameObject.GetComponent<SkillButtonSlotPointerRelay>();
+
             if (_pointerRelay == null)
             {
                 _pointerRelay = _skillButton.gameObject.AddComponent<SkillButtonSlotPointerRelay>();
             }
 
             _pointerRelay.Init(this);
+
             if (_skillButton.targetGraphic != null)
             {
                 _skillButton.targetGraphic.raycastTarget = true;
@@ -133,6 +139,7 @@ namespace Erumperem.Combat
             if (_panelBackgroundImage == null)
             {
                 _panelBackgroundImage = GetComponent<Image>();
+
                 if (_panelBackgroundImage != null)
                 {
                     _panelColorBase = _panelBackgroundImage.color;
@@ -143,6 +150,7 @@ namespace Erumperem.Combat
             if (_skillButton == null)
             {
                 _skillButton = GetComponent<Button>();
+
                 if (_skillButton == null)
                 {
                     _skillButton = GetComponentInChildren<Button>(true);
@@ -154,6 +162,7 @@ namespace Erumperem.Combat
                 if (_buttonImage == null)
                 {
                     _buttonImage = _skillButton.targetGraphic as Image;
+
                     if (_buttonImage != null)
                     {
                         _buttonColorBase = _buttonImage.color;
@@ -186,18 +195,13 @@ namespace Erumperem.Combat
             gameObject.SetActive(visible);
         }
 
-        public void ApplyVisuals(
-            Sprite skillIconOrNull,
-            Color skillIconColor,
-            bool interactable,
-            bool selected,
-            string playerDescriptionLine,
-            int hotkeyLabelOneToSeven)
+        public void ApplyVisuals(Sprite skillIconOrNull, Color skillIconColor, bool interactable, bool selected, string playerDescriptionLine, int hotkeyLabelOneToSeven)
         {
             _playerDescriptionLine = PlayerFacingText.PresentForUi(playerDescriptionLine ?? string.Empty);
             _isInteractable = interactable;
             _isSelected = selected;
             TryCacheHotkeyDigitLabel();
+
             if (_hotkeyDigitLabel != null && hotkeyLabelOneToSeven >= 1 && hotkeyLabelOneToSeven <= 6)
             {
                 _hotkeyDigitLabel.text = hotkeyLabelOneToSeven.ToString();
@@ -208,9 +212,8 @@ namespace Erumperem.Combat
             if (_skillButton != null)
             {
                 _skillButton.interactable = interactable;
-                _buttonCanvasGroup = _buttonCanvasGroup != null
-                    ? _buttonCanvasGroup
-                    : _skillButton.GetComponent<CanvasGroup>();
+                _buttonCanvasGroup = _buttonCanvasGroup != null ? _buttonCanvasGroup : _skillButton.GetComponent<CanvasGroup>();
+
                 if (_buttonCanvasGroup == null)
                 {
                     _buttonCanvasGroup = _skillButton.gameObject.AddComponent<CanvasGroup>();
@@ -233,9 +236,11 @@ namespace Erumperem.Combat
             var wasFirstLayoutApply = !_lastAppliedIsSelected.HasValue;
             var selectionStateChanged = !wasFirstLayoutApply && _lastAppliedIsSelected.Value != selected;
             _lastAppliedIsSelected = selected;
+
             if (selectionStateChanged || wasFirstLayoutApply)
             {
                 KillTweensOnButtonChrome();
+
                 if (wasFirstLayoutApply && !selected)
                 {
                     RestoreRootLayout();
@@ -244,23 +249,12 @@ namespace Erumperem.Combat
                 {
                     if (selected)
                     {
-                        var targetScale = new Vector3(
-                            SelectedLocalScale * _rootLocalScaleBase.x,
-                            SelectedLocalScale * _rootLocalScaleBase.y,
-                            SelectedLocalScale * _rootLocalScaleBase.z);
-                        _rootRectTransform
-                            .DOScale(targetScale, SelectionTweenDuration)
-                            .SetEase(Ease.OutCubic)
-                            .SetLink(gameObject)
-                            .OnComplete(RestoreRootLayoutForCurrentSelection);
+                        var targetScale = new Vector3(SelectedLocalScale * _rootLocalScaleBase.x, SelectedLocalScale * _rootLocalScaleBase.y, SelectedLocalScale * _rootLocalScaleBase.z);
+                        _rootRectTransform.DOScale(targetScale, SelectionTweenDuration).SetEase(Ease.OutCubic).SetLink(gameObject).OnComplete(RestoreRootLayoutForCurrentSelection);
                     }
                     else
                     {
-                        _rootRectTransform
-                            .DOScale(_rootLocalScaleBase, SelectionTweenDuration)
-                            .SetEase(Ease.OutCubic)
-                            .SetLink(gameObject)
-                            .OnComplete(RestoreRootLayoutForCurrentSelection);
+                        _rootRectTransform.DOScale(_rootLocalScaleBase, SelectionTweenDuration).SetEase(Ease.OutCubic).SetLink(gameObject).OnComplete(RestoreRootLayoutForCurrentSelection);
                     }
                 }
                 else
@@ -271,6 +265,7 @@ namespace Erumperem.Combat
 
             if (_isDescriptionPanelVisible && _descriptionText != null)
             {
+                PlayerGameRichText.ConfigureTextComponent(_descriptionText);
                 _descriptionText.text = _playerDescriptionLine;
                 _descriptionText.color = new Color(1f, 1f, 1f, 1f);
                 _descriptionText.ForceMeshUpdate(true);
@@ -284,6 +279,7 @@ namespace Erumperem.Combat
             ShowDescriptionIfPossible();
             TweenButtonHoverEnter();
             PointerEntered?.Invoke(this);
+
             if (_rootRectTransform == null || _isSelected)
             {
                 return;
@@ -295,11 +291,7 @@ namespace Erumperem.Combat
             }
 
             _rootRectTransform.DOKill(false);
-            _rootRectTransform
-                .DOScale(_rootLocalScaleBase * PointerEnterScale, PointerEnterDuration)
-                .SetEase(Ease.OutQuad)
-                .SetLink(gameObject)
-                .OnComplete(RestoreRootLayoutForCurrentSelection);
+            _rootRectTransform.DOScale(_rootLocalScaleBase * PointerEnterScale, PointerEnterDuration).SetEase(Ease.OutQuad).SetLink(gameObject).OnComplete(RestoreRootLayoutForCurrentSelection);
         }
 
         public void HandlePointerExit()
@@ -353,11 +345,7 @@ namespace Erumperem.Combat
             _rootRectTransform.localScale = _isSelected ? GetSelectedRootScale() : _rootLocalScaleBase;
         }
 
-        private Vector3 GetSelectedRootScale() =>
-            new Vector3(
-                SelectedLocalScale * _rootLocalScaleBase.x,
-                SelectedLocalScale * _rootLocalScaleBase.y,
-                SelectedLocalScale * _rootLocalScaleBase.z);
+        private Vector3 GetSelectedRootScale() => new Vector3(SelectedLocalScale * _rootLocalScaleBase.x, SelectedLocalScale * _rootLocalScaleBase.y, SelectedLocalScale * _rootLocalScaleBase.z);
 
         private void RestoreButtonLayout()
         {
@@ -392,13 +380,11 @@ namespace Erumperem.Combat
             }
 
             _buttonRect.DOKill(false);
-            _buttonRect
-                .DOPunchScale(new Vector3(0.06f, 0.06f, 0.06f), 0.14f, 6, 0.3f)
-                .SetLink(_buttonRect.gameObject)
-                .OnComplete(() =>
-                {
-                    RestoreButtonLayout();
-                });
+
+            _buttonRect.DOPunchScale(new Vector3(0.06f, 0.06f, 0.06f), 0.14f, 6, 0.3f).SetLink(_buttonRect.gameObject).OnComplete(() =>
+            {
+                RestoreButtonLayout();
+            });
         }
 
         private void TweenButtonHoverExit()
@@ -426,11 +412,7 @@ namespace Erumperem.Combat
             }
 
             _rootRectTransform.DOKill(false);
-            _rootRectTransform
-                .DOScale(_rootLocalScaleBase, PointerExitDuration)
-                .SetEase(Ease.OutQuad)
-                .SetLink(gameObject)
-                .OnComplete(RestoreRootLayoutForCurrentSelection);
+            _rootRectTransform.DOScale(_rootLocalScaleBase, PointerExitDuration).SetEase(Ease.OutQuad).SetLink(gameObject).OnComplete(RestoreRootLayoutForCurrentSelection);
         }
 
         private void PlayClickFeedback()
@@ -439,20 +421,14 @@ namespace Erumperem.Combat
             {
                 return;
             }
-            // Deixa o botão afundado/menor
-            _rootRectTransform
-                .DOScale(new Vector3(0.95f, 0.95f, 0.95f), 0.1f)
-                .SetEase(Ease.OutQuad)
-                .SetLink(gameObject)
-                .OnComplete(RestoreRootLayoutForCurrentSelection);
 
-
-
+            _rootRectTransform.DOScale(new Vector3(0.95f, 0.95f, 0.95f), 0.1f).SetEase(Ease.OutQuad).SetLink(gameObject).OnComplete(RestoreRootLayoutForCurrentSelection);
         }
 
         private void ApplySkillIconVisuals(Sprite skillIconOrNull, Color skillIconColor, bool interactable)
         {
             EnsureButtonReferencesResolved();
+
             if (_buttonImage == null)
             {
                 return;
@@ -469,13 +445,13 @@ namespace Erumperem.Combat
             _buttonImage.color = tintedIconColor;
         }
 
-        private void CacheParentRow() =>
-            _parentRow = GetComponentInParent<CharacterSkillButtonsRowView>();
+        private void CacheParentRow() => _parentRow = GetComponentInParent<CharacterSkillButtonsRowView>();
 
         private void OnDisable()
         {
             ForceHideDescriptionPanelImmediate();
             KillTweensOnButtonChrome();
+
             if (_rootRectTransform != null)
             {
                 RestoreRootLayout();
@@ -515,10 +491,7 @@ namespace Erumperem.Combat
 
             if (_descriptionPanel == null)
             {
-                _descriptionPanel = FindDescendantByName(
-                        _skillButton.transform,
-                        descriptionPanelName)
-                    as RectTransform;
+                _descriptionPanel = FindDescendantByName(_skillButton.transform, descriptionPanelName) as RectTransform;
             }
 
             if (_descriptionPanel == null)
@@ -528,18 +501,15 @@ namespace Erumperem.Combat
 
             if (!_descriptionLayoutInitialized)
             {
-                _descriptionPanelBaseScale = _descriptionPanel.localScale.sqrMagnitude < 0.0001f
-                    ? Vector3.one
-                    : _descriptionPanel.localScale;
+                _descriptionPanelBaseScale = _descriptionPanel.localScale.sqrMagnitude < 0.0001f ? Vector3.one : _descriptionPanel.localScale;
             }
 
             if (_descriptionText == null)
             {
                 if (!string.IsNullOrEmpty(descriptionTextName))
                 {
-                    var textTransform = FindDescendantByName(
-                        _descriptionPanel,
-                        descriptionTextName);
+                    var textTransform = FindDescendantByName(_descriptionPanel, descriptionTextName);
+
                     if (textTransform != null)
                     {
                         _descriptionText = textTransform.GetComponent<TextMeshProUGUI>();
@@ -552,11 +522,17 @@ namespace Erumperem.Combat
                 }
             }
 
+            if (_descriptionText != null)
+            {
+                PlayerGameRichText.ConfigureTextComponent(_descriptionText);
+            }
+
             if (ensureCanvasGroupOnDescriptionPanel)
             {
                 if (_descriptionCanvasGroup == null)
                 {
                     _descriptionCanvasGroup = _descriptionPanel.GetComponent<CanvasGroup>();
+
                     if (_descriptionCanvasGroup == null)
                     {
                         _descriptionCanvasGroup = _descriptionPanel.gameObject.AddComponent<CanvasGroup>();
@@ -570,6 +546,7 @@ namespace Erumperem.Combat
             }
 
             _descriptionLayoutInitialized = true;
+
             if (_descriptionCanvasGroup != null)
             {
                 _descriptionCanvasGroup.alpha = 0f;
@@ -578,6 +555,7 @@ namespace Erumperem.Combat
             }
 
             _descriptionPanel.localScale = Vector3.zero;
+
             if (!_isDescriptionPanelVisible)
             {
                 _descriptionPanel.gameObject.SetActive(false);
@@ -592,21 +570,24 @@ namespace Erumperem.Combat
             }
 
             var all = searchRoot.GetComponentsInChildren<Transform>(true);
+
             for (var index = 0; index < all.Length; index++)
             {
-                var t = all[index];
-                if (t != null && string.Equals(t.name, nameToMatch, StringComparison.Ordinal))
+                var currentTransform = all[index];
+
+                if (currentTransform != null && string.Equals(currentTransform.name, nameToMatch, StringComparison.Ordinal))
                 {
-                    return t;
+                    return currentTransform;
                 }
             }
 
             for (var index = 0; index < all.Length; index++)
             {
-                var t = all[index];
-                if (t != null && string.Equals(t.name, nameToMatch, StringComparison.OrdinalIgnoreCase))
+                var currentTransform = all[index];
+
+                if (currentTransform != null && string.Equals(currentTransform.name, nameToMatch, StringComparison.OrdinalIgnoreCase))
                 {
-                    return t;
+                    return currentTransform;
                 }
             }
 
@@ -616,6 +597,7 @@ namespace Erumperem.Combat
         private void ShowDescriptionIfPossible()
         {
             TryResolveDescriptionUi();
+
             if (string.IsNullOrEmpty(_playerDescriptionLine) || _descriptionPanel == null)
             {
                 return;
@@ -623,6 +605,7 @@ namespace Erumperem.Combat
 
             if (_descriptionText != null)
             {
+                PlayerGameRichText.ConfigureTextComponent(_descriptionText);
                 _descriptionText.text = _playerDescriptionLine;
                 _descriptionText.color = new Color(1f, 1f, 1f, 1f);
                 _descriptionText.ForceMeshUpdate(true);
@@ -637,6 +620,7 @@ namespace Erumperem.Combat
             _descriptionPanel.gameObject.SetActive(true);
             _isDescriptionPanelVisible = true;
             _descriptionPanel.localScale = Vector3.zero;
+
             if (_descriptionCanvasGroup != null)
             {
                 _descriptionCanvasGroup.alpha = 0f;
@@ -645,16 +629,10 @@ namespace Erumperem.Combat
             if (_descriptionCanvasGroup != null)
             {
                 _descriptionCanvasGroup.DOKill(false);
-                _descriptionCanvasGroup
-                    .DOFade(1f, DescriptionShowDuration * 0.9f)
-                    .SetEase(DescriptionShowEase)
-                    .SetLink(_descriptionPanel.gameObject);
+                _descriptionCanvasGroup.DOFade(1f, DescriptionShowDuration * 0.9f).SetEase(DescriptionShowEase).SetLink(_descriptionPanel.gameObject);
             }
 
-            _descriptionPanel
-                .DOScale(_descriptionPanelBaseScale, DescriptionShowDuration)
-                .SetEase(DescriptionShowEase)
-                .SetLink(_descriptionPanel.gameObject);
+            _descriptionPanel.DOScale(_descriptionPanelBaseScale, DescriptionShowDuration).SetEase(DescriptionShowEase).SetLink(_descriptionPanel.gameObject);
         }
 
         private void HideDescriptionPanel()
@@ -665,6 +643,7 @@ namespace Erumperem.Combat
             }
 
             _descriptionPanel.DOKill(false);
+
             if (_descriptionCanvasGroup != null)
             {
                 _descriptionCanvasGroup.DOKill(false);
@@ -672,30 +651,23 @@ namespace Erumperem.Combat
 
             if (_descriptionCanvasGroup != null)
             {
-                _descriptionCanvasGroup
-                    .DOFade(0f, DescriptionHideDuration)
-                    .SetEase(DescriptionHideEase)
-                    .SetLink(_descriptionPanel.gameObject);
+                _descriptionCanvasGroup.DOFade(0f, DescriptionHideDuration).SetEase(DescriptionHideEase).SetLink(_descriptionPanel.gameObject);
             }
 
-            _descriptionPanel
-                .DOScale(0f, DescriptionHideDuration)
-                .SetEase(DescriptionHideEase)
-                .SetLink(_descriptionPanel.gameObject)
-                .OnComplete(() =>
+            _descriptionPanel.DOScale(0f, DescriptionHideDuration).SetEase(DescriptionHideEase).SetLink(_descriptionPanel.gameObject).OnComplete(() =>
+            {
+                if (_descriptionPanel != null)
                 {
-                    if (_descriptionPanel != null)
+                    if (_descriptionCanvasGroup != null)
                     {
-                        if (_descriptionCanvasGroup != null)
-                        {
-                            _descriptionCanvasGroup.alpha = 0f;
-                        }
-
-                        _descriptionPanel.gameObject.SetActive(false);
+                        _descriptionCanvasGroup.alpha = 0f;
                     }
 
-                    _isDescriptionPanelVisible = false;
-                });
+                    _descriptionPanel.gameObject.SetActive(false);
+                }
+
+                _isDescriptionPanelVisible = false;
+            });
         }
 
         private void ForceHideDescriptionPanelImmediate()
@@ -706,6 +678,7 @@ namespace Erumperem.Combat
             }
 
             _descriptionPanel.DOKill(false);
+
             if (_descriptionCanvasGroup != null)
             {
                 _descriptionCanvasGroup.DOKill(false);

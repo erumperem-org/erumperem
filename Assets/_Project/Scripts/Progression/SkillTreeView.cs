@@ -39,6 +39,7 @@ namespace Erumperem.Progression
 
                 if (Body != null)
                 {
+                    PlayerGameRichText.ConfigureTextComponent(Body);
                     Body.text = PlayerFacingText.FormatSkillTreeNodeDescription(nodeAsset);
                 }
             }
@@ -68,9 +69,7 @@ namespace Erumperem.Progression
         [SerializeField] private Button _arrowRightButton;
 
         [Header("Character profiles (order = arrow cycle)")]
-        [SerializeField]
-        private SkillTreeCharacterUiProfile[] _characterProfiles =
-        {
+        [SerializeField] private SkillTreeCharacterUiProfile[] _characterProfiles = {
             new()
             {
                 ProgressionCharacterId = "wulfric",
@@ -116,10 +115,7 @@ namespace Erumperem.Progression
         private int _currentProfileIndex;
         private bool _subscribedToService;
 
-        public string CurrentProgressionCharacterId =>
-            _characterProfiles.Length > 0
-                ? _characterProfiles[_currentProfileIndex].ProgressionCharacterId
-                : string.Empty;
+        public string CurrentProgressionCharacterId => _characterProfiles.Length > 0 ? _characterProfiles[_currentProfileIndex].ProgressionCharacterId : string.Empty;
 
         private void Awake()
         {
@@ -182,6 +178,7 @@ namespace Erumperem.Progression
         public void ResetCurrentCharacterSkillTree()
         {
             var service = ResolveService();
+
             if (service == null || string.IsNullOrWhiteSpace(CurrentProgressionCharacterId))
             {
                 return;
@@ -203,6 +200,7 @@ namespace Erumperem.Progression
             for (var profileLoopIndex = 0; profileLoopIndex < _characterProfiles.Length; profileLoopIndex++)
             {
                 var characterProfile = _characterProfiles[profileLoopIndex];
+
                 if (characterProfile.SkillTreeRoot != null)
                 {
                     characterProfile.SkillTreeRoot.SetActive(profileLoopIndex == _currentProfileIndex);
@@ -285,6 +283,7 @@ namespace Erumperem.Progression
             {
                 _detailPanel.Title = FindChildComponent<TMP_Text>("SkillTitle");
             }
+
             if (_detailPanel.Body == null)
             {
                 _detailPanel.Body = FindChildComponent<TMP_Text>("SkillDescription");
@@ -297,11 +296,8 @@ namespace Erumperem.Progression
 
             var wulfricProfile = _characterProfiles[0];
             var buckProfile = _characterProfiles[1];
-
-            wulfricProfile.SkillTreeRoot ??= FindChildTransform("SkillTree_Wulfric")?.gameObject
-                ?? FindChildTransform("SkillTree")?.gameObject;
+            wulfricProfile.SkillTreeRoot ??= FindChildTransform("SkillTree_Wulfric")?.gameObject ?? FindChildTransform("SkillTree")?.gameObject;
             buckProfile.SkillTreeRoot ??= FindChildTransform("SkillTree_Buck")?.gameObject;
-
             _characterProfiles[0] = wulfricProfile;
             _characterProfiles[1] = buckProfile;
         }
@@ -309,6 +305,7 @@ namespace Erumperem.Progression
         private Transform FindChildTransform(string childName)
         {
             var transforms = GetComponentsInChildren<Transform>(true);
+
             foreach (var childTransform in transforms)
             {
                 if (string.Equals(childTransform.name, childName, System.StringComparison.Ordinal))
@@ -328,9 +325,7 @@ namespace Erumperem.Progression
 
         private PlayerProgressionService EnsureProgressionServiceReady()
         {
-            var service = _progressionService != null
-                ? _progressionService
-                : PlayerProgressionService.Instance;
+            var service = _progressionService != null ? _progressionService : PlayerProgressionService.Instance;
 
             if (service == null)
             {
@@ -356,6 +351,7 @@ namespace Erumperem.Progression
             }
 
             var service = ResolveService();
+
             if (service == null)
             {
                 return;
@@ -373,6 +369,7 @@ namespace Erumperem.Progression
             }
 
             var service = ResolveService();
+
             if (service != null)
             {
                 service.OnUnlockedNodesChanged -= HandleUnlockedNodesChanged;
@@ -384,9 +381,7 @@ namespace Erumperem.Progression
         private void CollectPresenters()
         {
             _presenters.Clear();
-            var activeRoot = _characterProfiles.Length > 0
-                ? _characterProfiles[_currentProfileIndex].SkillTreeRoot
-                : null;
+            var activeRoot = _characterProfiles.Length > 0 ? _characterProfiles[_currentProfileIndex].SkillTreeRoot : null;
 
             if (activeRoot != null)
             {
@@ -400,10 +395,7 @@ namespace Erumperem.Progression
 
             if (_presenters.Count == 0)
             {
-                Debug.LogWarning(
-                    "SkillTreeView: nenhum SkillTreeNodePresenter no root activo. " +
-                    "Confirma SkillTreeRoot e SkillTreeNodePresenter nos botões.",
-                    this);
+                Debug.LogWarning("SkillTreeView: nenhum SkillTreeNodePresenter no root activo. Confirma SkillTreeRoot e SkillTreeNodePresenter nos botões.", this);
             }
         }
 
@@ -419,29 +411,20 @@ namespace Erumperem.Progression
         {
             var service = ResolveService();
             var characterId = CurrentProgressionCharacterId;
-            _characterTrees = service != null && !string.IsNullOrWhiteSpace(characterId)
-                ? service.GetCharacterDefinition(characterId)
-                : null;
+            _characterTrees = service != null && !string.IsNullOrWhiteSpace(characterId) ? service.GetCharacterDefinition(characterId) : null;
 
             if (_characterTrees == null)
             {
                 var catalogLoaded = service.IsSkillTreesCatalogLoaded;
-                Debug.LogError(
-                    catalogLoaded
-                        ? $"SkillTreeView: personagem '{characterId}' não está em skill_trees.json."
-                        : $"SkillTreeView: skill_trees.json não carregou " +
-                          $"(verifica Assets/StreamingAssets/Data/skill_trees.json). Personagem pedido: '{characterId}'.",
-                    this);
+                Debug.LogError(catalogLoaded ? $"SkillTreeView: personagem '{characterId}' não está em skill_trees.json." : $"SkillTreeView: skill_trees.json não carregou (verifica Assets/StreamingAssets/Data/skill_trees.json). Personagem pedido: '{characterId}'.", this);
             }
         }
 
         private void HandleUnlockedNodesChanged(string characterIdWhoseSaveChanged)
         {
             var service = ResolveService();
-            if (service != null &&
-                !string.IsNullOrEmpty(characterIdWhoseSaveChanged) &&
-                !service.IsSharedSkillBudgetCharacter(characterIdWhoseSaveChanged) &&
-                !string.Equals(characterIdWhoseSaveChanged, CurrentProgressionCharacterId, StringComparison.OrdinalIgnoreCase))
+
+            if (service != null && !string.IsNullOrEmpty(characterIdWhoseSaveChanged) && !service.IsSharedSkillBudgetCharacter(characterIdWhoseSaveChanged) && !string.Equals(characterIdWhoseSaveChanged, CurrentProgressionCharacterId, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
@@ -449,13 +432,13 @@ namespace Erumperem.Progression
             RefreshAllPresenters();
         }
 
-        private PlayerProgressionService ResolveService() =>
-            _progressionService != null ? _progressionService : PlayerProgressionService.Instance;
+        private PlayerProgressionService ResolveService() => _progressionService != null ? _progressionService : PlayerProgressionService.Instance;
 
         public void NotifyNodePointerActivated(SkillTreeNodeAsset nodeAsset)
         {
             var service = ResolveService();
             var characterId = CurrentProgressionCharacterId;
+
             if (service == null || _characterTrees == null || string.IsNullOrWhiteSpace(characterId))
             {
                 return;
@@ -477,6 +460,7 @@ namespace Erumperem.Progression
         private void RefreshAllPresenters()
         {
             var service = ResolveService();
+
             if (service == null || _characterTrees == null)
             {
                 foreach (var presenter in _presenters)
@@ -506,13 +490,12 @@ namespace Erumperem.Progression
             foreach (var presenter in _presenters)
             {
                 var asset = presenter.NodeAsset;
+
                 if (asset == null)
                 {
                     if (_logVisualStateDecisions)
                     {
-                        Debug.LogWarning(
-                            $"SkillTreeView: presenter em '{presenter.name}' sem SkillTreeNodeAsset atribuído.",
-                            presenter);
+                        Debug.LogWarning($"SkillTreeView: presenter em '{presenter.name}' sem SkillTreeNodeAsset atribuído.", presenter);
                     }
 
                     presenter.ApplyVisualState(SkillTreeNodeVisualState.Locked, _lockedTint);
@@ -531,12 +514,7 @@ namespace Erumperem.Progression
             _ => _lockedTint,
         };
 
-        private SkillTreeNodeVisualState ComputeVisualState(
-            SkillTreeNodeAsset asset,
-            PlayerProgressionService service,
-            IReadOnlyDictionary<string, bool> unlocked,
-            int sharedSkillLevel,
-            int currentCharacterPointsSpent)
+        private SkillTreeNodeVisualState ComputeVisualState(SkillTreeNodeAsset asset, PlayerProgressionService service, IReadOnlyDictionary<string, bool> unlocked, int sharedSkillLevel, int currentCharacterPointsSpent)
         {
             if (_characterTrees == null)
             {
@@ -547,9 +525,7 @@ namespace Erumperem.Progression
             {
                 if (_logVisualStateDecisions)
                 {
-                    Debug.LogWarning(
-                        $"SkillTreeView: SO '{asset.name}' tem _nodeId vazio.",
-                        asset);
+                    Debug.LogWarning($"SkillTreeView: SO '{asset.name}' tem _nodeId vazio.", asset);
                 }
 
                 return SkillTreeNodeVisualState.Locked;
@@ -559,9 +535,7 @@ namespace Erumperem.Progression
             {
                 if (_logVisualStateDecisions)
                 {
-                    Debug.LogWarning(
-                        $"SkillTreeView: nodeId '{asset.NodeId}' não está na árvore de '{CurrentProgressionCharacterId}'.",
-                        asset);
+                    Debug.LogWarning($"SkillTreeView: nodeId '{asset.NodeId}' não está na árvore de '{CurrentProgressionCharacterId}'.", asset);
                 }
 
                 return SkillTreeNodeVisualState.Locked;
@@ -576,32 +550,20 @@ namespace Erumperem.Progression
             {
                 if (_logVisualStateDecisions)
                 {
-                    Debug.Log(
-                        $"SkillTreeView: '{asset.NodeId}' inactivo — {CurrentProgressionCharacterId} sem pontos " +
-                        $"(gasto {currentCharacterPointsSpent}, level partilhado {sharedSkillLevel}/{service.MaxSkillPoints}).",
-                        asset);
+                    Debug.Log($"SkillTreeView: '{asset.NodeId}' inactivo — {CurrentProgressionCharacterId} sem pontos (gasto {currentCharacterPointsSpent}, level partilhado {sharedSkillLevel}/{service.MaxSkillPoints}).", asset);
                 }
 
                 return SkillTreeNodeVisualState.Locked;
             }
 
-            var canUnlock = SkillTreeRules.CanUnlockNode(
-                _characterTrees,
-                elementType.ToString(),
-                asset.NodeId,
-                unlocked);
+            var canUnlock = SkillTreeRules.CanUnlockNode(_characterTrees, elementType.ToString(), asset.NodeId, unlocked);
 
             if (!canUnlock && _logVisualStateDecisions)
             {
-                Debug.Log(
-                    $"SkillTreeView: '{asset.NodeId}' inactivo — requisitos da árvore não cumpridos " +
-                    $"(elemento {elementType}, requires=[{string.Join(",", nodeDef.Requires)}]).",
-                    asset);
+                Debug.Log($"SkillTreeView: '{asset.NodeId}' inactivo — requisitos da árvore não cumpridos (elemento {elementType}, requires=[{string.Join(",", nodeDef.Requires)}]).", asset);
             }
 
-            return canUnlock
-                ? SkillTreeNodeVisualState.AvailableToUnlock
-                : SkillTreeNodeVisualState.Locked;
+            return canUnlock ? SkillTreeNodeVisualState.AvailableToUnlock : SkillTreeNodeVisualState.Locked;
         }
     }
 }
