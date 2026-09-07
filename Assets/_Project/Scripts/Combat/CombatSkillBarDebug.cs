@@ -102,8 +102,12 @@ namespace Erumperem.Combat
         /// <summary>Complemento depois de "dano a …".</summary>
         private static string TargetAfterA(SkillTargetKind targetKind) => targetKind switch
         {
-            SkillTargetKind.Enemy => "um inimigo único",
-            SkillTargetKind.Ally => "um aliado",
+            SkillTargetKind.OneEnemy => "um inimigo único",
+            SkillTargetKind.UpToThreeEnemies => "até 3 inimigos (selecionado + adjacentes na ordem de ranks)",
+            SkillTargetKind.AllEnemies => "todos os inimigos válidos",
+            SkillTargetKind.OneAlly => "um aliado",
+            SkillTargetKind.SelfOrAlly => "ti ou um aliado",
+            SkillTargetKind.SelfAndAlly => "ti e o aliado",
             SkillTargetKind.Self => "ti (self)",
             _ => targetKind.ToString(),
         };

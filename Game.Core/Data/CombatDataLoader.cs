@@ -44,6 +44,7 @@ public static class CombatDataLoader
         ReadCommentHandling = JsonCommentHandling.Skip,
         Converters =
         {
+            new SkillTargetKindJsonConverter(),
             new PassiveEffectKindJsonConverter(),
             new JsonStringEnumConverter(),
         },
@@ -52,6 +53,7 @@ public static class CombatDataLoader
     public static IReadOnlyList<SkillDefinition> LoadSkills(string path)
     {
         var json = File.ReadAllText(path);
+        RejectRemovedSkillContractProperties(json);
         var skills = JsonSerializer.Deserialize<List<SkillDefinition>>(json, JsonOptions) ?? [];
         ValidateSkills(skills);
         return skills;
@@ -102,6 +104,31 @@ public static class CombatDataLoader
         return index;
     }
 
+    private static void RejectRemovedSkillContractProperties(string skillsJson)
+    {
+        using var document = JsonDocument.Parse(skillsJson);
+        if (document.RootElement.ValueKind != JsonValueKind.Array)
+        {
+            return;
+        }
+
+        foreach (var skillElement in document.RootElement.EnumerateArray())
+        {
+            var skillId = skillElement.TryGetProperty("id", out var idElement)
+                ? idElement.GetString() ?? "(unknown)"
+                : "(unknown)";
+
+            foreach (var property in skillElement.EnumerateObject())
+            {
+                if (string.Equals(property.Name, "comboBonus", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidDataException(
+                        $"Skill {skillId}: comboBonus was removed from the skill contract. Put extra effects in effectsOnHit.");
+                }
+            }
+        }
+    }
+
     private static void ValidateSkills(IEnumerable<SkillDefinition> skills)
     {
         foreach (var skill in skills)
@@ -119,6 +146,19 @@ public static class CombatDataLoader
             if (double.IsNaN(skill.CorruptionCost) || double.IsInfinity(skill.CorruptionCost))
             {
                 throw new InvalidDataException($"Skill {skill.Id}: corruptionCost must be a finite number.");
+            }
+
+            if (!Enum.IsDefined(typeof(SkillTargetKind), skill.TargetKind))
+            {
+                throw new InvalidDataException($"Skill {skill.Id}: unknown targetKind.");
+            }
+
+            foreach (var effect in skill.EffectsOnHit)
+            {
+                if (!Enum.IsDefined(typeof(EffectScope), effect.EffectScope))
+                {
+                    throw new InvalidDataException($"Skill {skill.Id}: unknown effectScope.");
+                }
             }
         }
     }

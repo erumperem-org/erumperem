@@ -111,15 +111,6 @@ public static class SkillPlayerDescriptionBuilder
             detailParts.Add(effectsPart);
         }
 
-        if (skill.ComboBonus.Count > 0)
-        {
-            var comboPart = DescribeEffects(skill.ComboBonus, skill, context, prefix: "with combo");
-            if (!string.IsNullOrEmpty(comboPart))
-            {
-                detailParts.Add(comboPart);
-            }
-        }
-
         detailParts.Add(DescribeCorruptionCost(skill));
 
         var passiveParts = DescribePassiveModifiersForSkill(skill, context);
@@ -133,8 +124,12 @@ public static class SkillPlayerDescriptionBuilder
     private static string DescribeTarget(SkillDefinition skill) =>
         skill.TargetKind switch
         {
-            SkillTargetKind.Enemy => "1 target",
-            SkillTargetKind.Ally => "1 ally",
+            SkillTargetKind.OneEnemy => "1 target",
+            SkillTargetKind.UpToThreeEnemies => "up to 3 enemies",
+            SkillTargetKind.AllEnemies => "all enemies",
+            SkillTargetKind.OneAlly => "1 ally",
+            SkillTargetKind.SelfOrAlly => "self or ally",
+            SkillTargetKind.SelfAndAlly => "self and ally",
             SkillTargetKind.Self => "self",
             _ => "1 target",
         };
@@ -311,24 +306,31 @@ public static class SkillPlayerDescriptionBuilder
         return $"{dotName} ({potency} damage for {FormatTurnCount(duration)})";
     }
 
-    private static string DescribeEffectScopePrefix(string effectScope, SkillDefinition skill)
+    private static string DescribeEffectScopePrefix(EffectScope effectScope, SkillDefinition skill)
     {
-        if (string.Equals(effectScope, EffectScopes.AllAllies, StringComparison.OrdinalIgnoreCase))
+        if (effectScope == EffectScope.AllAllies)
         {
             return "all allies";
         }
 
-        if (string.Equals(effectScope, EffectScopes.Self, StringComparison.OrdinalIgnoreCase))
+        if (effectScope == EffectScope.AllEnemies)
+        {
+            return "all enemies";
+        }
+
+        if (effectScope == EffectScope.Self)
         {
             return "on self";
         }
 
-        if (string.Equals(effectScope, EffectScopes.Default, StringComparison.OrdinalIgnoreCase))
+        if (effectScope == EffectScope.Default)
         {
             return skill.TargetKind switch
             {
                 SkillTargetKind.Self => "on self",
-                SkillTargetKind.Ally => "on ally",
+                SkillTargetKind.OneAlly => "on ally",
+                SkillTargetKind.SelfOrAlly => "on self or ally",
+                SkillTargetKind.SelfAndAlly => "on self and ally",
                 _ => string.Empty,
             };
         }
@@ -451,14 +453,6 @@ public static class SkillPlayerDescriptionBuilder
     private static bool SkillAppliesDotType(SkillDefinition skill, DotType dotType)
     {
         foreach (var effect in skill.EffectsOnHit)
-        {
-            if (effect.Type == EffectType.ApplyDot && effect.Dot == dotType)
-            {
-                return true;
-            }
-        }
-
-        foreach (var effect in skill.ComboBonus)
         {
             if (effect.Type == EffectType.ApplyDot && effect.Dot == dotType)
             {

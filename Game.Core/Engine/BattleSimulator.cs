@@ -44,6 +44,31 @@ public sealed class BattleSimulator
                 var action = ChooseAiAction(state, actor);
                 if (action is null) continue;
                 ResolveChosenAction(state, action);
+
+                while (!actor.Health.IsDead &&
+                       !state.IsFinished &&
+                       actor.PassiveRuntime.ShouldRetainTurnForBonusAction)
+                {
+                    actor.PassiveRuntime.ShouldRetainTurnForBonusAction = false;
+                    if (actor.Tokens.ConsumeOne(TokenType.BonusAction))
+                    {
+                        state.PassiveBus.RaiseTokenStacksChanged(
+                            state,
+                            actor,
+                            actor,
+                            skill: null,
+                            TokenType.BonusAction,
+                            delta: -1);
+                    }
+
+                    var bonusAction = ChooseAiAction(state, actor);
+                    if (bonusAction is null)
+                    {
+                        break;
+                    }
+
+                    ResolveChosenAction(state, bonusAction);
+                }
             }
         }
 
@@ -113,9 +138,12 @@ public sealed class BattleSimulator
             return false;
         }
 
+        BattleCombatStatusTicker.ApplyTurnStartStatusEffects(state, actor, _eventEmitter);
+
         if (actor.Tokens.ConsumeOne(TokenType.Stun))
         {
             state.PassiveBus.RaiseTokenStacksChanged(state, actor, actor, skill: null, TokenType.Stun, delta: -1);
+            BattleCombatStatusTicker.ApplyEndOfTurnStatusEffects(state, actor, _eventEmitter);
             return false;
         }
 
@@ -199,6 +227,12 @@ public sealed class BattleSimulator
                 actor.Health.IsDead = true;
                 _eventEmitter.Emit(state, BattleEventType.CombatantDied, targetId: actor.Identity.Id);
                 state.PassiveBus.RaiseCombatantSlain(state, dotSourceCombatant, actor);
+                BattleCombatStatusTicker.TriggerDestabilizationExplosion(
+                    state,
+                    actor,
+                    _eventEmitter,
+                    skillId: string.Empty,
+                    actorId: dotSourceCombatant?.Identity.Id ?? string.Empty);
                 _effectApplicator.HandleCompaction(state, actor.Position.Side);
                 break;
             }
@@ -231,69 +265,184 @@ public sealed class BattleSimulator
     /// <summary>Resolve uma ação já escolhida (player ou AI).</summary>
     public void ResolveChosenAction(BattleState state, ChosenAction action)
     {
+        ResolveSkillActionCore(state, action, isFollowUpInvocation: false);
+    }
+
+    /// <summary>
+    /// True when the actor should keep acting (ChanceToNotEndTurn / BonusAction) without advancing initiative.
+    /// Unity turn drivers should check this before incrementing ActorIndex.
+    /// </summary>
+    public static bool ShouldActorRetainTurn(Combatant actor) =>
+        actor?.PassiveRuntime.ShouldRetainTurnForBonusAction == true;
+
+    private void ResolveSkillActionCore(BattleState state, ChosenAction action, bool isFollowUpInvocation)
+    {
         var actor = action.Actor;
-        var target = action.Target;
         var skill = action.Skill;
+        var selectedTarget = action.Target;
+        var primaryTargets = SkillTargetResolver.ResolvePrimaryTargets(state, actor, skill, selectedTarget);
+        primaryTargets = ApplyConfusionRetargetIfNeeded(state, actor, skill, primaryTargets);
+
+        var actionUsedTargetId = primaryTargets.Count > 0
+            ? primaryTargets[0].Identity.Id
+            : action.Target.Identity.Id;
+
         _eventEmitter.Emit(
             state,
             BattleEventType.ActionUsed,
             actorId: actor.Identity.Id,
-            targetId: target.Identity.Id,
+            targetId: actionUsedTargetId,
             skillId: skill.Id,
             element: skill.Element);
 
-        ResolveActionResult result;
-        if (skill.TargetKind == SkillTargetKind.Enemy)
-        {
-            result = ResolveHitAndDamage(state, actor, target, skill);
-            EmitHitResolved(state, actor, target, skill, result);
-            if (result.IsHit)
-            {
-                _effectApplicator.ApplyEffects(state, actor, target, skill, result);
-            }
-        }
-        else if (skill.TargetKind == SkillTargetKind.Ally)
-        {
-            if (skill.BaseDamage.Max > 0)
-            {
-                result = ResolveHitAndDamage(state, actor, target, skill);
-            }
-            else
-            {
-                result = new ResolveActionResult { IsHit = true, IsCrit = false, DamageApplied = 0 };
-            }
+        var hasDirectDamage = skill.BaseDamage.Min != 0 ||
+                              skill.BaseDamage.Max != 0 ||
+                              skill.ComputeFromDebuffTypesOnTarget ||
+                              skill.BonusDamagePerOwnToken.HasValue;
+        var hasAppliedSkillWideEffects = false;
+        Combatant? lastSuccessfulHitTarget = null;
+        var hitCount = Math.Max(1, skill.HitCount);
 
-            EmitHitResolved(state, actor, target, skill, result);
-            if (result.IsHit)
-            {
-                _effectApplicator.ApplyEffects(state, actor, target, skill, result);
-            }
-        }
-        else
+        for (var hitIndex = 0; hitIndex < hitCount; hitIndex++)
         {
-            if (skill.BaseDamage.Max == 0 && skill.BaseDamage.Min == 0)
+            foreach (var primaryTarget in primaryTargets)
             {
-                result = new ResolveActionResult { IsHit = true, IsCrit = false, DamageApplied = 0 };
-                EmitHitResolved(state, actor, target, skill, result);
-                _effectApplicator.ApplyEffects(state, actor, target, skill, result);
-            }
-            else
-            {
-                result = ResolveHitAndDamage(state, actor, target, skill);
-                EmitHitResolved(state, actor, target, skill, result);
-                if (result.IsHit)
+                if (primaryTarget.Health.IsDead && !skill.CanTargetDeadAllies)
                 {
-                    _effectApplicator.ApplyEffects(state, actor, target, skill, result);
+                    continue;
                 }
+
+                var result = hasDirectDamage
+                    ? ResolveHitAndDamage(state, actor, primaryTarget, skill)
+                    : new ResolveActionResult { IsHit = true, IsCrit = false, DamageApplied = 0 };
+
+                EmitHitResolved(state, actor, primaryTarget, skill, result);
+                if (!result.IsHit)
+                {
+                    continue;
+                }
+
+                _effectApplicator.ApplyEffects(
+                    state,
+                    actor,
+                    primaryTarget,
+                    skill,
+                    includeDefaultScopedEffects: true,
+                    includeNonDefaultScopedEffects: !hasAppliedSkillWideEffects);
+                hasAppliedSkillWideEffects = true;
+                _effectApplicator.ApplyPassiveExtraDotsAfterEnemySkill(state, actor, primaryTarget, skill);
+                lastSuccessfulHitTarget = primaryTarget;
             }
         }
 
-        if (action.ActionType == ActionType.Skill && actor.Identity.Faction == Faction.Player)
+        if (lastSuccessfulHitTarget != null)
+        {
+            _effectApplicator.ApplyPostSkillPassiveExtras(state, actor, lastSuccessfulHitTarget, skill);
+        }
+
+        if (skill.GrantsBonusActionsToAllies)
+        {
+            foreach (var ally in state.GetAllCombatants()
+                         .Where(combatant =>
+                             !combatant.Health.IsDead &&
+                             combatant.Position.Side == actor.Position.Side))
+            {
+                ally.Tokens.Add(TokenType.BonusAction, 1);
+                ally.PassiveRuntime.ShouldRetainTurnForBonusAction = true;
+                _eventEmitter.Emit(
+                    state,
+                    BattleEventType.TokenApplied,
+                    actorId: actor.Identity.Id,
+                    targetId: ally.Identity.Id,
+                    skillId: skill.Id,
+                    tokenType: TokenType.BonusAction.ToString(),
+                    tokenDelta: 1);
+            }
+        }
+
+        if (!isFollowUpInvocation &&
+            skill.FollowUpSkillIds is { Count: > 0 })
+        {
+            foreach (var followUpSkillId in skill.FollowUpSkillIds)
+            {
+                if (!state.SkillsById.TryGetValue(followUpSkillId, out var followUpSkill))
+                {
+                    continue;
+                }
+
+                ResolveSkillActionCore(
+                    state,
+                    new ChosenAction
+                    {
+                        Actor = actor,
+                        Target = selectedTarget,
+                        Skill = followUpSkill,
+                        ActionType = ActionType.Skill,
+                    },
+                    isFollowUpInvocation: true);
+            }
+        }
+
+        if (action.ActionType == ActionType.Skill &&
+            actor.Identity.Faction == Faction.Player &&
+            !isFollowUpInvocation)
         {
             ApplyBattleCorruptionDelta(state, skill.CorruptionCost, actor.Identity.Id, skill.Id);
         }
 
-        state.PassiveBus.RaiseTurnEnded(state, actor);
+        if (!isFollowUpInvocation)
+        {
+            var shouldRetainTurn = false;
+            if (skill.ChanceToNotEndTurn > 0 && _random.NextDouble() < skill.ChanceToNotEndTurn)
+            {
+                actor.Tokens.Add(TokenType.BonusAction, 1);
+                shouldRetainTurn = true;
+            }
+
+            if (actor.Tokens.GetStacks(TokenType.BonusAction) > 0)
+            {
+                shouldRetainTurn = true;
+            }
+
+            actor.PassiveRuntime.ShouldRetainTurnForBonusAction = shouldRetainTurn;
+
+            if (!shouldRetainTurn)
+            {
+                BattleCombatStatusTicker.ApplyEndOfTurnStatusEffects(state, actor, _eventEmitter);
+                state.PassiveBus.RaiseTurnEnded(state, actor);
+            }
+        }
+    }
+
+    private IReadOnlyList<Combatant> ApplyConfusionRetargetIfNeeded(
+        BattleState state,
+        Combatant actor,
+        SkillDefinition skill,
+        IReadOnlyList<Combatant> primaryTargets)
+    {
+        if (!actor.PassiveRuntime.ConfusionActiveThisTurn)
+        {
+            return primaryTargets;
+        }
+
+        if (!SkillTargetKindRules.DirectsPrimaryDamageAtEnemies(skill.TargetKind))
+        {
+            return primaryTargets;
+        }
+
+        if (_random.NextDouble() >= CombatStatusRules.ConfusionRetargetChance)
+        {
+            return primaryTargets;
+        }
+
+        var validEnemies = SkillTargetResolver.GetValidEnemyPool(state, actor);
+        if (validEnemies.Count == 0)
+        {
+            return primaryTargets;
+        }
+
+        var randomEnemy = validEnemies[_random.Next(0, validEnemies.Count)];
+        return SkillTargetResolver.ResolvePrimaryTargets(state, actor, skill, randomEnemy);
     }
 
     private void EmitHitResolved(
@@ -331,7 +480,12 @@ public sealed class BattleSimulator
             }
         }
 
-        if (_random.NextDouble() > skill.Accuracy * actor.Stats.Accuracy)
+        var effectiveHitChance = CombatDamageCalculator.ComputeEffectiveHitChanceFraction(
+            state,
+            actor,
+            target,
+            skill);
+        if (_random.NextDouble() > effectiveHitChance)
         {
             return new ResolveActionResult { IsHit = false, IsCrit = false, DamageApplied = 0 };
         }
@@ -347,7 +501,13 @@ public sealed class BattleSimulator
         }
 
         var isCrit = _random.NextDouble() < CombatDamageCalculator.EffectiveCritChanceFraction(state, actor, target, skill);
-        var baseRollDamage = _random.Next(skill.BaseDamage.Min, skill.BaseDamage.Max + 1);
+        var baseRollMin = skill.BaseDamage.Min;
+        var baseRollMax = skill.BaseDamage.Max;
+        var baseRollDamage = baseRollMax >= baseRollMin
+            ? _random.Next(baseRollMin, baseRollMax + 1)
+            : 0;
+        baseRollDamage += CombatDamageCalculator.ComputeBonusDamageFromSkillTokens(actor, target, skill);
+
         var damageComputation = CombatDamageCalculator.ComputeDirectDamageBeforeMitigation(
             state,
             actor,
@@ -409,6 +569,14 @@ public sealed class BattleSimulator
                 isCrit,
                 hpPercentBeforeDamage,
                 hpPercentAfterDamage);
+
+            BattleCombatStatusTicker.ConsumeTauntOnBeingHit(state, target, actor);
+            BattleCombatStatusTicker.ApplyControlledInstabilityReflect(
+                state,
+                actor,
+                target,
+                _eventEmitter,
+                skill.Id);
         }
 
         if (target.Health.CurrentHp <= 0 && !target.Health.IsDead && !IsAllyInfiniteHealthProtected(state, target))
@@ -416,6 +584,12 @@ public sealed class BattleSimulator
             target.Health.IsDead = true;
             _eventEmitter.Emit(state, BattleEventType.CombatantDied, targetId: target.Identity.Id);
             state.PassiveBus.RaiseCombatantSlain(state, actor, target);
+            BattleCombatStatusTicker.TriggerDestabilizationExplosion(
+                state,
+                target,
+                _eventEmitter,
+                skill.Id,
+                actor.Identity.Id);
             _effectApplicator.HandleCompaction(state, target.Position.Side);
         }
 

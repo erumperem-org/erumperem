@@ -24,13 +24,45 @@ namespace Erumperem.Combat.Tokens
             TokenType.Blind =>
                 "[token blind]: the bearer's next attack has a high chance to miss.",
             TokenType.Taunt =>
-                "[token taunt]: enemies prioritize targeting this unit.",
+                "[token taunt]: enemies prioritize targeting this unit; loses 1 stack when hit.",
             TokenType.Stealth =>
                 "[token stealth]: cannot be targeted by direct attacks.",
             TokenType.Combo =>
                 "[token combo]: accumulates and empowers specific skills; consumed upon use.",
             TokenType.Stun =>
                 "[token stun]: the bearer loses their next turn.",
+            TokenType.ControlledInstability =>
+                "[token controlledinstability]: attackers take 2 damage per stack.",
+            TokenType.Destabilization =>
+                "[token destabilization]: on death (or force-trigger), all others take 3 damage per stack.",
+            TokenType.Strength =>
+                "[token strength]: deals 25% more damage per stack; loses 1 at end of turn.",
+            TokenType.Defense =>
+                "[token defense]: takes 25% less damage per stack; loses 1 at end of turn.",
+            TokenType.Weaken =>
+                "[token weaken]: deals 50% less damage per stack; loses 1 at end of turn.",
+            TokenType.Vulnerability =>
+                "[token vulnerability]: takes 50% more damage per stack; loses 1 at end of turn.",
+            TokenType.Confusion =>
+                "[token confusion]: 33% chance to retarget enemy skills randomly this turn.",
+            TokenType.Bleeding =>
+                "[token bleeding]: 5% Max HP damage per stack at end of turn; loses 1 stack.",
+            TokenType.LuckyShot =>
+                "[token luckyshot]: +4% crit chance per stack; loses 1 at end of turn.",
+            TokenType.Dexterity =>
+                "[token dexterity]: +10% accuracy per stack; loses 1 at end of turn.",
+            TokenType.Exposition =>
+                "[token exposition]: skills targeting this gain +20% accuracy per stack.",
+            TokenType.Corrosion =>
+                "[token corrosion]: amplifies other debuffs; takes 5 damage and loses 1 at EOT.",
+            TokenType.Mark =>
+                "[token mark]: easier to crit; crits deal +50% more damage per stack.",
+            TokenType.Regeneration =>
+                "[token regeneration]: heals 1 HP per stack at end of turn; loses 1 stack.",
+            TokenType.Clumsy =>
+                "[token clumsy]: -20% accuracy per stack; loses 1 at end of turn.",
+            TokenType.BonusAction =>
+                "[token bonusaction]: may act again before the turn fully ends.",
             _ => tokenType.ToString(),
         };
 

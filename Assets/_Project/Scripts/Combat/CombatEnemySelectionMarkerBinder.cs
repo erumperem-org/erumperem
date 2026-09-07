@@ -205,64 +205,29 @@ namespace Erumperem.Combat
             return battleState.SkillsById.TryGetValue(skillIds[zeroBasedSlotIndex], out skillDefinition);
         }
 
-        private Combatant ResolvePrimaryTargetForSkillPreview(
+        private Combatant? ResolvePrimaryTargetForSkillPreview(
             Combatant actingCombatant,
             SkillDefinition skillDefinition,
             int zeroBasedSlotIndex)
         {
             var battleState = combatSession.BattleState;
 
+            Combatant? preferredCombatant = null;
             if (skillButtonBarUIManager != null &&
-                skillButtonBarUIManager.TryGetHoveredLivingCombatant(out var hoveredCombatant) &&
-                PlayerActionBuilder.TryCreate(
-                    battleState,
-                    combatSession.BattleSimulator,
-                    actingCombatant,
-                    zeroBasedSlotIndex,
-                    hoveredCombatant) != null)
+                skillButtonBarUIManager.TryGetHoveredLivingCombatant(out var hoveredCombatant))
             {
-                return hoveredCombatant;
+                preferredCombatant = hoveredCombatant;
+            }
+            else
+            {
+                preferredCombatant = combatSession.CurrentSelectedEnemy;
             }
 
-            switch (skillDefinition.TargetKind)
-            {
-                case SkillTargetKind.Self:
-                    return actingCombatant;
-
-                case SkillTargetKind.Ally:
-                    return battleState.Allies.FirstOrDefault(allyCandidate =>
-                        !allyCandidate.Health.IsDead &&
-                        PlayerActionBuilder.TryCreate(
-                            battleState,
-                            combatSession.BattleSimulator,
-                            actingCombatant,
-                            zeroBasedSlotIndex,
-                            allyCandidate) != null) ?? actingCombatant;
-
-                case SkillTargetKind.Enemy:
-                default:
-                    var selectedEnemy = combatSession.CurrentSelectedEnemy;
-                    if (selectedEnemy != null &&
-                        !selectedEnemy.Health.IsDead &&
-                        PlayerActionBuilder.TryCreate(
-                            battleState,
-                            combatSession.BattleSimulator,
-                            actingCombatant,
-                            zeroBasedSlotIndex,
-                            selectedEnemy) != null)
-                    {
-                        return selectedEnemy;
-                    }
-
-                    return battleState.Enemies.FirstOrDefault(enemyCandidate =>
-                        !enemyCandidate.Health.IsDead &&
-                        PlayerActionBuilder.TryCreate(
-                            battleState,
-                            combatSession.BattleSimulator,
-                            actingCombatant,
-                            zeroBasedSlotIndex,
-                            enemyCandidate) != null);
-            }
+            return SkillTargetResolver.ResolvePreferredSelection(
+                battleState,
+                actingCombatant,
+                skillDefinition,
+                preferredCombatant);
         }
 
         private void TryAddEnemyCombatantId(HashSet<string> highlightedEnemyCombatantIds, string combatantId)

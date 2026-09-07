@@ -373,8 +373,8 @@ public class UnitTest1
 
         var unlocked = new Dictionary<string, bool>(StringComparer.Ordinal)
         {
-            ["f_t1_p1"] = true,
-            ["f_t1_a1"] = true,
+            ["w_us_t1_p1"] = true,
+            ["wulfricUnstable"] = true,
         };
 
         var loadout = SkillTreeLookup.BuildPlayerSkillLoadout(
@@ -382,9 +382,9 @@ public class UnitTest1
             unlocked,
             BattleFactory.WulfricInnateSkillIds);
 
-        Assert.Contains("wulfric_innate_cleave", loadout);
-        Assert.Contains("f_t1_a1", loadout);
-        Assert.DoesNotContain("f_t2_a1", loadout);
+        Assert.Contains("wulfricBasicHit", loadout);
+        Assert.Contains("wulfricUnstable", loadout);
+        Assert.DoesNotContain("wulfricStabilize", loadout);
     }
 
     [Fact]
@@ -399,7 +399,7 @@ public class UnitTest1
             BaseDamage = new DamageRange { Min = 100, Max = 100 },
             BaseCritChance = 0,
             Accuracy = 1.0,
-            TargetKind = SkillTargetKind.Enemy,
+            TargetKind = SkillTargetKind.OneEnemy,
         };
         var passive = new PassiveDefinition
         {
@@ -646,7 +646,7 @@ public class UnitTest1
             Name = "NB",
             Element = ElementType.Fire,
             Type = "Active",
-            TargetKind = SkillTargetKind.Enemy,
+            TargetKind = SkillTargetKind.OneEnemy,
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
@@ -686,7 +686,7 @@ public class UnitTest1
             Name = "Zero cost",
             Element = ElementType.Fire,
             Type = "Active",
-            TargetKind = SkillTargetKind.Enemy,
+            TargetKind = SkillTargetKind.OneEnemy,
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
@@ -713,7 +713,7 @@ public class UnitTest1
     }
 
     [Fact]
-    public void PlayerSkill_NegativeCorruptionCost_ReducesCorruption()
+    public void PlayerSkill_NegativeCorruptionCost_RemainsForbiddenInCombat()
     {
         var random = new SeededRandomSource(22);
         var collector = new CombatEventCollector();
@@ -724,7 +724,7 @@ public class UnitTest1
             Name = "Purify tap",
             Element = ElementType.Metal,
             Type = "Active",
-            TargetKind = SkillTargetKind.Enemy,
+            TargetKind = SkillTargetKind.OneEnemy,
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
@@ -746,9 +746,8 @@ public class UnitTest1
                 ActionType = ActionType.Skill,
             });
 
-        Assert.Equal(16, battle.CorruptionValue);
-        var corruptionEvent = Assert.Single(collector.Events.Where(e => e.EventType == BattleEventType.CorruptionAdjusted));
-        Assert.Equal(-4, corruptionEvent.CorruptionDelta);
+        Assert.Equal(20, battle.CorruptionValue);
+        Assert.DoesNotContain(collector.Events, combatEvent => combatEvent.EventType == BattleEventType.CorruptionAdjusted);
     }
 
     [Fact]
@@ -763,7 +762,7 @@ public class UnitTest1
             Name = "Tier cross",
             Element = ElementType.Fire,
             Type = "Active",
-            TargetKind = SkillTargetKind.Enemy,
+            TargetKind = SkillTargetKind.OneEnemy,
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
@@ -803,7 +802,7 @@ public class UnitTest1
             Name = "Same tier",
             Element = ElementType.Fire,
             Type = "Active",
-            TargetKind = SkillTargetKind.Enemy,
+            TargetKind = SkillTargetKind.OneEnemy,
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
@@ -842,7 +841,7 @@ public class UnitTest1
             Name = "Big gain",
             Element = ElementType.Fire,
             Type = "Active",
-            TargetKind = SkillTargetKind.Enemy,
+            TargetKind = SkillTargetKind.OneEnemy,
             BaseDamage = new DamageRange { Min = 1, Max = 1 },
             BaseCritChance = 0,
             Accuracy = 1.0,
@@ -969,9 +968,9 @@ public class UnitTest1
         var trees = CombatDataLoader.LoadSkillTrees(CombatDataLoader.ResolveDefaultSkillTreesPath());
         var wulfric = SimulationSkillTreeSetup.GetCharacter(trees);
         var ids = SimulationSkillTreeSetup.GetNodeIdsForTreeMaxTier(wulfric, treeIndex1Based: 1, maxTierInclusive: 3);
-        Assert.Contains("f_t3_a1", ids);
-        Assert.Contains("f_t1_p1", ids);
-        Assert.DoesNotContain("m_t1_p1", ids);
+        Assert.Contains("wulfricNocontrol", ids);
+        Assert.Contains("w_us_t1_p1", ids);
+        Assert.DoesNotContain("w_dz_t1_p1", ids);
     }
 
     [Fact]
@@ -982,7 +981,7 @@ public class UnitTest1
         var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(guardSkill);
 
         Assert.Equal(
-            "Postura de lobo: ti (auto) | sem dano direto | +1 Bloqueio, +1 Provocação | sem corrupção.",
+            "Wolf Stance: self | no direct damage | +1 Block, +1 Taunt | no corruption.",
             summary);
         Assert.DoesNotContain("crít", summary, StringComparison.OrdinalIgnoreCase);
     }
@@ -995,7 +994,7 @@ public class UnitTest1
         var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(executionSkill);
 
         Assert.Equal(
-            "Execução de leilão: 1 alvo | 10–16 de dano | 12% de crít | +1 corrupção.",
+            "Auction Execution: 1 target | 10–16 damage | 12% crit | +1 corruption.",
             summary);
     }
 
@@ -1006,9 +1005,9 @@ public class UnitTest1
 
         var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(bleedSkill);
 
-        Assert.Contains("6–10 de dano", summary, StringComparison.Ordinal);
-        Assert.Contains("Sangramento (3 de dano por 3 turnos)", summary, StringComparison.Ordinal);
-        Assert.Contains("+1 corrupção", summary, StringComparison.Ordinal);
+        Assert.Contains("6–10 damage", summary, StringComparison.Ordinal);
+        Assert.Contains("Bleed (3 damage for 3 turns)", summary, StringComparison.Ordinal);
+        Assert.Contains("+1 corruption", summary, StringComparison.Ordinal);
     }
 
     [Fact]
