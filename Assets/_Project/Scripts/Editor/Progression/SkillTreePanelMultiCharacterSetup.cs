@@ -182,9 +182,13 @@ namespace Erumperem.Editor.Progression
                     continue;
                 }
 
-                var buckNodeId = wulfricNodeAsset.NodeId.StartsWith("b_", StringComparison.Ordinal)
-                    ? wulfricNodeAsset.NodeId
-                    : $"b_{wulfricNodeAsset.NodeId}";
+                var buckNodeId = MapSourceNodeIdToCurrentBuckNodeId(wulfricNodeAsset.NodeId);
+                if (string.IsNullOrWhiteSpace(buckNodeId))
+                {
+                    Debug.LogWarning(
+                        $"SkillTreePanelMultiCharacterSetup: cannot map '{wulfricNodeAsset.NodeId}' to a Buck node.");
+                    continue;
+                }
 
                 var buckNodeAssetPath = $"{SkillTreeNodesFolder}/{buckNodeId}.asset";
                 var buckNodeAsset = AssetDatabase.LoadAssetAtPath<SkillTreeNodeAsset>(buckNodeAssetPath);
@@ -198,6 +202,87 @@ namespace Erumperem.Editor.Progression
                 nodeAssetProperty.objectReferenceValue = buckNodeAsset;
                 presenterSerializedObject.ApplyModifiedPropertiesWithoutUndo();
             }
+        }
+
+        /// <summary>
+        /// Maps legacy (b_f_t1_p1 / f_t1_a1) or current Wulfric-shaped ids onto Buck kit ids (b_ar_*/buck*).
+        /// </summary>
+        private static string MapSourceNodeIdToCurrentBuckNodeId(string sourceNodeId)
+        {
+            if (sourceNodeId.StartsWith("b_ar_", StringComparison.Ordinal)
+                || sourceNodeId.StartsWith("b_sn_", StringComparison.Ordinal)
+                || sourceNodeId.StartsWith("b_du_", StringComparison.Ordinal)
+                || sourceNodeId.StartsWith("buck", StringComparison.OrdinalIgnoreCase))
+            {
+                return sourceNodeId;
+            }
+
+            var legacyBuckMatch = System.Text.RegularExpressions.Regex.Match(
+                sourceNodeId,
+                @"^b_([fma])_t(\d+)_(p\d+|a\d+)$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (legacyBuckMatch.Success)
+            {
+                return ResolveBuckNodeIdFromElementTierSlot(
+                    legacyBuckMatch.Groups[1].Value.ToLowerInvariant(),
+                    int.Parse(legacyBuckMatch.Groups[2].Value),
+                    legacyBuckMatch.Groups[3].Value.ToLowerInvariant());
+            }
+
+            var legacyWulfricMatch = System.Text.RegularExpressions.Regex.Match(
+                sourceNodeId,
+                @"^([fma])_t(\d+)_(p\d+|a\d+)$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (legacyWulfricMatch.Success)
+            {
+                return ResolveBuckNodeIdFromElementTierSlot(
+                    legacyWulfricMatch.Groups[1].Value.ToLowerInvariant(),
+                    int.Parse(legacyWulfricMatch.Groups[2].Value),
+                    legacyWulfricMatch.Groups[3].Value.ToLowerInvariant());
+            }
+
+            return null;
+        }
+
+        private static string ResolveBuckNodeIdFromElementTierSlot(
+            string elementKey,
+            int tierNumber,
+            string slotKey)
+        {
+            var branchPrefix = elementKey switch
+            {
+                "f" => "b_ar",
+                "m" => "b_sn",
+                "a" => "b_du",
+                _ => null,
+            };
+            if (branchPrefix == null || tierNumber < 1)
+            {
+                return null;
+            }
+
+            if (slotKey.StartsWith("p", StringComparison.Ordinal))
+            {
+                return $"{branchPrefix}_t{tierNumber}_{slotKey}";
+            }
+
+            var fireActives = new[] { "buckSpiderHands", "buckAllGuns", "buckJuggle" };
+            var metalActives = new[] { "buckSnakeVision", "buckSnakeBite", "buckSnakeTail" };
+            var anomalyActives = new[] { "buckMark", "buckPistolHeadShot", "buckLuckManipulation" };
+            var activeList = elementKey switch
+            {
+                "f" => fireActives,
+                "m" => metalActives,
+                "a" => anomalyActives,
+                _ => Array.Empty<string>(),
+            };
+            var activeIndex = tierNumber - 1;
+            if (activeIndex < 0 || activeIndex >= activeList.Length)
+            {
+                return null;
+            }
+
+            return activeList[activeIndex];
         }
 
         private static Sprite LoadPortraitSpriteFromPrefab(string prefabPath)

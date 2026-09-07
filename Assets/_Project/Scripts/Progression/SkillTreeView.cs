@@ -124,6 +124,7 @@ namespace Erumperem.Progression
         private void Awake()
         {
             TryAutoBindHierarchyReferences();
+            EnsureSharedSkillLevelClickCheatBound();
         }
 
         private void OnEnable()
@@ -269,6 +270,11 @@ namespace Erumperem.Progression
             {
                 _resetSkillsButton.onClick.RemoveListener(ResetCurrentCharacterSkillTree);
             }
+        }
+
+        private void EnsureSharedSkillLevelClickCheatBound()
+        {
+            SharedSkillLevelClickCheat.EnsureBoundToLevelRoot(FindChildTransform("Level"));
         }
 
         private void TryAutoBindHierarchyReferences()
