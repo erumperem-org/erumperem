@@ -25,4 +25,8 @@ public class PlayableCharacterSettings : ScriptableObject
     [Header("Resting")]
     [Tooltip("Distância a partir da qual o personagem é considerado 'chegou' no ponto de Resting.")]
     public float restingArrivalThreshold = 0.5f;
+
+    [Header("Companheiro - Abrir Passagem")]
+    [Tooltip("Distância abaixo da qual o companheiro para de tentar se aproximar e passa a se deslocar lateralmente, para não bloquear o caminho do líder. Deve ser menor que stopDistance.")]
+    public float pathClearDistance = 0.8f;
 }

@@ -92,11 +92,13 @@ public class Torch : MonoBehaviour
     private void ActivateObjects()
     {
         SetActiveForList(controlledObjects, true);
+        this.gameObject.SetActive(false);
     }
 
     private void DeactivateObjects()
     {
         SetActiveForList(controlledObjects, false);
+        this.gameObject.SetActive(true);
     }
 
     private void SetActiveForList(List<GameObject> list, bool active)

@@ -7,6 +7,11 @@ using UnityEngine;
 /// pacote ChaserAI). Para perto do líder e acelera (sprint) quando fica
 /// muito para trás, usando histerese entre duas distâncias para não ficar
 /// entrando e saindo de sprint na borda de um único limiar.
+///
+/// Muito perto do líder (abaixo de pathClearDistance), em vez de apenas
+/// parar - o que deixaria o companheiro parado bem na frente/no caminho do
+/// líder - ele se desloca lateralmente para o lado em que já está,
+/// perpendicular à direção que o líder está encarando, para abrir passagem.
 /// </summary>
 [RequireComponent(typeof(PhysicsMovementService))]
 public class CompanionFollowController : MonoBehaviour
@@ -66,6 +71,12 @@ public class CompanionFollowController : MonoBehaviour
 
         movement.SetSprinting(isSprinting);
 
+        if (distance <= settings.pathClearDistance)
+        {
+            movement.SetMoveDirection(ComputeSidestepDirection());
+            return;
+        }
+
         if (distance <= settings.stopDistance)
         {
             movement.SetMoveDirection(Vector3.zero);
@@ -80,5 +91,37 @@ public class CompanionFollowController : MonoBehaviour
         Vector3 flatDelta = worldPosition - transform.position;
         flatDelta.y = 0f;
         return flatDelta.sqrMagnitude > 0.0001f ? flatDelta.normalized : Vector3.zero;
+    }
+
+    /// <summary>
+    /// Calcula uma direção lateral, perpendicular ao forward do líder, para
+    /// o lado em que o companheiro já está (evita alternar de lado a cada
+    /// frame). Fallback para o lado direito se o companheiro estiver quase
+    /// exatamente alinhado com o eixo forward do líder (produto escalar
+    /// perto de zero, lado ambíguo).
+    /// </summary>
+    private Vector3 ComputeSidestepDirection()
+    {
+        Vector3 leaderForward = followTarget.forward;
+        leaderForward.y = 0f;
+
+        if (leaderForward.sqrMagnitude < 0.0001f)
+        {
+            leaderForward = Vector3.forward;
+        }
+        else
+        {
+            leaderForward.Normalize();
+        }
+
+        Vector3 sideAxis = Vector3.Cross(Vector3.up, leaderForward); // "direita" do líder
+
+        Vector3 toCompanion = transform.position - followTarget.position;
+        toCompanion.y = 0f;
+
+        float side = Vector3.Dot(toCompanion, sideAxis);
+        float sideSign = Mathf.Abs(side) > 0.01f ? Mathf.Sign(side) : 1f;
+
+        return sideAxis * sideSign;
     }
 }
