@@ -5,7 +5,7 @@ namespace Game.Core.Engine;
 
 /// <summary>
 /// Single source of truth for skill targeting.
-/// Returns an ordered list of valid primary targets (Taunt, Stealth, and dead combatants applied).
+/// Returns an ordered list of valid primary targets (Taunt and dead combatants applied).
 /// PlayerActionBuilder, AI, preview, and HUD all call this.
 /// </summary>
 public static class SkillTargetResolver
@@ -152,9 +152,7 @@ public static class SkillTargetResolver
             .Where(enemy => enemy.Tokens.GetStacks(TokenType.Taunt) > 0)
             .ToList();
         var candidateEnemies = tauntingEnemies.Count > 0 ? tauntingEnemies : livingEnemies;
-        return candidateEnemies
-            .Where(enemy => enemy.Tokens.GetStacks(TokenType.Stealth) == 0)
-            .ToList();
+        return candidateEnemies;
     }
 
     private static IReadOnlyList<Combatant> ResolveOneAlly(
@@ -262,9 +260,7 @@ public static class SkillTargetResolver
     }
 
     private static List<Combatant> VisibleLivingSameSide(BattleState battleState, Combatant actor) =>
-        LivingCombatantsOnRoster(SameSideRoster(battleState, actor))
-            .Where(ally => ally.Tokens.GetStacks(TokenType.Stealth) == 0)
-            .ToList();
+        LivingCombatantsOnRoster(SameSideRoster(battleState, actor));
 
     private static List<Combatant> LivingCombatantsOnRoster(IList<Combatant> roster) =>
         roster.Where(combatant => !combatant.Health.IsDead).ToList();

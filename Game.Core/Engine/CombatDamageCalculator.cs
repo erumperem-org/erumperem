@@ -253,6 +253,7 @@ public static class CombatDamageCalculator
         var hitChance = skill.Accuracy * actor.Stats.Accuracy;
         hitChance += CombatStatusRules.AccuracyModifierFromActorTokens(actor.Tokens);
         hitChance += CombatStatusRules.AccuracyBonusFromTargetExposition(target.Tokens);
+        hitChance -= CombatStatusRules.AccuracyPenaltyFromTargetStealth(target.Tokens);
 
         if (skill.AccuracyPenaltyPerLivingEnemy > 0)
         {

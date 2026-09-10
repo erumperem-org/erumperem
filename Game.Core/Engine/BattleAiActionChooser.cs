@@ -103,7 +103,7 @@ internal sealed class BattleAiActionChooser
     {
         var sameSideRoster = actor.Position.Side == Side.Allies ? state.Allies : state.Enemies;
         var visibleAllies = sameSideRoster
-            .Where(ally => !ally.Health.IsDead && ally.Tokens.GetStacks(TokenType.Stealth) == 0)
+            .Where(ally => !ally.Health.IsDead)
             .Where(ally => includeActor || !string.Equals(ally.Identity.Id, actor.Identity.Id, StringComparison.Ordinal))
             .ToList();
         if (includeActor && visibleAllies.Count == 0)

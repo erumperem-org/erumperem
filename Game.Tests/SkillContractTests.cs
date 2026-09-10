@@ -71,7 +71,7 @@ public sealed class SkillTargetResolverTests
     }
 
     [Fact]
-    public void UpToThreeEnemies_RespectsTauntStealthAndDead()
+    public void UpToThreeEnemies_RespectsTauntAndDead_StealthRemainsTargetable()
     {
         var areaSkill = CreateDamageSkill("iron_maiden", SkillTargetKind.UpToThreeEnemies);
         var battle = CreateBattle(areaSkill, allyCount: 1, enemyCount: 4);
@@ -91,7 +91,9 @@ public sealed class SkillTargetResolverTests
         enemyFour.Health.IsDead = true;
         enemyThree.Tokens.Add(TokenType.Stealth, 1);
         var afterStealthAndDeath = SkillTargetResolver.ResolvePrimaryTargets(battle, actor, areaSkill, enemyTwo);
-        Assert.Equal([enemyTwo.Identity.Id, enemyOne.Identity.Id], afterStealthAndDeath.Select(combatant => combatant.Identity.Id));
+        Assert.Equal(
+            [enemyTwo.Identity.Id, enemyOne.Identity.Id, enemyThree.Identity.Id],
+            afterStealthAndDeath.Select(combatant => combatant.Identity.Id));
 
         enemyOne.Tokens.Add(TokenType.Taunt, 1);
         Assert.Empty(SkillTargetResolver.ResolvePrimaryTargets(battle, actor, areaSkill, enemyTwo));
@@ -100,7 +102,7 @@ public sealed class SkillTargetResolverTests
     }
 
     [Fact]
-    public void AllEnemies_RespectsTauntStealthAndDead()
+    public void AllEnemies_RespectsTauntAndDead_StealthRemainsTargetable()
     {
         var allEnemiesSkill = CreateDamageSkill("sweep", SkillTargetKind.AllEnemies);
         var battle = CreateBattle(allEnemiesSkill, allyCount: 1, enemyCount: 4);
@@ -110,12 +112,40 @@ public sealed class SkillTargetResolverTests
 
         var withoutTaunt = SkillTargetResolver.ResolvePrimaryTargets(battle, actor, allEnemiesSkill, selectedCombatant: null);
         Assert.Equal(
-            [battle.Enemies[0].Identity.Id, battle.Enemies[1].Identity.Id],
+            [battle.Enemies[0].Identity.Id, battle.Enemies[1].Identity.Id, battle.Enemies[2].Identity.Id],
             withoutTaunt.Select(combatant => combatant.Identity.Id));
 
         battle.Enemies[1].Tokens.Add(TokenType.Taunt, 1);
         var withTaunt = SkillTargetResolver.ResolvePrimaryTargets(battle, actor, allEnemiesSkill, selectedCombatant: null);
         Assert.Equal([battle.Enemies[1].Identity.Id], withTaunt.Select(combatant => combatant.Identity.Id));
+    }
+
+    [Fact]
+    public void Stealth_AppliesFlatAccuracyPenaltyAndIsInEndOfTurnDecay()
+    {
+        var skill = CreateDamageSkill("probe", SkillTargetKind.OneEnemy);
+        var battle = CreateBattle(skill, allyCount: 1, enemyCount: 1);
+        var actor = battle.Allies[0];
+        var target = battle.Enemies[0];
+
+        var hitChanceWithoutStealth = CombatDamageCalculator.ComputeEffectiveHitChanceFraction(
+            battle,
+            actor,
+            target,
+            skill);
+
+        target.Tokens.Add(TokenType.Stealth, 2);
+        var hitChanceWithStealth = CombatDamageCalculator.ComputeEffectiveHitChanceFraction(
+            battle,
+            actor,
+            target,
+            skill);
+
+        Assert.Equal(
+            hitChanceWithoutStealth - CombatStatusRules.StealthTargetAccuracyPenalty,
+            hitChanceWithStealth,
+            precision: 5);
+        Assert.Contains(TokenType.Stealth, CombatStatusRules.EndOfTurnDecayTokens);
     }
 
     [Fact]

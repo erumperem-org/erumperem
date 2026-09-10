@@ -16,6 +16,8 @@ public static class CombatStatusRules
     public const double DexterityAccuracyBonusPerStack = 0.10;
     public const double ClumsyAccuracyPenaltyPerStack = 0.20;
     public const double ExpositionAccuracyBonusPerStack = 0.20;
+    /// <summary>Flat accuracy penalty while the target has any Stealth stacks.</summary>
+    public const double StealthTargetAccuracyPenalty = 0.40;
     public const double MarkCritChanceBonusPerStack = 0.10;
     public const double MarkCritDamageBonusPerStack = 0.50;
     public const int ControlledInstabilityReflectDamagePerStack = 2;
@@ -54,6 +56,7 @@ public static class CombatStatusRules
         TokenType.Confusion,
         TokenType.Regeneration,
         TokenType.Bleeding,
+        TokenType.Stealth,
     ];
 
     public static bool IsDebuffToken(TokenType tokenType) => DebuffTokenTypes.Contains(tokenType);
@@ -186,5 +189,18 @@ public static class CombatStatusRules
         var expositionStacks = targetTokens.GetStacks(TokenType.Exposition);
         var corrosionAmplify = CorrosionAmplificationMultiplier(targetTokens);
         return ExpositionAccuracyBonusPerStack * expositionStacks * corrosionAmplify;
+    }
+
+    /// <summary>
+    /// Accuracy penalty applied to skills that target a combatant with Stealth (flat, not per stack).
+    /// </summary>
+    public static double AccuracyPenaltyFromTargetStealth(TokenComponent targetTokens)
+    {
+        if (targetTokens == null || targetTokens.GetStacks(TokenType.Stealth) <= 0)
+        {
+            return 0;
+        }
+
+        return StealthTargetAccuracyPenalty;
     }
 }

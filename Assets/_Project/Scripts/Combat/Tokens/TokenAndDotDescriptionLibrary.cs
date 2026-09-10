@@ -26,7 +26,7 @@ namespace Erumperem.Combat.Tokens
             TokenType.Taunt =>
                 "[token taunt]: enemies prioritize targeting this unit; loses 1 stack when hit.",
             TokenType.Stealth =>
-                "[token stealth]: cannot be targeted by direct attacks.",
+                "[token stealth]: skills targeting this character have -40% accuracy; loses 1 stack at end of turn.",
             TokenType.Combo =>
                 "[token combo]: accumulates and empowers specific skills; consumed upon use.",
             TokenType.Stun =>

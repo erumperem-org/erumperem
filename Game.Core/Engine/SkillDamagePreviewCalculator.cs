@@ -86,6 +86,9 @@ public static class SkillDamagePreviewCalculator
         }
 
         hitChance *= skill.Accuracy * actor.Stats.Accuracy;
+        hitChance += CombatStatusRules.AccuracyModifierFromActorTokens(actor.Tokens);
+        hitChance += CombatStatusRules.AccuracyBonusFromTargetExposition(target.Tokens);
+        hitChance -= CombatStatusRules.AccuracyPenaltyFromTargetStealth(target.Tokens);
 
         if (target.Tokens.GetStacks(TokenType.Dodge) > 0)
         {

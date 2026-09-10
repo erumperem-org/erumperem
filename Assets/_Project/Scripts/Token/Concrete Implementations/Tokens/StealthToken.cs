@@ -6,13 +6,11 @@ using Services.DebugUtilities;
 namespace Core.Tokens
 {
     /// <summary>
-    /// BUFF — Furtividade. A unidade não pode ser alvo direto enquanto ativo.
+    /// BUFF — Furtividade. Skills that target this unit have -40% accuracy.
+    /// Loses 1 stack at end of turn (decay handled by Core combat status ticker).
     /// Sinergias:
-    ///   - Immunity: bloqueia TauntToken e BlindToken de serem alocados na unidade
-    ///     furtiva (alvos invisíveis não provocam nem ficam cegos da mesma forma).
-    ///   - Amplification: DodgeToken presente amplifica a eficácia do sigilo
-    ///     (unidade que esquiva é ainda mais difícil de detectar).
-    /// Quebrado automaticamente ao atacar (tratado externamente via RemoveTokenFromContainer).
+    ///   - Immunity: bloqueia TauntToken e BlindToken de serem alocados na unidade furtiva.
+    ///   - Amplification: DodgeToken presente amplifica a eficácia do sigilo.
     /// Allocation: on-event.
     /// </summary>
     public class StealthToken : TokenController, IImmunitySynergy, IAmplificationSynergy
@@ -42,9 +40,10 @@ namespace Core.Tokens
 
         public override void ExecuteTokenEffect()
         {
-            setUntargetable?.Invoke(true);
+            // Stealth no longer makes the unit untargetable; Core applies -40% accuracy instead.
+            setUntargetable?.Invoke(false);
             LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"Stealth active — unit is untargetable (bonus {stealthBonus:F2}x)", LogCategory.Combat);
+                $"Stealth active — attackers have -40% accuracy (bonus {stealthBonus:F2}x)", LogCategory.Combat);
             base.ExecuteTokenEffect();
         }
     }
