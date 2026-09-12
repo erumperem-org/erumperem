@@ -493,6 +493,7 @@ GameObject:
   - component: {fileID: 2011919981807021708}
   - component: {fileID: 4118925719751959337}
   - component: {fileID: 4256945351003506334}
+  - component: {fileID: 5615401685597194076}
   m_Layer: 0
   m_Name: CorruptedMiner_Citrine
   m_TagString: Untagged
@@ -575,17 +576,39 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.EnemyAnimationController
   unitAnimator: {fileID: 2011919981807021708}
-  idleStateName: Idle
+  _idleStateName: Idle
   attackStateName: Attack
+  hitTakenStateName: HitTaken
   deathStateName: Death
   crossFadeSeconds: 0.08
   attackClipLengthFallbackSeconds: 2
+  hitTakenClipLengthFallbackSeconds: 0.5
   deathClipLengthFallbackSeconds: 2
   deathDespawnPunchDurationSeconds: 0.12
   deathDespawnPunchScale: {x: 0.12, y: 0.18, z: 0.12}
   deathDespawnPunchVibrato: 6
   deathDespawnPunchElasticity: 0.45
   deathDespawnScaleDownDurationSeconds: 0.35
+  hitTakenVfxPrefab: {fileID: 0}
+  hitTakenVfxOffset: {x: 0, y: 0, z: 0}
+  destroySpawnedHitVfx: 1
+  destroyHitVfxAfterSeconds: 5
+--- !u!114 &5615401685597194076
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1620782059425082796}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e2fa43ff361f14438625a701d6826f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Systems.Audio.CombatantSkillAudio
+  sfxMixerGroup: {fileID: 0}
+  skillSounds: []
+  minDistance: 2
+  maxDistance: 20
 --- !u!1 &1687350590381966484
 GameObject:
   m_ObjectHideFlags: 0

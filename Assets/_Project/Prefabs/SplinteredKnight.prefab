@@ -246,7 +246,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 16195be7763875f4da10eb3be1aae843, type: 3}
       propertyPath: m_Name
-      value: WulfricThornvale
+      value: SplinteredKnight
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 16195be7763875f4da10eb3be1aae843, type: 3}
       propertyPath: m_Layer
@@ -401,7 +401,15 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 16195be7763875f4da10eb3be1aae843, type: 3}
       insertIndex: -1
       addedObject: {fileID: -255727886326640083}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 16195be7763875f4da10eb3be1aae843, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7219578881145508020}
   m_SourcePrefab: {fileID: 100100000, guid: 16195be7763875f4da10eb3be1aae843, type: 3}
+--- !u!4 &2773691334711578411 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6124366125346184619, guid: 16195be7763875f4da10eb3be1aae843, type: 3}
+  m_PrefabInstance: {fileID: 8250663890420093568}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &9097648146937081809 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 16195be7763875f4da10eb3be1aae843, type: 3}
@@ -506,6 +514,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8d8a6a5e6d0fab41b9d7bac5329a3c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FootstepEmitter
+  mainVolume: 1
+  companionVolume: 0.35
 --- !u!114 &8332501410721585808
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -532,3 +542,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatCapsuleAnimatorBridge
   combatSessionHub: {fileID: 0}
+--- !u!114 &7219578881145508020
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9097648146937081809}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e2fa43ff361f14438625a701d6826f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Systems.Audio.CombatantSkillAudio
+  sfxMixerGroup: {fileID: 0}
+  skillSounds:
+  - skillId: BasicAttack
+    skillClips:
+    - {fileID: 8300000, guid: 5329194c5c53ff14fb93e687f964116f, type: 3}
+    volume: 0.2
+    emissionBone: {fileID: 2773691334711578411}
+  minDistance: 2
+  maxDistance: 20

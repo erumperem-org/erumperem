@@ -85,6 +85,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 1bfbaa33006ec0f45ac6eb358af99d43, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1641830796524311944}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 1bfbaa33006ec0f45ac6eb358af99d43, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -8007097080650908599}
   m_SourcePrefab: {fileID: 100100000, guid: 1bfbaa33006ec0f45ac6eb358af99d43, type: 3}
 --- !u!1 &2070143912985818890 stripped
 GameObject:
@@ -147,7 +150,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.EnemyAnimationController
   unitAnimator: {fileID: 8046591678728698952}
-  idleStateName: Idle
+  _idleStateName: Idle
   attackStateName: Attack
   hitTakenStateName: HitTaken
   deathStateName: Death
@@ -164,3 +167,19 @@ MonoBehaviour:
   hitTakenVfxOffset: {x: 0, y: 0, z: 0}
   destroySpawnedHitVfx: 1
   destroyHitVfxAfterSeconds: 5
+--- !u!114 &-8007097080650908599
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2070143912985818890}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e2fa43ff361f14438625a701d6826f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Systems.Audio.CombatantSkillAudio
+  sfxMixerGroup: {fileID: 0}
+  skillSounds: []
+  minDistance: 2
+  maxDistance: 20
