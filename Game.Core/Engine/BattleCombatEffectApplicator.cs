@@ -271,7 +271,19 @@ internal sealed class BattleCombatEffectApplicator
             var healRoll = potencyMin == potencyMax
                 ? potencyMin
                 : _random.Next(potencyMin, potencyMax + 1);
-            CombatHealUnlock.ApplyHealHpToRecipient(recipient, healRoll);
+            var healModifiers = PassiveDataDrivenEngine.GetPermanentStatModifiers(state, actor, recipient, skill);
+            healRoll = (int)Math.Round(healRoll * (1.0 + healModifiers.SkillHealEffectivenessAdditive));
+            if (healModifiers.SkillHealDoubleChanceAdditive > 0 &&
+                _random.NextDouble() < healModifiers.SkillHealDoubleChanceAdditive)
+            {
+                healRoll *= 2;
+            }
+
+            var appliedHeal = CombatHealUnlock.ApplyHealHpToRecipient(recipient, healRoll);
+            if (appliedHeal > 0)
+            {
+                state.PassiveBus.RaiseHealingDealt(state, actor, recipient, skill, appliedHeal);
+            }
         }
     }
 
@@ -296,7 +308,11 @@ internal sealed class BattleCombatEffectApplicator
 
         foreach (var recipient in effectRecipients)
         {
-            CombatHealUnlock.ApplyHealHpPercentToRecipient(recipient, percentOfMaxHp);
+            var appliedHeal = CombatHealUnlock.ApplyHealHpPercentToRecipient(recipient, percentOfMaxHp);
+            if (appliedHeal > 0)
+            {
+                state.PassiveBus.RaiseHealingDealt(state, actor, recipient, skill, appliedHeal);
+            }
         }
     }
 
@@ -441,6 +457,11 @@ internal sealed class BattleCombatEffectApplicator
         int stacks)
     {
         recipient.Tokens.Add(tokenType, stacks);
+        if (tokenType == TokenType.Hypnosis)
+        {
+            CombatHypnosisRules.CaptureLockFromLastResolvedSkill(recipient);
+        }
+
         state.PassiveBus.RaiseTokenStacksChanged(
             state,
             actor,
@@ -474,6 +495,22 @@ internal sealed class BattleCombatEffectApplicator
 
         var elementalMultiplier = CombatDamageCalculator.GetElementalMultiplier(state, actor, recipient, skill);
         var resolvedPotency = (int)Math.Round(Math.Max(1, potency) * elementalMultiplier);
+        var mappedStatus = CombatStatusRules.MapDotTypeToStatusToken(dotType);
+        if (mappedStatus == TokenType.Burn)
+        {
+            ApplyTokenToCombatant(state, actor, recipient, skill, TokenType.Burn, resolvedPotency);
+            _eventEmitter.Emit(
+                state,
+                BattleEventType.DotInflicted,
+                actorId: actor.Identity.Id,
+                targetId: recipient.Identity.Id,
+                skillId: skill.Id,
+                dotType: DotType.Burn.ToString(),
+                dotAmount: resolvedPotency,
+                dotDurationTurns: Math.Max(1, durationTurns));
+            return;
+        }
+
         var baseDuration = Math.Max(1, durationTurns);
         var duration = state.PassiveBus.AdjustDotDuration(state, actor, dotType, baseDuration);
         recipient.Dots.ActiveDots.Add(new DotInstance

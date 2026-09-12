@@ -17,6 +17,7 @@ namespace Erumperem.Combat.Runtime
             session.RoundOrder.AddRange(session.Simulator.BuildInitiativeOrder(session.State));
             session.ActorIndex = 0;
             session.PreparedThisStep = false;
+            session.AnnouncedRoundSide = null;
         }
 
         public bool TryAdvanceCombatStep(CombatSessionRuntime session, CombatTurnAdvanceCallbacks callbacks)
@@ -38,6 +39,8 @@ namespace Erumperem.Combat.Runtime
                 session.PreparedThisStep = false;
                 return true;
             }
+
+            AnnounceRoundSideIfNeeded(session, callbacks, actor.Position.Side);
 
             if (!session.PreparedThisStep)
             {
@@ -93,6 +96,20 @@ namespace Erumperem.Combat.Runtime
 
         public static bool IsPlayerControlled(Combatant actor) =>
             actor.AI == null && actor.Identity.Faction == Faction.Player;
+
+        private static void AnnounceRoundSideIfNeeded(
+            CombatSessionRuntime session,
+            CombatTurnAdvanceCallbacks callbacks,
+            Side actingSide)
+        {
+            if (session.AnnouncedRoundSide == actingSide)
+            {
+                return;
+            }
+
+            session.AnnouncedRoundSide = actingSide;
+            callbacks.SessionHub?.RaiseCombatRoundSideBegan(actingSide);
+        }
     }
 
     public sealed class CombatTurnAdvanceCallbacks

@@ -287,10 +287,10 @@ public class UnitTest1
                             Tier = 1,
                             Nodes =
                             [
-                                new SkillTreeNodeDefinition { Id = "f_t1_p1", Type = "Passive", Cost = 1, Requires = [] },
-                                new SkillTreeNodeDefinition { Id = "f_t1_p2", Type = "Passive", Cost = 1, Requires = [] },
-                                new SkillTreeNodeDefinition { Id = "f_t1_p3", Type = "Passive", Cost = 1, Requires = [] },
-                                new SkillTreeNodeDefinition { Id = "f_t1_a1", Type = "Active", Cost = 1, Requires = ["f_t1_p1", "f_t1_p2", "f_t1_p3"] },
+                                new SkillTreeNodeDefinition { Id = "synth_t1_p1", Type = "Passive", Cost = 1, Requires = [] },
+                                new SkillTreeNodeDefinition { Id = "synth_t1_p2", Type = "Passive", Cost = 1, Requires = [] },
+                                new SkillTreeNodeDefinition { Id = "synth_t1_p3", Type = "Passive", Cost = 1, Requires = [] },
+                                new SkillTreeNodeDefinition { Id = "synth_t1_a1", Type = "Active", Cost = 1, Requires = ["synth_t1_p1", "synth_t1_p2", "synth_t1_p3"] },
                             ],
                         },
                         new SkillTreeTierDefinition
@@ -298,10 +298,10 @@ public class UnitTest1
                             Tier = 2,
                             Nodes =
                             [
-                                new SkillTreeNodeDefinition { Id = "f_t2_p1", Type = "Passive", Cost = 1, Requires = [] },
-                                new SkillTreeNodeDefinition { Id = "f_t2_p2", Type = "Passive", Cost = 1, Requires = [] },
-                                new SkillTreeNodeDefinition { Id = "f_t2_p3", Type = "Passive", Cost = 1, Requires = [] },
-                                new SkillTreeNodeDefinition { Id = "f_t2_a1", Type = "Active", Cost = 1, Requires = ["f_t2_p1", "f_t2_p2", "f_t2_p3"] },
+                                new SkillTreeNodeDefinition { Id = "synth_t2_p1", Type = "Passive", Cost = 1, Requires = [] },
+                                new SkillTreeNodeDefinition { Id = "synth_t2_p2", Type = "Passive", Cost = 1, Requires = [] },
+                                new SkillTreeNodeDefinition { Id = "synth_t2_p3", Type = "Passive", Cost = 1, Requires = [] },
+                                new SkillTreeNodeDefinition { Id = "synth_t2_a1", Type = "Active", Cost = 1, Requires = ["synth_t2_p1", "synth_t2_p2", "synth_t2_p3"] },
                             ],
                         },
                     ],
@@ -311,13 +311,13 @@ public class UnitTest1
 
         var unlockedNodes = new Dictionary<string, bool>
         {
-            ["f_t1_p1"] = true,
-            ["f_t1_p2"] = false,
-            ["f_t1_p3"] = true,
-            ["f_t1_a1"] = false,
+            ["synth_t1_p1"] = true,
+            ["synth_t1_p2"] = false,
+            ["synth_t1_p3"] = true,
+            ["synth_t1_a1"] = false,
         };
 
-        var canUnlock = SkillTreeRules.CanUnlockNode(tree, "Fire", "f_t2_p1", unlockedNodes);
+        var canUnlock = SkillTreeRules.CanUnlockNode(tree, "Fire", "synth_t2_p1", unlockedNodes);
         Assert.False(canUnlock);
     }
 
@@ -373,8 +373,8 @@ public class UnitTest1
 
         var unlocked = new Dictionary<string, bool>(StringComparer.Ordinal)
         {
-            ["w_us_t1_p1"] = true,
-            ["wulfricUnstable"] = true,
+            ["wulfric_tree1_tier1_passive1"] = true,
+            ["wulfric_tree1_tier1_active"] = true,
         };
 
         var loadout = SkillTreeLookup.BuildPlayerSkillLoadout(
@@ -382,13 +382,13 @@ public class UnitTest1
             unlocked,
             BattleFactory.WulfricInnateSkillIds);
 
-        Assert.Contains("wulfricBasicHit", loadout);
-        Assert.Contains("wulfricUnstable", loadout);
-        Assert.DoesNotContain("wulfricStabilize", loadout);
+        Assert.Contains("wulfric_innate_active1", loadout);
+        Assert.Contains("wulfric_tree1_tier1_active", loadout);
+        Assert.DoesNotContain("wulfric_tree1_tier2_active", loadout);
     }
 
     [Fact]
-    public void Passive_OutgoingDamageVsSkillId_IncreasesDamageDealt()
+    public void Passive_DamageCausedVsSkillId_IncreasesDamageDealt()
     {
         var smack = new SkillDefinition
         {
@@ -404,7 +404,7 @@ public class UnitTest1
         var passive = new PassiveDefinition
         {
             Id = "p_damage_bonus",
-            EffectKind = PassiveEffectKind.OutgoingDamageVsSkillId,
+            EffectKind = PassiveEffectKind.DamageCausedVsSkillId,
             SkillId = smack.Id,
             Additive = 0.15,
         };
@@ -486,11 +486,22 @@ public class UnitTest1
     [Fact]
     public void Passive_ApplyExtraDotAfterShove_WhenTargetHasBleed()
     {
-        var skills = SampleCombatData.CreateSkills();
-        var shove = skills.First(skill => skill.Id == "wulfric_innate_shove");
+        var shove = new SkillDefinition
+        {
+            Id = "synthetic_shove_for_extra_dot",
+            Name = "Synthetic Shove",
+            Element = ElementType.Metal,
+            Type = "Active",
+            TargetKind = SkillTargetKind.OneEnemy,
+            BaseDamage = new DamageRange { Min = 2, Max = 5 },
+            BaseCritChance = 0,
+            Accuracy = 1.0,
+            EffectsOnHit = [],
+        };
+        var skills = SampleCombatData.CreateSkills().Append(shove).ToList();
         var passive = new PassiveDefinition
         {
-            Id = "f_t1_p3",
+            Id = "synthetic_extra_dot_after_shove",
             EffectKind = PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot,
             SkillId = shove.Id,
             DotType = DotType.Bleed,
@@ -502,7 +513,7 @@ public class UnitTest1
         var collector = new CombatEventCollector();
         var simulator = new BattleSimulator(random, collector);
         var battle = BattleFactory.CreateSampleBattle(
-            skills.ToList(),
+            skills,
             allyCount: 1,
             enemyCount: 1,
             corruptionValue: 0,
@@ -531,8 +542,34 @@ public class UnitTest1
     [Fact]
     public void LoadSkills_WhenCorruptionCostOmitted_DefaultsToOne()
     {
-        var f3 = SampleCombatData.CreateSkills().First(skill => skill.Id == "f_t3_a1");
-        Assert.Equal(1, f3.CorruptionCost);
+        var skillsPath = Path.Combine(Path.GetTempPath(), $"skills-corruption-default-{Guid.NewGuid():N}.json");
+        File.WriteAllText(
+            skillsPath,
+            """
+            [
+              {
+                "id": "synthetic_omitted_corruption_cost",
+                "name": "Synthetic Omitted Cost",
+                "element": "Fire",
+                "type": "Active",
+                "targetKind": "OneEnemy",
+                "baseDamage": { "min": 10, "max": 16 },
+                "baseCritChance": 0.12,
+                "accuracy": 1,
+                "effectsOnHit": []
+              }
+            ]
+            """);
+
+        try
+        {
+            var loadedSkill = Assert.Single(CombatDataLoader.LoadSkills(skillsPath));
+            Assert.Equal(1, loadedSkill.CorruptionCost);
+        }
+        finally
+        {
+            File.Delete(skillsPath);
+        }
     }
 
     [Fact]
@@ -540,7 +577,9 @@ public class UnitTest1
     {
         var list = SampleCombatData.CreatePassives();
         Assert.NotEmpty(list);
-        Assert.Contains(list, passive => passive.Id == "f_t1_p1" && passive.EffectKind == PassiveEffectKind.OutgoingDamageVsSkillId);
+        Assert.Contains(list, passive => passive.Id == "horse_boss_summon_fairy_on_hp_tier");
+        Assert.Contains(list, passive => passive.Id == "wulfric_tree1_tier1_passive1");
+        Assert.DoesNotContain(list, passive => passive.Id == "f_t1_p1");
     }
 
     [Fact]
@@ -556,7 +595,7 @@ public class UnitTest1
                 Turn = 0,
                 TimestampUtc = sharedTimestampUtc,
                 EventType = BattleEventType.BattleStarted,
-                PassiveLoadoutCsv = "f_t1_p1,f_t1_p2",
+                PassiveLoadoutCsv = "analytics_passive_a,analytics_passive_b",
             },
             new()
             {
@@ -574,7 +613,7 @@ public class UnitTest1
                 Turn = 0,
                 TimestampUtc = sharedTimestampUtc,
                 EventType = BattleEventType.BattleStarted,
-                PassiveLoadoutCsv = "f_t1_p1",
+                PassiveLoadoutCsv = "analytics_passive_a",
             },
             new()
             {
@@ -589,11 +628,11 @@ public class UnitTest1
 
         var rows = CombatAnalyticsExporter.BuildPassiveAggregates(events, allPassiveIdsInCatalog: null)
             .ToDictionary(row => row.PassiveId);
-        Assert.Equal(2, rows["f_t1_p1"].BattlesWithPassive);
-        Assert.Equal(1, rows["f_t1_p1"].Wins);
-        Assert.Equal(0.5, rows["f_t1_p1"].WinRate);
-        Assert.Equal(1, rows["f_t1_p2"].BattlesWithPassive);
-        Assert.Equal(1, rows["f_t1_p2"].Wins);
+        Assert.Equal(2, rows["analytics_passive_a"].BattlesWithPassive);
+        Assert.Equal(1, rows["analytics_passive_a"].Wins);
+        Assert.Equal(0.5, rows["analytics_passive_a"].WinRate);
+        Assert.Equal(1, rows["analytics_passive_b"].BattlesWithPassive);
+        Assert.Equal(1, rows["analytics_passive_b"].Wins);
     }
 
     [Fact]
@@ -609,7 +648,7 @@ public class UnitTest1
                 Turn = 0,
                 TimestampUtc = sharedTimestampUtc,
                 EventType = BattleEventType.BattleStarted,
-                PassiveLoadoutCsv = "f_t1_p1",
+                PassiveLoadoutCsv = "analytics_passive_a",
             },
             new()
             {
@@ -622,9 +661,10 @@ public class UnitTest1
             },
         };
 
-        var rows = CombatAnalyticsExporter.BuildPassiveAggregates(events, ["f_t1_p1", "f_t3_p1"]).ToDictionary(row => row.PassiveId);
-        Assert.Equal(0, rows["f_t3_p1"].BattlesWithPassive);
-        Assert.Equal(0, rows["f_t3_p1"].WinRate);
+        var rows = CombatAnalyticsExporter.BuildPassiveAggregates(events, ["analytics_passive_a", "analytics_passive_unused"])
+            .ToDictionary(row => row.PassiveId);
+        Assert.Equal(0, rows["analytics_passive_unused"].BattlesWithPassive);
+        Assert.Equal(0, rows["analytics_passive_unused"].WinRate);
     }
 
     private static JsonSerializerOptions SkillTreesJsonSerializerOptions { get; } = new()
@@ -968,15 +1008,31 @@ public class UnitTest1
         var trees = CombatDataLoader.LoadSkillTrees(CombatDataLoader.ResolveDefaultSkillTreesPath());
         var wulfric = SimulationSkillTreeSetup.GetCharacter(trees);
         var ids = SimulationSkillTreeSetup.GetNodeIdsForTreeMaxTier(wulfric, treeIndex1Based: 1, maxTierInclusive: 3);
-        Assert.Contains("wulfricNocontrol", ids);
-        Assert.Contains("w_us_t1_p1", ids);
-        Assert.DoesNotContain("w_dz_t1_p1", ids);
+        Assert.Contains("wulfric_tree1_tier3_active", ids);
+        Assert.Contains("wulfric_tree1_tier1_passive1", ids);
+        Assert.DoesNotContain("wulfric_tree2_tier1_passive1", ids);
     }
 
     [Fact]
     public void SkillPlayerDescriptionBuilder_PosturaDeLobo_DescribesTokensWithoutCrit()
     {
-        var guardSkill = SampleCombatData.CreateSkills().First(skill => skill.Id == "wulfric_innate_guard");
+        var guardSkill = new SkillDefinition
+        {
+            Id = "synthetic_wolf_stance",
+            Name = "Postura de lobo",
+            Element = ElementType.Metal,
+            Type = "Active",
+            TargetKind = SkillTargetKind.Self,
+            BaseDamage = new DamageRange { Min = 0, Max = 0 },
+            BaseCritChance = 0,
+            Accuracy = 1,
+            CorruptionCost = 0,
+            EffectsOnHit =
+            [
+                new EffectSpec { Type = EffectType.ApplyToken, Token = TokenType.Block, Stacks = 1, Chance = 1 },
+                new EffectSpec { Type = EffectType.ApplyToken, Token = TokenType.Taunt, Stacks = 1, Chance = 1 },
+            ],
+        };
 
         var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(guardSkill);
 
@@ -989,7 +1045,18 @@ public class UnitTest1
     [Fact]
     public void SkillPlayerDescriptionBuilder_ExecucaoDeLeilao_DescribesDamageAndCrit()
     {
-        var executionSkill = SampleCombatData.CreateSkills().First(skill => skill.Id == "f_t3_a1");
+        var executionSkill = new SkillDefinition
+        {
+            Id = "synthetic_auction_execution",
+            Name = "Execução de leilão",
+            Element = ElementType.Fire,
+            Type = "Active",
+            TargetKind = SkillTargetKind.OneEnemy,
+            BaseDamage = new DamageRange { Min = 10, Max = 16 },
+            BaseCritChance = 0.12,
+            Accuracy = 1,
+            EffectsOnHit = [],
+        };
 
         var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(executionSkill);
 
@@ -1001,7 +1068,29 @@ public class UnitTest1
     [Fact]
     public void SkillPlayerDescriptionBuilder_RasgarTendao_IncludesDotAndCorruption()
     {
-        var bleedSkill = SampleCombatData.CreateSkills().First(skill => skill.Id == "f_t1_a1");
+        var bleedSkill = new SkillDefinition
+        {
+            Id = "synthetic_tear_tendon",
+            Name = "Rasgar tendão",
+            Element = ElementType.Fire,
+            Type = "Active",
+            TargetKind = SkillTargetKind.OneEnemy,
+            BaseDamage = new DamageRange { Min = 6, Max = 10 },
+            BaseCritChance = 0.08,
+            Accuracy = 1,
+            CorruptionCost = 1,
+            EffectsOnHit =
+            [
+                new EffectSpec
+                {
+                    Type = EffectType.ApplyDot,
+                    Dot = DotType.Bleed,
+                    Potency = 3,
+                    Duration = 3,
+                    Chance = 1,
+                },
+            ],
+        };
 
         var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(bleedSkill);
 

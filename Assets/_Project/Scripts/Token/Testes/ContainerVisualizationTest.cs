@@ -13,7 +13,7 @@ class ContainerVisualizationTest : MonoBehaviour
     private AsyncOperationHandle<GameObject> instanceHandle;
     void Start()
     {
-        tokenController = new AcidToken();
+        tokenController = new BlockToken();
         Debug.Log($"MODEL: {tokenController.data.tokenModelAddress}");
         Debug.Log($"MAT: {tokenController.data.tokenLogoAddress}");
         instanceHandle = Addressables.InstantiateAsync(tokenController.data.tokenModelAddress, transform.position, transform.rotation);
@@ -25,7 +25,7 @@ class ContainerVisualizationTest : MonoBehaviour
                 GameObject instance = op.Result;
                 var renderer = instance.GetComponent<Renderer>();
 
-                Addressables.LoadAssetAsync<Material>("Prefabs/Tokens/AcidToken.mat")
+                Addressables.LoadAssetAsync<Material>(tokenController.data.tokenLogoAddress)
     .Completed += handle =>
 {
     if (handle.Status == UnityEngine.ResourceManagement.AsyncOperations.AsyncOperationStatus.Succeeded)

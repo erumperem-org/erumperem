@@ -5,11 +5,13 @@ namespace Game.Core.Domain;
 /// <summary>
 /// Shared combat status (token) rules: debuff set, EOT decay, magnitude helpers.
 /// Player-facing name is "Status"; engine storage remains <see cref="TokenType"/>.
+/// Perma* variants use <see cref="PermanentStatusEfficiencyMultiplier"/> and never decay at end of turn.
+/// Stealth accuracy penalty is flat (-40%) while any Stealth stack is present (spec L785).
 /// </summary>
 public static class CombatStatusRules
 {
-    public const double StrengthOutgoingDamageBonusPerStack = 0.25;
-    public const double WeakenOutgoingDamagePenaltyPerStack = 0.50;
+    public const double StrengthDamageCausedBonusPerStack = 0.25;
+    public const double WeakenDamageCausedPenaltyPerStack = 0.50;
     public const double DefenseIncomingDamageReductionPerStack = 0.25;
     public const double VulnerabilityIncomingDamageBonusPerStack = 0.50;
     public const double LuckyShotCritChanceBonusPerStack = 0.04;
@@ -26,7 +28,11 @@ public static class CombatStatusRules
     public const double CorrosionDebuffAmplifyPerStack = 0.10;
     public const int CorrosionEndOfTurnDamage = 5;
     public const double ConfusionRetargetChance = 0.33;
+    public const double DizzyRetargetChance = 0.50;
     public const double CriticalStrikeBaseDamageMultiplier = 2.0;
+    public const double MinimumHitChanceFraction = 0.05;
+    public const double MaximumHitChanceFraction = 1.0;
+    public const double PermanentStatusEfficiencyMultiplier = 0.25;
 
     private static readonly HashSet<TokenType> DebuffTokenTypes =
     [
@@ -40,6 +46,32 @@ public static class CombatStatusRules
         TokenType.Bleeding,
         TokenType.Blind,
         TokenType.Stun,
+        TokenType.Hypnosis,
+        TokenType.Dizzy,
+        TokenType.Burn,
+        TokenType.PermaWeaken,
+        TokenType.PermaVulnerability,
+        TokenType.PermaClumsy,
+        TokenType.PermaExposition,
+    ];
+
+    private static readonly HashSet<TokenType> BuffTokenTypes =
+    [
+        TokenType.Strength,
+        TokenType.Defense,
+        TokenType.LuckyShot,
+        TokenType.Dexterity,
+        TokenType.Regeneration,
+        TokenType.Stealth,
+        TokenType.ControlledInstability,
+        TokenType.Block,
+        TokenType.BlockPlus,
+        TokenType.Dodge,
+        TokenType.BonusAction,
+        TokenType.PermaStrength,
+        TokenType.PermaDefense,
+        TokenType.PermaDexterity,
+        TokenType.PermaStealth,
     ];
 
     private static readonly HashSet<TokenType> EndOfTurnDecayTokenTypes =
@@ -57,9 +89,29 @@ public static class CombatStatusRules
         TokenType.Regeneration,
         TokenType.Bleeding,
         TokenType.Stealth,
+        TokenType.Corrosion,
+        TokenType.Burn,
+        TokenType.Hypnosis,
+        TokenType.Dizzy,
+    ];
+
+    private static readonly HashSet<TokenType> PermanentTokenTypes =
+    [
+        TokenType.PermaStrength,
+        TokenType.PermaDefense,
+        TokenType.PermaWeaken,
+        TokenType.PermaVulnerability,
+        TokenType.PermaDexterity,
+        TokenType.PermaClumsy,
+        TokenType.PermaExposition,
+        TokenType.PermaStealth,
     ];
 
     public static bool IsDebuffToken(TokenType tokenType) => DebuffTokenTypes.Contains(tokenType);
+
+    public static bool IsBuffToken(TokenType tokenType) => BuffTokenTypes.Contains(tokenType);
+
+    public static bool IsPermanentStatus(TokenType tokenType) => PermanentTokenTypes.Contains(tokenType);
 
     public static IReadOnlyCollection<TokenType> AllDebuffTokenTypes => DebuffTokenTypes;
 
@@ -95,7 +147,12 @@ public static class CombatStatusRules
         return 1.0 + (CorrosionDebuffAmplifyPerStack * corrosionStacks);
     }
 
-    public static double OutgoingDamageMultiplierFromTokens(TokenComponent tokens)
+    public static double DamageCausedMultiplierFromTokens(TokenComponent tokens) =>
+        DamageCausedMultiplierFromTokens(tokens, tokenEfficiencyLookup: null);
+
+    public static double DamageCausedMultiplierFromTokens(
+        TokenComponent tokens,
+        Func<TokenType, double>? tokenEfficiencyLookup)
     {
         if (tokens == null)
         {
@@ -103,14 +160,33 @@ public static class CombatStatusRules
         }
 
         var corrosionAmplify = CorrosionAmplificationMultiplier(tokens);
-        var strengthStacks = tokens.GetStacks(TokenType.Strength);
-        var weakenStacks = tokens.GetStacks(TokenType.Weaken);
-        var strengthBonus = StrengthOutgoingDamageBonusPerStack * strengthStacks;
-        var weakenPenalty = WeakenOutgoingDamagePenaltyPerStack * weakenStacks * corrosionAmplify;
+        var strengthStacks = EffectiveMagnitudeStacks(
+            tokens,
+            TokenType.Strength,
+            TokenType.PermaStrength,
+            tokenEfficiencyLookup);
+        var weakenStacks = EffectiveMagnitudeStacks(
+            tokens,
+            TokenType.Weaken,
+            TokenType.PermaWeaken,
+            tokenEfficiencyLookup);
+        var strengthBonus = StrengthDamageCausedBonusPerStack * strengthStacks;
+        var weakenPenalty = WeakenDamageCausedPenaltyPerStack * weakenStacks * corrosionAmplify;
         return Math.Max(0.0, 1.0 + strengthBonus - weakenPenalty);
     }
 
-    public static double IncomingDamageMultiplierFromTokens(TokenComponent tokens)
+    public static double ApplyBaseDefenseChance(double incomingDamage, double defenseChance)
+    {
+        var clampedDefenseChance = Math.Clamp(defenseChance, 0.0, 1.0);
+        return incomingDamage * (1.0 - clampedDefenseChance);
+    }
+
+    public static double IncomingDamageMultiplierFromTokens(TokenComponent tokens) =>
+        IncomingDamageMultiplierFromTokens(tokens, tokenEfficiencyLookup: null);
+
+    public static double IncomingDamageMultiplierFromTokens(
+        TokenComponent tokens,
+        Func<TokenType, double>? tokenEfficiencyLookup)
     {
         if (tokens == null)
         {
@@ -118,8 +194,16 @@ public static class CombatStatusRules
         }
 
         var corrosionAmplify = CorrosionAmplificationMultiplier(tokens);
-        var defenseStacks = tokens.GetStacks(TokenType.Defense);
-        var vulnerabilityStacks = tokens.GetStacks(TokenType.Vulnerability);
+        var defenseStacks = EffectiveMagnitudeStacks(
+            tokens,
+            TokenType.Defense,
+            TokenType.PermaDefense,
+            tokenEfficiencyLookup);
+        var vulnerabilityStacks = EffectiveMagnitudeStacks(
+            tokens,
+            TokenType.Vulnerability,
+            TokenType.PermaVulnerability,
+            tokenEfficiencyLookup);
         var defenseReduction = DefenseIncomingDamageReductionPerStack * defenseStacks;
         var vulnerabilityBonus = VulnerabilityIncomingDamageBonusPerStack * vulnerabilityStacks * corrosionAmplify;
         return Math.Max(0.0, 1.0 - defenseReduction + vulnerabilityBonus);
@@ -135,26 +219,38 @@ public static class CombatStatusRules
         return LuckyShotCritChanceBonusPerStack * attackerTokens.GetStacks(TokenType.LuckyShot);
     }
 
-    public static double CritChanceBonusFromDefenderTokens(TokenComponent defenderTokens)
+    public static double CritChanceBonusFromDefenderTokens(TokenComponent defenderTokens) =>
+        CritChanceBonusFromDefenderTokens(defenderTokens, tokenEfficiencyLookup: null);
+
+    public static double CritChanceBonusFromDefenderTokens(
+        TokenComponent defenderTokens,
+        Func<TokenType, double>? tokenEfficiencyLookup)
     {
         if (defenderTokens == null)
         {
             return 0;
         }
 
-        var markStacks = defenderTokens.GetStacks(TokenType.Mark);
+        var markStacks = defenderTokens.GetStacks(TokenType.Mark) *
+                         LookupEfficiency(tokenEfficiencyLookup, TokenType.Mark);
         var corrosionAmplify = CorrosionAmplificationMultiplier(defenderTokens);
         return MarkCritChanceBonusPerStack * markStacks * corrosionAmplify;
     }
 
-    public static double CritDamageMultiplierFromDefenderMark(TokenComponent defenderTokens)
+    public static double CritDamageMultiplierFromDefenderMark(TokenComponent defenderTokens) =>
+        CritDamageMultiplierFromDefenderMark(defenderTokens, tokenEfficiencyLookup: null);
+
+    public static double CritDamageMultiplierFromDefenderMark(
+        TokenComponent defenderTokens,
+        Func<TokenType, double>? tokenEfficiencyLookup)
     {
         if (defenderTokens == null)
         {
             return CriticalStrikeBaseDamageMultiplier;
         }
 
-        var markStacks = defenderTokens.GetStacks(TokenType.Mark);
+        var markStacks = defenderTokens.GetStacks(TokenType.Mark) *
+                         LookupEfficiency(tokenEfficiencyLookup, TokenType.Mark);
         if (markStacks <= 0)
         {
             return CriticalStrikeBaseDamageMultiplier;
@@ -165,42 +261,102 @@ public static class CombatStatusRules
                (1.0 + (MarkCritDamageBonusPerStack * markStacks * corrosionAmplify));
     }
 
-    public static double AccuracyModifierFromActorTokens(TokenComponent actorTokens)
+    public static double AccuracyModifierFromActorTokens(TokenComponent actorTokens) =>
+        AccuracyModifierFromActorTokens(actorTokens, tokenEfficiencyLookup: null);
+
+    public static double AccuracyModifierFromActorTokens(
+        TokenComponent actorTokens,
+        Func<TokenType, double>? tokenEfficiencyLookup)
     {
         if (actorTokens == null)
         {
             return 0;
         }
 
-        var dexterityStacks = actorTokens.GetStacks(TokenType.Dexterity);
-        var clumsyStacks = actorTokens.GetStacks(TokenType.Clumsy);
+        var dexterityStacks = EffectiveMagnitudeStacks(
+            actorTokens,
+            TokenType.Dexterity,
+            TokenType.PermaDexterity,
+            tokenEfficiencyLookup);
+        var clumsyStacks = EffectiveMagnitudeStacks(
+            actorTokens,
+            TokenType.Clumsy,
+            TokenType.PermaClumsy,
+            tokenEfficiencyLookup);
         var corrosionAmplify = CorrosionAmplificationMultiplier(actorTokens);
         return (DexterityAccuracyBonusPerStack * dexterityStacks) -
                (ClumsyAccuracyPenaltyPerStack * clumsyStacks * corrosionAmplify);
     }
 
-    public static double AccuracyBonusFromTargetExposition(TokenComponent targetTokens)
+    public static double AccuracyBonusFromTargetExposition(TokenComponent targetTokens) =>
+        AccuracyBonusFromTargetExposition(targetTokens, tokenEfficiencyLookup: null);
+
+    public static double AccuracyBonusFromTargetExposition(
+        TokenComponent targetTokens,
+        Func<TokenType, double>? tokenEfficiencyLookup)
     {
         if (targetTokens == null)
         {
             return 0;
         }
 
-        var expositionStacks = targetTokens.GetStacks(TokenType.Exposition);
+        var expositionStacks = EffectiveMagnitudeStacks(
+            targetTokens,
+            TokenType.Exposition,
+            TokenType.PermaExposition,
+            tokenEfficiencyLookup);
         var corrosionAmplify = CorrosionAmplificationMultiplier(targetTokens);
         return ExpositionAccuracyBonusPerStack * expositionStacks * corrosionAmplify;
     }
 
     /// <summary>
-    /// Accuracy penalty applied to skills that target a combatant with Stealth (flat, not per stack).
+    /// Accuracy penalty applied to skills that target a combatant with Stealth (flat while present).
+    /// PermaStealth is per-stack at 25% of the flat Stealth penalty.
     /// </summary>
     public static double AccuracyPenaltyFromTargetStealth(TokenComponent targetTokens)
     {
-        if (targetTokens == null || targetTokens.GetStacks(TokenType.Stealth) <= 0)
+        if (targetTokens == null)
         {
             return 0;
         }
 
-        return StealthTargetAccuracyPenalty;
+        var penalty = 0.0;
+        if (targetTokens.GetStacks(TokenType.Stealth) > 0)
+        {
+            penalty += StealthTargetAccuracyPenalty;
+        }
+
+        var permaStealthStacks = targetTokens.GetStacks(TokenType.PermaStealth);
+        if (permaStealthStacks > 0)
+        {
+            penalty += StealthTargetAccuracyPenalty * PermanentStatusEfficiencyMultiplier * permaStealthStacks;
+        }
+
+        return penalty;
     }
+
+    public static TokenType? MapDotTypeToStatusToken(DotType dotType) =>
+        dotType switch
+        {
+            DotType.Burn => TokenType.Burn,
+            DotType.Bleed => TokenType.Bleeding,
+            _ => null,
+        };
+
+    private static double EffectiveMagnitudeStacks(
+        TokenComponent tokens,
+        TokenType temporaryTokenType,
+        TokenType permanentTokenType,
+        Func<TokenType, double>? tokenEfficiencyLookup)
+    {
+        var temporaryStacks = tokens.GetStacks(temporaryTokenType) *
+                              LookupEfficiency(tokenEfficiencyLookup, temporaryTokenType);
+        var permanentStacks = tokens.GetStacks(permanentTokenType) *
+                              PermanentStatusEfficiencyMultiplier *
+                              LookupEfficiency(tokenEfficiencyLookup, permanentTokenType);
+        return temporaryStacks + permanentStacks;
+    }
+
+    private static double LookupEfficiency(Func<TokenType, double>? tokenEfficiencyLookup, TokenType tokenType) =>
+        tokenEfficiencyLookup?.Invoke(tokenType) ?? 1.0;
 }

@@ -12,9 +12,9 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
 const nodesDir = path.join(projectRoot, "Assets/_Project/Resources/SkillTreeNodes");
-const treesPath = path.join(projectRoot, "Game.Simulations/Data/skill_trees.json");
-const skillsPath = path.join(projectRoot, "Game.Simulations/Data/skills.json");
-const passivesPath = path.join(projectRoot, "Game.Simulations/Data/passives.json");
+const treesPath = path.join(projectRoot, "Assets/StreamingAssets/Data/skill_trees.json");
+const skillsPath = path.join(projectRoot, "Assets/StreamingAssets/Data/skills.json");
+const passivesPath = path.join(projectRoot, "Assets/StreamingAssets/Data/passives.json");
 const panelPrefabPath = path.join(
   projectRoot,
   "Assets/_Project/Prefabs/UIPrefabs/SkillTreePanel.prefab"

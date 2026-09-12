@@ -10,7 +10,7 @@ namespace Core.Tokens
     /// Cada reaplicação aumenta os stacks linearmente (fator 0.1 por stack).
     /// Sinergias:
     ///   - Bleed presente → Amplification: dano aumentado (cauterização falha, ferida arde).
-    ///   - Immunity: bloqueia FreezingStatusToken de ser alocado enquanto ativo.
+    ///   - Immunity: reservado (parceiro de Exemplos/Freezing removido).
     /// Allocation: on-hit.
     /// </summary>
     public class BurnToken : TokenController, IAmplificationSynergy, IImmunitySynergy
@@ -19,7 +19,7 @@ namespace Core.Tokens
         private float currentDamageMultiplier = 1f;
 
         public HashSet<Type> amplificationSynergys { get; } = new() { typeof(BleedToken) };
-        public HashSet<Type> immunitySynergys      { get; } = new() { typeof(FreezingStatusToken) };
+        public HashSet<Type> immunitySynergys { get; } = new();
 
         public BurnToken(Action<float> applyDamage, float baseDamage = 5f) : base(
             typeof(BurnToken).Name,

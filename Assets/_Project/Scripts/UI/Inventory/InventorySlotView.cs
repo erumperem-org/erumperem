@@ -15,6 +15,8 @@
 
 using System;
 using Core.Exploration.Items;
+using Erumperem.Combat.Authoring;
+using Game.Core.Items;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -23,6 +25,7 @@ public sealed class InventorySlotView : MonoBehaviour
 {
     [Header("Referências (prefab)")]
     [SerializeField] private Image _icon;
+    [SerializeField] private Image _rarityBackground;
     [SerializeField] private TMP_Text _itemName;
     [SerializeField] private TMP_Text _amount;
     [SerializeField] private Button _executeButton;
@@ -71,6 +74,8 @@ public sealed class InventorySlotView : MonoBehaviour
             _icon.enabled = item.Sprite != null;
         }
 
+        ApplyRarityBackground(item);
+
         if (_amount != null)
         {
             bool showAmount = item.storageMode is StorageMode.Stackable or StorageMode.Unlimited;
@@ -78,6 +83,24 @@ public sealed class InventorySlotView : MonoBehaviour
             if (showAmount)
                 _amount.text = quantity > 1 ? $"x{quantity}" : "x1";
         }
+    }
+
+    private void ApplyRarityBackground(IItem item)
+    {
+        if (_rarityBackground == null)
+        {
+            return;
+        }
+
+        if (item is CombatItemAsset combatItem)
+        {
+            var rgb = CombatItemRarityColors.ResolveBackgroundRgb(combatItem.Rarity);
+            _rarityBackground.enabled = true;
+            _rarityBackground.color = new Color((float)rgb.Red, (float)rgb.Green, (float)rgb.Blue, 1f);
+            return;
+        }
+
+        _rarityBackground.enabled = false;
     }
 
     // ── Privado ───────────────────────────────────────────────────────────

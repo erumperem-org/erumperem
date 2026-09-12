@@ -6,33 +6,33 @@ namespace Game.Core.Engine;
 
 public static class BattleFactory
 {
-    public static readonly string[] DefaultAllySkillIds = ["wulfricBasicHit"];
+    public static readonly string[] DefaultAllySkillIds = ["wulfric_innate_active1"];
 
     /// <summary>Skills always on Wulfric regardless of tree (innates).</summary>
     public static readonly string[] WulfricInnateSkillIds =
     [
-        "wulfricBasicHit",
-        "wulfricTaunt",
-        "wulfricAreaAttack",
-        "wulfricRaiseShield",
+        "wulfric_innate_active1",
+        "wulfric_innate_active2",
+        "wulfric_innate_active3",
+        "wulfric_innate_active4",
     ];
 
     /// <summary>Innate loadout for Buck.</summary>
     public static readonly string[] BuckInnateSkillIds =
     [
-        "buckBasicHit",
-        "buckPistol",
-        "buckRevolver",
-        "buckRifle",
+        "buck_innate_active1",
+        "buck_innate_active2",
+        "buck_innate_active3",
+        "buck_innate_active4",
     ];
 
-    /// <summary>Innate loadout for Maria.</summary>
+    /// <summary>Innate loadout for Maria / The Star.</summary>
     public static readonly string[] MariaInnateSkillIds =
     [
-        "mariaBasicHit",
-        "mariaHealVoice",
-        "mariaScreamAttack",
-        "mariaDamageBuff",
+        "maria_innate_active1",
+        "maria_innate_active2",
+        "maria_innate_active3",
+        "maria_innate_active4",
     ];
 
     public static IReadOnlyList<string> ResolveInnateSkillIds(string progressionCharacterId)
@@ -55,28 +55,94 @@ public static class BattleFactory
         return DefaultAllySkillIds;
     }
 
+    public static IReadOnlyList<string> ResolveAlwaysOnPassiveIds(string progressionCharacterId)
+    {
+        if (string.Equals(progressionCharacterId, "wulfric", StringComparison.OrdinalIgnoreCase))
+        {
+            return WulfricAlwaysOnPassiveIds;
+        }
+
+        if (string.Equals(progressionCharacterId, "buck", StringComparison.OrdinalIgnoreCase))
+        {
+            return BuckAlwaysOnPassiveIds;
+        }
+
+        if (string.Equals(progressionCharacterId, "maria", StringComparison.OrdinalIgnoreCase))
+        {
+            return MariaAlwaysOnPassiveIds;
+        }
+
+        return [];
+    }
+
+    public static void UnlockAlwaysOnKitPassives(
+        Combatant combatant,
+        string progressionCharacterId,
+        IReadOnlyDictionary<string, PassiveDefinition>? passivesById)
+    {
+        if (combatant == null || passivesById == null || passivesById.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var passiveId in ResolveAlwaysOnPassiveIds(progressionCharacterId))
+        {
+            if (passivesById.ContainsKey(passiveId))
+            {
+                combatant.Progression.UnlockedNodes[passiveId] = true;
+            }
+        }
+    }
+
     public static readonly string[] WulfricFullSkillLoadout =
     [
-        "wulfricBasicHit", "wulfricTaunt", "wulfricAreaAttack", "wulfricRaiseShield",
-        "wulfricUnstable", "wulfricStabilize", "wulfricNocontrol",
-        "wulfricWhip", "wulfricBigSword", "wulfricForceExplosion",
-        "wulfricShieldAttack", "wulfricDefendAlly", "wulfricFrenzy",
+        "wulfric_innate_active1", "wulfric_innate_active2", "wulfric_innate_active3", "wulfric_innate_active4",
+        "wulfric_tree1_tier1_active", "wulfric_tree1_tier2_active", "wulfric_tree1_tier3_active",
+        "wulfric_tree2_tier1_active", "wulfric_tree2_tier2_active", "wulfric_tree2_tier3_active",
+        "wulfric_tree3_tier1_active", "wulfric_tree3_tier2_active", "wulfric_tree3_tier3_active",
+    ];
+
+    public static readonly string[] WulfricAlwaysOnPassiveIds =
+    [
+        "wulfric_leader_passive1",
+        "wulfric_companion_passive1",
+        "wulfric_corruption_tier1_passive1",
+        "wulfric_corruption_tier2_passive1",
+        "wulfric_corruption_tier3_passive1",
     ];
 
     public static readonly string[] BuckFullSkillLoadout =
     [
-        "buckBasicHit", "buckPistol", "buckRevolver", "buckRifle",
-        "buckSpiderHands", "buckAllGuns", "buckJuggle",
-        "buckSnakeVision", "buckSnakeBite", "buckSnakeTail",
-        "buckMark", "buckPistolHeadShot", "buckLuckManipulation",
+        "buck_innate_active1", "buck_innate_active2", "buck_innate_active3", "buck_innate_active4",
+        "buck_tree1_tier1_active", "buck_tree1_tier2_active", "buck_tree1_tier3_active",
+        "buck_tree2_tier1_active", "buck_tree2_tier2_active", "buck_tree2_tier3_active",
+        "buck_tree3_tier1_active", "buck_tree3_tier2_active", "buck_tree3_tier3_active",
+    ];
+
+    public static readonly string[] BuckAlwaysOnPassiveIds =
+    [
+        "buck_leader_passive1",
+        "buck_companion_passive1",
+        "buck_corruption_tier1_passive1",
+        "buck_corruption_tier2_passive1",
+        "buck_corruption_tier3_passive1",
     ];
 
     public static readonly string[] MariaFullSkillLoadout =
     [
-        "mariaBasicHit", "mariaHealVoice", "mariaScreamAttack", "mariaDamageBuff",
-        "mariaEchoHeal", "mariaCleanse", "mariaResurrection",
-        "mariaChanceBuff", "mariaDefenseBuff", "mariaShow",
-        "mariaScreechNoise", "mariaPiercingYell", "mariaChaosMelody",
+        "maria_innate_active1", "maria_innate_active2", "maria_innate_active3", "maria_innate_active4",
+        "maria_tree1_tier1_active", "maria_tree1_tier2_active", "maria_tree1_tier3_active",
+        "maria_tree2_tier1_active", "maria_tree2_tier2_active", "maria_tree2_tier3_active",
+        "maria_tree3_tier1_active", "maria_tree3_tier2_active", "maria_tree3_tier3_active",
+    ];
+
+    public static readonly string[] MariaAlwaysOnPassiveIds =
+    [
+        "maria_leader_passive1",
+        "maria_companion_passive1",
+        "maria_corruption_tier1_passive1",
+        "maria_corruption_tier2_passive1",
+        "maria_corruption_tier3_passive1",
     ];
 
     public static readonly string[] DefaultEnemySkillIds = ["spider_bite", "spider_web", "enemy_claw"];
@@ -205,6 +271,7 @@ public static class BattleFactory
             Progression = new ProgressionComponent { Level = 0, SpentPoints = 0 },
             AI = null,
             ElementAffinity = new ElementAffinityComponent { Element = ElementType.Fire },
+            PartyRole = CombatPartyRoleRules.FromAllyPartyIndex(rank - 1),
         };
     }
 
@@ -258,6 +325,7 @@ public static class BattleFactory
             Progression = new ProgressionComponent { Level = 0, SpentPoints = 0 },
             AI = new AIComponent { DecisionPolicyId = "KillThenWeighted" },
             ElementAffinity = new ElementAffinityComponent { Element = ElementType.Anomaly },
+            PartyRole = CombatantPartyRole.None,
         };
     }
 }

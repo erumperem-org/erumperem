@@ -27,7 +27,7 @@ Cópias em **`Assets/StreamingAssets/Data/`**:
 - `skills.json`
 - `passives.json`
 
-O protótipo lê com `Application.streamingAssetsPath + "/Data/..."`. Se faltarem ficheiros, copie a partir de `Game.Simulations/Data/`.
+O protótipo lê com `Application.streamingAssetsPath + "/Data/..."`. Este JSON é a fonte única; não existe clone em `Game.Simulations/Data`.
 
 ## Cena e controlos
 

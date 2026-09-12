@@ -38,12 +38,30 @@ namespace Erumperem.Combat
                 return true;
             }
 
-            if (!SkillTargetKindRules.DirectsPrimaryDamageAtEnemies(skill.TargetKind))
+            if (SkillTargetKindRules.DirectsPrimaryDamageAtEnemies(skill.TargetKind))
             {
-                return false;
+                return HasAnyValidEnemyForSlot(state, simulator, actor, hotkeyIndexZeroBased);
             }
 
-            return HasAnyValidEnemyForSlot(state, simulator, actor, hotkeyIndexZeroBased);
+            return HasAnyValidSameSideTargetForSlot(state, simulator, actor, hotkeyIndexZeroBased);
+        }
+
+        private static bool HasAnyValidSameSideTargetForSlot(
+            BattleState state,
+            BattleSimulator simulator,
+            Combatant actor,
+            int hotkeyIndexZeroBased)
+        {
+            var sameSideRoster = actor.Position.Side == Side.Allies ? state.Allies : state.Enemies;
+            foreach (var candidate in sameSideRoster)
+            {
+                if (PlayerActionBuilder.TryCreate(state, simulator, actor, hotkeyIndexZeroBased, candidate) != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool HasAnyValidEnemyForSlot(

@@ -32,6 +32,11 @@ public static class PlayerActionBuilder
             return null;
         }
 
+        if (!IsValidPlayerClickTarget(state, actor, skill, selectedTarget))
+        {
+            return null;
+        }
+
         var primaryTargets = SkillTargetResolver.ResolvePrimaryTargets(state, actor, skill, selectedTarget);
         if (primaryTargets.Count == 0)
         {
@@ -51,5 +56,44 @@ public static class PlayerActionBuilder
             Skill = skill,
             ActionType = ActionType.Skill,
         };
+    }
+
+    /// <summary>
+    /// Self skills must be clicked on the caster. Ally skills need a same-side click.
+    /// Enemy skills need a living enemy in the valid pool — clicking an ally must not fire them.
+    /// </summary>
+    private static bool IsValidPlayerClickTarget(
+        BattleState state,
+        Combatant actor,
+        SkillDefinition skill,
+        Combatant? selectedTarget)
+    {
+        if (selectedTarget == null)
+        {
+            return false;
+        }
+
+        if (SkillTargetKindRules.IsSelfOnly(skill.TargetKind))
+        {
+            return string.Equals(selectedTarget.Identity.Id, actor.Identity.Id, StringComparison.Ordinal);
+        }
+
+        if (SkillTargetKindRules.DirectsPrimaryDamageAtAllies(skill.TargetKind))
+        {
+            if (selectedTarget.Position.Side != actor.Position.Side)
+            {
+                return false;
+            }
+
+            return !selectedTarget.Health.IsDead || skill.CanTargetDeadAllies;
+        }
+
+        if (SkillTargetKindRules.DirectsPrimaryDamageAtEnemies(skill.TargetKind))
+        {
+            return SkillTargetResolver.GetValidEnemyPool(state, actor)
+                .Any(enemy => string.Equals(enemy.Identity.Id, selectedTarget.Identity.Id, StringComparison.Ordinal));
+        }
+
+        return false;
     }
 }

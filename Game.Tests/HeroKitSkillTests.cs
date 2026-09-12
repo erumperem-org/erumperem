@@ -12,18 +12,18 @@ public sealed class HeroKitSkillTests
 {
     private static readonly string[] RequiredHeroSkillIds =
     [
-        "wulfricBasicHit", "wulfricTaunt", "wulfricAreaAttack", "wulfricRaiseShield",
-        "wulfricUnstable", "wulfricStabilize", "wulfricNocontrol",
-        "wulfricWhip", "wulfricBigSword", "wulfricForceExplosion",
-        "wulfricShieldAttack", "wulfricDefendAlly", "wulfricFrenzy",
-        "buckBasicHit", "buckPistol", "buckRevolver", "buckRifle",
-        "buckSpiderHands", "buckAllGuns", "buckJuggle",
-        "buckSnakeVision", "buckSnakeBite", "buckSnakeTail",
-        "buckMark", "buckPistolHeadShot", "buckLuckManipulation",
-        "mariaBasicHit", "mariaHealVoice", "mariaScreamAttack", "mariaDamageBuff",
-        "mariaEchoHeal", "mariaCleanse", "mariaResurrection",
-        "mariaChanceBuff", "mariaDefenseBuff", "mariaShow",
-        "mariaScreechNoise", "mariaPiercingYell", "mariaChaosMelody",
+        "wulfric_innate_active1", "wulfric_innate_active2", "wulfric_innate_active3", "wulfric_innate_active4",
+        "wulfric_tree1_tier1_active", "wulfric_tree1_tier2_active", "wulfric_tree1_tier3_active",
+        "wulfric_tree2_tier1_active", "wulfric_tree2_tier2_active", "wulfric_tree2_tier3_active",
+        "wulfric_tree3_tier1_active", "wulfric_tree3_tier2_active", "wulfric_tree3_tier3_active",
+        "buck_innate_active1", "buck_innate_active2", "buck_innate_active3", "buck_innate_active4",
+        "buck_tree1_tier1_active", "buck_tree1_tier2_active", "buck_tree1_tier3_active",
+        "buck_tree2_tier1_active", "buck_tree2_tier2_active", "buck_tree2_tier3_active",
+        "buck_tree3_tier1_active", "buck_tree3_tier2_active", "buck_tree3_tier3_active",
+        "maria_innate_active1", "maria_innate_active2", "maria_innate_active3", "maria_innate_active4",
+        "maria_tree1_tier1_active", "maria_tree1_tier2_active", "maria_tree1_tier3_active",
+        "maria_tree2_tier1_active", "maria_tree2_tier2_active", "maria_tree2_tier3_active",
+        "maria_tree3_tier1_active", "maria_tree3_tier2_active", "maria_tree3_tier3_active",
     ];
 
     [Fact]
@@ -53,7 +53,7 @@ public sealed class HeroKitSkillTests
     public void WulfricIronMaiden_ResolvesUpToThreeEnemies()
     {
         var skills = SampleCombatData.CreateSkills();
-        var ironMaiden = skills.First(skill => skill.Id == "wulfricAreaAttack");
+        var ironMaiden = skills.First(skill => skill.Id == "wulfric_innate_active3");
         Assert.Equal(SkillTargetKind.UpToThreeEnemies, ironMaiden.TargetKind);
 
         var battle = BattleFactory.CreateSampleBattle(
@@ -72,7 +72,7 @@ public sealed class HeroKitSkillTests
     public void WulfricTaunt_AppliesTauntAndControlledInstability()
     {
         var skills = SampleCombatData.CreateSkills();
-        var tauntSkill = skills.First(skill => skill.Id == "wulfricTaunt");
+        var tauntSkill = skills.First(skill => skill.Id == "wulfric_innate_active2");
         var battle = BattleFactory.CreateSampleBattle(
             skills,
             allyCount: 1,
@@ -97,7 +97,7 @@ public sealed class HeroKitSkillTests
     [Fact]
     public void BuckUnload_HasHitCountThree()
     {
-        var unload = SampleCombatData.CreateSkills().First(skill => skill.Id == "buckRevolver");
+        var unload = SampleCombatData.CreateSkills().First(skill => skill.Id == "buck_innate_active3");
         Assert.Equal(3, unload.HitCount);
     }
 
@@ -106,7 +106,7 @@ public sealed class HeroKitSkillTests
     {
         Assert.True(CombatHealUnlock.IsCombatHealingUnlocked);
         var skills = SampleCombatData.CreateSkills();
-        var healSkill = skills.First(skill => skill.Id == "mariaHealVoice");
+        var healSkill = skills.First(skill => skill.Id == "maria_innate_active2");
         var battle = BattleFactory.CreateSampleBattle(
             skills,
             allyCount: 1,
@@ -134,7 +134,7 @@ public sealed class HeroKitSkillTests
     public void LossOfControl_ConsumesControlledInstabilityAndDamagesEnemies()
     {
         var skills = SampleCombatData.CreateSkills();
-        var lossOfControl = skills.First(skill => skill.Id == "wulfricNocontrol");
+        var lossOfControl = skills.First(skill => skill.Id == "wulfric_tree1_tier3_active");
         var battle = BattleFactory.CreateSampleBattle(
             skills,
             allyCount: 1,
@@ -203,7 +203,7 @@ public sealed class HeroKitSkillTests
     }
 
     [Fact]
-    public void StrengthToken_IncreasesOutgoingDamage()
+    public void StrengthToken_IncreasesDamageCaused()
     {
         var smack = new SkillDefinition
         {
@@ -290,7 +290,7 @@ public sealed class HeroKitSkillTests
     public void MultiTargetSkill_IsDeterministicWithSameSeed()
     {
         var skills = SampleCombatData.CreateSkills();
-        var ironMaiden = skills.First(skill => skill.Id == "wulfricAreaAttack");
+        var ironMaiden = skills.First(skill => skill.Id == "wulfric_innate_active3");
 
         int RunOnce(int seed)
         {
@@ -323,13 +323,13 @@ public sealed class HeroKitSkillTests
         Assert.Contains(trees, character => character.CharacterId == "maria");
         var wulfric = SkillTreeLookup.FindCharacterTrees(trees, "wulfric");
         Assert.NotNull(wulfric);
-        Assert.True(SkillTreeLookup.TryFindNode(wulfric!, "wulfricUnstable", out _, out _));
+        Assert.True(SkillTreeLookup.TryFindNode(wulfric!, "wulfric_tree1_tier1_active", out _, out _));
         var buck = SkillTreeLookup.FindCharacterTrees(trees, "buck");
         Assert.NotNull(buck);
-        Assert.True(SkillTreeLookup.TryFindNode(buck!, "buckAllGuns", out _, out _));
+        Assert.True(SkillTreeLookup.TryFindNode(buck!, "buck_tree1_tier2_active", out _, out _));
         var maria = SkillTreeLookup.FindCharacterTrees(trees, "maria");
         Assert.NotNull(maria);
-        Assert.True(SkillTreeLookup.TryFindNode(maria!, "mariaHealVoice", out _, out _) == false);
-        Assert.True(SkillTreeLookup.TryFindNode(maria!, "mariaEchoHeal", out _, out _));
+        Assert.True(SkillTreeLookup.TryFindNode(maria!, "maria_innate_active2", out _, out _) == false);
+        Assert.True(SkillTreeLookup.TryFindNode(maria!, "maria_tree1_tier1_active", out _, out _));
     }
 }

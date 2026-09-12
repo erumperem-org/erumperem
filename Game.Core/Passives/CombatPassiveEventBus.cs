@@ -35,7 +35,13 @@ public sealed class CombatPassiveEventBus
 
     public void RaiseTurnStarted(BattleState state, Combatant actor, Action<TokenType, int>? onTokenGranted)
     {
+        actor.PassiveRuntime.BeginTurn();
         PassiveRuleApplier.ApplyTurnStartPassives(state, actor, onTokenGranted);
+        PassiveDataDrivenEngine.HandleActivation(
+            state,
+            actor,
+            PassiveActivationKind.OnTurnStart,
+            new CombatPassiveEventContext { Self = actor });
         Dispatch(
             PassiveTrigger.TurnStarted,
             state,
@@ -44,10 +50,12 @@ public sealed class CombatPassiveEventBus
 
     public void RaiseTurnEnded(BattleState state, Combatant actor)
     {
+        var context = new CombatPassiveEventContext { Self = actor };
+        PassiveDataDrivenEngine.HandleActivation(state, actor, PassiveActivationKind.OnTurnEnd, context);
         Dispatch(
             PassiveTrigger.TurnEnded,
             state,
-            new CombatPassiveEventContext { Self = actor });
+            context);
     }
 
     public double GetDotTickDamageMultiplier(BattleState state, Combatant victim, DotInstance dot)
@@ -65,7 +73,7 @@ public sealed class CombatPassiveEventBus
         return mult;
     }
 
-    public (DamageModifierAccumulator Acc, bool ConsumeImpeto, List<PassiveCombatNote> OutNotes) AccumulateOutgoingDamageModifiers(
+    public (DamageModifierAccumulator Acc, bool ConsumeImpeto, List<PassiveCombatNote> OutNotes) AccumulateDamageCausedModifiers(
         BattleState state,
         Combatant actor,
         Combatant target,
@@ -74,7 +82,7 @@ public sealed class CombatPassiveEventBus
         List<PassiveCombatNote>? noteSink = null)
     {
         var notes = noteSink ?? new List<PassiveCombatNote>();
-        var result = PassiveRuleApplier.AccumulateOutgoingDamageModifiers(state, actor, target, skill, notes);
+        var result = PassiveRuleApplier.AccumulateDamageCausedModifiers(state, actor, target, skill, notes);
         if (notifyObservers)
         {
             Dispatch(
@@ -110,15 +118,37 @@ public sealed class CombatPassiveEventBus
         Combatant actor,
         Combatant? hitTarget,
         SkillDefinition skill,
-        bool hit)
+        bool hit,
+        bool wasCrit = false)
     {
         PassiveRuleApplier.OnOutgoingHitSuccess(state, actor, skill, hit);
         if (hit)
         {
+            var context = new CombatPassiveEventContext
+            {
+                Self = actor,
+                Other = hitTarget,
+                Skill = skill,
+                WasCrit = wasCrit,
+            };
+            if (wasCrit)
+            {
+                PassiveDataDrivenEngine.HandleActivation(
+                    state,
+                    actor,
+                    PassiveActivationKind.UponCriticalStrike,
+                    context);
+            }
+
+            PassiveDataDrivenEngine.HandleActivation(
+                state,
+                actor,
+                PassiveActivationKind.UponHittingTargetWithStatus,
+                context);
             Dispatch(
                 PassiveTrigger.AfterOutgoingHitResolved,
                 state,
-                new CombatPassiveEventContext { Self = actor, Other = hitTarget, Skill = skill });
+                context);
         }
     }
 
@@ -168,6 +198,21 @@ public sealed class CombatPassiveEventBus
             new CombatPassiveEventContext { Self = actor, Other = target, Skill = skill });
     }
 
+    /// <summary>Player-chosen skill started resolving (not follow-up invocations).</summary>
+    public void RaiseSkillUsed(BattleState state, Combatant actor, Combatant? selectedTarget, SkillDefinition skill)
+    {
+        PassiveDataDrivenEngine.HandleActivation(
+            state,
+            actor,
+            PassiveActivationKind.UponUsingSkill,
+            new CombatPassiveEventContext
+            {
+                Self = actor,
+                Other = selectedTarget,
+                Skill = skill,
+            });
+    }
+
     public void RaiseDamageTaken(
         BattleState state,
         Combatant? attacker,
@@ -191,6 +236,74 @@ public sealed class CombatPassiveEventBus
                 HpPercentBefore = hpPercentBefore,
                 HpPercentAfter = hpPercentAfter,
             });
+
+        PassiveDataDrivenEngine.RegisterDamageTakenTowardEveryXHitPoints(defender, damage);
+        var defenderContext = new CombatPassiveEventContext
+        {
+            Self = defender,
+            Other = attacker,
+            Skill = skill,
+            DamageAmount = damage,
+            WasCrit = wasCrit,
+            HpPercentBefore = hpPercentBefore,
+            HpPercentAfter = hpPercentAfter,
+        };
+        PassiveDataDrivenEngine.HandleActivation(
+            state,
+            defender,
+            PassiveActivationKind.UponDamageTaken,
+            defenderContext);
+        PassiveDataDrivenEngine.HandleActivation(
+            state,
+            defender,
+            PassiveActivationKind.UponStatThreshold,
+            defenderContext);
+        NotifySameSideAllies(
+            state,
+            defender,
+            PassiveActivationKind.UponAllyDamageTaken,
+            new CombatPassiveEventContext
+            {
+                Self = defender,
+                Other = attacker,
+                Victim = defender,
+                Skill = skill,
+                DamageAmount = damage,
+                WasCrit = wasCrit,
+                HpPercentBefore = hpPercentBefore,
+                HpPercentAfter = hpPercentAfter,
+            });
+
+        if (attacker != null &&
+            !string.Equals(attacker.Identity.Id, defender.Identity.Id, StringComparison.Ordinal))
+        {
+            var attackerContext = new CombatPassiveEventContext
+            {
+                Self = attacker,
+                Other = defender,
+                Skill = skill,
+                DamageAmount = damage,
+                WasCrit = wasCrit,
+            };
+            PassiveDataDrivenEngine.HandleActivation(
+                state,
+                attacker,
+                PassiveActivationKind.UponDealingDamage,
+                attackerContext);
+            NotifySameSideAllies(
+                state,
+                attacker,
+                PassiveActivationKind.UponAllyDealingDamage,
+                new CombatPassiveEventContext
+                {
+                    Self = attacker,
+                    Other = defender,
+                    Killer = attacker,
+                    Skill = skill,
+                    DamageAmount = damage,
+                    WasCrit = wasCrit,
+                });
+        }
 
         if (hpPercentBefore is not null &&
             hpPercentAfter is not null &&
@@ -226,7 +339,53 @@ public sealed class CombatPassiveEventBus
                 selfApply ? PassiveTrigger.TokenAppliedToSelf : PassiveTrigger.TokenAppliedToOther,
                 state,
                 contextBase);
+
+            PassiveDataDrivenEngine.HandleActivation(
+                state,
+                recipient,
+                PassiveActivationKind.UponReceivingStatus,
+                contextBase);
+            var applierContext = new CombatPassiveEventContext
+            {
+                Self = sourceActor,
+                Other = recipient,
+                Skill = skill,
+                TokenType = tokenType,
+                TokenDelta = delta,
+            };
+            PassiveDataDrivenEngine.HandleActivation(
+                state,
+                sourceActor,
+                PassiveActivationKind.UponApplyingStatus,
+                applierContext);
         }
+    }
+
+    public void RaiseHealingDealt(
+        BattleState state,
+        Combatant healer,
+        Combatant recipient,
+        SkillDefinition? skill,
+        int healAmount)
+    {
+        if (healAmount <= 0)
+        {
+            return;
+        }
+
+        var context = new CombatPassiveEventContext
+        {
+            Self = healer,
+            Other = recipient,
+            Skill = skill,
+            HealAmount = healAmount,
+        };
+        Dispatch(PassiveTrigger.HealingDealt, state, context);
+        PassiveDataDrivenEngine.HandleActivation(
+            state,
+            healer,
+            PassiveActivationKind.UponHealing,
+            context);
     }
 
     public void RaiseCombatantSlain(BattleState state, Combatant? killer, Combatant victim)
@@ -235,6 +394,44 @@ public sealed class CombatPassiveEventBus
             PassiveTrigger.CombatantSlain,
             state,
             new CombatPassiveEventContext { Killer = killer, Victim = victim });
+        if (killer != null)
+        {
+            if (victim.Identity.Faction == Faction.Enemy)
+            {
+                killer.PassiveRuntime.EnemiesDefeatedThisBattle++;
+            }
+
+            PassiveDataDrivenEngine.HandleActivation(
+                state,
+                killer,
+                PassiveActivationKind.UponKill,
+                new CombatPassiveEventContext
+                {
+                    Self = killer,
+                    Other = victim,
+                    Killer = killer,
+                    Victim = victim,
+                });
+        }
+    }
+
+    private static void NotifySameSideAllies(
+        BattleState state,
+        Combatant eventCombatant,
+        PassiveActivationKind activation,
+        CombatPassiveEventContext context)
+    {
+        var roster = eventCombatant.Position.Side == Side.Allies ? state.Allies : state.Enemies;
+        foreach (var ally in roster)
+        {
+            if (ally.Health.IsDead ||
+                string.Equals(ally.Identity.Id, eventCombatant.Identity.Id, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            PassiveDataDrivenEngine.HandleActivation(state, ally, activation, context);
+        }
     }
 
     /// <summary>Emits one event per barrier in <see cref="MonitoredHpPercentBarriers"/> crossed between the two ratios.</summary>

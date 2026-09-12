@@ -33,6 +33,9 @@ public sealed class StatsComponent
     public required int Speed { get; init; }
     public required double Accuracy { get; init; }
     public required double CritChance { get; init; }
+
+    /// <summary>Incoming damage reduction as a fraction (0.25 = 25%).</summary>
+    public double DefenseChance { get; init; }
 }
 
 public sealed class ResistanceComponent
@@ -172,4 +175,9 @@ public sealed class Combatant
     public PassiveRuntimeState PassiveRuntime { get; set; } = new();
     public AIComponent? AI { get; set; }
     public required ElementAffinityComponent ElementAffinity { get; set; }
+
+    /// <summary>
+    /// Overworld Main maps to Leader, Companion to Companion. Enemies and summons stay None.
+    /// </summary>
+    public CombatantPartyRole PartyRole { get; set; } = CombatantPartyRole.None;
 }

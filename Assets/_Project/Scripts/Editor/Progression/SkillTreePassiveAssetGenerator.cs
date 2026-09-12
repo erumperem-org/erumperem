@@ -23,14 +23,15 @@ namespace Erumperem.Editor.Progression
         public static void GenerateAll()
         {
             var projectRoot = Directory.GetParent(Application.dataPath)!.FullName;
-            var treesPath = Path.Combine(projectRoot, "Game.Simulations", "Data", "skill_trees.json");
-            var skillsPath = Path.Combine(projectRoot, "Game.Simulations", "Data", "skills.json");
-            var passivesPath = Path.Combine(projectRoot, "Game.Simulations", "Data", "passives.json");
+            var treesPath = Path.Combine(projectRoot, "Assets", "StreamingAssets", "Data", "skill_trees.json");
+            var skillsPath = Path.Combine(projectRoot, "Assets", "StreamingAssets", "Data", "skills.json");
+            var passivesPath = Path.Combine(projectRoot, "Assets", "StreamingAssets", "Data", "passives.json");
 
             if (!File.Exists(treesPath) || !File.Exists(skillsPath) || !File.Exists(passivesPath))
             {
                 Debug.LogError(
-                    "Generate: faltam ficheiros em Game.Simulations/Data (skill_trees, skills, passives).");
+                    "Generate: faltam ficheiros em Assets/StreamingAssets/Data (skill_trees, skills, passives). " +
+                    "Run Erumperem/Combat/Export Catalog first.");
                 return;
             }
 

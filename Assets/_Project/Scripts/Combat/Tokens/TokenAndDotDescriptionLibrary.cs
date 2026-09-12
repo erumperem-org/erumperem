@@ -16,54 +16,76 @@ namespace Erumperem.Combat.Tokens
         public static string GetTokenAuthoredDescription(TokenType tokenType) => tokenType switch
         {
             TokenType.Block =>
-                "[token block]: reduces the next physical damage taken.",
+                "Status — [token block]: reduces the next physical damage taken.",
             TokenType.BlockPlus =>
-                "[token blockplus]: [c buff]strongly[/c] reduces the next physical damage taken.",
+                "Status — [token blockplus]: [c buff]strongly[/c] reduces the next physical damage taken.",
             TokenType.Dodge =>
-                "[token dodge]: evades the next enemy attack.",
+                "Status — [token dodge]: evades the next enemy attack.",
             TokenType.Blind =>
-                "[token blind]: the bearer's next attack has a high chance to miss.",
+                "Status — [token blind]: the bearer's next attack has a high chance to miss.",
             TokenType.Taunt =>
-                "[token taunt]: enemies prioritize targeting this unit; loses 1 stack when hit.",
+                "Status — [token taunt]: enemies can only select this. Lose 1 stack when hit by an enemy.",
             TokenType.Stealth =>
-                "[token stealth]: skills targeting this character have -40% accuracy; loses 1 stack at end of turn.",
+                "Status — [token stealth]: skills targeting this character have -40% accuracy. Lose 1 stack at the end of turn.",
             TokenType.Combo =>
-                "[token combo]: accumulates and empowers specific skills; consumed upon use.",
+                "Status — [token combo]: accumulates and empowers specific skills; consumed upon use.",
             TokenType.Stun =>
-                "[token stun]: the bearer loses their next turn.",
+                "Status — [token stun]: the bearer loses their next turn.",
             TokenType.ControlledInstability =>
-                "[token controlledinstability]: attackers take 2 damage per stack.",
+                "Status — [token controlledinstability]: enemies who hit you receive 2 damage per stack.",
             TokenType.Destabilization =>
-                "[token destabilization]: on death (or force-trigger), all others take 3 damage per stack.",
+                "Status — [token destabilization]: on death, nearby characters take 3 damage per stack.",
             TokenType.Strength =>
-                "[token strength]: deals 25% more damage per stack; loses 1 at end of turn.",
+                "Status — [token strength]: deals 25% more damage per stack. Lose 1 stack at the end of turn.",
             TokenType.Defense =>
-                "[token defense]: takes 25% less damage per stack; loses 1 at end of turn.",
+                "Status — [token defense]: takes 25% less damage per stack. Lose 1 stack at the end of turn.",
             TokenType.Weaken =>
-                "[token weaken]: deals 50% less damage per stack; loses 1 at end of turn.",
+                "Status — [token weaken]: deals 50% less damage per stack. Lose 1 stack at the end of turn.",
             TokenType.Vulnerability =>
-                "[token vulnerability]: takes 50% more damage per stack; loses 1 at end of turn.",
+                "Status — [token vulnerability]: takes 50% more damage per stack. Lose 1 stack at the end of turn.",
             TokenType.Confusion =>
-                "[token confusion]: 33% chance to retarget enemy skills randomly this turn.",
+                "Status — [token confusion]: each skill has 33% chance to swap Ally↔Enemy and Self↔None this turn. Lose 1 stack at the end of turn.",
             TokenType.Bleeding =>
-                "[token bleeding]: 5% Max HP damage per stack at end of turn; loses 1 stack.",
+                "Status — [token bleeding]: takes 5% maximum health per stack at the end of turn. Lose 1 stack.",
             TokenType.LuckyShot =>
-                "[token luckyshot]: +4% crit chance per stack; loses 1 at end of turn.",
+                "Status — [token luckyshot]: +4% critical chance per stack. Lose 1 stack at the end of turn.",
             TokenType.Dexterity =>
-                "[token dexterity]: +10% accuracy per stack; loses 1 at end of turn.",
+                "Status — [token dexterity]: +10% accuracy per stack. Lose 1 stack at the end of turn.",
             TokenType.Exposition =>
-                "[token exposition]: skills targeting this gain +20% accuracy per stack.",
+                "Status — [token exposition]: skills targeting this character have +20% accuracy per stack. Lose 1 stack at the end of turn.",
             TokenType.Corrosion =>
-                "[token corrosion]: amplifies other debuffs; takes 5 damage and loses 1 at EOT.",
+                "Status — [token corrosion]: every other debuff type is +10% more effective per stack. Take 5 damage and lose 1 stack at the end of turn.",
             TokenType.Mark =>
-                "[token mark]: easier to crit; crits deal +50% more damage per stack.",
+                "Status — [token mark]: +10% chance to receive a critical hit. Critical hits deal +50% more damage per stack. Lose 1 stack at the end of turn.",
             TokenType.Regeneration =>
-                "[token regeneration]: heals 1 HP per stack at end of turn; loses 1 stack.",
+                "Status — [token regeneration]: receive 1 health per stack at the end of turn. Lose 1 stack.",
             TokenType.Clumsy =>
-                "[token clumsy]: -20% accuracy per stack; loses 1 at end of turn.",
+                "Status — [token clumsy]: -20% accuracy per stack. Lose 1 stack at the end of turn.",
             TokenType.BonusAction =>
-                "[token bonusaction]: may act again before the turn fully ends.",
-            _ => tokenType.ToString(),
+                "Status — [token bonusaction]: may act again before the turn fully ends.",
+            TokenType.Hypnosis =>
+                "Status — [token hypnosis]: can only use the skill last used before this Status. Lose 1 stack at the end of turn.",
+            TokenType.Dizzy =>
+                "Status — [token dizzy]: 50% chance to change which targets the skill will hit. Lose 1 stack at the end of turn.",
+            TokenType.Burn =>
+                "Status — [token burn]: takes damage equal to stacks at the end of turn. Lose 1 stack.",
+            TokenType.PermaStrength =>
+                "Status — [token permastrength]: +6.25% Damage Caused per stack; does not decay.",
+            TokenType.PermaDefense =>
+                "Status — [token permadefense]: +6.25% damage reduction per stack; does not decay.",
+            TokenType.PermaWeaken =>
+                "Status — [token permaweaken]: -12.5% Damage Caused per stack; does not decay.",
+            TokenType.PermaVulnerability =>
+                "Status — [token permavulnerability]: +12.5% damage taken per stack; does not decay.",
+            TokenType.PermaDexterity =>
+                "Status — [token permadexterity]: +2.5% accuracy per stack; does not decay.",
+            TokenType.PermaClumsy =>
+                "Status — [token permaclumsy]: -5% accuracy per stack; does not decay.",
+            TokenType.PermaExposition =>
+                "Status — [token permaexposition]: skills targeting this gain +5% accuracy per stack; does not decay.",
+            TokenType.PermaStealth =>
+                "Status — [token permastealth]: skills targeting this have -10% accuracy per stack; does not decay.",
+            _ => "Status — " + tokenType.ToString(),
         };
 
         public static string GetDotAuthoredDescription(

@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0ab11117e8f4d2e9a3b5c6d7e8f9012, type: 3}
+  m_Name: maria_tree2_tier3_passive1
+  m_EditorClassIdentifier: 
+  _abilityId: maria_tree2_tier3_passive1
+  _displayName: +1 Dexterity to team on enemy hit
+  _ownerCharacterId: maria
+  _abilityKind: 1
+  _placement: 1
+  _treeIndex: 2
+  _tierIndex: 3
+  _passiveIndex: 1
+  _corruptionMinTier: 0
+  _designerNotes: Maria kit. Duplicate this asset, change abilityId, Export Catalog.
+  _activeSkillTypeLabel: Active
+  _activeSkillDamageElement: 0
+  _baseDamageMinimum: 0
+  _baseDamageMaximum: 0
+  _baseCriticalHitChanceFraction: 0
+  _baseHitAccuracyFraction: 1
+  _targetSelectionKind: 0
+  _aiAbsoluteChanceToConsiderWhenEligible: 1
+  _aiOnlyEligibleWhenOwnHpFractionBelow: 1
+  _corruptionCostAddedWhenPlayerCasts: 0
+  _hitCount: 1
+  _chanceToNotEndTurn: 0
+  _followUpSkillIds: []
+  _grantsBonusActionsToAllies: 0
+  _accuracyPenaltyPerLivingEnemy: 0
+  _hasBonusDamagePerOwnToken: 0
+  _bonusDamagePerOwnToken: 0
+  _bonusDamagePerOwnTokenStacks: 1
+  _computeFromDebuffTypesOnTarget: 0
+  _damagePerDistinctDebuffType: 0
+  _critChancePerDistinctDebuffType: 0
+  _accuracyPerDistinctDebuffType: 0
+  _canTargetDeadAllies: 0
+  _effectsAppliedAfterSuccessfulHit: []
+  _requiredPartyRole: 0
+  _chanceToTrigger: 1
+  _maxTriggersPerBattle: 0
+  _maxTriggersPerTurn: 0
+  _passiveConditions: 
+  - Activation: 10
+    HasRequiredStatus: 0
+    RequiredStatus: 0
+    StatusMatch: 0
+    HitPointsLostPerTrigger: 0
+    StatThresholdFraction: 0
+    StatThresholdComparison: 0
+    SkillId: 
+  _passiveEffects: 
+  - Operation: 4
+    Magnitude: 0
+    HasToken: 1
+    Token: 17
+    SkillId: 
+    SummonEnemyId: 
+    Stacks: 1
+    ChanceToTrigger: 1
+    MaxTriggersPerBattle: 0
+    MaxTriggersPerTurn: 0
+    CharacterStat: 0
+    SkillStat: 0
+    Resource: 0
+    StatChangeTarget: 2
+    TokenManipulationMode: 0
+    HasResourceToken: 0
+    ResourceToken: 0
+    ScaleStacksPerSourceStack: 0
+    ScaleStacksSourceDivisor: 0
+    ExpiresAtEndOfOpposingSideTurn: 0
+    SkipEndOfTurnDecayChance: 0
+  _treeNodeUnlockCost: 1
+  _treeNodePrerequisiteAbilityIds: []

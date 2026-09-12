@@ -78,23 +78,26 @@ public static class SkillDamagePreviewCalculator
         Combatant target,
         SkillDefinition skill)
     {
-        var hitChance = 1.0;
+        var hitChance = CombatDamageCalculator.ComputeEffectiveHitChanceFraction(state, actor, target, skill);
 
         if (actor.Tokens.GetStacks(TokenType.Blind) > 0)
         {
             hitChance *= 1.0 - state.BalanceConfig.BlindMissChance;
         }
 
-        hitChance *= skill.Accuracy * actor.Stats.Accuracy;
-        hitChance += CombatStatusRules.AccuracyModifierFromActorTokens(actor.Tokens);
-        hitChance += CombatStatusRules.AccuracyBonusFromTargetExposition(target.Tokens);
-        hitChance -= CombatStatusRules.AccuracyPenaltyFromTargetStealth(target.Tokens);
-
         if (target.Tokens.GetStacks(TokenType.Dodge) > 0)
         {
             hitChance *= 1.0 - state.BalanceConfig.DodgeNegateChance;
         }
 
-        return Math.Clamp(hitChance, 0, 1);
+        if (skill.Accuracy <= 0 && hitChance <= 0)
+        {
+            return Math.Max(0, hitChance);
+        }
+
+        return Math.Clamp(
+            hitChance,
+            CombatStatusRules.MinimumHitChanceFraction,
+            CombatStatusRules.MaximumHitChanceFraction);
     }
 }

@@ -1,5 +1,6 @@
 using Game.Core.Domain;
 using Game.Core.Models;
+using Game.Core.Passives;
 
 namespace Game.Core.Engine;
 
@@ -28,7 +29,17 @@ public static class SkillTargetResolver
             return Array.Empty<Combatant>();
         }
 
-        return skill.TargetKind switch
+        if (actor.PassiveRuntime.IsSkillConfusedThisTurn(skill.Id))
+        {
+            return CombatConfusionRules.ResolveSwappedPrimaryTargets(
+                battleState,
+                actor,
+                PassiveDataDrivenEngine.GetEffectiveSkillTargetKind(battleState, actor, skill),
+                selectedCombatant);
+        }
+
+        var effectiveTargetKind = PassiveDataDrivenEngine.GetEffectiveSkillTargetKind(battleState, actor, skill);
+        return effectiveTargetKind switch
         {
             SkillTargetKind.Self => new[] { actor },
             SkillTargetKind.OneAlly => ResolveOneAlly(battleState, actor, selectedCombatant),
@@ -93,7 +104,8 @@ public static class SkillTargetResolver
             return resolvedPrimaryTargets[0];
         }
 
-        if (SkillTargetKindRules.DirectsPrimaryDamageAtEnemies(skill.TargetKind))
+        if (SkillTargetKindRules.DirectsPrimaryDamageAtEnemies(
+                PassiveDataDrivenEngine.GetEffectiveSkillTargetKind(battleState, actor, skill)))
         {
             foreach (var enemyCandidate in GetValidEnemyPool(battleState, actor))
             {
@@ -105,8 +117,10 @@ public static class SkillTargetResolver
             }
         }
 
-        if (SkillTargetKindRules.DirectsPrimaryDamageAtAllies(skill.TargetKind) ||
-            SkillTargetKindRules.IsSelfOnly(skill.TargetKind))
+        if (SkillTargetKindRules.DirectsPrimaryDamageAtAllies(
+                PassiveDataDrivenEngine.GetEffectiveSkillTargetKind(battleState, actor, skill)) ||
+            SkillTargetKindRules.IsSelfOnly(
+                PassiveDataDrivenEngine.GetEffectiveSkillTargetKind(battleState, actor, skill)))
         {
             foreach (var allyCandidate in LivingCombatantsOnRoster(SameSideRoster(battleState, actor)))
             {
@@ -131,7 +145,7 @@ public static class SkillTargetResolver
             return 1;
         }
 
-        return skill.TargetKind switch
+        return PassiveDataDrivenEngine.GetEffectiveSkillTargetKind(battleState, actor, skill) switch
         {
             SkillTargetKind.AllEnemies => Math.Max(1, GetValidEnemyPool(battleState, actor).Count),
             SkillTargetKind.UpToThreeEnemies => Math.Max(

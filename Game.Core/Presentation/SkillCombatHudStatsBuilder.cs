@@ -1,3 +1,4 @@
+using Game.Core.Config;
 using Game.Core.Engine;
 using Game.Core.Models;
 
@@ -11,6 +12,8 @@ public readonly struct SkillCombatHudStats
     public required int DamageMax { get; init; }
     public required double CriticalChanceFraction { get; init; }
     public required double CorruptionCost { get; init; }
+    public required double ElementalMultiplier { get; init; }
+    public required ElementMatchupKind ElementMatchup { get; init; }
 }
 
 /// <summary>
@@ -48,6 +51,17 @@ public static class SkillCombatHudStatsBuilder
             actor,
             criticalTarget,
             skill);
+        var elementMatchupTarget = previewTargetOrNull ?? criticalTarget;
+        var elementalMultiplier = elementMatchupTarget == null
+            ? 1.0
+            : CombatDamageCalculator.GetElementalMultiplier(
+                battleState,
+                actor,
+                elementMatchupTarget,
+                skill);
+        var elementMatchup = elementMatchupTarget == null
+            ? ElementMatchupKind.Neutral
+            : CombatDamageCalculator.GetElementMatchup(actor, elementMatchupTarget, skill);
 
         return new SkillCombatHudStats
         {
@@ -57,6 +71,8 @@ public static class SkillCombatHudStatsBuilder
             DamageMax = damageMax,
             CriticalChanceFraction = criticalChanceFraction,
             CorruptionCost = skill.CorruptionCost,
+            ElementalMultiplier = elementalMultiplier,
+            ElementMatchup = elementMatchup,
         };
     }
 

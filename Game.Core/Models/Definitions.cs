@@ -121,6 +121,9 @@ public sealed class EnemyDefinition
     public required IReadOnlyList<string> Skills { get; init; }
     public required string AiPolicy { get; init; }
     public ElementType Element { get; init; }
+
+    /// <summary>Passive ids from passives.json always shown in the enemy almanac (Horse Boss summon, etc.).</summary>
+    public IReadOnlyList<string> PassiveIds { get; init; } = [];
 }
 
 public sealed class SkillTreeNodeDefinition

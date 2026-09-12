@@ -16,6 +16,7 @@ public sealed class CombatPassiveEventContext
     public SkillDefinition? Skill { get; init; }
 
     public int DamageAmount { get; init; }
+    public int HealAmount { get; init; }
     public bool WasCrit { get; init; }
 
     public TokenType? TokenType { get; init; }

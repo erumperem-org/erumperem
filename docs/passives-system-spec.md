@@ -1,6 +1,10 @@
 # Sistema de talentos e passivas — especificação
 
-Documento de desenho para integração futura com `BattleSimulator` e dados em `Game.Simulations/Data/`. **Estado atual:** `skill_trees.json` define nós `Passive` / `Active`; `SkillTreeRules` valida desbloqueio; `Progression.UnlockedNodes` guarda o estado — **as passivas não alteram o combate**.
+**Estado actual (pós fases A–H):** JSON canónico em `Assets/StreamingAssets/Data/`. Kits de herói usam IDs snake_case (`wulfric_tree1_tier1_passive1`, …) com Conditions + Effects avaliadas em combate por `PassiveDataDrivenEngine`. `SkillTreeRules` valida desbloqueio; `Progression.UnlockedNodes` guarda o estado.
+
+`PassiveEffectKind` legado permanece para conteúdo de inimigo (Horse Boss summon) e testes sintéticos. Authoring: duplicar `CombatAbilityAsset` e `Erumperem/Combat/Export Catalog` — ver `docs/skill-authoring.md`.
+
+O resto deste ficheiro é o desenho original (hooks, kinds one-off). Não uses os exemplos `f_t1_p1` / `wulfric_innate_cleave` — esses IDs foram apagados na fase H.
 
 ---
 
@@ -20,7 +24,7 @@ Documento de desenho para integração futura com `BattleSimulator` e dados em `
 **Sem breaking change na v1:** manter o formato atual por nó:
 
 ```json
-{ "id": "f_t1_p1", "type": "Passive", "cost": 1, "requires": [] }
+{ "id": "wulfric_tree1_tier1_passive1", "type": "Passive", "cost": 1, "requires": [] }
 ```
 
 **Extensão opcional (v1.1):** ficheiro paralelo ou secção opcional por personagem, ex. `passives.json`:
@@ -29,9 +33,9 @@ Documento de desenho para integração futura com `BattleSimulator` e dados em `
 {
   "passives": [
     {
-      "id": "f_t1_p1",
+      "id": "wulfric_tree1_tier1_passive1",
       "effectKind": "OutgoingDamageSkillTag",
-      "parameters": { "skillId": "wulfric_innate_cleave", "damageMultiplierAdditive": 0.10 }
+      "parameters": { "skillId": "wulfric_innate_active1", "damageMultiplierAdditive": 0.10 }
     }
   ]
 }
@@ -165,16 +169,16 @@ Evitar um `switch` gigante no simulador: **um** `switch` ou dicionário em `Pass
 |------|---------|
 | Unitário | Dado alvo com Bleed, passiva `OutgoingDamageVsDotOnTarget` +10%, dano base 10 → esperado 11 |
 | Unitário | `DotDurationBonus` +1 turno, cap 5, DOT inicial 3 → duração 4 |
-| Integração | `UnlockedNodes["f_t1_p1"] = true`, carregar regra mock, uma `ResolveAction` → `DamageApplied` reflete bónus |
+| Integração | `UnlockedNodes["wulfric_tree1_tier1_passive1"] = true`, carregar regra mock, uma `ResolveAction` → `DamageApplied` reflete bónus |
 | Regressão | Simulação com seed fixo: assinatura de eventos inalterada quando nenhuma passiva desbloqueada |
 
 ---
 
 ## 9. Convenções e documentação para designers
 
-- IDs de nó: `{elementLetter}_t{tier}_{p|a}{index}` — ex. `f_t1_p1`, `m_t2_a1`.
-- Cada passiva documentada em `docs/wulfric-skill-trees.md` (efeito em linguagem natural) + entrada em `passives.json` (efeito em dados).
-- README: link para este ficheiro na secção de dados.
+- IDs de nó: `{hero}_tree{N}_tier{M}_{passiveK|active}` — ex. `wulfric_tree1_tier1_passive1`, `maria_tree2_tier3_active`.
+- Cada passiva documentada no Inspector do `CombatAbilityAsset` + entrada exportada em `Assets/StreamingAssets/Data/passives.json`.
+- README: link para `docs/skill-authoring.md` na secção de dados.
 
 ---
 
@@ -186,7 +190,7 @@ Evitar um `switch` gigante no simulador: **um** `switch` ou dicionário em `Pass
 | Ordem errada de hooks | Tabela fixa + testes de integração por hook |
 | Exploit de stacking | Caps por categoria + telemetria nas simulações CSV |
 | JSON sem schema | JSON Schema opcional em `docs/schemas/passives.schema.json` (fase 2) |
-| Árvores multi-personagem | `passives.json` por `characterId` ou chave composta `wulfric:f_t1_p1` |
+| Árvores multi-personagem | `passives.json` por `characterId` no kit; IDs já incluem o herói (`wulfric_tree1_tier1_passive1`) |
 
 ---
 

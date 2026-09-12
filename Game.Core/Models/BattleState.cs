@@ -1,3 +1,5 @@
+using Game.Core.Abstractions;
+using Game.Core.Almanac;
 using Game.Core.Config;
 using Game.Core.Domain;
 using Game.Core.Passives;
@@ -21,6 +23,9 @@ public sealed class BattleState
     /// <summary>Observer hub for passive hooks; raise events from <see cref="Game.Core.Engine.BattleSimulator"/>.</summary>
     public CombatPassiveEventBus PassiveBus { get; init; } = new();
 
+    /// <summary>RNG for data-driven passive chance rolls. Tests may replace this.</summary>
+    public IRandomSource PassiveTriggerRandom { get; set; } = new SeededRandomSource(1);
+
     /// <summary>QA cheat: aliados não perdem HP nem morrem enquanto activo.</summary>
     public bool AlliesHaveInfiniteHealth { get; set; }
 
@@ -34,6 +39,11 @@ public sealed class BattleState
 
     /// <summary>Rolagem de iniciativa no início do combate; define qual equipa abre cada ronda.</summary>
     public BattleInitiativeSnapshot? Initiative { get; set; }
+
+    /// <summary>
+    /// Which enemy catalog types have revealed which active skills. Survives the battle when Unity copies it to save.
+    /// </summary>
+    public EnemyAlmanacProgress EnemyAlmanac { get; set; } = new();
 
     public IEnumerable<Combatant> GetAllCombatants()
     {

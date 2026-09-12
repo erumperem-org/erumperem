@@ -1,11 +1,33 @@
 # Authoring de skills
 
-Criar uma skill nova é sobretudo **editar JSON** + passar na validação do loader. Não abras um `switch` no simulador nem copies ramos de `TargetKind`.
+Criar uma skill ou passiva nova é **duplicar um ScriptableObject**, preencher o Inspector, e exportar o catálogo. Não edites JSON à mão e não abras um `switch` no simulador.
 
-Fonte canónica: `Game.Simulations/Data/skills.json`  
-Cópia Unity: `Assets/StreamingAssets/Data/skills.json` (via `tools/PublishGameCoreForUnity.ps1`)
+Fonte do designer: `CombatAbilityAsset` em `Assets/_Project/ScriptableObjects/Combat/` (Create → Erumperem/Combat/Ability).  
+Contrato de runtime (Unity, `Game.Core`, testes, CLI): **um** JSON em `Assets/StreamingAssets/Data/` (`skills.json`, `passives.json`, `skill_trees.json`). `enemies.json` não é reescrito por este export.
 
-## Contrato
+## Passos
+
+1. Project window → duplica um `CombatAbilityAsset` existente (ex. `wulfric_innate_active1`).
+2. Preenche `abilityId` em **snake_case**, `displayName`, `ownerCharacterId` (`wulfric` / `buck` / `maria`, ou id de inimigo). Não uses Matsuda como kit de combate.
+3. `abilityKind`: Active ou Passive. `placement`: InnateActive, TreeNode, LeaderPassive, CompanionPassive, CorruptionPassive, EnemyPassive.
+4. TreeNode: `treeIndex` 1–3, `tierIndex` 1–3, `passiveIndex` 1–3 (passivas). CorruptionPassive: `corruptionMinTier`.
+5. Activa: todos os campos de combate (dano, `hitCount`, follow-ups, `effectsOnHit` com AmountMax / ScaleFromToken / EffectScope). Passiva: `requiredPartyRole`, chance, caps, listas Conditions + Effects (o motor avalia-as em combate).
+6. Opcional: arrasta o asset para o `CharacterCombatKitAsset` do herói (organização). O export **varre todos** os `CombatAbilityAsset` da pasta de Combat / Resources.
+7. Menu **Erumperem/Combat/Export Catalog**.
+8. Play Mode e `dotnet test Game.Tests/Game.Tests.csproj` leem o mesmo `StreamingAssets/Data`.
+
+Convenções de id (kits Wulfric / Buck / Maria no catálogo):
+
+- Inatas: `{hero}_innate_active1` … `active4`
+- Árvore: `{hero}_tree{N}_tier{M}_passive{K}` e `{hero}_tree{N}_tier{M}_active`
+- Role: `{hero}_leader_passive1`, `{hero}_companion_passive1`
+- Corrupção: `{hero}_corruption_tier{N}_passive1`
+
+Não cries `*_innate_passive*`. Não inventes kit Matsuda (`characterId` de progressão da Star é `maria`).
+
+`tools/PublishGameCoreForUnity.ps1` só publica a DLL de `Game.Core`. Não copia JSON.
+
+## Contrato runtime (`SkillDefinition`)
 
 ### `targetKind` — quem se seleciona / quem recebe dano primário
 
@@ -47,6 +69,8 @@ Scopes não-`Default` aplicam-se **uma vez** por skill (no primeiro hit que acer
 | `computeFromDebuffTypesOnTarget` + `damagePerDistinctDebuffType` / crit / accuracy | Strangle. |
 | `canTargetDeadAllies` | Resurrection Hymn inclui cadáveres no pool. |
 
+Accuracy da skill pode ser **> 100%** (ex. 2.0); a hit chance final clampa a 1.0 depois de tokens.
+
 ### Campos opcionais em `EffectSpec`
 
 | Campo | Uso |
@@ -67,23 +91,14 @@ Tipos: `ApplyToken`, `ApplyDot`, `ApplyRandomDot`, `Push`, `Pull`, `ApplyStun`, 
 
 **Desbloqueada** via `CombatHealUnlock.IsCombatHealingUnlocked = true`. O applicator cura HP (e pode reviver com `canTargetDeadAllies`). Se `IsCombatHealingUnlocked` for false, volta ao log `[FORBIDDEN]`.
 
-## Hero kits MVP notes
+## Notas de runtime (kits actuais)
 
 - **Confusion:** MVP retarget — 33% chance de escolher inimigo válido aleatório em skills inimigas; não troca Ally↔Enemy nem Self→None.
 - **Juggling / ChanceToNotEndTurn:** usam `TokenType.BonusAction` + `ShouldRetainTurnForBonusAction` (Simulate + Unity turn driver).
 - **Resurrection Hymn:** revive/cura aliados mortos se `canTargetDeadAllies`; não modela cutscene.
-- **Passivas de árvore novas:** best-effort com `PassiveEffectKind` existentes; muitas entradas GDD (leader/companion/corruption, “+25% Defense tokens”) não têm kind dedicado — ver `passives.json` ids `w_us_*`, `b_ar_*`, `m_lf_*`, etc.
+- **Passivas:** kits de herói usam Conditions + Effects. `PassiveEffectKind` legado permanece só para conteúdo de inimigo (ex. Horse Boss summon) e testes sintéticos. Não acrescentes cases one-off.
 - **Bleeding token** vs `DotType.Bleed`: kits novos usam `TokenType.Bleeding` (5% MaxHp EOT); conteúdo antigo de inimigos pode manter DoT Bleed.
 - **ControlledInstability / Destabilization** não decaem EOT; só consomem / disparam.
-- Skills legado (`wulfric_innate_*`, `f_t*_a1`, …) permanecem no JSON para testes/inimigos; hotbar de protótipo usa innates novos via `BattleFactory`.
-
-## Passos para uma skill nova
-
-1. Acrescenta em `Game.Simulations/Data/skills.json`.
-2. Escolhe `targetKind` da tabela. Não inventes strings.
-3. Define `effectScope` se não for o alvo do hit.
-4. `dotnet test Game.Tests/Game.Tests.csproj`.
-5. `powershell -ExecutionPolicy Bypass -File tools/PublishGameCoreForUnity.ps1`.
-6. Opcional: regenera ScriptableObjects (`Erumperem/Generate Skill Tree + Passive Assets From JSON`).
+- Horse Boss (`horse_boss_*` skills + `horse_boss_summon_fairy_on_hp_tier`) permanece no JSON; o export faz upsert e **não apaga** entradas sem SO.
 
 A resolução de alvos é sempre `SkillTargetResolver`. O `BattleSimulator` faz loop de dano + efeitos (e `hitCount`) sem ramificar por `TargetKind`.

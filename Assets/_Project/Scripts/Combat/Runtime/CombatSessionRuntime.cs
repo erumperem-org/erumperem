@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Game.Core.Abstractions;
 using Game.Core.Analytics;
+using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
 using UnityEngine;
@@ -40,6 +41,7 @@ namespace Erumperem.Combat.Runtime
         public Combatant SelectedEnemyTarget;
         public int? SkillBarSelectedSlot;
         public string SkillBarSelectedOwnerId;
+        public Side? AnnouncedRoundSide;
 
         public bool IsInfiniteAllyHealthCheatActive;
         public bool IsDoubleAllyDamageCheatActive;

@@ -17,10 +17,25 @@ public static class PassiveRuleApplier
         foreach (var nodeIdAndUnlocked in actor.Progression.UnlockedNodes)
         {
             if (!nodeIdAndUnlocked.Value) continue;
-            if (state.PassivesById.TryGetValue(nodeIdAndUnlocked.Key, out var passiveDefinition))
+            if (!state.PassivesById.TryGetValue(nodeIdAndUnlocked.Key, out var passiveDefinition))
             {
-                yield return passiveDefinition;
+                continue;
             }
+
+            if (!CombatPartyRoleRules.PassiveAppliesToCombatant(
+                    passiveDefinition.RequiredPartyRole,
+                    actor.PartyRole))
+            {
+                continue;
+            }
+
+            if (passiveDefinition.CorruptionMinTier > 0 &&
+                state.CorruptionTier < passiveDefinition.CorruptionMinTier)
+            {
+                continue;
+            }
+
+            yield return passiveDefinition;
         }
     }
 
@@ -28,6 +43,7 @@ public static class PassiveRuleApplier
     {
         foreach (var def in EnumerateActivePassives(actor, state))
         {
+            if (def.HasDataDrivenEffects) continue;
             if (def.EffectKind != PassiveEffectKind.GrantTokenAtTurnStartIfCondition) continue;
             if (def.IfHasTokenType is not null && actor.Tokens.GetStacks(def.IfHasTokenType.Value) <= 0) continue;
             if (def.UnlessHasTokenType is not null && actor.Tokens.GetStacks(def.UnlessHasTokenType.Value) > 0) continue;
@@ -82,7 +98,8 @@ public static class PassiveRuleApplier
         if (!hit) return;
         foreach (var def in EnumerateActivePassives(actor, state))
         {
-            if (def.EffectKind != PassiveEffectKind.OutgoingDamageAfterPrerequisiteSkill) continue;
+            if (def.HasDataDrivenEffects) continue;
+            if (def.EffectKind != PassiveEffectKind.DamageCausedAfterPrerequisiteSkill) continue;
             if (def.PrerequisiteSkillId == skill.Id)
             {
                 actor.PassiveRuntime.ImpetoCleaveBonusPending = true;
@@ -91,7 +108,7 @@ public static class PassiveRuleApplier
     }
 
     public static (DamageModifierAccumulator Acc, bool ConsumeImpeto, List<PassiveCombatNote> Notes)
-        AccumulateOutgoingDamageModifiers(
+        AccumulateDamageCausedModifiers(
             BattleState state,
             Combatant actor,
             Combatant target,
@@ -102,12 +119,17 @@ public static class PassiveRuleApplier
         var consumeImpeto = false;
         foreach (var def in EnumerateActivePassives(actor, state))
         {
+            if (def.HasDataDrivenEffects)
+            {
+                continue;
+            }
+
             switch (def.EffectKind)
             {
-                case PassiveEffectKind.OutgoingDamageVsSkillId:
+                case PassiveEffectKind.DamageCausedVsSkillId:
                     if (skill.Id == def.SkillId)
                     {
-                        acc.OutgoingDamageAdditiveSum += def.Additive;
+                        acc.DamageCausedAdditiveSum += def.Additive;
                         noteSink?.Add(
                             new PassiveCombatNote(
                                 def.Id,
@@ -122,13 +144,13 @@ public static class PassiveRuleApplier
                     }
 
                     break;
-                case PassiveEffectKind.OutgoingDamageVsDotOnTarget:
+                case PassiveEffectKind.DamageCausedVsDotOnTarget:
                     if (def.DotType is null) break;
                     var stacks = CountDotStacks(target, def.DotType.Value);
                     if (stacks <= 0) break;
                     var bonus = def.AdditivePerStack > 0 ? stacks * def.AdditivePerStack : def.Additive;
                     if (def.Cap > 0) bonus = Math.Min(bonus, def.Cap);
-                    acc.OutgoingDamageAdditiveSum += bonus;
+                    acc.DamageCausedAdditiveSum += bonus;
                     noteSink?.Add(
                         new PassiveCombatNote(
                             def.Id,
@@ -141,10 +163,10 @@ public static class PassiveRuleApplier
                             0,
                             0));
                     break;
-                case PassiveEffectKind.OutgoingDamagePenaltyWhenToken:
+                case PassiveEffectKind.DamageCausedPenaltyWhenToken:
                     if (def.TokenType is not null && actor.Tokens.GetStacks(def.TokenType.Value) > 0)
                     {
-                        acc.OutgoingDamageAdditiveSum += def.Additive;
+                        acc.DamageCausedAdditiveSum += def.Additive;
                         noteSink?.Add(
                             new PassiveCombatNote(
                                 def.Id,
@@ -159,10 +181,10 @@ public static class PassiveRuleApplier
                     }
 
                     break;
-                case PassiveEffectKind.OutgoingDamageAfterPrerequisiteSkill:
+                case PassiveEffectKind.DamageCausedAfterPrerequisiteSkill:
                     if (skill.Id == def.SkillId && actor.PassiveRuntime.ImpetoCleaveBonusPending)
                     {
-                        acc.OutgoingDamageAdditiveSum += def.Additive;
+                        acc.DamageCausedAdditiveSum += def.Additive;
                         consumeImpeto = true;
                         noteSink?.Add(
                             new PassiveCombatNote(
@@ -178,11 +200,11 @@ public static class PassiveRuleApplier
                     }
 
                     break;
-                case PassiveEffectKind.OutgoingDamageVsSkillIfTargetHasDot:
+                case PassiveEffectKind.DamageCausedVsSkillIfTargetHasDot:
                     if (skill.Id != def.SkillId || def.DotType is null) break;
                     if (CountDotStacks(target, def.DotType.Value) > 0)
                     {
-                        acc.OutgoingDamageAdditiveSum += def.Additive;
+                        acc.DamageCausedAdditiveSum += def.Additive;
                         noteSink?.Add(
                             new PassiveCombatNote(
                                 def.Id,
@@ -211,6 +233,7 @@ public static class PassiveRuleApplier
         var mult = 1.0;
         foreach (var def in EnumerateActivePassives(defender, state))
         {
+            if (def.HasDataDrivenEffects) continue;
             if (def.EffectKind != PassiveEffectKind.IncomingDamageMultiplierWhenHpBelow) continue;
             if (def.Additive <= 0 || def.HpBelowPercent <= 0) continue;
             var hpPct = defender.Health.MaxHp <= 0 ? 0 : (double)defender.Health.CurrentHp / defender.Health.MaxHp;
@@ -240,6 +263,7 @@ public static class PassiveRuleApplier
         var maxTotal = int.MaxValue;
         foreach (var def in EnumerateActivePassives(actor, state))
         {
+            if (def.HasDataDrivenEffects) continue;
             if (def.EffectKind != PassiveEffectKind.DotDurationBonus) continue;
             if (def.DotType != dotType) continue;
             extra += def.IntValue;
@@ -261,6 +285,7 @@ public static class PassiveRuleApplier
         var mult = 1.0;
         foreach (var def in EnumerateActivePassives(applier, state))
         {
+            if (def.HasDataDrivenEffects) continue;
             if (def.EffectKind != PassiveEffectKind.DotTickDamageBonusWhenTargetHpBelow) continue;
             if (def.DotType != dot.Type) continue;
             var hpPct = victim.Health.MaxHp <= 0 ? 0 : (double)victim.Health.CurrentHp / victim.Health.MaxHp;
@@ -283,6 +308,7 @@ public static class PassiveRuleApplier
     {
         foreach (var def in EnumerateActivePassives(actor, state))
         {
+            if (def.HasDataDrivenEffects) continue;
             switch (def.EffectKind)
             {
                 case PassiveEffectKind.ExtraTokenOnSelfSkill:
@@ -329,6 +355,7 @@ public static class PassiveRuleApplier
         if (!SkillTargetKindRules.DirectsPrimaryDamageAtEnemies(skill.TargetKind)) return;
         foreach (var def in EnumerateActivePassives(actor, state))
         {
+            if (def.HasDataDrivenEffects) continue;
             if (def.EffectKind != PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot) continue;
             if (def.SkillId != skill.Id || def.DotType is null) continue;
             if (CountDotStacks(target, def.DotType.Value) <= 0) continue;
@@ -358,6 +385,11 @@ public static class PassiveRuleApplier
         }
     }
 
-    public static int CountDotStacks(Combatant target, DotType dotType) =>
-        target.Dots.ActiveDots.Count(dotInstance => dotInstance.Type == dotType);
+    public static int CountDotStacks(Combatant target, DotType dotType)
+    {
+        var dotInstanceCount = target.Dots.ActiveDots.Count(dotInstance => dotInstance.Type == dotType);
+        var mappedStatus = CombatStatusRules.MapDotTypeToStatusToken(dotType);
+        var statusStacks = mappedStatus.HasValue ? target.Tokens.GetStacks(mappedStatus.Value) : 0;
+        return dotInstanceCount + statusStacks;
+    }
 }

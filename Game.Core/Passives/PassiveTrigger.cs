@@ -25,6 +25,9 @@ public enum PassiveTrigger
     /// <summary>Combatente eliminado (dano directo ou DOT); <see cref="CombatPassiveEventContext.Killer"/> pode ser null (DOT sem applier).</summary>
     CombatantSlain = 10,
 
+    /// <summary>HP restored by a heal effect or data-driven Heal operation.</summary>
+    HealingDealt = 15,
+
     /// <summary>Destinatário do token é o mesmo combatente que <see cref="CombatPassiveEventContext.Other"/> (actor da skill); apenas quando <c>delta &gt; 0</c>.</summary>
     TokenAppliedToSelf = 11,
 

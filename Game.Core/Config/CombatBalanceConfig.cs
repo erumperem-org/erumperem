@@ -12,6 +12,9 @@ public sealed class CorruptionTierModifiers
 
     /// <summary>Extra multiplier applied to critical hit damage when an enemy critically strikes a player.</summary>
     public double EnemyCritDamageMultiplierAgainstPlayer { get; init; } = 1.0;
+
+    /// <summary>Added to enemy hit chance. Player actors never receive this bonus.</summary>
+    public double EnemyAccuracyBonus { get; init; }
 }
 
 public sealed class CombatBalanceConfig
@@ -42,39 +45,44 @@ public sealed class CombatBalanceConfig
                     PlayerDamageTakenMultiplier = 1.00,
                     PlayerCritBonus = 0.00,
                     EnemyCritBonusAgainstPlayer = 0.00,
+                    EnemyAccuracyBonus = 0.00,
                 },
                 new CorruptionTierModifiers
                 {
                     Tier = 1,
-                    PlayerDamageDealtMultiplier = 1.08,
-                    PlayerDamageTakenMultiplier = 1.08,
+                    PlayerDamageDealtMultiplier = 1.00,
+                    PlayerDamageTakenMultiplier = 1.00,
                     PlayerCritBonus = 0.03,
                     EnemyCritBonusAgainstPlayer = 0.03,
+                    EnemyAccuracyBonus = 0.04,
                 },
                 new CorruptionTierModifiers
                 {
                     Tier = 2,
-                    PlayerDamageDealtMultiplier = 1.16,
-                    PlayerDamageTakenMultiplier = 1.16,
+                    PlayerDamageDealtMultiplier = 1.00,
+                    PlayerDamageTakenMultiplier = 1.00,
                     PlayerCritBonus = 0.06,
                     EnemyCritBonusAgainstPlayer = 0.06,
+                    EnemyAccuracyBonus = 0.08,
                 },
                 new CorruptionTierModifiers
                 {
                     Tier = 3,
-                    PlayerDamageDealtMultiplier = 1.25,
-                    PlayerDamageTakenMultiplier = 1.25,
+                    PlayerDamageDealtMultiplier = 1.00,
+                    PlayerDamageTakenMultiplier = 1.00,
                     PlayerCritBonus = 0.10,
                     EnemyCritBonusAgainstPlayer = 0.10,
+                    EnemyAccuracyBonus = 0.12,
                 },
                 new CorruptionTierModifiers
                 {
                     Tier = 4,
-                    PlayerDamageDealtMultiplier = 1.25,
+                    PlayerDamageDealtMultiplier = 1.00,
                     PlayerDamageTakenMultiplier = 1.45,
-                    PlayerCritBonus = 0.10,
+                    PlayerCritBonus = 0.00,
                     EnemyCritBonusAgainstPlayer = 0.18,
                     EnemyCritDamageMultiplierAgainstPlayer = 1.35,
+                    EnemyAccuracyBonus = 0.22,
                 },
             ],
         };
@@ -110,6 +118,13 @@ public static class CorruptionTierCalculator
     }
 }
 
+public enum ElementMatchupKind
+{
+    Neutral = 0,
+    Advantage = 1,
+    Disadvantage = 2,
+}
+
 public static class ElementTriangle
 {
     public static bool HasAdvantage(ElementType attacker, ElementType defender)
@@ -121,5 +136,23 @@ public static class ElementTriangle
             (ElementType.Anomaly, ElementType.Fire) => true,
             _ => false,
         };
+    }
+
+    public static bool HasDisadvantage(ElementType attacker, ElementType defender) =>
+        HasAdvantage(defender, attacker);
+
+    public static ElementMatchupKind GetMatchup(ElementType attacker, ElementType defender)
+    {
+        if (HasAdvantage(attacker, defender))
+        {
+            return ElementMatchupKind.Advantage;
+        }
+
+        if (HasDisadvantage(attacker, defender))
+        {
+            return ElementMatchupKind.Disadvantage;
+        }
+
+        return ElementMatchupKind.Neutral;
     }
 }

@@ -1,893 +1,2209 @@
 [
   {
-    "id": "f_t1_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "wulfric_innate_cleave",
-    "additive": 0.1
-  },
-  {
-    "id": "f_t1_p2",
-    "effectKind": "OutgoingDamageVsDotOnTarget",
-    "dotType": "Bleed",
-    "additivePerStack": 0.03,
-    "cap": 0.12
-  },
-  {
-    "id": "f_t1_p3",
-    "effectKind": "ApplyExtraDotAfterSkillIfTargetHasDot",
-    "skillId": "wulfric_innate_shove",
-    "dotType": "Bleed",
-    "intValue": 2,
-    "intValue2": 2
-  },
-  {
-    "id": "f_t2_p1",
-    "effectKind": "DotDurationBonus",
-    "dotType": "Bleed",
-    "intValue": 1,
-    "intValue2": 6
-  },
-  {
-    "id": "f_t2_p2",
-    "effectKind": "DotTickDamageBonusWhenTargetHpBelow",
-    "dotType": "Bleed",
-    "hpBelowPercent": 0.4,
-    "additive": 0.2
-  },
-  {
-    "id": "f_t2_p3",
-    "effectKind": "OutgoingDamageVsSkillIfTargetHasDot",
-    "skillId": "wulfric_innate_cleave",
-    "dotType": "Bleed",
-    "additive": 0.1
-  },
-  {
-    "id": "f_t3_p1",
-    "effectKind": "GrantTokenAtTurnStartIfCondition",
-    "unlessHasTokenType": "Block",
-    "grantTokenType": "Combo",
-    "intValue": 1
-  },
-  {
-    "id": "f_t3_p2",
-    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
-    "prerequisiteSkillId": "wulfric_innate_shove",
-    "skillId": "wulfric_innate_cleave",
-    "additive": 0.25
-  },
-  {
-    "id": "f_t3_p3",
-    "effectKind": "OutgoingDamageVsSkillIfTargetHasDot",
-    "skillId": "f_t3_a1",
-    "dotType": "Bleed",
-    "additive": 0.15
-  },
-  {
-    "id": "m_t1_p1",
-    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
-    "hpBelowPercent": 0.5,
-    "additive": 0.88
-  },
-  {
-    "id": "m_t1_p2",
-    "effectKind": "ExtraHealPercentOnSelfSkill",
-    "skillId": "wulfric_innate_guard",
-    "additive": 5
-  },
-  {
-    "id": "m_t1_p3",
-    "effectKind": "GrantTokenAtTurnStartIfCondition",
-    "ifHasTokenType": "Taunt",
-    "grantTokenType": "Block",
-    "intValue": 1
-  },
-  {
-    "id": "m_t2_p1",
-    "effectKind": "OutgoingDamagePenaltyWhenToken",
-    "tokenType": "Taunt",
-    "additive": -0.12
-  },
-  {
-    "id": "m_t2_p2",
-    "effectKind": "ExtraTokenOnSelfSkill",
-    "skillId": "wulfric_innate_guard",
-    "tokenType": "Block",
-    "intValue": 1
-  },
-  {
-    "id": "m_t2_p3",
-    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
-    "hpBelowPercent": 0.35,
-    "additive": 0.92
-  },
-  {
-    "id": "m_t3_p1",
-    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
-    "hpBelowPercent": 0.25,
-    "additive": 0.82
-  },
-  {
-    "id": "m_t3_p2",
-    "effectKind": "OutgoingDamageVsDotOnTarget",
-    "dotType": "Blight",
-    "additive": 0.08
-  },
-  {
-    "id": "m_t3_p3",
-    "effectKind": "ExtraHealPercentOnSelfSkill",
-    "skillId": "m_t2_a1",
-    "additive": 3
-  },
-  {
-    "id": "a_t1_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "a_t1_a1",
-    "additive": 0.08
-  },
-  {
-    "id": "a_t1_p2",
-    "effectKind": "OutgoingDamageVsDotOnTarget",
-    "dotType": "Blight",
-    "additivePerStack": 0.04,
-    "cap": 0.12
-  },
-  {
-    "id": "a_t1_p3",
-    "effectKind": "DotTickDamageBonusWhenTargetHpBelow",
-    "dotType": "Blight",
-    "hpBelowPercent": 0.45,
-    "additive": 0.15
-  },
-  {
-    "id": "a_t2_p1",
-    "effectKind": "ExtraTokenOnSelfSkill",
-    "skillId": "m_t2_a1",
-    "tokenType": "BlockPlus",
-    "intValue": 1
-  },
-  {
-    "id": "a_t2_p2",
-    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
-    "hpBelowPercent": 0.55,
-    "additive": 0.9
-  },
-  {
-    "id": "a_t2_p3",
-    "effectKind": "DotDurationBonus",
-    "dotType": "Blight",
-    "intValue": 1,
-    "intValue2": 5
-  },
-  {
-    "id": "a_t3_p1",
-    "effectKind": "OutgoingDamageVsSkillIfTargetHasDot",
-    "skillId": "a_t3_a1",
-    "dotType": "Blight",
-    "additive": 0.12
-  },
-  {
-    "id": "a_t3_p2",
-    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
-    "prerequisiteSkillId": "a_t2_a1",
-    "skillId": "a_t3_a1",
-    "additive": 0.2
-  },
-  {
-    "id": "a_t3_p3",
-    "effectKind": "ApplyExtraDotAfterSkillIfTargetHasDot",
-    "skillId": "a_t2_a1",
-    "dotType": "Blight",
-    "intValue": 2,
-    "intValue2": 2
-  },
-  {
-    "id": "b_f_t1_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "buck_innate_cleave",
-    "additive": 0.1
-  },
-  {
-    "id": "b_f_t1_p2",
-    "effectKind": "OutgoingDamageVsDotOnTarget",
-    "dotType": "Burn",
-    "additivePerStack": 0.03,
-    "cap": 0.12
-  },
-  {
-    "id": "b_f_t1_p3",
-    "effectKind": "ApplyExtraDotAfterSkillIfTargetHasDot",
-    "skillId": "buck_innate_shove",
-    "dotType": "Burn",
-    "intValue": 2,
-    "intValue2": 2
-  },
-  {
-    "id": "b_f_t2_p1",
-    "effectKind": "DotDurationBonus",
-    "dotType": "Burn",
-    "intValue": 1,
-    "intValue2": 6
-  },
-  {
-    "id": "b_f_t2_p2",
-    "effectKind": "DotTickDamageBonusWhenTargetHpBelow",
-    "dotType": "Burn",
-    "hpBelowPercent": 0.4,
-    "additive": 0.2
-  },
-  {
-    "id": "b_f_t2_p3",
-    "effectKind": "OutgoingDamageVsSkillIfTargetHasDot",
-    "skillId": "buck_innate_cleave",
-    "dotType": "Burn",
-    "additive": 0.1
-  },
-  {
-    "id": "b_f_t3_p1",
-    "effectKind": "GrantTokenAtTurnStartIfCondition",
-    "unlessHasTokenType": "Block",
-    "grantTokenType": "Combo",
-    "intValue": 1
-  },
-  {
-    "id": "b_f_t3_p2",
-    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
-    "prerequisiteSkillId": "buck_innate_shove",
-    "skillId": "buck_innate_cleave",
-    "additive": 0.25
-  },
-  {
-    "id": "b_f_t3_p3",
-    "effectKind": "OutgoingDamageVsSkillIfTargetHasDot",
-    "skillId": "b_f_t3_a1",
-    "dotType": "Burn",
-    "additive": 0.15
-  },
-  {
-    "id": "b_m_t1_p1",
-    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
-    "hpBelowPercent": 0.5,
-    "additive": 0.88
-  },
-  {
-    "id": "b_m_t1_p2",
-    "effectKind": "ExtraHealPercentOnSelfSkill",
-    "skillId": "buck_innate_guard",
-    "additive": 5
-  },
-  {
-    "id": "b_m_t1_p3",
-    "effectKind": "GrantTokenAtTurnStartIfCondition",
-    "ifHasTokenType": "Taunt",
-    "grantTokenType": "Block",
-    "intValue": 1
-  },
-  {
-    "id": "b_m_t2_p1",
-    "effectKind": "OutgoingDamagePenaltyWhenToken",
-    "tokenType": "Taunt",
-    "additive": -0.12
-  },
-  {
-    "id": "b_m_t2_p2",
-    "effectKind": "ExtraTokenOnSelfSkill",
-    "skillId": "buck_innate_guard",
-    "tokenType": "Block",
-    "intValue": 1
-  },
-  {
-    "id": "b_m_t2_p3",
-    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
-    "hpBelowPercent": 0.35,
-    "additive": 0.92
-  },
-  {
-    "id": "b_m_t3_p1",
-    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
-    "hpBelowPercent": 0.25,
-    "additive": 0.82
-  },
-  {
-    "id": "b_m_t3_p2",
-    "effectKind": "OutgoingDamageVsDotOnTarget",
-    "dotType": "Blight",
-    "additive": 0.08
-  },
-  {
-    "id": "b_m_t3_p3",
-    "effectKind": "ExtraHealPercentOnSelfSkill",
-    "skillId": "b_m_t2_a1",
-    "additive": 3
-  },
-  {
-    "id": "b_a_t1_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "b_a_t1_a1",
-    "additive": 0.08
-  },
-  {
-    "id": "b_a_t1_p2",
-    "effectKind": "OutgoingDamageVsDotOnTarget",
-    "dotType": "Blight",
-    "additivePerStack": 0.04,
-    "cap": 0.12
-  },
-  {
-    "id": "b_a_t1_p3",
-    "effectKind": "DotTickDamageBonusWhenTargetHpBelow",
-    "dotType": "Blight",
-    "hpBelowPercent": 0.45,
-    "additive": 0.15
-  },
-  {
-    "id": "b_a_t2_p1",
-    "effectKind": "ExtraTokenOnSelfSkill",
-    "skillId": "b_m_t2_a1",
-    "tokenType": "BlockPlus",
-    "intValue": 1
-  },
-  {
-    "id": "b_a_t2_p2",
-    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
-    "hpBelowPercent": 0.55,
-    "additive": 0.9
-  },
-  {
-    "id": "b_a_t2_p3",
-    "effectKind": "DotDurationBonus",
-    "dotType": "Blight",
-    "intValue": 1,
-    "intValue2": 5
-  },
-  {
-    "id": "b_a_t3_p1",
-    "effectKind": "OutgoingDamageVsSkillIfTargetHasDot",
-    "skillId": "b_a_t3_a1",
-    "dotType": "Blight",
-    "additive": 0.12
-  },
-  {
-    "id": "b_a_t3_p2",
-    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
-    "prerequisiteSkillId": "b_a_t2_a1",
-    "skillId": "b_a_t3_a1",
-    "additive": 0.2
-  },
-  {
-    "id": "b_a_t3_p3",
-    "effectKind": "ApplyExtraDotAfterSkillIfTargetHasDot",
-    "skillId": "b_a_t2_a1",
-    "dotType": "Blight",
-    "intValue": 2,
-    "intValue2": 2
-  },
-  {
     "id": "horse_boss_summon_fairy_on_hp_tier",
     "effectKind": "SummonEnemyAtTurnStartWhenHpBelowTiered",
     "skillId": "CorruptedFairy",
     "intValue": 1
   },
   {
-    "id": "w_us_t1_p1",
-    "effectKind": "ExtraTokenOnSelfSkill",
-    "skillId": "wulfricTaunt",
-    "tokenType": "ControlledInstability",
-    "intValue": 1
-  },
-  {
-    "id": "w_us_t1_p2",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "wulfricBasicHit",
-    "additive": 0.1
-  },
-  {
-    "id": "w_us_t1_p3",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "wulfricUnstable",
-    "additive": 0.08
-  },
-  {
-    "id": "w_us_t2_p1",
-    "effectKind": "ExtraTokenOnSelfSkill",
-    "skillId": "wulfricStabilize",
-    "tokenType": "Defense",
-    "intValue": 1
-  },
-  {
-    "id": "w_us_t2_p2",
-    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
-    "prerequisiteSkillId": "wulfricUnstable",
-    "skillId": "wulfricStabilize",
-    "additive": 0.15
-  },
-  {
-    "id": "w_us_t2_p3",
-    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
-    "hpBelowPercent": 0.45,
-    "additive": 0.9
-  },
-  {
-    "id": "w_us_t3_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "wulfricNocontrol",
-    "additive": 0.12
-  },
-  {
-    "id": "w_us_t3_p2",
-    "effectKind": "GrantTokenAtTurnStartIfCondition",
-    "grantTokenType": "ControlledInstability",
-    "intValue": 1
-  },
-  {
-    "id": "w_us_t3_p3",
-    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
-    "prerequisiteSkillId": "wulfricStabilize",
-    "skillId": "wulfricNocontrol",
-    "additive": 0.2
-  },
-  {
-    "id": "w_dz_t1_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "wulfricWhip",
-    "additive": 0.1
-  },
-  {
-    "id": "w_dz_t1_p2",
-    "effectKind": "OutgoingDamageVsDotOnTarget",
-    "dotType": "Bleed",
-    "additive": 0.05,
-    "additivePerStack": 0.03,
-    "cap": 0.12
-  },
-  {
-    "id": "w_dz_t1_p3",
-    "effectKind": "ApplyExtraDotAfterSkillIfTargetHasDot",
-    "skillId": "wulfricWhip",
-    "dotType": "Bleed",
-    "intValue": 2,
-    "intValue2": 2
-  },
-  {
-    "id": "w_dz_t2_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "wulfricBigSword",
-    "additive": 0.12
-  },
-  {
-    "id": "w_dz_t2_p2",
-    "effectKind": "OutgoingDamageVsSkillIfTargetHasDot",
-    "skillId": "wulfricBigSword",
-    "dotType": "Bleed",
-    "additive": 0.1
-  },
-  {
-    "id": "w_dz_t2_p3",
-    "effectKind": "DotDurationBonus",
-    "dotType": "Bleed",
-    "intValue": 1,
-    "intValue2": 6
-  },
-  {
-    "id": "w_dz_t3_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "wulfricForceExplosion",
-    "additive": 0.15
-  },
-  {
-    "id": "w_dz_t3_p2",
-    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
-    "prerequisiteSkillId": "wulfricWhip",
-    "skillId": "wulfricForceExplosion",
-    "additive": 0.2
-  },
-  {
-    "id": "w_dz_t3_p3",
-    "effectKind": "DotTickDamageBonusWhenTargetHpBelow",
-    "dotType": "Bleed",
-    "hpBelowPercent": 0.4,
-    "additive": 0.2
-  },
-  {
-    "id": "w_ft_t1_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "wulfricShieldAttack",
-    "additive": 0.1
-  },
-  {
-    "id": "w_ft_t1_p2",
-    "effectKind": "ExtraTokenOnSelfSkill",
-    "skillId": "wulfricRaiseShield",
-    "tokenType": "Defense",
-    "intValue": 1
-  },
-  {
-    "id": "w_ft_t1_p3",
-    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
-    "hpBelowPercent": 0.5,
-    "additive": 0.88
-  },
-  {
-    "id": "w_ft_t2_p1",
-    "effectKind": "GrantTokenAtTurnStartIfCondition",
-    "grantTokenType": "Defense",
-    "intValue": 1
-  },
-  {
-    "id": "w_ft_t2_p2",
-    "effectKind": "ExtraHealPercentOnSelfSkill",
-    "skillId": "wulfricDefendAlly",
-    "additive": 5
-  },
-  {
-    "id": "w_ft_t2_p3",
-    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
-    "hpBelowPercent": 0.35,
-    "additive": 0.9
-  },
-  {
-    "id": "w_ft_t3_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "wulfricFrenzy",
-    "additive": 0.12
-  },
-  {
-    "id": "w_ft_t3_p2",
-    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
-    "hpBelowPercent": 0.25,
-    "additive": 0.82
-  },
-  {
-    "id": "w_ft_t3_p3",
-    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
-    "prerequisiteSkillId": "wulfricDefendAlly",
-    "skillId": "wulfricFrenzy",
-    "additive": 0.2
-  },
-  {
-    "id": "b_ar_t1_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "buckPistol",
-    "additive": 0.1
-  },
-  {
-    "id": "b_ar_t1_p2",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "buckRevolver",
-    "additive": 0.08
-  },
-  {
-    "id": "b_ar_t1_p3",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "buckSpiderHands",
-    "additive": 0.1
-  },
-  {
-    "id": "b_ar_t2_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "buckRifle",
-    "additive": 0.1
-  },
-  {
-    "id": "b_ar_t2_p2",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "buckAllGuns",
-    "additive": 0.12
-  },
-  {
-    "id": "b_ar_t2_p3",
-    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
-    "prerequisiteSkillId": "buckSpiderHands",
-    "skillId": "buckAllGuns",
-    "additive": 0.15
-  },
-  {
-    "id": "b_ar_t3_p1",
-    "effectKind": "GrantTokenAtTurnStartIfCondition",
-    "grantTokenType": "BonusAction",
-    "intValue": 1
-  },
-  {
-    "id": "b_ar_t3_p2",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "buckJuggle",
-    "additive": 0.08
-  },
-  {
-    "id": "b_ar_t3_p3",
-    "effectKind": "ExtraTokenOnSelfSkill",
-    "skillId": "buckJuggle",
-    "tokenType": "BonusAction",
-    "intValue": 1
-  },
-  {
-    "id": "b_sn_t1_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "buckSnakeVision",
-    "additive": 0.1
-  },
-  {
-    "id": "b_sn_t1_p2",
-    "effectKind": "OutgoingDamageVsDotOnTarget",
-    "dotType": "Blight",
-    "additive": 0.05,
-    "additivePerStack": 0.03,
-    "cap": 0.12
-  },
-  {
-    "id": "b_sn_t1_p3",
-    "effectKind": "GrantTokenAtTurnStartIfCondition",
-    "grantTokenType": "Dexterity",
-    "intValue": 1
-  },
-  {
-    "id": "b_sn_t2_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "buckSnakeBite",
-    "additive": 0.12
-  },
-  {
-    "id": "b_sn_t2_p2",
-    "effectKind": "OutgoingDamageVsSkillIfTargetHasDot",
-    "skillId": "buckSnakeBite",
-    "dotType": "Blight",
-    "additive": 0.1
-  },
-  {
-    "id": "b_sn_t2_p3",
-    "effectKind": "ApplyExtraDotAfterSkillIfTargetHasDot",
-    "skillId": "buckSnakeBite",
-    "dotType": "Blight",
-    "intValue": 2,
-    "intValue2": 2
-  },
-  {
-    "id": "b_sn_t3_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "buckSnakeTail",
-    "additive": 0.15
-  },
-  {
-    "id": "b_sn_t3_p2",
-    "effectKind": "DotDurationBonus",
-    "dotType": "Blight",
-    "intValue": 1,
-    "intValue2": 5
-  },
-  {
-    "id": "b_sn_t3_p3",
-    "effectKind": "DotTickDamageBonusWhenTargetHpBelow",
-    "dotType": "Blight",
-    "hpBelowPercent": 0.4,
-    "additive": 0.18
-  },
-  {
-    "id": "b_du_t1_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "buckMark",
-    "additive": 0.1
-  },
-  {
-    "id": "b_du_t1_p2",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "buckPistol",
-    "additive": 0.08
-  },
-  {
-    "id": "b_du_t1_p3",
-    "effectKind": "GrantTokenAtTurnStartIfCondition",
-    "grantTokenType": "LuckyShot",
-    "intValue": 1
-  },
-  {
-    "id": "b_du_t2_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "buckPistolHeadShot",
-    "additive": 0.15
-  },
-  {
-    "id": "b_du_t2_p2",
-    "effectKind": "OutgoingDamageVsSkillIfTargetHasDot",
-    "skillId": "buckPistolHeadShot",
-    "dotType": "Burn",
-    "additive": 0.1
-  },
-  {
-    "id": "b_du_t2_p3",
-    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
-    "prerequisiteSkillId": "buckMark",
-    "skillId": "buckPistolHeadShot",
-    "additive": 0.2
-  },
-  {
-    "id": "b_du_t3_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "buckLuckManipulation",
-    "additive": 0.1
-  },
-  {
-    "id": "b_du_t3_p2",
-    "effectKind": "GrantTokenAtTurnStartIfCondition",
-    "grantTokenType": "LuckyShot",
-    "intValue": 2
-  },
-  {
-    "id": "b_du_t3_p3",
-    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
-    "prerequisiteSkillId": "buckPistolHeadShot",
-    "skillId": "buckLuckManipulation",
-    "additive": 0.18
-  },
-  {
-    "id": "m_lf_t1_p1",
-    "effectKind": "ExtraHealPercentOnSelfSkill",
-    "skillId": "mariaHealVoice",
-    "additive": 5
-  },
-  {
-    "id": "m_lf_t1_p2",
-    "effectKind": "ExtraHealPercentOnSelfSkill",
-    "skillId": "mariaEchoHeal",
-    "additive": 5
-  },
-  {
-    "id": "m_lf_t1_p3",
-    "effectKind": "GrantTokenAtTurnStartIfCondition",
-    "grantTokenType": "Regeneration",
-    "intValue": 1
-  },
-  {
-    "id": "m_lf_t2_p1",
-    "effectKind": "ExtraHealPercentOnSelfSkill",
-    "skillId": "mariaCleanse",
-    "additive": 3
-  },
-  {
-    "id": "m_lf_t2_p2",
-    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
-    "hpBelowPercent": 0.5,
-    "additive": 0.92
-  },
-  {
-    "id": "m_lf_t2_p3",
-    "effectKind": "ExtraTokenOnSelfSkill",
-    "skillId": "mariaCleanse",
-    "tokenType": "Defense",
-    "intValue": 1
-  },
-  {
-    "id": "m_lf_t3_p1",
-    "effectKind": "ExtraHealPercentOnSelfSkill",
-    "skillId": "mariaResurrection",
-    "additive": 8
-  },
-  {
-    "id": "m_lf_t3_p2",
-    "effectKind": "GrantTokenAtTurnStartIfCondition",
-    "grantTokenType": "Regeneration",
-    "intValue": 2
-  },
-  {
-    "id": "m_lf_t3_p3",
-    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
-    "hpBelowPercent": 0.3,
-    "additive": 0.88
-  },
-  {
-    "id": "m_bh_t1_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "mariaBasicHit",
-    "additive": 0.08
-  },
-  {
-    "id": "m_bh_t1_p2",
-    "effectKind": "GrantTokenAtTurnStartIfCondition",
-    "grantTokenType": "LuckyShot",
-    "intValue": 1
-  },
-  {
-    "id": "m_bh_t1_p3",
-    "effectKind": "ExtraTokenOnSelfSkill",
-    "skillId": "mariaChanceBuff",
-    "tokenType": "LuckyShot",
-    "intValue": 1
-  },
-  {
-    "id": "m_bh_t2_p1",
-    "effectKind": "GrantTokenAtTurnStartIfCondition",
-    "grantTokenType": "Defense",
-    "intValue": 1
-  },
-  {
-    "id": "m_bh_t2_p2",
-    "effectKind": "ExtraTokenOnSelfSkill",
-    "skillId": "mariaDefenseBuff",
-    "tokenType": "Defense",
-    "intValue": 1
-  },
-  {
-    "id": "m_bh_t2_p3",
-    "effectKind": "IncomingDamageMultiplierWhenHpBelow",
-    "hpBelowPercent": 0.45,
-    "additive": 0.9
-  },
-  {
-    "id": "m_bh_t3_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "mariaShow",
-    "additive": 0.1
-  },
-  {
-    "id": "m_bh_t3_p2",
-    "effectKind": "GrantTokenAtTurnStartIfCondition",
-    "grantTokenType": "Strength",
-    "intValue": 1
-  },
-  {
-    "id": "m_bh_t3_p3",
-    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
-    "prerequisiteSkillId": "mariaDefenseBuff",
-    "skillId": "mariaShow",
-    "additive": 0.15
-  },
-  {
-    "id": "m_ds_t1_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "mariaScreamAttack",
-    "additive": 0.1
-  },
-  {
-    "id": "m_ds_t1_p2",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "mariaScreechNoise",
-    "additive": 0.1
-  },
-  {
-    "id": "m_ds_t1_p3",
-    "effectKind": "OutgoingDamageVsDotOnTarget",
-    "dotType": "Blight",
-    "additive": 0.06,
-    "additivePerStack": 0.03,
-    "cap": 0.12
-  },
-  {
-    "id": "m_ds_t2_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "mariaPiercingYell",
-    "additive": 0.12
-  },
-  {
-    "id": "m_ds_t2_p2",
-    "effectKind": "OutgoingDamageVsSkillIfTargetHasDot",
-    "skillId": "mariaPiercingYell",
-    "dotType": "Blight",
-    "additive": 0.1
-  },
-  {
-    "id": "m_ds_t2_p3",
-    "effectKind": "ApplyExtraDotAfterSkillIfTargetHasDot",
-    "skillId": "mariaScreechNoise",
-    "dotType": "Blight",
-    "intValue": 2,
-    "intValue2": 2
-  },
-  {
-    "id": "m_ds_t3_p1",
-    "effectKind": "OutgoingDamageVsSkillId",
-    "skillId": "mariaChaosMelody",
-    "additive": 0.15
-  },
-  {
-    "id": "m_ds_t3_p2",
-    "effectKind": "OutgoingDamageAfterPrerequisiteSkill",
-    "prerequisiteSkillId": "mariaPiercingYell",
-    "skillId": "mariaChaosMelody",
-    "additive": 0.2
-  },
-  {
-    "id": "m_ds_t3_p3",
-    "effectKind": "DotTickDamageBonusWhenTargetHpBelow",
-    "dotType": "Blight",
-    "hpBelowPercent": 0.4,
-    "additive": 0.2
+    "id": "wulfric_leader_passive1",
+    "requiredPartyRole": "Leader",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponKill"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "Heal",
+        "magnitude": 5,
+        "statChangeTarget": "Self"
+      }
+    ]
+  },
+  {
+    "id": "wulfric_companion_passive1",
+    "requiredPartyRole": "Companion",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "ExtraStatsFromResource",
+        "resource": "MissingHitPointsChunks",
+        "stacks": 18,
+        "magnitude": 0.02,
+        "characterStat": "DefenseChance"
+      }
+    ]
+  },
+  {
+    "id": "wulfric_corruption_tier1_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 1,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      },
+      {
+        "activation": "UponDamageTaken"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "characterStat": "DefenseChance",
+        "magnitude": -0.05
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "characterStat": "DefenseChance",
+        "magnitude": 0.06,
+        "expiresAtEndOfOpposingSideTurn": true
+      }
+    ]
+  },
+  {
+    "id": "wulfric_corruption_tier2_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 2,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      },
+      {
+        "activation": "UponDamageTaken"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "characterStat": "DefenseChance",
+        "magnitude": -0.1
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "characterStat": "DefenseChance",
+        "magnitude": 0.12,
+        "expiresAtEndOfOpposingSideTurn": true
+      }
+    ]
+  },
+  {
+    "id": "wulfric_corruption_tier3_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 3,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      },
+      {
+        "activation": "UponDamageTaken"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "characterStat": "DefenseChance",
+        "magnitude": -0.15
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "characterStat": "DefenseChance",
+        "magnitude": 0.18,
+        "expiresAtEndOfOpposingSideTurn": true
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree1_tier1_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponHittingTargetWithStatus",
+        "requiredStatus": "Destabilization",
+        "skillId": "wulfric_innate_active1"
+      }
+    ],
+    "effects": [
+      {
+        "operation": "TokenManipulation",
+        "token": "ControlledInstability",
+        "stacks": 1,
+        "tokenManipulationMode": "Apply",
+        "statChangeTarget": "Self",
+        "chanceToTrigger": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree1_tier1_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "token": "Defense",
+        "magnitude": 0.25
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree1_tier1_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponDamageTaken",
+        "hitPointsLostPerTrigger": 10
+      }
+    ],
+    "effects": [
+      {
+        "operation": "TokenManipulation",
+        "token": "ControlledInstability",
+        "stacks": 1,
+        "tokenManipulationMode": "Apply",
+        "statChangeTarget": "Self",
+        "chanceToTrigger": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree1_tier2_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "WhileHavingStatus",
+        "requiredStatus": "Defense"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "token": "ControlledInstability",
+        "magnitude": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree1_tier2_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponReceivingStatus",
+        "requiredStatus": "Defense"
+      }
+    ],
+    "effects": [
+      {
+        "operation": "TokenManipulation",
+        "token": "ControlledInstability",
+        "stacks": 1,
+        "tokenManipulationMode": "Apply",
+        "statChangeTarget": "Self",
+        "chanceToTrigger": 1,
+        "scaleStacksPerSourceStack": 1,
+        "scaleStacksSourceDivisor": 2
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree1_tier2_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponApplyingStatus",
+        "requiredStatus": "Destabilization"
+      }
+    ],
+    "effects": [
+      {
+        "operation": "TokenManipulation",
+        "token": "ControlledInstability",
+        "stacks": 1,
+        "tokenManipulationMode": "Apply",
+        "statChangeTarget": "Self",
+        "chanceToTrigger": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree1_tier3_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponReceivingStatus",
+        "requiredStatus": "ControlledInstability"
+      }
+    ],
+    "effects": [
+      {
+        "operation": "TokenManipulation",
+        "token": "ControlledInstability",
+        "stacks": 1,
+        "tokenManipulationMode": "Apply",
+        "statChangeTarget": "Self",
+        "chanceToTrigger": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree1_tier3_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "ExtraStatsFromResource",
+        "resource": "TokenStacksChunks",
+        "token": "ControlledInstability",
+        "stacks": 3,
+        "magnitude": 1,
+        "skillStat": "Damage"
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree1_tier3_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponApplyingStatus",
+        "requiredStatus": "ControlledInstability"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "Heal",
+        "magnitude": 1,
+        "scaleStacksPerSourceStack": 1,
+        "scaleStacksSourceDivisor": 5,
+        "statChangeTarget": "Self"
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree2_tier1_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponDamageTaken",
+        "requiredStatus": "Destabilization"
+      }
+    ],
+    "effects": [
+      {
+        "operation": "TokenManipulation",
+        "token": "ControlledInstability",
+        "stacks": 1,
+        "tokenManipulationMode": "Apply",
+        "statChangeTarget": "Self",
+        "chanceToTrigger": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree2_tier1_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "WhileOppositeHasStatus",
+        "requiredStatus": "Destabilization"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "token": "Defense",
+        "magnitude": 0.1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree2_tier1_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponDamageTaken",
+        "hitPointsLostPerTrigger": 5
+      }
+    ],
+    "effects": [
+      {
+        "operation": "TokenManipulation",
+        "token": "Strength",
+        "stacks": 1,
+        "tokenManipulationMode": "Apply",
+        "statChangeTarget": "Self",
+        "chanceToTrigger": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree2_tier2_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponApplyingStatus",
+        "requiredStatus": "Destabilization"
+      }
+    ],
+    "effects": [
+      {
+        "operation": "TokenManipulation",
+        "token": "Destabilization",
+        "stacks": 1,
+        "tokenManipulationMode": "Apply",
+        "statChangeTarget": "Opposite",
+        "chanceToTrigger": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree2_tier2_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponApplyingStatus",
+        "requiredStatus": "Destabilization"
+      }
+    ],
+    "effects": [
+      {
+        "operation": "TokenManipulation",
+        "token": "Weaken",
+        "stacks": 1,
+        "tokenManipulationMode": "Apply",
+        "statChangeTarget": "Opposite",
+        "chanceToTrigger": 0.25,
+        "scaleStacksPerSourceStack": 1,
+        "scaleStacksSourceDivisor": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree2_tier2_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "ExtraStatsFromResource",
+        "resource": "OppositeTokenStacks",
+        "token": "Destabilization",
+        "magnitude": 0.1,
+        "characterStat": "DamageCaused"
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree2_tier3_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "SkillStatChange",
+        "skillStat": "TargetKind",
+        "skillId": "wulfric_innate_active1",
+        "magnitude": 3
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree2_tier3_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponApplyingStatus",
+        "requiredStatus": "Destabilization"
+      }
+    ],
+    "effects": [
+      {
+        "operation": "TokenManipulation",
+        "token": "Vulnerability",
+        "stacks": 1,
+        "tokenManipulationMode": "Apply",
+        "statChangeTarget": "Opposite",
+        "chanceToTrigger": 0.25,
+        "scaleStacksPerSourceStack": 1,
+        "scaleStacksSourceDivisor": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree2_tier3_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "token": "Destabilization",
+        "resource": "TokenStacks",
+        "resourceToken": "ControlledInstability",
+        "magnitude": 0.25
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree3_tier1_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "characterStat": "DefenseChance",
+        "magnitude": 0.15
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree3_tier1_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "token": "Defense",
+        "magnitude": 0.75
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree3_tier1_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponReceivingStatus",
+        "requiredStatus": "ControlledInstability"
+      }
+    ],
+    "effects": [
+      {
+        "operation": "TokenManipulation",
+        "token": "Defense",
+        "stacks": 1,
+        "tokenManipulationMode": "Apply",
+        "statChangeTarget": "Self",
+        "chanceToTrigger": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree3_tier2_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "OnTurnStart"
+      }
+    ],
+    "effects": [
+      {
+        "operation": "TokenManipulation",
+        "token": "Defense",
+        "stacks": 1,
+        "tokenManipulationMode": "Apply",
+        "statChangeTarget": "Self",
+        "chanceToTrigger": 0.5
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree3_tier2_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponDamageTaken",
+        "requiredStatus": "Destabilization"
+      }
+    ],
+    "effects": [
+      {
+        "operation": "TokenManipulation",
+        "token": "Defense",
+        "stacks": 1,
+        "tokenManipulationMode": "Apply",
+        "statChangeTarget": "Self",
+        "chanceToTrigger": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree3_tier2_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "ExtraStatsFromResource",
+        "resource": "OppositeTokenStacks",
+        "token": "Destabilization",
+        "skillId": "wulfric_tree3_tier1_active",
+        "skillStat": "Damage",
+        "magnitude": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree3_tier3_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "token": "Defense",
+        "skipEndOfTurnDecayChance": 0.25
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree3_tier3_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "ExtraStatsFromResource",
+        "resource": "TokenStacks",
+        "token": "Defense",
+        "magnitude": 0.1,
+        "characterStat": "DamageCaused"
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree3_tier3_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "ExtraStatsFromResource",
+        "resource": "TokenStacks",
+        "token": "ControlledInstability",
+        "skillId": "wulfric_tree3_tier1_active",
+        "skillStat": "Damage",
+        "magnitude": 1
+      }
+    ]
+  },
+  {
+    "id": "buck_leader_passive1",
+    "requiredPartyRole": "Leader",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponCriticalStrike"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": 0.5,
+        "characterStat": "CriticalDamage",
+        "statChangeTarget": "Self"
+      }
+    ]
+  },
+  {
+    "id": "buck_companion_passive1",
+    "requiredPartyRole": "Companion",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponHittingTargetWithStatus",
+        "skillId": "buck_innate_active1"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.5,
+        "operation": "TokenManipulation",
+        "token": "LuckyShot",
+        "stacks": 2,
+        "statChangeTarget": "Self",
+        "tokenManipulationMode": "Apply"
+      }
+    ]
+  },
+  {
+    "id": "buck_corruption_tier1_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 1,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": -0.05,
+        "characterStat": "Accuracy"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": 0.03,
+        "characterStat": "CriticalChance"
+      }
+    ]
+  },
+  {
+    "id": "buck_corruption_tier2_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 2,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": -0.08,
+        "characterStat": "Accuracy"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": 0.05,
+        "characterStat": "CriticalChance"
+      }
+    ]
+  },
+  {
+    "id": "buck_corruption_tier3_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 3,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": -0.1,
+        "characterStat": "Accuracy"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": 0.08,
+        "characterStat": "CriticalChance"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree1_tier1_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": 0.15,
+        "characterStat": "Accuracy"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree1_tier1_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "SkillStatChange",
+        "magnitude": 2,
+        "skillId": "buck_innate_active1",
+        "skillStat": "Damage"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "SkillStatChange",
+        "magnitude": 2,
+        "skillId": "buck_innate_active3",
+        "skillStat": "Damage"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree1_tier1_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "SkillStatChange",
+        "magnitude": 1,
+        "skillId": "buck_innate_active3",
+        "skillStat": "HitCount"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree1_tier2_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponDealingDamage",
+        "requiredStatus": "Vulnerability"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenManipulation",
+        "token": "Strength",
+        "stacks": 1,
+        "statChangeTarget": "Self",
+        "tokenManipulationMode": "Apply"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree1_tier2_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponDealingDamage",
+        "requiredStatus": "Vulnerability"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenManipulation",
+        "token": "Dexterity",
+        "stacks": 1,
+        "statChangeTarget": "Self",
+        "tokenManipulationMode": "Apply"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree1_tier2_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "SkillStatChange",
+        "magnitude": 3,
+        "skillId": "buck_innate_active1",
+        "skillStat": "Damage"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "SkillStatChange",
+        "magnitude": 3,
+        "skillId": "buck_innate_active3",
+        "skillStat": "Damage"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree1_tier3_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "SkillStatChange",
+        "magnitude": 0.5,
+        "skillId": "buck_innate_active4",
+        "skillStat": "ChanceToNotEndTurn"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree1_tier3_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponUsingSkill",
+        "skillId": "buck_innate_active1"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.25,
+        "operation": "TurnManipulation",
+        "stacks": 1,
+        "maxTriggersPerBattle": 1
+      }
+    ],
+    "maxTriggersPerBattle": 1
+  },
+  {
+    "id": "buck_tree1_tier3_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponUsingSkill"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.25,
+        "operation": "TurnManipulation",
+        "stacks": 1,
+        "maxTriggersPerBattle": 1
+      }
+    ],
+    "maxTriggersPerBattle": 1
+  },
+  {
+    "id": "buck_tree2_tier1_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "SkillStatChange",
+        "magnitude": 0.2,
+        "skillId": "buck_innate_active4",
+        "skillStat": "Accuracy"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree2_tier1_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "SkillStatChange",
+        "magnitude": 0.25,
+        "skillId": "buck_innate_active2",
+        "skillStat": "Accuracy"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "SkillStatChange",
+        "magnitude": 0.25,
+        "skillId": "buck_tree3_tier2_active",
+        "skillStat": "Accuracy"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree2_tier1_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "SkillStatChange",
+        "magnitude": 5,
+        "skillId": "buck_innate_active4",
+        "skillStat": "Damage"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree2_tier2_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponHittingTargetWithStatus",
+        "skillId": "buck_innate_active1"
+      },
+      {
+        "activation": "UponHittingTargetWithStatus",
+        "skillId": "buck_innate_active3"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.15,
+        "operation": "TokenManipulation",
+        "token": "Vulnerability",
+        "stacks": 1,
+        "statChangeTarget": "Opposite",
+        "tokenManipulationMode": "Apply"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree2_tier2_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponHittingTargetWithStatus",
+        "skillId": "buck_innate_active2"
+      },
+      {
+        "activation": "UponHittingTargetWithStatus",
+        "skillId": "buck_tree3_tier2_active"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.2,
+        "operation": "TokenManipulation",
+        "token": "Vulnerability",
+        "stacks": 2,
+        "statChangeTarget": "Opposite",
+        "tokenManipulationMode": "Apply"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree2_tier2_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "WhileOppositeHasStatus",
+        "requiredStatus": "Vulnerability"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": 0.2,
+        "characterStat": "Accuracy"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree2_tier3_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 0.5,
+        "token": "Vulnerability",
+        "statChangeTarget": "Opposite"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree2_tier3_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 0.5,
+        "token": "Exposition",
+        "statChangeTarget": "Opposite"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree2_tier3_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponHittingTargetWithStatus"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.1,
+        "operation": "TokenManipulation",
+        "token": "Corrosion",
+        "stacks": 2,
+        "statChangeTarget": "Opposite",
+        "tokenManipulationMode": "Apply"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree3_tier1_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent",
+        "skillId": "buck_innate_active2"
+      },
+      {
+        "activation": "Permanent",
+        "skillId": "buck_tree3_tier2_active"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": 0.5,
+        "characterStat": "DamageCaused"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree3_tier1_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent",
+        "skillId": "buck_innate_active2"
+      },
+      {
+        "activation": "Permanent",
+        "skillId": "buck_tree3_tier2_active"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": 1,
+        "characterStat": "CriticalDamage"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree3_tier1_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "WhileOppositeHasStatus",
+        "requiredStatus": "Vulnerability"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": 0.03,
+        "characterStat": "CriticalChance"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree3_tier2_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "WhileOppositeHasStatus",
+        "requiredStatus": "Mark",
+        "skillId": "buck_innate_active1"
+      },
+      {
+        "activation": "WhileOppositeHasStatus",
+        "requiredStatus": "Mark",
+        "skillId": "buck_innate_active3"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": 0.25,
+        "characterStat": "DamageCaused"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree3_tier2_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "WhileOppositeHasStatus",
+        "requiredStatus": "Mark",
+        "skillId": "buck_innate_active4"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": 0.75,
+        "characterStat": "DamageCaused"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree3_tier2_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponHittingTargetWithStatus",
+        "requiredStatus": "Vulnerability"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.1,
+        "operation": "TokenManipulation",
+        "token": "Mark",
+        "stacks": 1,
+        "statChangeTarget": "Opposite",
+        "tokenManipulationMode": "Apply"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree3_tier3_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponDamageTaken"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.25,
+        "operation": "TokenManipulation",
+        "token": "Mark",
+        "stacks": 2,
+        "statChangeTarget": "Opposite",
+        "tokenManipulationMode": "Apply"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree3_tier3_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent",
+        "skillId": "buck_innate_active2"
+      },
+      {
+        "activation": "Permanent",
+        "skillId": "buck_tree3_tier2_active"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "ExtraStatsFromResource",
+        "magnitude": 0.5,
+        "resource": "EnemiesDefeatedThisBattle",
+        "characterStat": "DamageCaused"
+      }
+    ]
+  },
+  {
+    "id": "buck_tree3_tier3_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 1,
+        "token": "Mark",
+        "statChangeTarget": "Opposite"
+      }
+    ]
+  },
+  {
+    "id": "maria_leader_passive1",
+    "requiredPartyRole": "Leader",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponApplyingStatus",
+        "statusMatch": "AnyDebuff"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenManipulation",
+        "stacks": 1,
+        "statChangeTarget": "EventRecipient"
+      }
+    ]
+  },
+  {
+    "id": "maria_companion_passive1",
+    "requiredPartyRole": "Companion",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponApplyingStatus",
+        "statusMatch": "AnyBuff"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenManipulation",
+        "stacks": 1,
+        "statChangeTarget": "EventRecipient"
+      }
+    ]
+  },
+  {
+    "id": "maria_corruption_tier1_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 1,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      },
+      {
+        "activation": "UponApplyingStatus"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 0.25,
+        "statChangeTarget": "Self"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 0.25,
+        "statChangeTarget": "Opposite"
+      },
+      {
+        "chanceToTrigger": 0.05,
+        "operation": "CastSkill",
+        "skillId": "maria_innate_active1",
+        "statChangeTarget": "Opposite"
+      }
+    ]
+  },
+  {
+    "id": "maria_corruption_tier2_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 2,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      },
+      {
+        "activation": "UponApplyingStatus"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 0.5,
+        "statChangeTarget": "Self"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 0.5,
+        "statChangeTarget": "Opposite"
+      },
+      {
+        "chanceToTrigger": 0.1,
+        "operation": "CastSkill",
+        "skillId": "maria_innate_active1",
+        "statChangeTarget": "Opposite"
+      }
+    ]
+  },
+  {
+    "id": "maria_corruption_tier3_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 3,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      },
+      {
+        "activation": "UponApplyingStatus"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 1,
+        "statChangeTarget": "Self"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 1,
+        "statChangeTarget": "Opposite"
+      },
+      {
+        "chanceToTrigger": 0.15,
+        "operation": "CastSkill",
+        "skillId": "maria_innate_active1",
+        "statChangeTarget": "Opposite"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree1_tier1_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "SkillStatChange",
+        "magnitude": 0.5,
+        "skillId": "maria_innate_active2",
+        "skillStat": "HealEffectiveness"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree1_tier1_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponHealing"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenManipulation",
+        "token": "Strength",
+        "stacks": 2,
+        "statChangeTarget": "Self"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree1_tier1_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponHealing"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.25,
+        "operation": "TokenManipulation",
+        "token": "Defense",
+        "stacks": 2,
+        "statChangeTarget": "Opposite"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree1_tier2_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponApplyingStatus",
+        "statusMatch": "AnyBuff"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "Heal",
+        "magnitude": 3,
+        "statChangeTarget": "Opposite"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree1_tier2_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponApplyingStatus",
+        "statusMatch": "AnyDebuff"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "Heal",
+        "magnitude": 3,
+        "statChangeTarget": "Self"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree1_tier2_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "maxTriggersPerBattle": 1,
+    "conditions": [
+      {
+        "activation": "OnTurnStart"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenManipulation",
+        "token": "Regeneration",
+        "stacks": 3,
+        "maxTriggersPerBattle": 1,
+        "statChangeTarget": "SelfAndAlly"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree1_tier3_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponDealingDamage"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.2,
+        "operation": "Heal",
+        "magnitude": 0.5,
+        "statChangeTarget": "Self"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree1_tier3_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "maxTriggersPerBattle": 1,
+    "conditions": [
+      {
+        "activation": "OnTurnStart",
+        "statThresholdFraction": 0.25
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenManipulation",
+        "token": "Regeneration",
+        "stacks": 5,
+        "maxTriggersPerBattle": 1,
+        "statChangeTarget": "Self"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree1_tier3_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "SkillStatChange",
+        "magnitude": 0.1,
+        "skillStat": "HealDoubleChance"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree2_tier1_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "SkillStatChange",
+        "magnitude": 0.1,
+        "skillId": "maria_innate_active4",
+        "skillStat": "Accuracy"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree2_tier1_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponDealingDamage",
+        "statusMatch": "AnyBuff"
+      },
+      {
+        "activation": "UponAllyDealingDamage",
+        "statusMatch": "AnyBuff"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.25,
+        "operation": "Heal",
+        "magnitude": 3,
+        "statChangeTarget": "SelfAndAlly"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree2_tier1_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponApplyingStatus",
+        "statusMatch": "AnyStatus"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenManipulation",
+        "token": "Strength",
+        "stacks": 1,
+        "statChangeTarget": "Opposite"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree2_tier2_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponHealing"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenManipulation",
+        "token": "Strength",
+        "stacks": 1,
+        "statChangeTarget": "Opposite"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree2_tier2_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponApplyingStatus",
+        "statusMatch": "AnyStatus"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.7,
+        "operation": "TokenManipulation",
+        "token": "Defense",
+        "stacks": 1,
+        "statChangeTarget": "Opposite"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree2_tier2_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "SkillStatChange",
+        "magnitude": 0.2,
+        "skillId": "maria_innate_active3",
+        "skillStat": "Accuracy"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree2_tier3_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponDealingDamage"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenManipulation",
+        "token": "Dexterity",
+        "stacks": 1,
+        "statChangeTarget": "SelfAndAlly"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree2_tier3_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "WhileHavingStatus",
+        "statusMatch": "AnyBuff"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": 0.1,
+        "characterStat": "DefenseChance",
+        "statChangeTarget": "SelfAndAlly"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree2_tier3_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "WhileHavingStatus",
+        "statusMatch": "AnyBuff"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": 0.5,
+        "characterStat": "CriticalDamage",
+        "statChangeTarget": "SelfAndAlly"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree3_tier1_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponApplyingStatus",
+        "statusMatch": "AnyDebuff"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "DealDamage",
+        "magnitude": 1,
+        "statChangeTarget": "Opposite",
+        "scaleStacksPerSourceStack": 1,
+        "scaleStacksSourceDivisor": 1
+      }
+    ]
+  },
+  {
+    "id": "maria_tree3_tier1_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponHittingTargetWithStatus",
+        "statusMatch": "AnyDebuff"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.5,
+        "operation": "Heal",
+        "magnitude": 6,
+        "statChangeTarget": "Self"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree3_tier1_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "WhileOppositeHasStatus",
+        "statusMatch": "AnyDebuff"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "CharacterStatChange",
+        "magnitude": 0.1,
+        "characterStat": "DefenseChance"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree3_tier2_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponHittingTargetWithStatus",
+        "skillId": "maria_innate_active1"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.4,
+        "operation": "TokenManipulation",
+        "token": "Weaken",
+        "stacks": 2,
+        "statChangeTarget": "Opposite"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree3_tier2_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponUsingSkill",
+        "skillId": "maria_innate_active2"
+      },
+      {
+        "activation": "UponUsingSkill",
+        "skillId": "maria_tree1_tier1_active"
+      },
+      {
+        "activation": "UponUsingSkill",
+        "skillId": "maria_tree1_tier2_active"
+      },
+      {
+        "activation": "UponUsingSkill",
+        "skillId": "maria_tree1_tier3_active"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.4,
+        "operation": "TokenManipulation",
+        "token": "Weaken",
+        "stacks": 1,
+        "statChangeTarget": "AllOpposites"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree3_tier2_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponUsingSkill",
+        "skillId": "maria_innate_active4"
+      },
+      {
+        "activation": "UponUsingSkill",
+        "skillId": "maria_tree2_tier1_active"
+      },
+      {
+        "activation": "UponUsingSkill",
+        "skillId": "maria_tree2_tier2_active"
+      },
+      {
+        "activation": "UponUsingSkill",
+        "skillId": "maria_tree2_tier3_active"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 0.4,
+        "operation": "TokenManipulation",
+        "token": "Vulnerability",
+        "stacks": 1,
+        "statChangeTarget": "AllOpposites"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree3_tier3_passive1",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponDamageTaken"
+      },
+      {
+        "activation": "UponAllyDamageTaken"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenManipulation",
+        "token": "Weaken",
+        "stacks": 1,
+        "statChangeTarget": "Opposite"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree3_tier3_passive2",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "Permanent"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 0.5,
+        "token": "Weaken",
+        "statChangeTarget": "Opposite"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 0.5,
+        "token": "Vulnerability",
+        "statChangeTarget": "Opposite"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 0.5,
+        "token": "Clumsy",
+        "statChangeTarget": "Opposite"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 0.5,
+        "token": "Confusion",
+        "statChangeTarget": "Opposite"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 0.5,
+        "token": "Exposition",
+        "statChangeTarget": "Opposite"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 0.5,
+        "token": "Corrosion",
+        "statChangeTarget": "Opposite"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 0.5,
+        "token": "Mark",
+        "statChangeTarget": "Opposite"
+      },
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenStatChange",
+        "magnitude": 0.5,
+        "token": "Bleeding",
+        "statChangeTarget": "Opposite"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree3_tier3_passive3",
+    "requiredPartyRole": "Any",
+    "corruptionMinTier": 0,
+    "chanceToTrigger": 1,
+    "conditions": [
+      {
+        "activation": "UponDamageTaken"
+      },
+      {
+        "activation": "UponAllyDamageTaken"
+      }
+    ],
+    "effects": [
+      {
+        "chanceToTrigger": 1,
+        "operation": "TokenManipulation",
+        "token": "Vulnerability",
+        "stacks": 1,
+        "statChangeTarget": "Opposite"
+      }
+    ]
   }
 ]

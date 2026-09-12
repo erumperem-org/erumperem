@@ -46,7 +46,8 @@ namespace Erumperem.Combat.Runtime
             if (_session.State.Winner == Side.Allies)
             {
                 _victoryPanel.SetActive(true);
-                _victoryPanel.GetComponent<CorruptionRewardGenerator>().GenerateRewards();
+                _victoryPanel.GetComponent<CorruptionRewardGenerator>()
+                    .GenerateRewardsForCombatExit(_session.State.CorruptionValue);
             }
             else if (_session.State.Winner == Side.Enemies)
             {

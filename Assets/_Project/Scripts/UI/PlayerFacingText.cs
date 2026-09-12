@@ -240,12 +240,12 @@ namespace Erumperem.UI
 
             return kind switch
             {
-                PassiveEffectKind.OutgoingDamageVsSkillId or
-                    PassiveEffectKind.OutgoingDamageVsDotOnTarget or
-                    PassiveEffectKind.OutgoingDamagePenaltyWhenToken or
-                    PassiveEffectKind.OutgoingDamageAfterPrerequisiteSkill or
-                    PassiveEffectKind.OutgoingDamageVsSkillIfTargetHasDot =>
-                    $"Passive «{passiveLabel}»: +{bonusPct} damage on this hit " +
+                PassiveEffectKind.DamageCausedVsSkillId or
+                    PassiveEffectKind.DamageCausedVsDotOnTarget or
+                    PassiveEffectKind.DamageCausedPenaltyWhenToken or
+                    PassiveEffectKind.DamageCausedAfterPrerequisiteSkill or
+                    PassiveEffectKind.DamageCausedVsSkillIfTargetHasDot =>
+                    $"Passive «{passiveLabel}»: Damage Caused +{bonusPct} on this hit " +
                     $"{(string.IsNullOrEmpty(relatedSkill) ? string.Empty : $"(skill «{relatedSkill}»)")}.",
                 PassiveEffectKind.IncomingDamageMultiplierWhenHpBelow =>
                     $"Passive «{passiveLabel}»: incoming damage ×{FormatMultiplier(combatEvent.PassiveMagnitude)} (low HP).",
@@ -384,15 +384,15 @@ namespace Erumperem.UI
 
             return def.EffectKind switch
             {
-                PassiveEffectKind.OutgoingDamageVsSkillId =>
-                    $"When using {skillRef}, deals +{additivePercent} damage.",
+                PassiveEffectKind.DamageCausedVsSkillId =>
+                    $"When using {skillRef}, Damage Caused +{additivePercent}.",
 
-                PassiveEffectKind.OutgoingDamageVsDotOnTarget when def.AdditivePerStack > 0 && def.Cap > 0 =>
-                    $"Deals +{perStackPercent} damage against targets with {dotName} for each stack of {dotName} " +
+                PassiveEffectKind.DamageCausedVsDotOnTarget when def.AdditivePerStack > 0 && def.Cap > 0 =>
+                    $"Damage Caused +{perStackPercent} against targets with {dotName} for each stack of {dotName} " +
                     $"(up to +{capPercent}).",
 
-                PassiveEffectKind.OutgoingDamageVsDotOnTarget =>
-                    $"Deals +{additivePercent} damage against targets with {dotName}.",
+                PassiveEffectKind.DamageCausedVsDotOnTarget =>
+                    $"Damage Caused +{additivePercent} against targets with {dotName}.",
 
                 PassiveEffectKind.DotDurationBonus when def.IntValue2 > 0 =>
                     $"Your {dotName} effects last +{FormatTurnCountWithUnit(def.IntValue)} " +
@@ -404,16 +404,16 @@ namespace Erumperem.UI
                 PassiveEffectKind.IncomingDamageMultiplierWhenHpBelow =>
                     FormatIncomingDamageMultiplierBelowHp(def.Additive, hpThresholdPercent),
 
-                PassiveEffectKind.OutgoingDamagePenaltyWhenToken =>
-                    FormatOutgoingDamageWhileTokenIsActive(def.Additive, def.TokenType),
+                PassiveEffectKind.DamageCausedPenaltyWhenToken =>
+                    FormatDamageCausedWhileTokenIsActive(def.Additive, def.TokenType),
 
-                PassiveEffectKind.OutgoingDamageAfterPrerequisiteSkill =>
-                    $"After using {prerequisiteSkillRef}, the next {skillRef} deals +{additivePercent} damage.",
+                PassiveEffectKind.DamageCausedAfterPrerequisiteSkill =>
+                    $"After using {prerequisiteSkillRef}, the next {skillRef} has Damage Caused +{additivePercent}.",
 
                 PassiveEffectKind.ExtraTokenOnSelfSkill =>
                     $"When using {skillRef} on self, gains " +
                     $"{FormatTokenStackCountWithUnit(Math.Max(1, def.IntValue))} additional " +
-                    $"{(def.TokenType.HasValue ? FormatTokenTypeDisplayName(def.TokenType.Value) : "token")}.",
+                    $"{(def.TokenType.HasValue ? FormatTokenTypeDisplayName(def.TokenType.Value) : "Status")}.",
 
                 PassiveEffectKind.ExtraHealPercentOnSelfSkill =>
                     $"When using {skillRef} on self, would restore {FormatPlainPercent(def.Additive)} of Max HP, " +
@@ -422,8 +422,8 @@ namespace Erumperem.UI
                 PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot =>
                     FormatApplyExtraDot(def, skillRef, dotName),
 
-                PassiveEffectKind.OutgoingDamageVsSkillIfTargetHasDot =>
-                    $"When using {skillRef} against a target with {dotName}, deals +{additivePercent} damage.",
+                PassiveEffectKind.DamageCausedVsSkillIfTargetHasDot =>
+                    $"When using {skillRef} against a target with {dotName}, Damage Caused +{additivePercent}.",
 
                 PassiveEffectKind.DotTickDamageBonusWhenTargetHpBelow =>
                     $"Your {dotName} effects deal +{additivePercent} damage per turn while " +
@@ -465,17 +465,17 @@ namespace Erumperem.UI
                    $"more damage (multiplier ×{FormatMultiplier(multiplier)}).";
         }
 
-        private static string FormatOutgoingDamageWhileTokenIsActive(double additive, TokenType? tokenType)
+        private static string FormatDamageCausedWhileTokenIsActive(double additive, TokenType? tokenType)
         {
-            var tokenName = tokenType.HasValue ? FormatTokenTypeDisplayName(tokenType.Value) : "this token";
+            var tokenName = tokenType.HasValue ? FormatTokenTypeDisplayName(tokenType.Value) : "this Status";
             if (additive < 0)
             {
                 var penaltyPercent = FormatPercentFromFraction(-additive);
-                return $"Deals {penaltyPercent} less damage while carrying {tokenName}.";
+                return $"Damage Caused -{penaltyPercent} while carrying {tokenName}.";
             }
 
             var bonusPercent = FormatPercentFromFraction(additive);
-            return $"Deals +{bonusPercent} damage while carrying {tokenName}.";
+            return $"Damage Caused +{bonusPercent} while carrying {tokenName}.";
         }
 
         private static string FormatApplyExtraDot(PassiveDefinition def, string skillRef, string dotName)
@@ -490,7 +490,7 @@ namespace Erumperem.UI
         {
             if (def.GrantTokenType is null)
             {
-                return "At the start of your turn, gain a token based on configured conditions.";
+                return "At the start of your turn, gain a Status based on configured conditions.";
             }
 
             var stacks = Math.Max(1, def.IntValue);
@@ -533,6 +533,33 @@ namespace Erumperem.UI
                 TokenType.Stealth => "Stealth",
                 TokenType.Combo => "Combo",
                 TokenType.Stun => "Stun",
+                TokenType.ControlledInstability => "Controlled Instability",
+                TokenType.Destabilization => "Destabilization",
+                TokenType.Strength => "Strength",
+                TokenType.Defense => "Defense",
+                TokenType.Weaken => "Weaken",
+                TokenType.Vulnerability => "Vulnerability",
+                TokenType.Confusion => "Confusion",
+                TokenType.Bleeding => "Bleeding",
+                TokenType.LuckyShot => "Lucky Shot",
+                TokenType.Dexterity => "Dexterity",
+                TokenType.Exposition => "Exposition",
+                TokenType.Corrosion => "Corrosion",
+                TokenType.Mark => "Mark",
+                TokenType.Regeneration => "Regeneration",
+                TokenType.Clumsy => "Clumsy",
+                TokenType.BonusAction => "Bonus Action",
+                TokenType.Hypnosis => "Hypnosis",
+                TokenType.Dizzy => "Dizzy",
+                TokenType.Burn => "Burn",
+                TokenType.PermaStrength => "Perma Strength",
+                TokenType.PermaDefense => "Perma Defense",
+                TokenType.PermaWeaken => "Perma Weaken",
+                TokenType.PermaVulnerability => "Perma Vulnerability",
+                TokenType.PermaDexterity => "Perma Dexterity",
+                TokenType.PermaClumsy => "Perma Clumsy",
+                TokenType.PermaExposition => "Perma Exposition",
+                TokenType.PermaStealth => "Perma Stealth",
                 _ => tokenType.ToString(),
             };
 
@@ -563,19 +590,19 @@ namespace Erumperem.UI
         public static string DescribePassiveEffectKind(PassiveEffectKind kind) =>
             kind switch
             {
-                PassiveEffectKind.OutgoingDamageVsSkillId =>
-                    "Increases damage dealt when using a specific skill.",
-                PassiveEffectKind.OutgoingDamageVsDotOnTarget =>
-                    "Increases damage against targets suffering from a specific damage-over-time (DoT) effect.",
-                PassiveEffectKind.OutgoingDamageVsSkillIfTargetHasDot =>
-                    "Increases damage of a specific skill if the target already carries a specific DoT.",
+                PassiveEffectKind.DamageCausedVsSkillId =>
+                    "Increases Damage Caused when using a specific skill.",
+                PassiveEffectKind.DamageCausedVsDotOnTarget =>
+                    "Increases Damage Caused against targets suffering from a specific damage-over-time (DoT) effect.",
+                PassiveEffectKind.DamageCausedVsSkillIfTargetHasDot =>
+                    "Increases Damage Caused of a specific skill if the target already carries a specific DoT.",
                 PassiveEffectKind.DotDurationBonus => "Increases the duration of a DoT applied by you.",
                 PassiveEffectKind.IncomingDamageMultiplierWhenHpBelow =>
                     "Modifies incoming damage when your HP is below a threshold.",
-                PassiveEffectKind.OutgoingDamagePenaltyWhenToken =>
-                    "Modifies your damage while you carry certain tokens.",
-                PassiveEffectKind.OutgoingDamageAfterPrerequisiteSkill =>
-                    "After using a setup skill, the next cast of another skill gains bonus damage.",
+                PassiveEffectKind.DamageCausedPenaltyWhenToken =>
+                    "Modifies Damage Caused while you carry certain tokens.",
+                PassiveEffectKind.DamageCausedAfterPrerequisiteSkill =>
+                    "After using a setup skill, the next cast of another skill gains Damage Caused.",
                 PassiveEffectKind.ExtraTokenOnSelfSkill =>
                     "Gain extra tokens when using specific self-targeted skills.",
                 PassiveEffectKind.ExtraHealPercentOnSelfSkill =>

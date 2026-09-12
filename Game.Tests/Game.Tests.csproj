@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Game.Core\Game.Core.csproj" />
     <ProjectReference Include="..\Game.Simulations\Game.Simulations.csproj" />
+    <None Include="..\Assets\StreamingAssets\Data\*.json" Link="Data\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

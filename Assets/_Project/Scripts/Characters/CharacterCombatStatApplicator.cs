@@ -14,6 +14,7 @@ namespace Erumperem.Characters
             int speed,
             double accuracy,
             double critChance,
+            double defenseChance,
             double burnResistance,
             double blightResistance,
             double stunResistance,
@@ -58,6 +59,7 @@ namespace Erumperem.Characters
                 Speed = speed,
                 Accuracy = accuracy,
                 CritChance = critChance,
+                DefenseChance = defenseChance,
             };
 
             var existingResistances = combatant.Resistances;

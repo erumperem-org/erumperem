@@ -202,7 +202,8 @@ namespace Erumperem.Combat
                 ownerCombatantId,
                 zeroBasedSlotIndex,
                 previewTarget?.Identity.Id ?? string.Empty,
-                _combatSession.BattleState.CorruptionTier);
+                _combatSession.BattleState.CorruptionTier,
+                previewTarget?.ElementAffinity.Element.ToString() ?? string.Empty);
 
             if (string.Equals(_lastRenderedDisplaySignature, displaySignature, StringComparison.Ordinal))
             {
@@ -333,8 +334,9 @@ namespace Erumperem.Combat
             string ownerCombatantId,
             int zeroBasedSlotIndex,
             string previewTargetCombatantId,
-            int corruptionTier) =>
-            $"{ownerCombatantId}|{zeroBasedSlotIndex}|{previewTargetCombatantId}|{corruptionTier}";
+            int corruptionTier,
+            string previewTargetElement) =>
+            $"{ownerCombatantId}|{zeroBasedSlotIndex}|{previewTargetCombatantId}|{corruptionTier}|{previewTargetElement}";
 
         private void ClearSkillInfoPanel()
         {

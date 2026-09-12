@@ -26,4 +26,24 @@ public sealed class PassiveDefinition
     public double HpBelowPercent { get; init; }
     public int IntValue { get; init; }
     public int IntValue2 { get; init; }
+
+    public PassiveRequiredPartyRole RequiredPartyRole { get; init; } = PassiveRequiredPartyRole.Any;
+
+    /// <summary>0 = no corruption gate. Otherwise the battle <c>CorruptionTier</c> must be &gt;= this value.</summary>
+    public int CorruptionMinTier { get; init; }
+
+    /// <summary>Absolute chance to fire when conditions match. Default 1 = always.</summary>
+    public double ChanceToTrigger { get; init; } = 1.0;
+
+    /// <summary>0 = unlimited for the battle.</summary>
+    public int MaxTriggersPerBattle { get; init; }
+
+    /// <summary>0 = unlimited for the turn.</summary>
+    public int MaxTriggersPerTurn { get; init; }
+
+    public IReadOnlyList<PassiveConditionDefinition> Conditions { get; init; } = [];
+
+    public IReadOnlyList<PassiveEffectDefinition> Effects { get; init; } = [];
+
+    public bool HasDataDrivenEffects => Effects is { Count: > 0 };
 }

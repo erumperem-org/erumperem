@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using Erumperem.Progression;
 using UnityEditor;
 using UnityEngine;
@@ -205,16 +206,24 @@ namespace Erumperem.Editor.Progression
         }
 
         /// <summary>
-        /// Maps legacy (b_f_t1_p1 / f_t1_a1) or current Wulfric-shaped ids onto Buck kit ids (b_ar_*/buck*).
+        /// Maps legacy (b_f_t1_p1 / f_t1_a1 / b_ar_* / camelCase) onto Buck snake_case kit ids.
         /// </summary>
         private static string MapSourceNodeIdToCurrentBuckNodeId(string sourceNodeId)
         {
-            if (sourceNodeId.StartsWith("b_ar_", StringComparison.Ordinal)
-                || sourceNodeId.StartsWith("b_sn_", StringComparison.Ordinal)
-                || sourceNodeId.StartsWith("b_du_", StringComparison.Ordinal)
-                || sourceNodeId.StartsWith("buck", StringComparison.OrdinalIgnoreCase))
+            if (sourceNodeId.StartsWith("buck_tree", StringComparison.Ordinal)
+                || sourceNodeId.StartsWith("buck_innate", StringComparison.Ordinal))
             {
                 return sourceNodeId;
+            }
+
+            if (TryMapLegacyBuckTreePrefix(sourceNodeId, out var remappedFromCurrentPrefix))
+            {
+                return remappedFromCurrentPrefix;
+            }
+
+            if (LegacyBuckActiveIds.TryGetValue(sourceNodeId, out var remappedActiveId))
+            {
+                return remappedActiveId;
             }
 
             var legacyBuckMatch = System.Text.RegularExpressions.Regex.Match(
@@ -244,45 +253,70 @@ namespace Erumperem.Editor.Progression
             return null;
         }
 
+        private static readonly Dictionary<string, string> LegacyBuckActiveIds = new(StringComparer.Ordinal)
+        {
+            ["buckSpiderHands"] = "buck_tree1_tier1_active",
+            ["buckAllGuns"] = "buck_tree1_tier2_active",
+            ["buckJuggle"] = "buck_tree1_tier3_active",
+            ["buckSnakeVision"] = "buck_tree2_tier1_active",
+            ["buckSnakeBite"] = "buck_tree2_tier2_active",
+            ["buckSnakeTail"] = "buck_tree2_tier3_active",
+            ["buckMark"] = "buck_tree3_tier1_active",
+            ["buckPistolHeadShot"] = "buck_tree3_tier2_active",
+            ["buckLuckManipulation"] = "buck_tree3_tier3_active",
+        };
+
+        private static bool TryMapLegacyBuckTreePrefix(string sourceNodeId, out string remappedNodeId)
+        {
+            remappedNodeId = null;
+            var match = System.Text.RegularExpressions.Regex.Match(
+                sourceNodeId,
+                @"^b_(ar|sn|du)_t(\d+)_p(\d+)$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (!match.Success)
+            {
+                return false;
+            }
+
+            var treeIndex = match.Groups[1].Value.ToLowerInvariant() switch
+            {
+                "ar" => 1,
+                "sn" => 2,
+                "du" => 3,
+                _ => 0,
+            };
+            if (treeIndex == 0)
+            {
+                return false;
+            }
+
+            remappedNodeId = $"buck_tree{treeIndex}_tier{match.Groups[2].Value}_passive{match.Groups[3].Value}";
+            return true;
+        }
+
         private static string ResolveBuckNodeIdFromElementTierSlot(
             string elementKey,
             int tierNumber,
             string slotKey)
         {
-            var branchPrefix = elementKey switch
+            var treeIndex = elementKey switch
             {
-                "f" => "b_ar",
-                "m" => "b_sn",
-                "a" => "b_du",
-                _ => null,
+                "f" => 1,
+                "m" => 2,
+                "a" => 3,
+                _ => 0,
             };
-            if (branchPrefix == null || tierNumber < 1)
+            if (treeIndex == 0 || tierNumber < 1 || tierNumber > 3)
             {
                 return null;
             }
 
-            if (slotKey.StartsWith("p", StringComparison.Ordinal))
+            if (slotKey.StartsWith("p", StringComparison.Ordinal) && slotKey.Length > 1)
             {
-                return $"{branchPrefix}_t{tierNumber}_{slotKey}";
+                return $"buck_tree{treeIndex}_tier{tierNumber}_passive{slotKey[1..]}";
             }
 
-            var fireActives = new[] { "buckSpiderHands", "buckAllGuns", "buckJuggle" };
-            var metalActives = new[] { "buckSnakeVision", "buckSnakeBite", "buckSnakeTail" };
-            var anomalyActives = new[] { "buckMark", "buckPistolHeadShot", "buckLuckManipulation" };
-            var activeList = elementKey switch
-            {
-                "f" => fireActives,
-                "m" => metalActives,
-                "a" => anomalyActives,
-                _ => Array.Empty<string>(),
-            };
-            var activeIndex = tierNumber - 1;
-            if (activeIndex < 0 || activeIndex >= activeList.Length)
-            {
-                return null;
-            }
-
-            return activeList[activeIndex];
+            return $"buck_tree{treeIndex}_tier{tierNumber}_active";
         }
 
         private static Sprite LoadPortraitSpriteFromPrefab(string prefabPath)

@@ -6,6 +6,8 @@ namespace Game.Core.Engine;
 
 /// <summary>
 /// Status ticks, Destabilization explosions, ControlledInstability reflect, and flat HP loss helpers.
+/// Destabilization "nearby" is every other living combatant (no radius). Unleash consumes all stacks
+/// and does not damage the carrier.
 /// </summary>
 internal static class BattleCombatStatusTicker
 {
@@ -16,12 +18,13 @@ internal static class BattleCombatStatusTicker
     {
         actor.PassiveRuntime.ConfusionActiveThisTurn = actor.Tokens.GetStacks(TokenType.Confusion) > 0;
         actor.PassiveRuntime.ShouldRetainTurnForBonusAction = false;
+        CombatHypnosisRules.ClearLockIfExpired(actor);
     }
 
     public static void ApplyEndOfTurnStatusEffects(
         BattleState state,
         Combatant actor,
-        BattleCombatEventEmitter eventEmitter)
+        BattleCombatEventEmitter? eventEmitter)
     {
         if (actor.Health.IsDead)
         {
@@ -31,7 +34,11 @@ internal static class BattleCombatStatusTicker
         var regenerationStacks = actor.Tokens.GetStacks(TokenType.Regeneration);
         if (regenerationStacks > 0 && CombatHealUnlock.IsCombatHealingUnlocked)
         {
-            CombatHealUnlock.ApplyHealHpToRecipient(actor, regenerationStacks);
+            var healed = CombatHealUnlock.ApplyHealHpToRecipient(actor, regenerationStacks);
+            if (healed > 0)
+            {
+                state.PassiveBus.RaiseHealingDealt(state, actor, actor, skill: null, healed);
+            }
         }
 
         var bleedingStacks = actor.Tokens.GetStacks(TokenType.Bleeding);
@@ -75,8 +82,40 @@ internal static class BattleCombatStatusTicker
             return;
         }
 
+        var burnStacks = actor.Tokens.GetStacks(TokenType.Burn);
+        if (burnStacks > 0)
+        {
+            ApplyDirectHpLoss(
+                state,
+                actor,
+                burnStacks,
+                eventEmitter,
+                actor.Identity.Id,
+                skillId: string.Empty,
+                markDeath: true);
+        }
+
+        if (actor.Health.IsDead)
+        {
+            return;
+        }
+
         foreach (var decayTokenType in CombatStatusRules.EndOfTurnDecayTokens)
         {
+            if (actor.Tokens.GetStacks(decayTokenType) <= 0)
+            {
+                continue;
+            }
+
+            var skipDecayChance = PassiveDataDrivenEngine.GetTokenEndOfTurnDecaySkipChance(
+                state,
+                actor,
+                decayTokenType);
+            if (skipDecayChance > 0 && state.PassiveTriggerRandom.NextDouble() < skipDecayChance)
+            {
+                continue;
+            }
+
             if (actor.Tokens.ConsumeOne(decayTokenType))
             {
                 state.PassiveBus.RaiseTokenStacksChanged(
@@ -90,22 +129,35 @@ internal static class BattleCombatStatusTicker
         }
 
         actor.PassiveRuntime.ConfusionActiveThisTurn = false;
+        actor.PassiveRuntime.ConfusedSkillIdsThisTurn.Clear();
+        CombatHypnosisRules.ClearLockIfExpired(actor);
     }
 
     public static void ApplyControlledInstabilityReflect(
         BattleState state,
         Combatant attacker,
         Combatant defender,
-        BattleCombatEventEmitter eventEmitter,
+        BattleCombatEventEmitter? eventEmitter,
         string skillId)
     {
+        if (attacker.Identity.Faction != Faction.Enemy)
+        {
+            return;
+        }
+
         var instabilityStacks = defender.Tokens.GetStacks(TokenType.ControlledInstability);
         if (instabilityStacks <= 0 || attacker.Health.IsDead)
         {
             return;
         }
 
-        var reflectDamage = CombatStatusRules.ControlledInstabilityReflectDamagePerStack * instabilityStacks;
+        var reflectEfficiency = PassiveDataDrivenEngine.GetTokenEfficiencyMultiplier(
+            state,
+            defender,
+            TokenType.ControlledInstability,
+            attacker);
+        var reflectDamage = (int)Math.Round(
+            CombatStatusRules.ControlledInstabilityReflectDamagePerStack * instabilityStacks * reflectEfficiency);
         ApplyDirectHpLoss(
             state,
             attacker,
@@ -118,6 +170,11 @@ internal static class BattleCombatStatusTicker
 
     public static void ConsumeTauntOnBeingHit(BattleState state, Combatant defender, Combatant attacker)
     {
+        if (attacker.Identity.Faction != Faction.Enemy)
+        {
+            return;
+        }
+
         if (defender.Tokens.GetStacks(TokenType.Taunt) <= 0)
         {
             return;
@@ -138,7 +195,7 @@ internal static class BattleCombatStatusTicker
     public static void TriggerDestabilizationExplosion(
         BattleState state,
         Combatant explodingCombatant,
-        BattleCombatEventEmitter eventEmitter,
+        BattleCombatEventEmitter? eventEmitter,
         string skillId,
         string actorId)
     {
@@ -156,7 +213,17 @@ internal static class BattleCombatStatusTicker
             TokenType.Destabilization,
             delta: -destabilizationStacks);
 
-        var explosionDamage = CombatStatusRules.DestabilizationDamagePerStack * destabilizationStacks;
+        var applierCombatant = state.GetAllCombatants().FirstOrDefault(combatant =>
+            string.Equals(combatant.Identity.Id, actorId, StringComparison.Ordinal));
+        var destabEfficiency = applierCombatant == null
+            ? 1.0
+            : PassiveDataDrivenEngine.GetTokenEfficiencyMultiplier(
+                state,
+                applierCombatant,
+                TokenType.Destabilization,
+                explodingCombatant);
+        var explosionDamage = (int)Math.Round(
+            CombatStatusRules.DestabilizationDamagePerStack * destabilizationStacks * destabEfficiency);
         foreach (var otherCombatant in state.GetAllCombatants())
         {
             if (otherCombatant.Health.IsDead)
@@ -187,7 +254,7 @@ internal static class BattleCombatStatusTicker
         BattleState state,
         Combatant target,
         int damage,
-        BattleCombatEventEmitter eventEmitter,
+        BattleCombatEventEmitter? eventEmitter,
         string actorId,
         string skillId,
         bool markDeath)
@@ -199,7 +266,7 @@ internal static class BattleCombatStatusTicker
 
         if (state.AlliesHaveInfiniteHealth && target.Identity.Faction == Faction.Player)
         {
-            eventEmitter.Emit(
+            eventEmitter?.Emit(
                 state,
                 BattleEventType.DamageApplied,
                 actorId: actorId,
@@ -211,7 +278,7 @@ internal static class BattleCombatStatusTicker
         }
 
         target.Health.CurrentHp = Math.Max(0, target.Health.CurrentHp - damage);
-        eventEmitter.Emit(
+        eventEmitter?.Emit(
             state,
             BattleEventType.DamageApplied,
             actorId: actorId,
@@ -225,7 +292,7 @@ internal static class BattleCombatStatusTicker
             !target.Health.IsDead)
         {
             target.Health.IsDead = true;
-            eventEmitter.Emit(state, BattleEventType.CombatantDied, targetId: target.Identity.Id);
+            eventEmitter?.Emit(state, BattleEventType.CombatantDied, targetId: target.Identity.Id);
             TriggerDestabilizationExplosion(state, target, eventEmitter, skillId, actorId);
         }
     }

@@ -23,7 +23,8 @@ public sealed class SkillTargetResolverTests
         Assert.Same(actor, primaryTargets[0]);
 
         var simulator = new BattleSimulator(new SeededRandomSource(1), new CombatEventCollector());
-        var chosenAction = PlayerActionBuilder.TryCreate(battle, simulator, actor, 0, selectedEnemy);
+        Assert.Null(PlayerActionBuilder.TryCreate(battle, simulator, actor, 0, selectedEnemy));
+        var chosenAction = PlayerActionBuilder.TryCreate(battle, simulator, actor, 0, actor);
         Assert.NotNull(chosenAction);
         Assert.Same(actor, chosenAction!.Target);
     }
@@ -326,11 +327,15 @@ public sealed class SkillContractValidationTests
     [Fact]
     public void CanonicalSkillsJson_LoadsWithoutComboBonus()
     {
-        var skills = CombatDataLoader.LoadSkills(CombatDataLoader.ResolveDefaultSkillsPath());
-        Assert.Contains(skills, skill => skill.Id == "wulfricBasicHit" && skill.TargetKind == SkillTargetKind.OneEnemy);
-        Assert.Contains(skills, skill => skill.Id == "wulfricAreaAttack" && skill.TargetKind == SkillTargetKind.UpToThreeEnemies);
-        Assert.Contains(skills, skill => skill.Id == "mariaHealVoice" && skill.TargetKind == SkillTargetKind.SelfOrAlly);
-        Assert.Contains(skills, skill => skill.Id == "wulfric_innate_cleave" && skill.TargetKind == SkillTargetKind.OneEnemy);
+        var skillsPath = CombatDataLoader.ResolveDefaultSkillsPath();
+        Assert.Contains("StreamingAssets", skillsPath, StringComparison.OrdinalIgnoreCase);
+
+        var skills = CombatDataLoader.LoadSkills(skillsPath);
+        Assert.Contains(skills, skill => skill.Id == "wulfric_innate_active1" && skill.TargetKind == SkillTargetKind.OneEnemy);
+        Assert.Contains(skills, skill => skill.Id == "wulfric_innate_active3" && skill.TargetKind == SkillTargetKind.UpToThreeEnemies);
+        Assert.Contains(skills, skill => skill.Id == "maria_innate_active2" && skill.TargetKind == SkillTargetKind.SelfOrAlly);
+        Assert.Contains(skills, skill => skill.Id == "horse_boss_painful_bite");
+        Assert.DoesNotContain(skills, skill => skill.Id == "wulfric_innate_cleave");
     }
 }
 

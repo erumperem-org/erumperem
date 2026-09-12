@@ -12,10 +12,9 @@ using UnityEngine.Serialization;
 namespace Erumperem.Progression
 {
     /// <summary>
-    /// Single ScriptableObject per skill-tree node (passive or active): tree identity, UI, full combat data,
-    /// and optional Unity passive presentation hooks. Use as the only authoring surface for this node.
-    /// Names are deliberately long so the Inspector and authors do not need extra documentation to
-    /// understand each field; tooltips give the per-field semantic where it changes per effect kind.
+    /// Legacy skill-tree UI node (presentation + incomplete combat fields).
+    /// Combat authoring is <c>CombatAbilityAsset</c> (Erumperem/Combat/Ability) exported to StreamingAssets JSON.
+    /// Do not merge this asset over JSON at runtime.
     /// </summary>
     [CreateAssetMenu(fileName = "SkillTreeNode", menuName = "Erumperem/Progression/Skill Tree Node (full)")]
     public sealed class SkillTreeNodeAsset : ScriptableObject
@@ -69,7 +68,7 @@ namespace Erumperem.Progression
         // 1) Tree & identity — sempre usado (progressão, combate, UI)
         // -------------------------------------------------------------------------
         [Header("1 — Tree & identity")]
-        [Tooltip("Must match the node id in skill_trees.json (e.g. f_t1_p1, f_t2_a1). " +
+        [Tooltip("Must match the node id in skill_trees.json (e.g. wulfric_tree1_tier1_passive1). " +
                  "For active skills this is also the skill id used by the combat simulator.")]
         [SerializeField] private string _nodeId = "";
 
@@ -155,13 +154,13 @@ namespace Erumperem.Progression
                  "(see PassiveRuleApplier for the per-kind semantics).")]
         [SerializeField] private PassiveEffectKind _passiveEffectKind;
 
-        [Tooltip("Skill id this passive watches for (e.g. for OutgoingDamageVsSkillId, the skill that gets the bonus). " +
+        [Tooltip("Skill id this passive watches for (e.g. for DamageCausedVsSkillId, the skill that gets the bonus). " +
                  "Match value is the node id of an active skill (= its skill id).")]
         [FormerlySerializedAs("_passiveSkillId")]
         [SerializeField] private string _passiveAppliesWhenSkillIdMatches = "";
 
         [Tooltip("Skill id that must have been used previously to prime this passive " +
-                 "(e.g. OutgoingDamageAfterPrerequisiteSkill).")]
+                 "(e.g. DamageCausedAfterPrerequisiteSkill).")]
         [FormerlySerializedAs("_passivePrerequisiteSkillId")]
         [SerializeField] private string _passivePrerequisiteSkillIdThatMustBeUsedFirst = "";
 
@@ -210,8 +209,8 @@ namespace Erumperem.Progression
         [SerializeField] private TokenType _passiveBlockingTokenTypeOnActor;
 
         [Tooltip("Generic numeric magnitude used by most damage-modifier kinds.\n" +
-                 "• OutgoingDamageVs* / OutgoingDamageAfterPrerequisiteSkill: additive damage bonus fraction (0.10 = +10%).\n" +
-                 "• OutgoingDamagePenaltyWhenToken: signed additive (e.g. -0.12 = -12%).\n" +
+                 "• DamageCausedVs* / DamageCausedAfterPrerequisiteSkill: additive Damage Caused fraction (0.10 = +10%).\n" +
+                 "• DamageCausedPenaltyWhenToken: signed additive (e.g. -0.12 = -12%).\n" +
                  "• IncomingDamageMultiplierWhenHpBelow: incoming damage MULTIPLIER (e.g. 0.88 = take 88% damage).\n" +
                  "• ExtraHealPercentOnSelfSkill: heal percentage of MaxHp (5 = 5%, not a fraction).\n" +
                  "• DotTickDamageBonusWhenTargetHpBelow: extra DoT tick multiplier added (0.20 = +20%).")]
@@ -219,7 +218,7 @@ namespace Erumperem.Progression
         [SerializeField] private double _passiveDamageBonusOrIncomingMultiplierMagnitude;
 
         [Tooltip("Damage bonus fraction added per stack of the configured DoT on the target (e.g. 0.03 = +3% per stack). " +
-                 "Used by OutgoingDamageVsDotOnTarget. Capped by 'Passive Damage Bonus Fraction Maximum Cap'.")]
+                 "Used by DamageCausedVsDotOnTarget. Capped by 'Passive Damage Bonus Fraction Maximum Cap'.")]
         [FormerlySerializedAs("_passiveAdditivePerStack")]
         [SerializeField] private double _passiveDamageBonusFractionPerDotStackOnTarget;
 

@@ -10,8 +10,7 @@ namespace Core.Tokens
     /// Múltiplas aplicações do mesmo Blight enfraquecem cada stack adicional
     /// (DiminishingStackData, fator 0.15).
     /// Sinergias:
-    ///   - Inversion: se um efeito de purificação (RegenToken) estiver ativo,
-    ///     o Blight inverte — ao invés de causar dano, drena cura da praga.
+    ///   - Inversion: reservado (parceiro de Exemplos/Regen removido).
     /// Allocation: on-hit.
     /// </summary>
     public class BlightToken : TokenController, IInversionSynergy
@@ -20,7 +19,7 @@ namespace Core.Tokens
         private readonly Action<float> applyHealDrain;
         private bool inverted = false;
 
-        public HashSet<Type> inversionSynergys { get; } = new() { typeof(RegenToken) };
+        public HashSet<Type> inversionSynergys { get; } = new();
 
         public BlightToken(Action<float> applyDamage, Action<float> applyHealDrain) : base(
             typeof(BlightToken).Name,

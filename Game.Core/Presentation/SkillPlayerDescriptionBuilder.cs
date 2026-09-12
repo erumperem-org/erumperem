@@ -377,22 +377,22 @@ public static class SkillPlayerDescriptionBuilder
                      passiveDefinition.Additive > 0 =>
                 $"passive: healing blocked outside village (+{FormatPlainNumber(passiveDefinition.Additive)}% HP)",
 
-            PassiveEffectKind.OutgoingDamageVsSkillId
+            PassiveEffectKind.DamageCausedVsSkillId
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
                      passiveDefinition.Additive != 0 =>
-                $"passive: {FormatSignedPercentBonus(passiveDefinition.Additive)} damage",
+                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)}",
 
-            PassiveEffectKind.OutgoingDamageVsSkillIfTargetHasDot
+            PassiveEffectKind.DamageCausedVsSkillIfTargetHasDot
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
                      passiveDefinition.DotType.HasValue &&
                      passiveDefinition.Additive != 0 =>
-                $"passive: {FormatSignedPercentBonus(passiveDefinition.Additive)} damage if target has " +
+                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} if target has " +
                 $"{DotDisplayName(passiveDefinition.DotType.Value)}",
 
-            PassiveEffectKind.OutgoingDamageAfterPrerequisiteSkill
+            PassiveEffectKind.DamageCausedAfterPrerequisiteSkill
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
                      passiveDefinition.Additive != 0 =>
-                $"passive: {FormatSignedPercentBonus(passiveDefinition.Additive)} damage after prep skill",
+                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} after prep skill",
 
             PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
@@ -409,25 +409,25 @@ public static class SkillPlayerDescriptionBuilder
                       $"(max. {FormatTurnCount(passiveDefinition.IntValue2)})"
                     : $"passive: {DotDisplayName(passiveDefinition.DotType.Value)} lasts +{FormatTurnCount(passiveDefinition.IntValue)}",
 
-            PassiveEffectKind.OutgoingDamagePenaltyWhenToken
+            PassiveEffectKind.DamageCausedPenaltyWhenToken
                 when passiveDefinition.TokenType.HasValue &&
                      context.Actor!.Tokens.GetStacks(passiveDefinition.TokenType.Value) > 0 &&
                      passiveDefinition.Additive != 0 =>
-                $"passive: {FormatSignedPercentBonus(passiveDefinition.Additive)} damage with " +
+                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} with " +
                 $"{TokenDisplayName(passiveDefinition.TokenType.Value)}",
 
-            PassiveEffectKind.OutgoingDamageVsDotOnTarget
+            PassiveEffectKind.DamageCausedVsDotOnTarget
                 when HasDirectDamage(skill) &&
                      passiveDefinition.DotType.HasValue &&
                      context.PreviewTarget != null &&
                      PassiveRuleApplier.CountDotStacks(context.PreviewTarget, passiveDefinition.DotType.Value) > 0 =>
-                DescribeOutgoingDamageVsDotOnTargetPassive(passiveDefinition),
+                DescribeDamageCausedVsDotOnTargetPassive(passiveDefinition),
 
             _ => string.Empty,
         };
     }
 
-    private static string DescribeOutgoingDamageVsDotOnTargetPassive(PassiveDefinition passiveDefinition)
+    private static string DescribeDamageCausedVsDotOnTargetPassive(PassiveDefinition passiveDefinition)
     {
         if (!passiveDefinition.DotType.HasValue)
         {
@@ -438,13 +438,13 @@ public static class SkillPlayerDescriptionBuilder
         if (passiveDefinition.AdditivePerStack > 0 && passiveDefinition.Cap > 0)
         {
             return
-                $"passive: +{FormatPercentFromFraction(passiveDefinition.AdditivePerStack)} damage per " +
+                $"passive: Damage Caused +{FormatPercentFromFraction(passiveDefinition.AdditivePerStack)} per " +
                 $"{dotName} stack on target (max. +{FormatPercentFromFraction(passiveDefinition.Cap)})";
         }
 
         if (passiveDefinition.Additive != 0)
         {
-            return $"passive: {FormatSignedPercentBonus(passiveDefinition.Additive)} damage against target with {dotName}";
+            return $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} against target with {dotName}";
         }
 
         return string.Empty;
@@ -495,6 +495,9 @@ public static class SkillPlayerDescriptionBuilder
             TokenType.Stealth => "Stealth",
             TokenType.Combo => "Combo",
             TokenType.Stun => "Stun",
+            TokenType.Hypnosis => "Hypnosis",
+            TokenType.Dizzy => "Dizzy",
+            TokenType.Burn => "Burn",
             _ => tokenType.ToString(),
         };
 

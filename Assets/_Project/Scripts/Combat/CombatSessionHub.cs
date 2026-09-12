@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Game.Core.Domain;
 using Game.Core.Models;
 using UnityEngine;
 
@@ -29,6 +30,12 @@ namespace Erumperem.Combat
         public event Action OnCombatSessionClosed;
 
         public event Action<CombatPrototypeController> OnCombatSessionReadyForUi;
+
+        /// <summary>Fires once after initiative is rolled (and after debug overrides).</summary>
+        public event Action<Side> OnBattleInitiativeResolved;
+
+        /// <summary>Fires when the player side or the enemy side begins acting in the current round.</summary>
+        public event Action<Side> OnCombatRoundSideBegan;
 
         public event Action<Transform, Transform> OnCinemachineFocusBegan;
         public event Action OnCinemachineFocusEnded;
@@ -73,6 +80,12 @@ namespace Erumperem.Combat
 
         internal void RaiseCombatSessionReadyForUi(CombatPrototypeController controller) =>
             OnCombatSessionReadyForUi?.Invoke(controller);
+
+        internal void RaiseBattleInitiativeResolved(Side firstActingSide) =>
+            OnBattleInitiativeResolved?.Invoke(firstActingSide);
+
+        internal void RaiseCombatRoundSideBegan(Side actingSide) =>
+            OnCombatRoundSideBegan?.Invoke(actingSide);
 
         internal void RaiseCinemachineFocusBegan(Transform actorRoot, Transform targetRoot) =>
             OnCinemachineFocusBegan?.Invoke(actorRoot, targetRoot);
