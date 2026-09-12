@@ -111,51 +111,6 @@ namespace Erumperem.Editor.Combat
             EditorGUILayout.PropertyField(serializedObject.FindProperty("_maxTriggersPerTurn"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("_passiveConditions"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("_passiveEffects"));
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Legacy EffectKind (current runtime)", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox(
-                "Fill only if this passive must export to the existing PassiveEffectKind engine. Prefer Conditions + Effects. Do not invent new EffectKind cases.",
-                MessageType.Info);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveEffectKind"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveSkillId"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassivePrerequisiteSkillId"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveUsesDotTypeFilter"));
-            if (serializedObject.FindProperty("_legacyPassiveUsesDotTypeFilter").boolValue)
-            {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveDotTypeFilter"));
-            }
-
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveUsesTokenTypeFilter"));
-            if (serializedObject.FindProperty("_legacyPassiveUsesTokenTypeFilter").boolValue)
-            {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveTokenTypeFilter"));
-            }
-
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveGrantsExtraTokenOfType"));
-            if (serializedObject.FindProperty("_legacyPassiveGrantsExtraTokenOfType").boolValue)
-            {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveTokenTypeToGrantWhenTriggered"));
-            }
-
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveOnlyAppliesWhenActorHasTokenType"));
-            if (serializedObject.FindProperty("_legacyPassiveOnlyAppliesWhenActorHasTokenType").boolValue)
-            {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveRequiredTokenTypeOnActor"));
-            }
-
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveOnlyAppliesWhenActorLacksTokenType"));
-            if (serializedObject.FindProperty("_legacyPassiveOnlyAppliesWhenActorLacksTokenType").boolValue)
-            {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveBlockingTokenTypeOnActor"));
-            }
-
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveAdditive"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveAdditivePerStack"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveCap"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveHpBelowPercent"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveIntValue"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_legacyPassiveIntValue2"));
         }
 
         private void DrawTreeNode()

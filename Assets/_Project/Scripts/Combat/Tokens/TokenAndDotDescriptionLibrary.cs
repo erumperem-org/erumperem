@@ -15,20 +15,10 @@ namespace Erumperem.Combat.Tokens
     {
         public static string GetTokenAuthoredDescription(TokenType tokenType) => tokenType switch
         {
-            TokenType.Block =>
-                "Status — [token block]: reduces the next physical damage taken.",
-            TokenType.BlockPlus =>
-                "Status — [token blockplus]: [c buff]strongly[/c] reduces the next physical damage taken.",
-            TokenType.Dodge =>
-                "Status — [token dodge]: evades the next enemy attack.",
-            TokenType.Blind =>
-                "Status — [token blind]: the bearer's next attack has a high chance to miss.",
             TokenType.Taunt =>
                 "Status — [token taunt]: enemies can only select this. Lose 1 stack when hit by an enemy.",
             TokenType.Stealth =>
                 "Status — [token stealth]: skills targeting this character have -40% accuracy. Lose 1 stack at the end of turn.",
-            TokenType.Combo =>
-                "Status — [token combo]: accumulates and empowers specific skills; consumed upon use.",
             TokenType.Stun =>
                 "Status — [token stun]: the bearer loses their next turn.",
             TokenType.ControlledInstability =>

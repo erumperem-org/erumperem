@@ -34,7 +34,7 @@ namespace Erumperem.Progression
             {
                 if (Title != null)
                 {
-                    Title.text = nodeAsset.IsPassiveNode ? "Passive" : PlayerFacingText.TranslateToEnglish(nodeAsset.DisplayName);
+                    Title.text = PlayerFacingText.FormatSkillTreeNodeTitle(nodeAsset);
                 }
 
                 if (Body != null)

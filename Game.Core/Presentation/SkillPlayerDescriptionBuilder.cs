@@ -256,9 +256,23 @@ public static class SkillPlayerDescriptionBuilder
             EffectType.ApplyDot when effect.Dot.HasValue =>
                 $"{chancePrefix}{FormatDotGrantPhrase(effect, skill, context)}",
             EffectType.HealHpPercent =>
-                $"{chancePrefix}healing blocked outside village ({FormatPlainNumber(Math.Max(0, effect.Potency))}% HP)",
+                $"{chancePrefix}heals {FormatPlainNumber(Math.Max(0, effect.Potency))}% HP",
             EffectType.HealHp =>
-                $"{chancePrefix}healing blocked outside the village ({Math.Max(0, effect.Potency)} HP)",
+                $"{chancePrefix}heals {Math.Max(0, effect.Potency)} HP",
+            EffectType.ApplyRandomDot =>
+                $"{chancePrefix}applies a random DoT",
+            EffectType.RemoveAllDebuffTokens =>
+                $"{chancePrefix}removes all debuffs",
+            EffectType.ConsumeAllTokenStacksDealDamagePerStack when effect.Token.HasValue =>
+                $"{chancePrefix}consumes all {TokenDisplayName(effect.Token.Value)}: {Math.Max(1, effect.Potency)} damage per stack",
+            EffectType.ConsumeAllTokenStacksHealPerStack when effect.Token.HasValue =>
+                $"{chancePrefix}consumes all {TokenDisplayName(effect.Token.Value)}: heals {Math.Max(1, effect.Potency)} HP per stack",
+            EffectType.SelfDamageFlat =>
+                $"{chancePrefix}{Math.Max(0, effect.Potency)} self-damage",
+            EffectType.TriggerDestabilizationOnTargets =>
+                $"{chancePrefix}triggers Destabilization on targets",
+            EffectType.ApplyBonusAction =>
+                $"{chancePrefix}+{FormatTokenStackCount(Math.Max(1, effect.Stacks))} {TokenDisplayName(TokenType.BonusAction)}",
             EffectType.Push =>
                 $"{chancePrefix}pushes {Math.Max(1, Math.Abs(effect.Steps))} position(s)",
             EffectType.Pull =>
@@ -484,20 +498,41 @@ public static class SkillPlayerDescriptionBuilder
     private static string FormatPlainNumber(double value) =>
         value.ToString("0.##", EnglishCulture);
 
+    public static string FormatStatusDisplayName(TokenType tokenType) => TokenDisplayName(tokenType);
+
     private static string TokenDisplayName(TokenType tokenType) =>
         tokenType switch
         {
-            TokenType.Block => "Block",
-            TokenType.BlockPlus => "Block Plus",
-            TokenType.Dodge => "Dodge",
-            TokenType.Blind => "Blind",
             TokenType.Taunt => "Taunt",
             TokenType.Stealth => "Stealth",
-            TokenType.Combo => "Combo",
             TokenType.Stun => "Stun",
+            TokenType.ControlledInstability => "Controlled Instability",
+            TokenType.Destabilization => "Destabilization",
+            TokenType.Strength => "Strength",
+            TokenType.Defense => "Defense",
+            TokenType.Weaken => "Weaken",
+            TokenType.Vulnerability => "Vulnerability",
+            TokenType.Confusion => "Confusion",
+            TokenType.Bleeding => "Bleeding",
+            TokenType.LuckyShot => "Lucky Shot",
+            TokenType.Dexterity => "Dexterity",
+            TokenType.Exposition => "Exposition",
+            TokenType.Corrosion => "Corrosion",
+            TokenType.Mark => "Mark",
+            TokenType.Regeneration => "Regeneration",
+            TokenType.Clumsy => "Clumsy",
+            TokenType.BonusAction => "Bonus Action",
             TokenType.Hypnosis => "Hypnosis",
             TokenType.Dizzy => "Dizzy",
             TokenType.Burn => "Burn",
+            TokenType.PermaStrength => "Perma Strength",
+            TokenType.PermaDefense => "Perma Defense",
+            TokenType.PermaWeaken => "Perma Weaken",
+            TokenType.PermaVulnerability => "Perma Vulnerability",
+            TokenType.PermaDexterity => "Perma Dexterity",
+            TokenType.PermaClumsy => "Perma Clumsy",
+            TokenType.PermaExposition => "Perma Exposition",
+            TokenType.PermaStealth => "Perma Stealth",
             _ => tokenType.ToString(),
         };
 

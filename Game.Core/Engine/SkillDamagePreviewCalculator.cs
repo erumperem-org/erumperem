@@ -80,16 +80,6 @@ public static class SkillDamagePreviewCalculator
     {
         var hitChance = CombatDamageCalculator.ComputeEffectiveHitChanceFraction(state, actor, target, skill);
 
-        if (actor.Tokens.GetStacks(TokenType.Blind) > 0)
-        {
-            hitChance *= 1.0 - state.BalanceConfig.BlindMissChance;
-        }
-
-        if (target.Tokens.GetStacks(TokenType.Dodge) > 0)
-        {
-            hitChance *= 1.0 - state.BalanceConfig.DodgeNegateChance;
-        }
-
         if (skill.Accuracy <= 0 && hitChance <= 0)
         {
             return Math.Max(0, hitChance);

@@ -23,13 +23,8 @@ public enum ElementType
 
 public enum TokenType
 {
-    Block = 0,
-    BlockPlus = 1,
-    Dodge = 2,
-    Blind = 3,
     Taunt = 4,
     Stealth = 5,
-    Combo = 6,
     Stun = 7,
     ControlledInstability = 8,
     Destabilization = 9,

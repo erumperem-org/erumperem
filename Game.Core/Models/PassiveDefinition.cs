@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Game.Core.Domain;
 using Game.Core.Passives;
 
@@ -9,22 +10,52 @@ namespace Game.Core.Models;
 public sealed class PassiveDefinition
 {
     public required string Id { get; init; }
+
+    /// <summary>
+    /// Legacy engine path. Only Horse Boss summon still uses this in the live catalog.
+    /// Default (0 / DamageCausedVsSkillId) is omitted on write so hero passives stay Conditions + Effects.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public PassiveEffectKind EffectKind { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? SkillId { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? PrerequisiteSkillId { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public DotType? DotType { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public TokenType? TokenType { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public TokenType? GrantTokenType { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public TokenType? IfHasTokenType { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public TokenType? UnlessHasTokenType { get; init; }
 
     /// <summary>Bónus aditivo ao multiplicador de dano (ex.: 0.10 = +10%).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public double Additive { get; init; }
 
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public double AdditivePerStack { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public double Cap { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public double HpBelowPercent { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public int IntValue { get; init; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public int IntValue2 { get; init; }
 
     public PassiveRequiredPartyRole RequiredPartyRole { get; init; } = PassiveRequiredPartyRole.Any;

@@ -576,16 +576,6 @@ public sealed class BattleSimulator
         Combatant target,
         SkillDefinition skill)
     {
-        if (actor.Tokens.GetStacks(TokenType.Blind) > 0)
-        {
-            actor.Tokens.ConsumeOne(TokenType.Blind);
-            var blindMiss = _random.NextDouble() < state.BalanceConfig.BlindMissChance;
-            if (blindMiss)
-            {
-                return new ResolveActionResult { IsHit = false, IsCrit = false, DamageApplied = 0 };
-            }
-        }
-
         var effectiveHitChance = CombatDamageCalculator.ComputeEffectiveHitChanceFraction(
             state,
             actor,
@@ -594,16 +584,6 @@ public sealed class BattleSimulator
         if (_random.NextDouble() > effectiveHitChance)
         {
             return new ResolveActionResult { IsHit = false, IsCrit = false, DamageApplied = 0 };
-        }
-
-        if (target.Tokens.GetStacks(TokenType.Dodge) > 0)
-        {
-            var dodged = _random.NextDouble() < state.BalanceConfig.DodgeNegateChance;
-            target.Tokens.ConsumeOne(TokenType.Dodge);
-            if (dodged)
-            {
-                return new ResolveActionResult { IsHit = false, IsCrit = false, DamageApplied = 0 };
-            }
         }
 
         var isCrit = _random.NextDouble() < CombatDamageCalculator.EffectiveCritChanceFraction(state, actor, target, skill);

@@ -336,35 +336,12 @@ namespace Erumperem.Combat.Authoring
         [Tooltip("0 = unlimited triggers per turn.")]
         [SerializeField] private int _maxTriggersPerTurn;
 
-        [Header("Passive — conditions and effects (new model, data only)")]
-        [Tooltip("Conditions that must match. Serialized to passives.json; not evaluated by the engine yet.")]
+        [Header("Passive — conditions and effects")]
+        [Tooltip("Conditions that must match before this passive can fire.")]
         [SerializeField] private List<SerializablePassiveCondition> _passiveConditions = new();
 
-        [Tooltip("Effects applied when the passive fires. Serialized to passives.json; not applied by the engine yet.")]
+        [Tooltip("Effects applied when the passive fires.")]
         [SerializeField] private List<SerializablePassiveEffect> _passiveEffects = new();
-
-        [Header("Passive — legacy EffectKind (export compatibility)")]
-        [Tooltip("Existing PassiveDefinition.EffectKind so current JSON/runtime still load. Do not add new enum cases; prefer Conditions + Effects.")]
-        [SerializeField] private PassiveEffectKind _legacyPassiveEffectKind;
-
-        [SerializeField] private string _legacyPassiveSkillId = "";
-        [SerializeField] private string _legacyPassivePrerequisiteSkillId = "";
-        [SerializeField] private bool _legacyPassiveUsesDotTypeFilter;
-        [SerializeField] private DotType _legacyPassiveDotTypeFilter;
-        [SerializeField] private bool _legacyPassiveUsesTokenTypeFilter;
-        [SerializeField] private TokenType _legacyPassiveTokenTypeFilter;
-        [SerializeField] private bool _legacyPassiveGrantsExtraTokenOfType;
-        [SerializeField] private TokenType _legacyPassiveTokenTypeToGrantWhenTriggered;
-        [SerializeField] private bool _legacyPassiveOnlyAppliesWhenActorHasTokenType;
-        [SerializeField] private TokenType _legacyPassiveRequiredTokenTypeOnActor;
-        [SerializeField] private bool _legacyPassiveOnlyAppliesWhenActorLacksTokenType;
-        [SerializeField] private TokenType _legacyPassiveBlockingTokenTypeOnActor;
-        [SerializeField] private double _legacyPassiveAdditive;
-        [SerializeField] private double _legacyPassiveAdditivePerStack;
-        [SerializeField] private double _legacyPassiveCap;
-        [SerializeField] private double _legacyPassiveHpBelowPercent;
-        [SerializeField] private int _legacyPassiveIntValue;
-        [SerializeField] private int _legacyPassiveIntValue2;
 
         [Header("Tree node (TreeNode placement only)")]
         [Tooltip("Unlock cost written to skill_trees.json. Default 1.")]
@@ -443,20 +420,6 @@ namespace Erumperem.Combat.Authoring
             return new PassiveDefinition
             {
                 Id = AbilityId,
-                EffectKind = _legacyPassiveEffectKind,
-                SkillId = EmptyToNull(_legacyPassiveSkillId),
-                PrerequisiteSkillId = EmptyToNull(_legacyPassivePrerequisiteSkillId),
-                DotType = _legacyPassiveUsesDotTypeFilter ? _legacyPassiveDotTypeFilter : null,
-                TokenType = _legacyPassiveUsesTokenTypeFilter ? _legacyPassiveTokenTypeFilter : null,
-                GrantTokenType = _legacyPassiveGrantsExtraTokenOfType ? _legacyPassiveTokenTypeToGrantWhenTriggered : null,
-                IfHasTokenType = _legacyPassiveOnlyAppliesWhenActorHasTokenType ? _legacyPassiveRequiredTokenTypeOnActor : null,
-                UnlessHasTokenType = _legacyPassiveOnlyAppliesWhenActorLacksTokenType ? _legacyPassiveBlockingTokenTypeOnActor : null,
-                Additive = _legacyPassiveAdditive,
-                AdditivePerStack = _legacyPassiveAdditivePerStack,
-                Cap = _legacyPassiveCap,
-                HpBelowPercent = _legacyPassiveHpBelowPercent,
-                IntValue = _legacyPassiveIntValue,
-                IntValue2 = _legacyPassiveIntValue2,
                 RequiredPartyRole = _requiredPartyRole,
                 ChanceToTrigger = _chanceToTrigger,
                 MaxTriggersPerBattle = _maxTriggersPerBattle,
@@ -500,9 +463,6 @@ namespace Erumperem.Combat.Authoring
                 .Select(skillId => skillId.Trim())
                 .ToList();
         }
-
-        private static string EmptyToNull(string value) =>
-            string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
 #if UNITY_EDITOR
         private void OnValidate()

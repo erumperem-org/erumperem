@@ -218,10 +218,10 @@ public static class EnemyAlmanacEntryBuilder
 
     private static string FormatPassiveSummary(PassiveDefinition passiveDefinition)
     {
-        if (passiveDefinition.HasDataDrivenEffects && passiveDefinition.Effects.Count > 0)
+        var dataDrivenSummary = PassivePlayerDescriptionBuilder.BuildSummaryLine(passiveDefinition);
+        if (!string.IsNullOrWhiteSpace(dataDrivenSummary))
         {
-            var firstEffect = passiveDefinition.Effects[0];
-            return $"{passiveDefinition.Id} ({firstEffect.Operation})";
+            return dataDrivenSummary;
         }
 
         return $"{passiveDefinition.Id} ({passiveDefinition.EffectKind})";

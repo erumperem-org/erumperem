@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Game.Core.Data;
 using Game.Core.Models;
+using Game.Core.Presentation;
 using UnityEditor;
 using UnityEngine;
 using Erumperem.Progression;
@@ -43,6 +44,8 @@ namespace Erumperem.Editor.Progression
             var passiveById = passiveDefs.ToDictionary(passive => passive.Id, passive => passive);
             var skillTrees = CombatDataLoader.LoadSkillTrees(treesPath);
 
+            var existingNodeAssetsById = LoadExistingNodeAssetsById();
+
             AssetDatabase.StartAssetEditing();
             try
             {
@@ -54,14 +57,7 @@ namespace Erumperem.Editor.Progression
                         {
                             foreach (var node in tier.Nodes)
                             {
-                                var nodePath = $"{ResourcesSkillNodes}/{node.Id}.asset";
-                                var nodeAsset = AssetDatabase.LoadAssetAtPath<SkillTreeNodeAsset>(nodePath);
-                                if (nodeAsset == null)
-                                {
-                                    nodeAsset = ScriptableObject.CreateInstance<SkillTreeNodeAsset>();
-                                    AssetDatabase.CreateAsset(nodeAsset, nodePath);
-                                }
-
+                                var nodeAsset = ResolveOrCreateNodeAsset(node.Id, existingNodeAssetsById);
                                 var isPassive = string.Equals(node.Type, "Passive", System.StringComparison.OrdinalIgnoreCase);
                                 var nodeSo = new SerializedObject(nodeAsset);
 
@@ -72,7 +68,9 @@ namespace Erumperem.Editor.Progression
                                 if (isPassive && passiveById.TryGetValue(node.Id, out var passiveDefinition))
                                 {
                                     PopulatePassiveFields(nodeSo, passiveDefinition);
-                                    FillIfEmpty(nodeSo.FindProperty("_displayName"), passiveDefinition.Id);
+                                    OverwriteString(
+                                        nodeSo.FindProperty("_displayName"),
+                                        BuildPassiveDisplayName(passiveDefinition, skillsById));
                                     OverwriteString(
                                         nodeSo.FindProperty("_descriptionForUi"),
                                         PlayerFacingText.DescribePassiveDefinitionInDetail(passiveDefinition));
@@ -81,10 +79,10 @@ namespace Erumperem.Editor.Progression
                                 else if (!isPassive && skillsById.TryGetValue(node.Id, out var skillDefinition))
                                 {
                                     PopulateActiveFields(nodeSo, skillDefinition);
-                                    FillIfEmpty(nodeSo.FindProperty("_displayName"), skillDefinition.Name);
-                                    FillIfEmpty(
+                                    OverwriteString(nodeSo.FindProperty("_displayName"), skillDefinition.Name);
+                                    OverwriteString(
                                         nodeSo.FindProperty("_descriptionForUi"),
-                                        $"{skillDefinition.Type} ({skillDefinition.Element}) — dano {skillDefinition.BaseDamage.Min}-{skillDefinition.BaseDamage.Max}.");
+                                        SkillPlayerDescriptionBuilder.BuildSummaryLine(skillDefinition));
                                     ClearPassiveFieldsForActive(nodeSo);
                                 }
                                 else
@@ -240,12 +238,56 @@ namespace Erumperem.Editor.Progression
             }
         }
 
-        private static void FillIfEmpty(SerializedProperty stringProperty, string newValue)
+        private static Dictionary<string, SkillTreeNodeAsset> LoadExistingNodeAssetsById()
         {
-            if (string.IsNullOrEmpty(stringProperty.stringValue))
+            var assetsById = new Dictionary<string, SkillTreeNodeAsset>(System.StringComparer.OrdinalIgnoreCase);
+            foreach (var assetGuid in AssetDatabase.FindAssets("t:SkillTreeNodeAsset", new[] { ResourcesSkillNodes }))
             {
-                stringProperty.stringValue = newValue ?? string.Empty;
+                var assetPath = AssetDatabase.GUIDToAssetPath(assetGuid);
+                var nodeAsset = AssetDatabase.LoadAssetAtPath<SkillTreeNodeAsset>(assetPath);
+                if (nodeAsset == null || string.IsNullOrWhiteSpace(nodeAsset.NodeId))
+                {
+                    continue;
+                }
+
+                assetsById[nodeAsset.NodeId] = nodeAsset;
             }
+
+            return assetsById;
+        }
+
+        private static SkillTreeNodeAsset ResolveOrCreateNodeAsset(
+            string nodeId,
+            Dictionary<string, SkillTreeNodeAsset> existingNodeAssetsById)
+        {
+            if (existingNodeAssetsById.TryGetValue(nodeId, out var existingAsset) && existingAsset != null)
+            {
+                return existingAsset;
+            }
+
+            var nodePath = $"{ResourcesSkillNodes}/{nodeId}.asset";
+            var nodeAsset = AssetDatabase.LoadAssetAtPath<SkillTreeNodeAsset>(nodePath);
+            if (nodeAsset == null)
+            {
+                nodeAsset = ScriptableObject.CreateInstance<SkillTreeNodeAsset>();
+                AssetDatabase.CreateAsset(nodeAsset, nodePath);
+            }
+
+            existingNodeAssetsById[nodeId] = nodeAsset;
+            return nodeAsset;
+        }
+
+        private static string BuildPassiveDisplayName(
+            PassiveDefinition passiveDefinition,
+            Dictionary<string, SkillDefinition> skillsById)
+        {
+            var summary = PassivePlayerDescriptionBuilder.BuildSummaryLine(passiveDefinition, skillsById);
+            if (string.IsNullOrWhiteSpace(summary))
+            {
+                return passiveDefinition.Id;
+            }
+
+            return summary.TrimEnd('.');
         }
 
         private static void OverwriteString(SerializedProperty stringProperty, string newValue)

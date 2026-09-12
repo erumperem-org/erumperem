@@ -12,7 +12,7 @@ public sealed class SkillTargetResolverTests
     [Fact]
     public void Self_ResolvesActor_EvenWhenEnemyIsSelected()
     {
-        var selfSkill = CreateTokenSkill("self_buff", SkillTargetKind.Self, EffectScope.Default, TokenType.Block);
+        var selfSkill = CreateTokenSkill("self_buff", SkillTargetKind.Self, EffectScope.Default, TokenType.Taunt);
         var battle = CreateBattle(selfSkill);
         var actor = battle.Allies[0];
         var selectedEnemy = battle.Enemies[0];
@@ -32,7 +32,7 @@ public sealed class SkillTargetResolverTests
     [Fact]
     public void SelfOrAlly_AcceptsSelfOrLivingAlly_AndRejectsEnemy()
     {
-        var selfOrAllySkill = CreateTokenSkill("self_or_ally", SkillTargetKind.SelfOrAlly, EffectScope.Default, TokenType.Block);
+        var selfOrAllySkill = CreateTokenSkill("self_or_ally", SkillTargetKind.SelfOrAlly, EffectScope.Default, TokenType.Taunt);
         var battle = CreateBattle(selfOrAllySkill);
         var actor = battle.Allies[0];
         var livingAlly = battle.Allies[1];
@@ -57,7 +57,7 @@ public sealed class SkillTargetResolverTests
     [Fact]
     public void SelfAndAlly_AppliesToBothLivingCombatantsOnTheSameSide()
     {
-        var selfAndAllySkill = CreateTokenSkill("self_and_ally", SkillTargetKind.SelfAndAlly, EffectScope.Default, TokenType.Block);
+        var selfAndAllySkill = CreateTokenSkill("self_and_ally", SkillTargetKind.SelfAndAlly, EffectScope.Default, TokenType.Taunt);
         var battle = CreateBattle(selfAndAllySkill);
         var actor = battle.Allies[0];
         var companion = battle.Allies[1];
@@ -152,18 +152,18 @@ public sealed class SkillTargetResolverTests
     [Fact]
     public void EffectScope_AllAllies_AppliesToParty_Default_AppliesOnlyToPrimaryHit()
     {
-        var defaultScopeSkill = CreateTokenSkill("default_block", SkillTargetKind.Self, EffectScope.Default, TokenType.Block);
-        var allAlliesSkill = CreateTokenSkill("allies_block", SkillTargetKind.Self, EffectScope.AllAllies, TokenType.Block);
+        var defaultScopeSkill = CreateTokenSkill("default_block", SkillTargetKind.Self, EffectScope.Default, TokenType.Taunt);
+        var allAlliesSkill = CreateTokenSkill("allies_block", SkillTargetKind.Self, EffectScope.AllAllies, TokenType.Taunt);
 
         var defaultBattle = CreateBattle(defaultScopeSkill);
         ResolveSkill(defaultBattle, defaultScopeSkill, defaultBattle.Allies[0]);
-        Assert.Equal(1, defaultBattle.Allies[0].Tokens.GetStacks(TokenType.Block));
-        Assert.Equal(0, defaultBattle.Allies[1].Tokens.GetStacks(TokenType.Block));
+        Assert.Equal(1, defaultBattle.Allies[0].Tokens.GetStacks(TokenType.Taunt));
+        Assert.Equal(0, defaultBattle.Allies[1].Tokens.GetStacks(TokenType.Taunt));
 
         var allAlliesBattle = CreateBattle(allAlliesSkill);
         ResolveSkill(allAlliesBattle, allAlliesSkill, allAlliesBattle.Allies[0]);
-        Assert.Equal(1, allAlliesBattle.Allies[0].Tokens.GetStacks(TokenType.Block));
-        Assert.Equal(1, allAlliesBattle.Allies[1].Tokens.GetStacks(TokenType.Block));
+        Assert.Equal(1, allAlliesBattle.Allies[0].Tokens.GetStacks(TokenType.Taunt));
+        Assert.Equal(1, allAlliesBattle.Allies[1].Tokens.GetStacks(TokenType.Taunt));
     }
 
     [Fact]

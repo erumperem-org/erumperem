@@ -109,25 +109,9 @@ public static class CombatDamageCalculator
         int damage,
         bool consumeMitigationTokens)
     {
-        if (target.Tokens.GetStacks(TokenType.BlockPlus) > 0)
-        {
-            if (consumeMitigationTokens)
-            {
-                target.Tokens.ConsumeOne(TokenType.BlockPlus);
-            }
-
-            damage = (int)Math.Round(damage * state.BalanceConfig.BlockPlusDamageMultiplier);
-        }
-        else if (target.Tokens.GetStacks(TokenType.Block) > 0)
-        {
-            if (consumeMitigationTokens)
-            {
-                target.Tokens.ConsumeOne(TokenType.Block);
-            }
-
-            damage = (int)Math.Round(damage * state.BalanceConfig.BlockDamageMultiplier);
-        }
-
+        _ = state;
+        _ = target;
+        _ = consumeMitigationTokens;
         return Math.Max(0, damage);
     }
 

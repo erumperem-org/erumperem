@@ -45,54 +45,16 @@ public class UnitTest1
     }
 
     [Fact]
-    public void TokenComponent_ConsumesBlockAndBlockPlus()
+    public void TokenComponent_ConsumesStacks()
     {
         var tokens = new TokenComponent();
-        tokens.Add(TokenType.Block, 1);
-        tokens.Add(TokenType.BlockPlus, 2);
+        tokens.Add(TokenType.Defense, 1);
+        tokens.Add(TokenType.Stun, 2);
 
-        Assert.True(tokens.ConsumeOne(TokenType.BlockPlus));
-        Assert.Equal(1, tokens.GetStacks(TokenType.BlockPlus));
-        Assert.True(tokens.ConsumeOne(TokenType.Block));
-        Assert.Equal(0, tokens.GetStacks(TokenType.Block));
-    }
-
-    [Fact]
-    public void BlindAndDodge_CanCauseMisses()
-    {
-        var random = new SeededRandomSource(5);
-        var collector = new CombatEventCollector();
-        var simulator = new BattleSimulator(random, collector);
-        var skills = SampleCombatData.CreateSkills();
-        var battle = BattleFactory.CreateSampleBattle(skills, allyCount: 1, enemyCount: 1, corruptionValue: 0);
-
-        var ally = battle.Allies[0];
-        var enemy = battle.Enemies[0];
-        ally.Tokens.Add(TokenType.Blind, 2);
-        enemy.Tokens.Add(TokenType.Dodge, 2);
-
-        simulator.Simulate(battle, maxTurns: 4);
-        var hitEvents = collector.Events.Where(combatEvent => combatEvent.EventType == BattleEventType.HitResolved).ToList();
-        Assert.NotEmpty(hitEvents);
-        Assert.Contains(hitEvents, hitEvent => hitEvent.IsHit == false);
-    }
-
-    [Fact]
-    public void Blind_IsConsumedWhenChecked_EvenIfAttackHits()
-    {
-        var random = new SeededRandomSource(9);
-        var collector = new CombatEventCollector();
-        var simulator = new BattleSimulator(random, collector);
-        var skills = SampleCombatData.CreateSkills();
-        var battle = BattleFactory.CreateSampleBattle(skills, allyCount: 1, enemyCount: 1, corruptionValue: 0);
-
-        var ally = battle.Allies[0];
-        ally.Stats = new StatsComponent { Speed = 100, Accuracy = 1.0, CritChance = 0.0 };
-        ally.Tokens.Add(TokenType.Blind, 1);
-
-        simulator.Simulate(battle, maxTurns: 1);
-
-        Assert.Equal(0, ally.Tokens.GetStacks(TokenType.Blind));
+        Assert.True(tokens.ConsumeOne(TokenType.Stun));
+        Assert.Equal(1, tokens.GetStacks(TokenType.Stun));
+        Assert.True(tokens.ConsumeOne(TokenType.Defense));
+        Assert.Equal(0, tokens.GetStacks(TokenType.Defense));
     }
 
     [Fact]
@@ -164,7 +126,7 @@ public class UnitTest1
     }
 
     [Fact]
-    public void SkillDamagePreviewCalculator_RespectsBaseRangeAndBlock()
+    public void SkillDamagePreviewCalculator_RespectsBaseRangeAndDefense()
     {
         var skill = new SkillDefinition
         {
@@ -188,29 +150,27 @@ public class UnitTest1
             battle.Allies[0],
             battle.Enemies[0],
             skill,
-            out var withoutBlock));
-        Assert.True(withoutBlock.MinDamageOnHit > 0);
-        Assert.True(withoutBlock.MaxDamageOnHit >= withoutBlock.MinDamageOnHit);
+            out var withoutDefense));
+        Assert.True(withoutDefense.MinDamageOnHit > 0);
+        Assert.True(withoutDefense.MaxDamageOnHit >= withoutDefense.MinDamageOnHit);
         Assert.Equal(
-            battle.Enemies[0].Health.CurrentHp - withoutBlock.MaxDamageOnHit,
-            withoutBlock.MinHpAfterHit);
+            battle.Enemies[0].Health.CurrentHp - withoutDefense.MaxDamageOnHit,
+            withoutDefense.MinHpAfterHit);
         Assert.Equal(
-            battle.Enemies[0].Health.CurrentHp - withoutBlock.MinDamageOnHit,
-            withoutBlock.MaxHpAfterHit);
-        Assert.False(withoutBlock.IsGuaranteedKillOnHit);
+            battle.Enemies[0].Health.CurrentHp - withoutDefense.MinDamageOnHit,
+            withoutDefense.MaxHpAfterHit);
+        Assert.False(withoutDefense.IsGuaranteedKillOnHit);
 
-        battle.Enemies[0].Tokens.Add(TokenType.Block, 1);
+        battle.Enemies[0].Tokens.Add(TokenType.Defense, 1);
         Assert.True(SkillDamagePreviewCalculator.TryCompute(
             battle,
             battle.Allies[0],
             battle.Enemies[0],
             skill,
-            out var withBlock));
-        Assert.True(withBlock.MaxDamageOnHit < withoutBlock.MaxDamageOnHit);
+            out var withDefense));
+        Assert.True(withDefense.MaxDamageOnHit < withoutDefense.MaxDamageOnHit);
 
-        while (battle.Enemies[0].Tokens.ConsumeOne(TokenType.Block)) { }
-
-        while (battle.Enemies[0].Tokens.ConsumeOne(TokenType.BlockPlus)) { }
+        while (battle.Enemies[0].Tokens.ConsumeOne(TokenType.Defense)) { }
 
         battle.Enemies[0].Health.CurrentHp = 1;
         Assert.True(SkillDamagePreviewCalculator.TryCompute(
@@ -476,7 +436,7 @@ public class UnitTest1
             });
         var actor = battle.Allies[0];
         var target = battle.Enemies[0];
-        bus.RaiseTokenStacksChanged(battle, actor, actor, skill: null, TokenType.Combo, delta: 2);
+        bus.RaiseTokenStacksChanged(battle, actor, actor, skill: null, TokenType.Taunt, delta: 2);
         bus.RaiseTokenStacksChanged(battle, actor, target, skill: null, TokenType.Stun, delta: 1);
 
         Assert.Equal(1, tokenAppliedToSelfCount);
@@ -1029,7 +989,7 @@ public class UnitTest1
             CorruptionCost = 0,
             EffectsOnHit =
             [
-                new EffectSpec { Type = EffectType.ApplyToken, Token = TokenType.Block, Stacks = 1, Chance = 1 },
+                new EffectSpec { Type = EffectType.ApplyToken, Token = TokenType.Defense, Stacks = 1, Chance = 1 },
                 new EffectSpec { Type = EffectType.ApplyToken, Token = TokenType.Taunt, Stacks = 1, Chance = 1 },
             ],
         };
@@ -1037,7 +997,7 @@ public class UnitTest1
         var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(guardSkill);
 
         Assert.Equal(
-            "Wolf Stance: self | no direct damage | +1 Block, +1 Taunt | no corruption.",
+            "Wolf Stance: self | no direct damage | +1 Defense, +1 Taunt | no corruption.",
             summary);
         Assert.DoesNotContain("crít", summary, StringComparison.OrdinalIgnoreCase);
     }

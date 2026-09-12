@@ -93,7 +93,7 @@ public sealed class PhaseCCombatRulesTests
     [Fact]
     public void Confusion_SwapsAllySkillToEnemyTargets()
     {
-        var allySkill = CreateTokenSkill("phase_c_confusion_ally", SkillTargetKind.OneAlly, TokenType.Defense);
+        var allySkill = CreateTokenSkill("phase_c_confusion_ally", SkillTargetKind.OneAlly, TokenType.Taunt);
         var battle = CreateNeutralBattle(allySkill, allyCount: 2, enemyCount: 1);
         var actor = battle.Allies[0];
         actor.PassiveRuntime.ConfusedSkillIdsThisTurn.Add(allySkill.Id);
@@ -490,7 +490,7 @@ public sealed class PhaseCCombatRulesTests
                 new PassiveEffectDefinition
                 {
                     Operation = PassiveEffectOperationKind.TokenManipulation,
-                    Token = TokenType.Block,
+                    Token = TokenType.ControlledInstability,
                     Stacks = 1,
                     TokenManipulationMode = PassiveTokenManipulationMode.Apply,
                 },
@@ -505,7 +505,7 @@ public sealed class PhaseCCombatRulesTests
 
         ResolveSkill(battle, smack, enemy, defender);
 
-        Assert.Equal(1, defender.Tokens.GetStacks(TokenType.Block));
+        Assert.Equal(1, defender.Tokens.GetStacks(TokenType.ControlledInstability));
     }
 
     [Fact]
@@ -518,7 +518,7 @@ public sealed class PhaseCCombatRulesTests
             new PassiveEffectDefinition
             {
                 Operation = PassiveEffectOperationKind.TokenManipulation,
-                Token = TokenType.Block,
+                Token = TokenType.Taunt,
                 Stacks = 2,
                 TokenManipulationMode = PassiveTokenManipulationMode.Apply,
             });
@@ -531,7 +531,7 @@ public sealed class PhaseCCombatRulesTests
         ResolveSkill(battle, smack, actor, target);
 
         Assert.True(target.Health.IsDead);
-        Assert.Equal(2, actor.Tokens.GetStacks(TokenType.Block));
+        Assert.Equal(2, actor.Tokens.GetStacks(TokenType.Taunt));
     }
 
     [Fact]
@@ -577,7 +577,7 @@ public sealed class PhaseCCombatRulesTests
             new PassiveEffectDefinition
             {
                 Operation = PassiveEffectOperationKind.TokenManipulation,
-                Token = TokenType.Block,
+                Token = TokenType.Taunt,
                 Stacks = 1,
                 TokenManipulationMode = PassiveTokenManipulationMode.Apply,
             },
@@ -588,13 +588,13 @@ public sealed class PhaseCCombatRulesTests
         ResolveSkill(battle, applySkill, battle.Allies[0], battle.Enemies[0]);
 
         Assert.Equal(1, battle.Enemies[0].Tokens.GetStacks(TokenType.Mark));
-        Assert.Equal(1, battle.Allies[0].Tokens.GetStacks(TokenType.Block));
+        Assert.Equal(1, battle.Allies[0].Tokens.GetStacks(TokenType.Taunt));
     }
 
     [Fact]
     public void DataDriven_UponReceivingStatus_Heals()
     {
-        var applySkill = CreateTokenSkill("phase_c_receive_block", SkillTargetKind.OneAlly, TokenType.Block);
+        var applySkill = CreateTokenSkill("phase_c_receive_block", SkillTargetKind.OneAlly, TokenType.Taunt);
         var passive = CreateDataDrivenPassive(
             "phase_c_upon_receiving",
             PassiveActivationKind.UponReceivingStatus,
@@ -603,7 +603,7 @@ public sealed class PhaseCCombatRulesTests
                 Operation = PassiveEffectOperationKind.Heal,
                 Magnitude = 4,
             },
-            requiredStatus: TokenType.Block);
+            requiredStatus: TokenType.Taunt);
         var battle = CreateBattleWithPassive(applySkill, passive, allyCount: 1);
         NeutralizeCombatantElements(battle);
         var actor = battle.Allies[0];
@@ -611,7 +611,7 @@ public sealed class PhaseCCombatRulesTests
 
         ResolveSkill(battle, applySkill, actor, actor);
 
-        Assert.Equal(1, actor.Tokens.GetStacks(TokenType.Block));
+        Assert.Equal(1, actor.Tokens.GetStacks(TokenType.Taunt));
         Assert.Equal(14, actor.Health.CurrentHp);
     }
 
@@ -636,7 +636,7 @@ public sealed class PhaseCCombatRulesTests
                 new PassiveEffectDefinition
                 {
                     Operation = PassiveEffectOperationKind.TokenManipulation,
-                Token = TokenType.Block,
+                    Token = TokenType.ControlledInstability,
                     Stacks = 3,
                     TokenManipulationMode = PassiveTokenManipulationMode.Apply,
                 },
@@ -652,7 +652,7 @@ public sealed class PhaseCCombatRulesTests
         ResolveSkill(battle, smack, enemy, defender);
 
         Assert.True(defender.Health.CurrentHp <= defender.Health.MaxHp * 0.5);
-        Assert.Equal(3, defender.Tokens.GetStacks(TokenType.Block));
+        Assert.Equal(3, defender.Tokens.GetStacks(TokenType.ControlledInstability));
     }
 
     [Fact]
@@ -712,7 +712,7 @@ public sealed class PhaseCCombatRulesTests
             new PassiveEffectDefinition
             {
                 Operation = PassiveEffectOperationKind.TokenManipulation,
-                Token = TokenType.Block,
+                Token = TokenType.Taunt,
                 Stacks = 1,
                 TokenManipulationMode = PassiveTokenManipulationMode.Apply,
             });
@@ -721,7 +721,7 @@ public sealed class PhaseCCombatRulesTests
 
         ResolveSkill(battle, smack, battle.Allies[0], battle.Enemies[0]);
 
-        Assert.Equal(1, battle.Allies[0].Tokens.GetStacks(TokenType.Block));
+        Assert.Equal(1, battle.Allies[0].Tokens.GetStacks(TokenType.Taunt));
     }
 
     [Fact]
@@ -753,7 +753,7 @@ public sealed class PhaseCCombatRulesTests
             new PassiveEffectDefinition
             {
                 Operation = PassiveEffectOperationKind.TokenManipulation,
-                Token = TokenType.Block,
+                Token = TokenType.Taunt,
                 Stacks = 1,
                 TokenManipulationMode = PassiveTokenManipulationMode.Apply,
             });
@@ -765,7 +765,7 @@ public sealed class PhaseCCombatRulesTests
         ResolveSkill(battle, healSkill, actor, actor);
 
         Assert.Equal(15, actor.Health.CurrentHp);
-        Assert.Equal(1, actor.Tokens.GetStacks(TokenType.Block));
+        Assert.Equal(1, actor.Tokens.GetStacks(TokenType.Taunt));
     }
 
     [Fact]

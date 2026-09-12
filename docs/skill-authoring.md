@@ -83,9 +83,9 @@ Accuracy da skill pode ser **> 100%** (ex. 2.0); a hit chance final clampa a 1.0
 
 Tipos: `ApplyToken`, `ApplyDot`, `ApplyRandomDot`, `Push`, `Pull`, `ApplyStun`, `HealHp`, `HealHpPercent`, `RemoveAllDebuffTokens`, `ConsumeAllTokenStacksDealDamagePerStack`, `ConsumeAllTokenStacksHealPerStack`, `SelfDamageFlat`, `TriggerDestabilizationOnTargets`, `ApplyBonusAction`.
 
-### Combo (removido)
+### Combo / Blind / Dodge / Block (removidos)
 
-`comboBonus` **já não existe**. Se reaparecer no JSON, o load **falha**. `TokenType.Combo` continua aplicável; sem payoff automático.
+`comboBonus` e `TokenType.Combo` **já não existem**. Se `comboBonus` reaparecer no JSON, o load **falha**. Blind, Dodge, Block e BlockPlus foram cortados do GDD — inimigos que os concediam passam a usar Clumsy ou Defense.
 
 ### Cura (`HealHp` / `HealHpPercent`)
 

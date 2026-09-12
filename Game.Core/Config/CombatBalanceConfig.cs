@@ -22,10 +22,6 @@ public sealed class CombatBalanceConfig
     public required IReadOnlyList<CorruptionTierModifiers> CorruptionTiers { get; init; }
     public double ElementAdvantageMultiplier { get; init; } = 1.5;
     public double ElementDisadvantageMultiplier { get; init; } = 0.5;
-    public double BlindMissChance { get; init; } = 0.5;
-    public double DodgeNegateChance { get; init; } = 0.5;
-    public double BlockDamageMultiplier { get; init; } = 0.5;
-    public double BlockPlusDamageMultiplier { get; init; } = 0.25;
 
     public CorruptionTierModifiers GetTierModifiers(int corruptionTier)
     {

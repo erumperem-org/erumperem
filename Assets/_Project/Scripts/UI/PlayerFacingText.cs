@@ -7,6 +7,7 @@ using Game.Core.Domain;
 using Game.Core.Models;
 using Game.Core.Passives;
 using Game.Core.Presentation;
+using Erumperem.Combat;
 using Erumperem.Progression;
 using UnityEngine;
 
@@ -168,11 +169,47 @@ namespace Erumperem.UI
         public static string ApplyRichMarkupForTextMeshPro(string alreadyLocalizedText) =>
             PlayerGameRichText.ExpandAuthoringMarkupToTextMeshPro(alreadyLocalizedText ?? string.Empty);
 
+        public static string FormatSkillTreeNodeTitle(SkillTreeNodeAsset nodeAsset)
+        {
+            if (nodeAsset == null)
+            {
+                return string.Empty;
+            }
+
+            if (CombatCatalogRuntimeLookup.TryGetSkill(nodeAsset.NodeId, out var catalogSkill))
+            {
+                return TranslateToEnglish(catalogSkill.Name);
+            }
+
+            if (nodeAsset.IsPassiveNode)
+            {
+                if (!string.IsNullOrWhiteSpace(nodeAsset.DisplayName) &&
+                    !string.Equals(nodeAsset.DisplayName, nodeAsset.NodeId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return TranslateToEnglish(nodeAsset.DisplayName);
+                }
+
+                return "Passive";
+            }
+
+            return TranslateToEnglish(nodeAsset.DisplayName);
+        }
+
         public static string FormatSkillTreeNodeDescription(SkillTreeNodeAsset nodeAsset)
         {
             if (nodeAsset == null)
             {
                 return string.Empty;
+            }
+
+            if (CombatCatalogRuntimeLookup.TryGetPassive(nodeAsset.NodeId, out var catalogPassive))
+            {
+                return PresentForUi(DescribePassiveDefinitionInDetail(catalogPassive));
+            }
+
+            if (CombatCatalogRuntimeLookup.TryGetSkill(nodeAsset.NodeId, out var catalogSkill))
+            {
+                return PresentForUi(SkillPlayerDescriptionBuilder.BuildSummaryLine(catalogSkill));
             }
 
             if (nodeAsset.IsPassiveNode)
@@ -318,6 +355,11 @@ namespace Erumperem.UI
         private static string NodeOrSkillDisplayName(string nodeOrSkillId)
         {
             if (string.IsNullOrEmpty(nodeOrSkillId)) return string.Empty;
+            if (CombatCatalogRuntimeLookup.TryGetSkill(nodeOrSkillId, out var catalogSkill))
+            {
+                return TranslateToEnglish(catalogSkill.Name);
+            }
+
             EnsureNodeNameCache();
             return _nodeIdToDisplayName.TryGetValue(nodeOrSkillId, out var name) ? name : TranslateToEnglish(nodeOrSkillId);
         }
@@ -371,6 +413,17 @@ namespace Erumperem.UI
 
         public static string DescribePassiveDefinitionInDetail(PassiveDefinition def)
         {
+            if (def.HasDataDrivenEffects)
+            {
+                var dataDrivenSummary = PassivePlayerDescriptionBuilder.BuildSummaryLine(
+                    def,
+                    CombatCatalogRuntimeLookup.SkillsById);
+                if (!string.IsNullOrWhiteSpace(dataDrivenSummary))
+                {
+                    return dataDrivenSummary;
+                }
+            }
+
             var skillRef = FormatSkillReference(def.SkillId);
             var prerequisiteSkillRef = FormatSkillReference(def.PrerequisiteSkillId);
             var dotName = def.DotType.HasValue ? FormatDotTypeDisplayName(def.DotType.Value) : string.Empty;
@@ -525,13 +578,8 @@ namespace Erumperem.UI
         public static string FormatTokenTypeDisplayName(TokenType tokenType) =>
             tokenType switch
             {
-                TokenType.Block => "Block",
-                TokenType.BlockPlus => "Block+",
-                TokenType.Dodge => "Dodge",
-                TokenType.Blind => "Blind",
                 TokenType.Taunt => "Taunt",
                 TokenType.Stealth => "Stealth",
-                TokenType.Combo => "Combo",
                 TokenType.Stun => "Stun",
                 TokenType.ControlledInstability => "Controlled Instability",
                 TokenType.Destabilization => "Destabilization",
