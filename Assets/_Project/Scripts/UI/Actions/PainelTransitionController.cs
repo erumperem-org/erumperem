@@ -1,556 +1,846 @@
-using UnityEngine;
-using UnityEngine.UI;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
 using DG.Tweening;
+using UnityEngine;
 
-public class PanelTransitionController : MonoBehaviour
+public class PanelTransition : MonoBehaviour
 {
-    [Header("Background")]
+    private const float HiddenAlpha = 0f;
+    private const float VisibleAlpha = 1f;
+    private const float InitialViewScale = 0.95f;
 
-    [Tooltip("Animator responsável pela animação do papel abrindo/fechando.")]
-    [SerializeField] private Animator backgroundAnimator;
+    private const int AnimatorLayer = 0;
+    private const int DelayMillisecondsMultiplier = 1000;
+    private const float DefaultPaperOpenDuration = 0.875f;
+    private const float DefaultPaperCloseDuration = 0.833333f;
 
-    [Tooltip("Nome do estado da animação de abertura no Animator.")]
-    [SerializeField] private string backgroundOpenAnimation = "Background_Open";
+    [Header("Paper")]
+    [SerializeField] private Animator paperAnimator;
+    [SerializeField] private string paperOpenState = "Paper_Open";
+    [SerializeField] private string paperCloseState = "Paper_Close";
+    [SerializeField, Min(0f)] private float paperOpenDuration = DefaultPaperOpenDuration;
+    [SerializeField, Min(0f)] private float paperCloseDuration = DefaultPaperCloseDuration;
 
-    [Tooltip("Nome do estado da animação de fechamento no Animator.")]
-    [SerializeField] private string backgroundCloseAnimation = "Background_Close";
+    [Header("View Panel")]
+    [SerializeField] private GameObject viewPanelObject;
+    [SerializeField] private CanvasGroup viewPanel;
 
-    [Tooltip("Duração da animação de abertura do Background.")]
-    [SerializeField] private float backgroundOpenDuration = 0.8f;
+    [Header("Buttons")]
+    [SerializeField] private CanvasGroup buttonExtra;
+    [SerializeField] private RectTransform buttonExtraRect;
+    [SerializeField] private CanvasGroup btnBack;
+    [SerializeField] private RectTransform btnBackRect;
 
-    [Tooltip("Duração da animação de fechamento do Background.")]
-    [SerializeField] private float backgroundCloseDuration = 0.8f;
-
-    [Header("Side Buttons")]
-
-    [Tooltip("Coloque aqui os RectTransforms dos botões que irão deslizar.")]
+    [Header("Legacy Button References")]
     [SerializeField] private RectTransform[] sideButtons;
-
-    [Tooltip("Distância que os botões ficarão fora da posição original.")]
-    [SerializeField] private float buttonSlideDistance = 300f;
-
-    [Tooltip("Tempo da animação dos botões.")]
-    [SerializeField] private float buttonSlideDuration = 0.35f;
-
-    [Tooltip("Tempo entre a entrada de cada botão.")]
-    [SerializeField] private float buttonStagger = 0.05f;
-
-    [Tooltip("Se verdadeiro, os botões entram pela direita. Se falso, pela esquerda.")]
-    [SerializeField] private bool buttonsEnterFromRight = true;
-
-    [Header("Back Button")]
-
-    [Tooltip("RectTransform do botão Back.")]
     [SerializeField] private RectTransform backButton;
-
-    [Header("View Content")]
-
-    [Tooltip("CanvasGroup opcional usado para controlar a interação do conteúdo.")]
     [SerializeField] private CanvasGroup contentCanvasGroup;
 
-    [Tooltip("Duração da animação de entrada do conteúdo.")]
-    [SerializeField] private float contentAnimationDuration = 0.25f;
+    [SerializeField] private bool autoFindSideButtons = true;
 
-    [Tooltip("Escala inicial do conteúdo.")]
-    [SerializeField] private float contentInitialScale = 0.85f;
+    [SerializeField, Min(0f)] private float openDelay = 0.15f;
+    [SerializeField, Min(0f)] private float closeDelay = 0.15f;
+    [SerializeField, Min(0f)] private float buttonDuration = 0.4f;
+    [SerializeField, Min(0f)] private float viewDuration = 0.35f;
+    [SerializeField, Min(0f)] private float buttonMoveDistance = 180f;
 
-    // ESTADO
+    [Header("Lifecycle")]
+    [SerializeField] private bool openOnEnable = true;
 
-    private Vector2[] sideButtonsOriginalPositions;
-    private Vector2 backButtonOriginalPosition;
-    private bool hasBackButton;
-    private bool isTransitioning;
+    private Vector2 buttonExtraStartPosition;
+
+    private Vector2 btnBackStartPosition;
+    private RectTransform viewPanelRect;
+    private TaskCompletionSource<bool> paperCompletion;
+    private CanvasGroup[] sideButtonCanvasGroups;
+    private Vector2[] sideButtonStartPositions;
+
+    private bool isReady;
+    private bool isAnimating;
+    private bool isOpen;
+    private int transitionVersion;
+
     private void Awake()
     {
-        SaveOriginalPositions();
+        ResolveReferences();
+        viewPanelRect = viewPanel != null
+            ? viewPanel.GetComponent<RectTransform>()
+            : null;
+        isReady = ValidateReferences();
 
-        PrepareInitialState();
-    }
-
-    private void SaveOriginalPositions()
-    {
-        // Botões laterais
-
-        if (sideButtons != null)
-        {
-            sideButtonsOriginalPositions = new Vector2[sideButtons.Length];
-
-            for (int i = 0; i < sideButtons.Length; i++)
-            {
-                if (sideButtons[i] != null)
-                {
-                    sideButtonsOriginalPositions[i] =
-                        sideButtons[i].anchoredPosition;
-                }
-            }
-        }
-
-        // Botão Back
-
-        if (backButton != null)
-        {
-            hasBackButton = true;
-
-            backButtonOriginalPosition =
-                backButton.anchoredPosition;
-        }
-    }
-    private void PrepareInitialState()
-    {
-        // Coloca os botões fora da posição original.
-
-        PrepareButtonsForAnimation();
-
-        // Prepara o conteúdo.
-
-        if (contentCanvasGroup != null)
-        {
-            contentCanvasGroup.alpha = 0f;
-            contentCanvasGroup.interactable = false;
-            contentCanvasGroup.blocksRaycasts = false;
-
-            RectTransform contentRect =
-                contentCanvasGroup.GetComponent<RectTransform>();
-
-            if (contentRect != null)
-            {
-                contentRect.localScale =
-                    Vector3.one * contentInitialScale;
-            }
-        }
-
-        // Desabilita interação durante o estado inicial.
-
-        SetButtonsInteractable(false);
-    }
-    private void PrepareButtonsForAnimation()
-    {
-        // Botões laterais
-
-        if (sideButtons != null)
-        {
-            for (int i = 0; i < sideButtons.Length; i++)
-            {
-                if (sideButtons[i] == null)
-                    continue;
-
-                float direction =
-                    buttonsEnterFromRight ? 1f : -1f;
-
-                sideButtons[i].anchoredPosition =
-                    new Vector2(
-                        sideButtonsOriginalPositions[i].x +
-                        buttonSlideDistance * direction,
-
-                        sideButtonsOriginalPositions[i].y
-                    );
-            }
-        }
-
-        // Back
-
-        if (hasBackButton)
-        {
-            float direction =
-                buttonsEnterFromRight ? 1f : -1f;
-
-            backButton.anchoredPosition =
-                new Vector2(
-                    backButtonOriginalPosition.x +
-                    buttonSlideDistance * direction,
-
-                    backButtonOriginalPosition.y
-                );
-        }
-    }
-    public void OpenPanel()
-    {
-        // Evita iniciar duas transições ao mesmo tempo.
-
-        if (isTransitioning)
+        if (!isReady)
             return;
 
-        gameObject.SetActive(true);
-
-        // Garante que o painel começa no estado correto.
-
-        PrepareButtonsForAnimation();
-
-        ResetContent();
-
-        // Começa a sequência.
-
-        StartCoroutine(OpenRoutine());
+        // viewPanelRect is resolved before validation.
+        buttonExtraStartPosition = buttonExtraRect != null
+            ? buttonExtraRect.anchoredPosition
+            : Vector2.zero;
+        btnBackStartPosition = btnBackRect != null
+            ? btnBackRect.anchoredPosition
+            : Vector2.zero;
+        SetClosedState();
     }
 
-    //ABERTURA
-    private System.Collections.IEnumerator OpenRoutine()
+    /// <summary>
+    /// Opens the paper first, then reveals the buttons and view panel together without fading the buttons during movement.
+    /// </summary>
+    public async Task OpenAsync()
     {
-        isTransitioning = true;
-
-        SetButtonsInteractable(false);
-
-        //BACKGROUND ABRE
-
-        if (backgroundAnimator != null)
-        {
-            backgroundAnimator.Play(
-                backgroundOpenAnimation,
-                0,
-                0f
-            );
-
-            yield return new WaitForSeconds(
-                backgroundOpenDuration
-            );
-        }
-
-        //BOTÕES ENTRAM
-
-        Sequence buttonsSequence =
-            CreateButtonsEnterSequence();
-
-        yield return buttonsSequence.WaitForCompletion();
-
-        // CONTEÚDO APARECE
-
-        Tween contentTween =
-            CreateContentEnterTween();
-
-        if (contentTween != null)
-        {
-            yield return contentTween.WaitForCompletion();
-        }
-
-        //LIBERA INTERAÇÃO
-
-        SetButtonsInteractable(true);
-
-        if (contentCanvasGroup != null)
-        {
-            contentCanvasGroup.interactable = true;
-            contentCanvasGroup.blocksRaycasts = true;
-        }
-
-
-        isTransitioning = false;
-    }
-
-    // CRIA ANIMAÇÃO DE ENTRADA DOS BOTÕES
-    private Sequence CreateButtonsEnterSequence()
-    {
-        Sequence sequence = DOTween.Sequence();
-
-        // Botões laterais
-
-        if (sideButtons != null)
-        {
-            for (int i = 0; i < sideButtons.Length; i++)
-            {
-                if (sideButtons[i] == null)
-                    continue;
-
-                RectTransform button =
-                    sideButtons[i];
-
-                float delay =
-                    i * buttonStagger;
-
-                sequence.Insert(
-                    delay,
-
-                    button.DOAnchorPos(
-                        sideButtonsOriginalPositions[i],
-                        buttonSlideDuration
-                    )
-                    .SetEase(Ease.OutBack)
-                );
-            }
-        }
-
-        // Back
-
-        if (hasBackButton)
-        {
-            float delay =
-                sideButtons != null
-                    ? sideButtons.Length * buttonStagger
-                    : 0f;
-
-            sequence.Insert(
-                delay,
-
-                backButton.DOAnchorPos(
-                    backButtonOriginalPosition,
-                    buttonSlideDuration
-                )
-                .SetEase(Ease.OutBack)
-            );
-        }
-
-
-        return sequence;
-    }
-
-    // ANIMAÇÃO DE ENTRADA
-    private Tween CreateContentEnterTween()
-    {
-        if (contentCanvasGroup == null)
-            return null;
-
-        RectTransform contentRect =
-            contentCanvasGroup.GetComponent<RectTransform>();
-
-        if (contentRect == null)
-            return null;
-
-
-        contentCanvasGroup.alpha = 0f;
-
-        contentRect.localScale =
-            Vector3.one * contentInitialScale;
-
-
-        Sequence sequence = DOTween.Sequence();
-
-        sequence.Join(
-            contentCanvasGroup
-                .DOFade(1f, contentAnimationDuration)
-        );
-
-        sequence.Join(
-            contentRect
-                .DOScale(1f, contentAnimationDuration)
-                .SetEase(Ease.OutBack)
-        );
-
-        return sequence;
-    }
-
-    // FECHAR PAINEL
-
-    public void ClosePanel()
-    {
-        if (isTransitioning)
+        if (!EnsureReady() || isOpen || isAnimating)
             return;
 
-        StartCoroutine(CloseRoutine());
-    }
+        int version = ++transitionVersion;
+        isAnimating = true;
 
-    // ROTINA DE FECHAMENTO
-    private System.Collections.IEnumerator CloseRoutine()
-    {
-        isTransitioning = true;
-
-        SetButtonsInteractable(false);
-
-        if (contentCanvasGroup != null)
+        try
         {
-            contentCanvasGroup.interactable = false;
-            contentCanvasGroup.blocksRaycasts = false;
-        }
-
-        //CONTEÚDO DESAPARECE
-
-        Tween contentTween =
-            CreateContentExitTween();
-
-        if (contentTween != null)
-        {
-            yield return contentTween.WaitForCompletion();
-        }
-
-        //BOTÕES SAEM
-
-        Sequence buttonsSequence =
-            CreateButtonsExitSequence();
-
-        yield return buttonsSequence.WaitForCompletion();
-
-        //BACKGROUND FECHA
-
-        if (backgroundAnimator != null)
-        {
-            backgroundAnimator.Play(
-                backgroundCloseAnimation,
-                0,
-                0f
+            await PlayPaperAnimationAsync(
+                paperOpenState,
+                paperOpenDuration,
+                DefaultPaperOpenDuration
             );
 
-            yield return new WaitForSeconds(
-                backgroundCloseDuration
+            if (!IsCurrentTransition(version))
+                return;
+
+            await Delay(openDelay);
+
+            if (!IsCurrentTransition(version))
+                return;
+
+            ActivateElements();
+
+            await Task.WhenAll(
+                AnimateButtonsOpenAsync(),
+                AnimateViewOpenAsync()
             );
+
+            if (!IsCurrentTransition(version))
+                return;
+
+            SetElementsInteractable(true);
+            isOpen = true;
         }
-
-        isTransitioning = false;
-        gameObject.SetActive(false);
-    }
-
-    // ANIMAÇÃO DE SAÍDA DOS BOTÕES
-    private Sequence CreateButtonsExitSequence()
-    {
-        Sequence sequence = DOTween.Sequence();
-
-
-        float direction =
-            buttonsEnterFromRight ? 1f : -1f;
-
-        // Botões laterais
-
-        if (sideButtons != null)
+        catch (Exception exception)
         {
-            for (int i = 0; i < sideButtons.Length; i++)
+            if (IsCurrentTransition(version))
             {
-                if (sideButtons[i] == null)
-                    continue;
-
-                RectTransform button =
-                    sideButtons[i];
-
-                Vector2 exitPosition =
-                    new Vector2(
-                        sideButtonsOriginalPositions[i].x +
-                        buttonSlideDistance * direction,
-
-                        sideButtonsOriginalPositions[i].y
-                    );
-
-                float delay =
-                    i * buttonStagger;
-
-                sequence.Insert(
-                    delay,
-
-                    button.DOAnchorPos(
-                        exitPosition,
-                        buttonSlideDuration
-                    )
-                    .SetEase(Ease.InBack)
-                );
+                Debug.LogException(exception, this);
+                SetClosedState();
             }
         }
-
-        // Back
-
-        if (hasBackButton)
+        finally
         {
-            Vector2 exitPosition =
-                new Vector2(
-                    backButtonOriginalPosition.x +
-                    buttonSlideDistance * direction,
-
-                    backButtonOriginalPosition.y
-                );
-
-            float delay =
-                sideButtons != null
-                    ? sideButtons.Length * buttonStagger
-                    : 0f;
-
-            sequence.Insert(
-                delay,
-
-                backButton.DOAnchorPos(
-                    exitPosition,
-                    buttonSlideDuration
-                )
-                .SetEase(Ease.InBack)
-            );
+            if (IsCurrentTransition(version))
+                isAnimating = false;
         }
-
-
-        return sequence;
     }
 
-    // ANIMAÇÃO DE SAÍDA DO CONTEÚDO
-    private Tween CreateContentExitTween()
+    /// <summary>
+    /// Slides the contents out, hides button graphics when the paper close animation starts, and closes the view.
+    /// </summary>
+    public async Task CloseAsync()
     {
-        if (contentCanvasGroup == null)
-            return null;
-
-        RectTransform contentRect =
-            contentCanvasGroup.GetComponent<RectTransform>();
-
-        if (contentRect == null)
-            return null;
-
-
-        Sequence sequence = DOTween.Sequence();
-
-        sequence.Join(
-            contentCanvasGroup
-                .DOFade(0f, contentAnimationDuration)
-        );
-
-        sequence.Join(
-            contentRect
-                .DOScale(
-                    contentInitialScale,
-                    contentAnimationDuration
-                )
-                .SetEase(Ease.InBack)
-        );
-
-        return sequence;
-    }
-
-    // RESET DO CONTEÚDO
-    private void ResetContent()
-    {
-        if (contentCanvasGroup == null)
+        if (!EnsureReady())
             return;
 
-        contentCanvasGroup.alpha = 0f;
-        contentCanvasGroup.interactable = false;
-        contentCanvasGroup.blocksRaycasts = false;
+        int version = ++transitionVersion;
+        KillTweens();
+        paperCompletion?.TrySetCanceled();
+        paperCompletion = null;
+        isAnimating = true;
 
-        RectTransform contentRect =
-            contentCanvasGroup.GetComponent<RectTransform>();
-
-        if (contentRect != null)
+        try
         {
-            contentRect.localScale =
-                Vector3.one * contentInitialScale;
+            SetElementsInteractable(false);
+
+            await Task.WhenAll(
+                AnimateButtonsCloseAsync(),
+                AnimateViewCloseAsync()
+            );
+
+            if (!IsCurrentTransition(version))
+                return;
+
+            await Delay(closeDelay);
+
+            if (!IsCurrentTransition(version))
+                return;
+
+            SetButtonsAlpha(HiddenAlpha);
+
+            await PlayPaperAnimationAsync(
+                paperCloseState,
+                paperCloseDuration,
+                DefaultPaperCloseDuration
+            );
+
+            if (!IsCurrentTransition(version))
+                return;
+
+            SetClosedState();
+        }
+        catch (Exception exception)
+        {
+            if (IsCurrentTransition(version))
+            {
+                Debug.LogException(exception, this);
+                SetClosedState();
+            }
+        }
+        finally
+        {
+            if (IsCurrentTransition(version))
+            {
+                isOpen = false;
+                isAnimating = false;
+            }
         }
     }
 
-    // CONTROLE DE INTERAÇÃO DOS BOTÕES
-    private void SetButtonsInteractable(bool value)
+    private void OnEnable()
     {
-        // Botões laterais
+        PrepareClosedState();
 
+        if (Application.isPlaying && openOnEnable)
+            _ = OpenAsync();
+    }
+
+    /// <summary>
+    /// Restores every animated element to the closed state so the next opening starts cleanly.
+    /// </summary>
+    public void ResetToClosedState()
+    {
+        if (!isReady)
+            return;
+
+        transitionVersion++;
+        KillTweens();
+        paperCompletion?.TrySetCanceled();
+        paperCompletion = null;
+        isAnimating = false;
+        SetClosedState();
+    }
+
+    private void OnDisable()
+    {
+        if (!Application.isPlaying || !isReady)
+            return;
+
+        transitionVersion++;
+        KillTweens();
+        isAnimating = false;
+        isOpen = false;
+        paperCompletion?.TrySetCanceled();
+        paperCompletion = null;
+    }
+
+    private void KillTweens()
+    {
+        buttonExtraRect?.DOKill();
+        btnBackRect?.DOKill();
+        buttonExtra?.DOKill();
+        btnBack?.DOKill();
+        viewPanelRect?.DOKill();
         if (sideButtons != null)
         {
-            foreach (RectTransform buttonTransform in sideButtons)
+            foreach (RectTransform sideButton in sideButtons)
+                sideButton?.DOKill();
+        }
+
+        if (sideButtonCanvasGroups != null)
+        {
+            foreach (CanvasGroup sideButtonCanvasGroup in sideButtonCanvasGroups)
+                sideButtonCanvasGroup?.DOKill();
+        }
+    }
+
+    private void ResolveReferences()
+    {
+        paperAnimator ??= FindChildComponent<Animator>("PaperBG");
+        buttonExtraRect ??= FindChildRectTransform("ButtonExtra");
+        btnBackRect ??= FindChildRectTransform("BtnBack");
+
+        viewPanelObject ??= FindChildObject("ViewPanel") ?? FindChildObject("Content");
+        viewPanel ??= contentCanvasGroup;
+        viewPanel ??= GetOrAddCanvasGroup(viewPanelObject != null ? viewPanelObject.transform : null);
+        buttonExtra ??= GetOrAddCanvasGroup(buttonExtraRect);
+        btnBackRect ??= backButton;
+        btnBack ??= GetOrAddCanvasGroup(btnBackRect);
+        if (autoFindSideButtons && (sideButtons == null || sideButtons.Length == 0))
+            sideButtons = FindSideButtons();
+
+        NormalizeButtonReferences();
+        ResolveSideButtonCanvasGroups();
+    }
+
+    private void NormalizeButtonReferences()
+    {
+        if (buttonExtra == null || buttonExtraRect == null || btnBackRect == null)
+            return;
+
+        if (buttonExtraRect != btnBackRect)
+            return;
+
+        buttonExtraRect = buttonExtra.GetComponent<RectTransform>();
+    }
+    private RectTransform[] FindSideButtons()
+
+    {
+        Transform[] children = GetComponentsInChildren<Transform>(true);
+        List<RectTransform> foundButtons = new();
+
+        foreach (Transform child in children)
+        {
+            if (!child.name.StartsWith("Buttons", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            foreach (Transform button in child)
             {
-                if (buttonTransform == null)
+                if (button.name.Equals("BtnBack", StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                Button button =
-                    buttonTransform.GetComponent<Button>();
+                RectTransform buttonRect = button as RectTransform;
 
-                if (button != null)
-                {
-                    button.interactable = value;
-                }
+                if (buttonRect != null)
+                    foundButtons.Add(buttonRect);
             }
         }
 
-        // Back
-
-        if (backButton != null)
-        {
-            Button button =
-                backButton.GetComponent<Button>();
-
-            if (button != null)
-            {
-                button.interactable = value;
-            }
-        }
+        return foundButtons.ToArray();
     }
-    public bool IsTransitioning()
+
+    private void ResolveSideButtonCanvasGroups()
     {
-        return isTransitioning;
+        if (sideButtons == null || sideButtons.Length == 0)
+            return;
+
+        sideButtonCanvasGroups = new CanvasGroup[sideButtons.Length];
+        sideButtonStartPositions = new Vector2[sideButtons.Length];
+
+        for (int index = 0; index < sideButtons.Length; index++)
+        {
+            RectTransform sideButton = sideButtons[index];
+            sideButtonCanvasGroups[index] = GetOrAddCanvasGroup(sideButton);
+            sideButtonStartPositions[index] = sideButton != null
+                ? sideButton.anchoredPosition
+                : Vector2.zero;
+        }
     }
+
+    private T FindChildComponent<T>(string childName) where T : Component
+    {
+        Transform[] children = GetComponentsInChildren<Transform>(true);
+
+        foreach (Transform child in children)
+        {
+            if (child.name == childName)
+                return child.GetComponent<T>();
+        }
+
+        return null;
+    }
+
+    private RectTransform FindChildRectTransform(string childName)
+    {
+        return FindChildComponent<RectTransform>(childName);
+    }
+
+    private GameObject FindChildObject(string childName)
+    {
+        Transform[] children = GetComponentsInChildren<Transform>(true);
+
+        foreach (Transform child in children)
+        {
+            if (child.name == childName)
+                return child.gameObject;
+        }
+
+        return null;
+    }
+
+    private static CanvasGroup GetOrAddCanvasGroup(Component target)
+    {
+        if (target == null)
+            return null;
+
+        CanvasGroup canvasGroup = target.GetComponent<CanvasGroup>();
+        return canvasGroup != null ? canvasGroup : target.gameObject.AddComponent<CanvasGroup>();
+    }
+
+    private bool HasButtonAnimationReferences()
+    {
+        return HasExtraButtonAnimationReferences() || HasBackButtonAnimationReferences();
+    }
+
+    private bool HasBackButtonAnimationReferences()
+    {
+        return btnBack != null && btnBackRect != null;
+    }
+
+    private bool HasExtraButtonAnimationReferences()
+    {
+        bool hasStandaloneButton = buttonExtra != null &&
+                                   buttonExtraRect != null &&
+                                   !IsSideButtonContainer();
+        bool hasSideButtons = sideButtons != null &&
+                              sideButtonCanvasGroups != null &&
+                              sideButtons.Length == sideButtonCanvasGroups.Length;
+
+        return hasStandaloneButton || hasSideButtons;
+    }
+
+    private bool HasSideButtonContainerAnimationReferences()
+    {
+        return buttonExtra != null &&
+               buttonExtraRect != null &&
+               IsSideButtonContainer();
+    }
+
+    private bool ShouldAnimateSideButtonsIndividually()
+    {
+        return sideButtons != null &&
+               sideButtonCanvasGroups != null &&
+               sideButtons.Length == sideButtonCanvasGroups.Length &&
+               !IsSideButtonContainer();
+    }
+    private bool HasStandaloneButtonExtraAnimationReferences()
+    {
+        return buttonExtra != null &&
+               buttonExtraRect != null &&
+               !IsSideButtonContainer();
+    }
+
+
+    private bool IsSideButtonContainer()
+
+    {
+        if (buttonExtraRect == null || sideButtons == null)
+            return false;
+
+        foreach (RectTransform sideButton in sideButtons)
+        {
+            if (sideButton == null)
+                continue;
+
+            if (sideButton == buttonExtraRect || sideButton.IsChildOf(buttonExtraRect))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool IsCurrentTransition(int version)
+    {
+        return version == transitionVersion;
+    }
+
+    private bool EnsureReady()
+    {
+        if (isReady)
+            return true;
+
+        ResolveReferences();
+        viewPanelRect = viewPanel != null
+            ? viewPanel.GetComponent<RectTransform>()
+            : null;
+        isReady = ValidateReferences();
+
+        if (!isReady)
+            return false;
+
+        buttonExtraStartPosition = buttonExtraRect != null
+            ? buttonExtraRect.anchoredPosition
+            : Vector2.zero;
+        btnBackStartPosition = btnBackRect != null
+            ? btnBackRect.anchoredPosition
+            : Vector2.zero;
+
+        return true;
+    }
+
+    private bool ValidateReferences()
+    {
+        bool hasValidReferences = paperAnimator != null &&
+                                  viewPanelObject != null &&
+                                  viewPanel != null &&
+                                  viewPanelRect != null;
+
+        if (!hasValidReferences)
+        {
+            Debug.LogError(
+                $"{nameof(PanelTransition)} requires all paper, panel, button and RectTransform references to be assigned.",
+                this
+            );
+        }
+
+        return hasValidReferences;
+    }
+
+    private void PrepareClosedState()
+    {
+        if (!isReady)
+            return;
+
+        SetClosedState();
+    }
+
+    private void SetClosedState()
+    {
+        viewPanelObject.SetActive(false);
+
+        viewPanel.alpha = HiddenAlpha;
+        viewPanelRect.localScale = Vector3.one * InitialViewScale;
+
+        ResetAnimatedButtonState();
+
+        SetButtonsAlpha(HiddenAlpha);
+        SetElementsInteractable(false);
+        isOpen = false;
+    }
+
+    private void SetButtonsAlpha(float alpha)
+    {
+        if (buttonExtra != null)
+            buttonExtra.alpha = alpha;
+
+        if (sideButtonCanvasGroups != null)
+        {
+            foreach (CanvasGroup sideButtonCanvasGroup in sideButtonCanvasGroups)
+            {
+                if (sideButtonCanvasGroup != null)
+                    sideButtonCanvasGroup.alpha = alpha;
+            }
+        }
+
+        if (btnBack != null)
+            btnBack.alpha = alpha;
+    }
+
+    private void ActivateElements()
+    {
+        viewPanelObject.SetActive(true);
+
+        viewPanel.alpha = HiddenAlpha;
+        viewPanelRect.localScale = Vector3.one * InitialViewScale;
+
+        ResetAnimatedButtonState();
+        SetButtonsAlpha(VisibleAlpha);
+
+        SetElementsInteractable(false);
+    }
+
+    private void ResetAnimatedButtonState()
+    {
+        if (HasSideButtonContainerAnimationReferences())
+        {
+            buttonExtraRect.anchoredPosition = GetButtonExtraHiddenPosition();
+        }
+        else if (HasStandaloneButtonExtraAnimationReferences())
+        {
+            buttonExtra.alpha = HiddenAlpha;
+            buttonExtraRect.anchoredPosition = GetButtonExtraHiddenPosition();
+        }
+
+        if (ShouldAnimateSideButtonsIndividually() && sideButtons != null && sideButtonCanvasGroups != null)
+        {
+            for (int index = 0; index < sideButtons.Length; index++)
+            {
+                RectTransform buttonRect = sideButtons[index];
+                CanvasGroup buttonCanvasGroup = sideButtonCanvasGroups[index];
+
+                if (buttonRect == null || buttonCanvasGroup == null)
+                    continue;
+
+                buttonCanvasGroup.alpha = HiddenAlpha;
+                buttonRect.anchoredPosition = GetButtonExtraHiddenPosition(index);
+            }
+        }
+
+        if (btnBack != null && btnBackRect != null)
+        {
+            btnBack.alpha = HiddenAlpha;
+            btnBackRect.anchoredPosition = GetBtnBackHiddenPosition();
+        }
+    }
+
+
+    private Vector2 GetButtonExtraHiddenPosition()
+    {
+        return buttonExtraStartPosition + Vector2.right * buttonMoveDistance;
+    }
+
+    private Vector2 GetButtonExtraHiddenPosition(int index)
+    {
+        return sideButtonStartPositions[index] + Vector2.right * buttonMoveDistance;
+    }
+
+    private Vector2 GetBtnBackHiddenPosition()
+    {
+        return btnBackStartPosition + Vector2.left * buttonMoveDistance;
+    }
+
+    private void SetElementsInteractable(bool interactable)
+    {
+        if (!HasButtonAnimationReferences())
+            return;
+
+        if (buttonExtra != null)
+        {
+            buttonExtra.interactable = interactable;
+            buttonExtra.blocksRaycasts = interactable;
+        }
+
+        if (sideButtonCanvasGroups != null)
+        {
+            foreach (CanvasGroup buttonCanvasGroup in sideButtonCanvasGroups)
+            {
+                if (buttonCanvasGroup == null)
+                    continue;
+
+                buttonCanvasGroup.interactable = interactable;
+                buttonCanvasGroup.blocksRaycasts = interactable;
+            }
+        }
+
+        if (btnBack != null)
+        {
+            btnBack.interactable = interactable;
+            btnBack.blocksRaycasts = interactable;
+        }
+    }
+
+    private async Task AnimateButtonsOpenAsync()
+    {
+        if (!HasButtonAnimationReferences())
+            return;
+
+        List<Task> animationTasks = new();
+
+        if (HasSideButtonContainerAnimationReferences() || HasStandaloneButtonExtraAnimationReferences())
+        {
+            animationTasks.Add(
+                buttonExtraRect
+                    .DOAnchorPos(buttonExtraStartPosition, buttonDuration)
+                    .SetEase(Ease.OutCubic)
+                    .AsyncWaitForCompletion()
+            );
+        }
+
+        if (ShouldAnimateSideButtonsIndividually() && sideButtons != null && sideButtonCanvasGroups != null)
+        {
+            for (int index = 0; index < sideButtons.Length; index++)
+            {
+                RectTransform buttonRect = sideButtons[index];
+
+                if (buttonRect == null)
+                    continue;
+
+                animationTasks.Add(
+                    buttonRect
+                        .DOAnchorPos(sideButtonStartPositions[index], buttonDuration)
+                        .SetEase(Ease.OutCubic)
+                        .AsyncWaitForCompletion()
+                );
+            }
+        }
+
+        if (HasBackButtonAnimationReferences())
+        {
+            animationTasks.Add(
+                btnBackRect
+                    .DOAnchorPos(btnBackStartPosition, buttonDuration)
+                    .SetEase(Ease.OutCubic)
+                    .AsyncWaitForCompletion()
+            );
+        }
+
+        await Task.WhenAll(animationTasks);
+    }
+
+    private async Task AnimateButtonsCloseAsync()
+    {
+        if (!HasButtonAnimationReferences())
+            return;
+
+        List<Task> animationTasks = new();
+
+        if (HasSideButtonContainerAnimationReferences() || HasStandaloneButtonExtraAnimationReferences())
+        {
+            animationTasks.Add(
+                buttonExtraRect
+                    .DOAnchorPos(GetButtonExtraHiddenPosition(), buttonDuration)
+                    .SetEase(Ease.InCubic)
+                    .AsyncWaitForCompletion()
+            );
+        }
+
+        if (ShouldAnimateSideButtonsIndividually() && sideButtons != null && sideButtonCanvasGroups != null)
+        {
+            for (int index = 0; index < sideButtons.Length; index++)
+            {
+                RectTransform buttonRect = sideButtons[index];
+
+                if (buttonRect == null)
+                    continue;
+
+                animationTasks.Add(
+                    buttonRect
+                        .DOAnchorPos(GetButtonExtraHiddenPosition(index), buttonDuration)
+                        .SetEase(Ease.InCubic)
+                        .AsyncWaitForCompletion()
+                );
+            }
+        }
+
+        if (HasBackButtonAnimationReferences())
+        {
+            animationTasks.Add(
+                btnBackRect
+                    .DOAnchorPos(GetBtnBackHiddenPosition(), buttonDuration)
+                    .SetEase(Ease.InCubic)
+                    .AsyncWaitForCompletion()
+            );
+        }
+
+        await Task.WhenAll(animationTasks);
+
+        if (btnBackRect != null)
+            btnBackRect.anchoredPosition = GetBtnBackHiddenPosition();
+    }
+
+    private async Task AnimateViewOpenAsync()
+    {
+        Tween fadeTween = viewPanel
+            .DOFade(VisibleAlpha, viewDuration)
+            .SetEase(Ease.OutQuad);
+
+        Tween scaleTween = viewPanelRect
+            .DOScale(Vector3.one, viewDuration)
+            .SetEase(Ease.OutBack);
+
+        await Task.WhenAll(
+            fadeTween.AsyncWaitForCompletion(),
+            scaleTween.AsyncWaitForCompletion()
+        );
+    }
+
+    private async Task AnimateViewCloseAsync()
+    {
+        Tween fadeTween = viewPanel
+            .DOFade(HiddenAlpha, viewDuration)
+            .SetEase(Ease.InQuad);
+
+        Tween scaleTween = viewPanelRect
+            .DOScale(Vector3.one * InitialViewScale, viewDuration)
+            .SetEase(Ease.InQuad);
+
+        await Task.WhenAll(
+            fadeTween.AsyncWaitForCompletion(),
+            scaleTween.AsyncWaitForCompletion()
+        );
+
+        viewPanelObject.SetActive(false);
+    }
+
+    private async Task PlayPaperAnimationAsync(
+        string stateName,
+        float configuredDuration,
+        float fallbackDuration)
+    {
+        float duration = GetPaperAnimationDuration(configuredDuration, fallbackDuration);
+        bool canPlayState = TryPlayPaperState(stateName);
+
+        TaskCompletionSource<bool> completion = new(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        paperCompletion = completion;
+
+        try
+        {
+            if (canPlayState)
+                await Task.WhenAny(completion.Task, Delay(duration));
+            else
+                await Delay(duration);
+        }
+        finally
+        {
+            if (ReferenceEquals(paperCompletion, completion))
+                paperCompletion = null;
+        }
+    }
+
+    private bool TryPlayPaperState(string stateName)
+    {
+        if (paperAnimator.runtimeAnimatorController == null)
+        {
+            Debug.LogWarning(
+                $"{nameof(PanelTransition)}: no RuntimeAnimatorController is assigned; using the configured paper duration.",
+                this
+            );
+            return false;
+        }
+
+        int stateHash = Animator.StringToHash(stateName);
+
+        if (!paperAnimator.HasState(AnimatorLayer, stateHash))
+        {
+            Debug.LogWarning(
+                $"{nameof(PanelTransition)}: animator state '{stateName}' was not found; using the configured paper duration.",
+                this
+            );
+            return false;
+        }
+
+        paperAnimator.Play(stateHash, AnimatorLayer, 0f);
+        return true;
+    }
+
+    private float GetPaperAnimationDuration(float configuredDuration, float fallbackDuration)
+    {
+        if (configuredDuration > 0f)
+            return configuredDuration;
+
+        return fallbackDuration;
+    }
+
+    /// <summary>
+    /// Completes a paper transition when an Animator Animation Event is present.
+    /// The code also has a duration fallback, so a missing event cannot deadlock the UI.
+    /// </summary>
+    public void OnPaperAnimationFinished()
+    {
+        paperCompletion?.TrySetResult(true);
+    }
+
+    /// <summary>
+    /// Completes the currently playing paper animation.
+    /// </summary>
+    public void OnPaperOpenFinished()
+    {
+        OnPaperAnimationFinished();
+    }
+
+    /// <summary>
+    /// Completes the currently playing paper animation.
+    /// </summary>
+    public void OnPaperCloseFinished()
+    {
+        OnPaperAnimationFinished();
+    }
+
+    private static Task Delay(float seconds)
+    {
+        if (seconds <= 0f)
+            return Task.CompletedTask;
+
+        int milliseconds = Mathf.CeilToInt(seconds * DelayMillisecondsMultiplier);
+        return Task.Delay(milliseconds);
+    }
+}
+
+public sealed class PanelTransitionController : PanelTransition
+{
 }
