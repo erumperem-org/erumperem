@@ -25,6 +25,9 @@ namespace SceneAllocation.Examples
         [SerializeField] private List<PlaceableObjectData> rockPool;
         [SerializeField] private List<Transform> rockPositions;
 
+        [Header("Parenting")]
+        public Transform parent;
+
         private async void Start()
         {
             await RunSceneSetupAsync();
@@ -37,11 +40,11 @@ namespace SceneAllocation.Examples
         private async Task RunSceneSetupAsync()
         {
             Debug.Log("[Orchestrator] Allocating trees...");
-            AllocationResult treeResult = await allocationSystem.AllocateObjectsAsync(treePool, treePositions);
+            AllocationResult treeResult = await allocationSystem.AllocateObjectsAsync(treePool, treePositions, parent);
             Debug.Log($"[Orchestrator] Trees placed: {treeResult.PlacedCount}/{treeResult.RequestedCount}");
 
             Debug.Log("[Orchestrator] Allocating rocks...");
-            AllocationResult rockResult = await allocationSystem.AllocateObjectsAsync(rockPool, rockPositions);
+            AllocationResult rockResult = await allocationSystem.AllocateObjectsAsync(rockPool, rockPositions, parent);
             Debug.Log($"[Orchestrator] Rocks placed: {rockResult.PlacedCount}/{rockResult.RequestedCount}");
 
             Debug.Log("[Orchestrator] Scene setup complete.");

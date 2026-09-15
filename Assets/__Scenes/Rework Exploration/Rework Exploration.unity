@@ -595,8 +595,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 535120969}
-  - {fileID: 713554309}
   - {fileID: 38089551}
+  - {fileID: 1108361674}
   m_Father: {fileID: 334687993}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &70459019
@@ -11279,7 +11279,6 @@ MonoBehaviour:
   balanceStrength: 1
   spreadAcrossFrames: 1
   placementsPerFrame: 5
-  instancesParent: {fileID: 38089551}
 --- !u!1 &547358387
 GameObject:
   m_ObjectHideFlags: 0
@@ -12662,89 +12661,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 99062211}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &713554308
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 713554309}
-  - component: {fileID: 713554310}
-  m_Layer: 0
-  m_Name: OverworldSceneryObjectsAllocationOrchestrator
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &713554309
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 713554308}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 68310390}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &713554310
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 713554308}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8755f99eee15fd44d8c01f1ac1ff7384, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SceneAllocation.Examples.OverworldSceneryObjectsAllocationOrchestrator
-  allocationSystem: {fileID: 535120970}
-  sceneryPool:
-  - {fileID: 11400000, guid: 680631392590e1d4a800fbc86ba16a24, type: 2}
-  - {fileID: 11400000, guid: 7d11658dd682db94aa681ba30e8d0f51, type: 2}
-  - {fileID: 11400000, guid: 5c80f8f2a3fdfa749b4171570fcaa03a, type: 2}
-  - {fileID: 11400000, guid: dbcbd3d7235a51c4c856210021076a75, type: 2}
-  sceneryPositions:
-  - {fileID: 276423814}
-  - {fileID: 276423813}
-  - {fileID: 276423812}
-  - {fileID: 276423811}
-  - {fileID: 276423810}
-  - {fileID: 276423809}
-  - {fileID: 276423808}
-  - {fileID: 276423807}
-  - {fileID: 276423806}
-  - {fileID: 276423805}
-  - {fileID: 276423804}
-  - {fileID: 276423803}
-  - {fileID: 276423802}
-  - {fileID: 276423801}
-  - {fileID: 276423800}
-  - {fileID: 276423799}
-  - {fileID: 276423798}
-  - {fileID: 276423797}
-  - {fileID: 276423796}
-  - {fileID: 276423795}
-  - {fileID: 276423794}
-  - {fileID: 276423793}
-  - {fileID: 276423792}
-  - {fileID: 276423791}
-  - {fileID: 276423790}
-  - {fileID: 276423789}
-  - {fileID: 276423788}
-  - {fileID: 276423787}
-  - {fileID: 276423786}
-  - {fileID: 276423785}
-  - {fileID: 276423784}
-  - {fileID: 276423783}
 --- !u!1 &729378821
 GameObject:
   m_ObjectHideFlags: 0
@@ -12792,7 +12708,6 @@ MonoBehaviour:
   balanceStrength: 1
   spreadAcrossFrames: 1
   placementsPerFrame: 5
-  instancesParent: {fileID: 105673149}
 --- !u!1 &746891327
 GameObject:
   m_ObjectHideFlags: 0
@@ -17876,6 +17791,91 @@ MonoBehaviour:
   labelOffset: 0.25
   data:
     halfExtents: {x: 1, y: 1, z: 1}
+--- !u!1 &1108361673
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1108361674}
+  - component: {fileID: 1108361675}
+  m_Layer: 0
+  m_Name: SceneObjectAllocationSaveSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1108361674
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1108361673}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 1.77387, y: 0.45677, z: 1.96931}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 68310390}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1108361675
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1108361673}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02a1e834401edbd4a8577243354131e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Core.SceneAllocation.SceneObjectAllocationSaveSystem
+  _allocationSystem: {fileID: 535120970}
+  _registry: {fileID: 11400000, guid: c4bd1f8cf8ce71341b7942c1a0a95a1d, type: 2}
+  _objectPool:
+  - {fileID: 11400000, guid: 680631392590e1d4a800fbc86ba16a24, type: 2}
+  - {fileID: 11400000, guid: 5c80f8f2a3fdfa749b4171570fcaa03a, type: 2}
+  - {fileID: 11400000, guid: dbcbd3d7235a51c4c856210021076a75, type: 2}
+  _availablePositions:
+  - {fileID: 276423814}
+  - {fileID: 276423813}
+  - {fileID: 276423812}
+  - {fileID: 276423811}
+  - {fileID: 276423810}
+  - {fileID: 276423809}
+  - {fileID: 276423808}
+  - {fileID: 276423807}
+  - {fileID: 276423806}
+  - {fileID: 276423805}
+  - {fileID: 276423804}
+  - {fileID: 276423803}
+  - {fileID: 276423802}
+  - {fileID: 276423801}
+  - {fileID: 276423800}
+  - {fileID: 276423799}
+  - {fileID: 276423798}
+  - {fileID: 276423797}
+  - {fileID: 276423796}
+  - {fileID: 276423795}
+  - {fileID: 276423794}
+  - {fileID: 276423793}
+  - {fileID: 276423792}
+  - {fileID: 276423791}
+  - {fileID: 276423790}
+  - {fileID: 276423789}
+  - {fileID: 276423788}
+  - {fileID: 276423787}
+  - {fileID: 276423786}
+  - {fileID: 276423785}
+  - {fileID: 276423784}
+  - {fileID: 276423783}
+  _instancesParent: {fileID: 38089551}
+  _fileName: scene_allocation.json
 --- !u!1 &1110105832 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7703994878192142880, guid: ae08eb99b18dc624a8dace5cd3813983, type: 3}
@@ -20618,6 +20618,7 @@ MonoBehaviour:
     _max: 5
   - _min: 1
     _max: 3
+  _instancesParent: {fileID: 105673149}
 --- !u!4 &1494736376
 Transform:
   m_ObjectHideFlags: 0

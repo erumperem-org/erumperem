@@ -53,6 +53,9 @@ namespace Core.Chests
         private readonly List<GameObject> _chestPoolInstances = new();
         private bool _poolCreated;
         private int _manualTestTier;
+        
+        [Tooltip("Parent for every chest instance in the pool. Optional — leave null for no parenting.")]
+        [SerializeField] private Transform _instancesParent;
 
         public event Action<Chest> OnChestCreated;
 
@@ -136,7 +139,7 @@ namespace Core.Chests
             int maxPoolSize = ResolveMaxPossibleCount();
             var initialPositions = PickRandomSubset(_allPositions, maxPoolSize);
 
-            AllocationResult result = await Allocator.AllocateObjectsAsync(_chestPool, initialPositions);
+            AllocationResult result = await Allocator.AllocateObjectsAsync(_chestPool, initialPositions, _instancesParent);
 
             foreach (var placed in result.PlacedObjects)
             {

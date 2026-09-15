@@ -20,6 +20,9 @@ namespace SceneAllocation.Examples
         [Header("Scenery Objects")]
         [SerializeField] private List<PlaceableObjectData> sceneryPool;
         [SerializeField] private List<Transform> sceneryPositions;
+        
+        [Header("Instances Parenting")]
+        public Transform instanceParent;
 
         private async void Start()
         {
@@ -34,7 +37,7 @@ namespace SceneAllocation.Examples
         private async Task RunSceneSetupAsync()
         {
             Debug.Log("[Orchestrator] Allocating scenery objects...");
-            AllocationResult sceneryResult = await allocationSystem.AllocateObjectsAsync(sceneryPool, sceneryPositions);
+            AllocationResult sceneryResult = await allocationSystem.AllocateObjectsAsync(sceneryPool, sceneryPositions, instanceParent);
             Debug.Log($"[Orchestrator] Scenery objects placed: {sceneryResult.PlacedCount}/{sceneryResult.RequestedCount}");
 
             Debug.Log("[Orchestrator] Scene setup complete.");
