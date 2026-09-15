@@ -23,6 +23,7 @@ namespace SceneAllocation
         Task<AllocationResult> AllocateObjectsAsync(
             IReadOnlyList<PlaceableObjectData> objectPool,
             IReadOnlyList<Transform> availablePositions,
+            Transform instancesParent,
             CancellationToken cancellationToken = default);
     }
 }

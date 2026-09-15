@@ -48,10 +48,6 @@ namespace SceneAllocation
         [Min(1)]
         [SerializeField] private int placementsPerFrame = 5;
 
-        [Header("Parenting")]
-        [Tooltip("Optional parent for all instantiated objects. If null, instances are placed at the scene root.")]
-        [SerializeField] private Transform instancesParent;
-
         // Tracks how many times each PlaceableObjectData has been used across the
         // lifetime of this system instance. Drives the balancing weights.
         private readonly Dictionary<PlaceableObjectData, int> usageCounts = new Dictionary<PlaceableObjectData, int>();
@@ -139,6 +135,7 @@ namespace SceneAllocation
         public async Task<AllocationResult> AllocateObjectsAsync(
             IReadOnlyList<PlaceableObjectData> objectPool,
             IReadOnlyList<Transform> availablePositions,
+            Transform instancesParent,
             CancellationToken cancellationToken = default)
         {
             var result = new AllocationResult { RequestedCount = availablePositions?.Count ?? 0 };
@@ -189,7 +186,7 @@ namespace SceneAllocation
                 }
 
                 // 3. Instantiate and randomize the instance at the target position.
-                GameObject instance = InstantiateAt(chosenData, targetPosition);
+                GameObject instance = InstantiateAt(chosenData, targetPosition, instancesParent);
 
                 // 4. Register usage for future balancing, mark the position as
                 //    occupied so future calls skip it, and record the outcome.
@@ -219,7 +216,7 @@ namespace SceneAllocation
         /// applying a random scale and rotation drawn from the ranges configured
         /// on that ScriptableObject.
         /// </summary>
-        private GameObject InstantiateAt(PlaceableObjectData data, Transform targetPosition)
+        private GameObject InstantiateAt(PlaceableObjectData data, Transform targetPosition, Transform instancesParent)
         {
             GameObject instance = Instantiate(
                 data.Prefab,
