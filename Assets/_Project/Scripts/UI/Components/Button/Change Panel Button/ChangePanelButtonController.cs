@@ -73,6 +73,21 @@ public class ChangePanelButtonController : UiButtonController<ChangePanelButtonM
         return useCloseTransition && panelTransition != null;
     }
 
+    protected override bool ShouldHandlePointerEnter(PointerEventData eventData)
+    {
+        return !isDisabled && !isChangingPanel;
+    }
+
+    protected override bool ShouldHandlePointerExit(PointerEventData eventData)
+    {
+        return !isDisabled && !isChangingPanel;
+    }
+
+    protected override bool ShouldHandlePointerDown(PointerEventData eventData)
+    {
+        return !isDisabled && !isChangingPanel;
+    }
+
     protected override void OnPointerDownHandled(PointerEventData eventData)
     {
         if (unityButton != null || isChangingPanel)
@@ -80,6 +95,8 @@ public class ChangePanelButtonController : UiButtonController<ChangePanelButtonM
 
         ChangePanelAsync();
     }
+
+
 
     private async void ChangePanelAsync()
     {
