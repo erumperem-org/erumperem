@@ -111,15 +111,6 @@ public static class SkillPlayerDescriptionBuilder
             detailParts.Add(effectsPart);
         }
 
-        if (skill.ComboBonus.Count > 0)
-        {
-            var comboPart = DescribeEffects(skill.ComboBonus, skill, context, prefix: "with combo");
-            if (!string.IsNullOrEmpty(comboPart))
-            {
-                detailParts.Add(comboPart);
-            }
-        }
-
         detailParts.Add(DescribeCorruptionCost(skill));
 
         var passiveParts = DescribePassiveModifiersForSkill(skill, context);
@@ -133,8 +124,12 @@ public static class SkillPlayerDescriptionBuilder
     private static string DescribeTarget(SkillDefinition skill) =>
         skill.TargetKind switch
         {
-            SkillTargetKind.Enemy => "1 target",
-            SkillTargetKind.Ally => "1 ally",
+            SkillTargetKind.OneEnemy => "1 target",
+            SkillTargetKind.UpToThreeEnemies => "up to 3 enemies",
+            SkillTargetKind.AllEnemies => "all enemies",
+            SkillTargetKind.OneAlly => "1 ally",
+            SkillTargetKind.SelfOrAlly => "self or ally",
+            SkillTargetKind.SelfAndAlly => "self and ally",
             SkillTargetKind.Self => "self",
             _ => "1 target",
         };
@@ -261,9 +256,23 @@ public static class SkillPlayerDescriptionBuilder
             EffectType.ApplyDot when effect.Dot.HasValue =>
                 $"{chancePrefix}{FormatDotGrantPhrase(effect, skill, context)}",
             EffectType.HealHpPercent =>
-                $"{chancePrefix}healing blocked outside village ({FormatPlainNumber(Math.Max(0, effect.Potency))}% HP)",
+                $"{chancePrefix}heals {FormatPlainNumber(Math.Max(0, effect.Potency))}% HP",
             EffectType.HealHp =>
-                $"{chancePrefix}healing blocked outside the village ({Math.Max(0, effect.Potency)} HP)",
+                $"{chancePrefix}heals {Math.Max(0, effect.Potency)} HP",
+            EffectType.ApplyRandomDot =>
+                $"{chancePrefix}applies a random DoT",
+            EffectType.RemoveAllDebuffTokens =>
+                $"{chancePrefix}removes all debuffs",
+            EffectType.ConsumeAllTokenStacksDealDamagePerStack when effect.Token.HasValue =>
+                $"{chancePrefix}consumes all {TokenDisplayName(effect.Token.Value)}: {Math.Max(1, effect.Potency)} damage per stack",
+            EffectType.ConsumeAllTokenStacksHealPerStack when effect.Token.HasValue =>
+                $"{chancePrefix}consumes all {TokenDisplayName(effect.Token.Value)}: heals {Math.Max(1, effect.Potency)} HP per stack",
+            EffectType.SelfDamageFlat =>
+                $"{chancePrefix}{Math.Max(0, effect.Potency)} self-damage",
+            EffectType.TriggerDestabilizationOnTargets =>
+                $"{chancePrefix}triggers Destabilization on targets",
+            EffectType.ApplyBonusAction =>
+                $"{chancePrefix}+{FormatTokenStackCount(Math.Max(1, effect.Stacks))} {TokenDisplayName(TokenType.BonusAction)}",
             EffectType.Push =>
                 $"{chancePrefix}pushes {Math.Max(1, Math.Abs(effect.Steps))} position(s)",
             EffectType.Pull =>
@@ -311,24 +320,31 @@ public static class SkillPlayerDescriptionBuilder
         return $"{dotName} ({potency} damage for {FormatTurnCount(duration)})";
     }
 
-    private static string DescribeEffectScopePrefix(string effectScope, SkillDefinition skill)
+    private static string DescribeEffectScopePrefix(EffectScope effectScope, SkillDefinition skill)
     {
-        if (string.Equals(effectScope, EffectScopes.AllAllies, StringComparison.OrdinalIgnoreCase))
+        if (effectScope == EffectScope.AllAllies)
         {
             return "all allies";
         }
 
-        if (string.Equals(effectScope, EffectScopes.Self, StringComparison.OrdinalIgnoreCase))
+        if (effectScope == EffectScope.AllEnemies)
+        {
+            return "all enemies";
+        }
+
+        if (effectScope == EffectScope.Self)
         {
             return "on self";
         }
 
-        if (string.Equals(effectScope, EffectScopes.Default, StringComparison.OrdinalIgnoreCase))
+        if (effectScope == EffectScope.Default)
         {
             return skill.TargetKind switch
             {
                 SkillTargetKind.Self => "on self",
-                SkillTargetKind.Ally => "on ally",
+                SkillTargetKind.OneAlly => "on ally",
+                SkillTargetKind.SelfOrAlly => "on self or ally",
+                SkillTargetKind.SelfAndAlly => "on self and ally",
                 _ => string.Empty,
             };
         }
@@ -375,22 +391,22 @@ public static class SkillPlayerDescriptionBuilder
                      passiveDefinition.Additive > 0 =>
                 $"passive: healing blocked outside village (+{FormatPlainNumber(passiveDefinition.Additive)}% HP)",
 
-            PassiveEffectKind.OutgoingDamageVsSkillId
+            PassiveEffectKind.DamageCausedVsSkillId
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
                      passiveDefinition.Additive != 0 =>
-                $"passive: {FormatSignedPercentBonus(passiveDefinition.Additive)} damage",
+                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)}",
 
-            PassiveEffectKind.OutgoingDamageVsSkillIfTargetHasDot
+            PassiveEffectKind.DamageCausedVsSkillIfTargetHasDot
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
                      passiveDefinition.DotType.HasValue &&
                      passiveDefinition.Additive != 0 =>
-                $"passive: {FormatSignedPercentBonus(passiveDefinition.Additive)} damage if target has " +
+                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} if target has " +
                 $"{DotDisplayName(passiveDefinition.DotType.Value)}",
 
-            PassiveEffectKind.OutgoingDamageAfterPrerequisiteSkill
+            PassiveEffectKind.DamageCausedAfterPrerequisiteSkill
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
                      passiveDefinition.Additive != 0 =>
-                $"passive: {FormatSignedPercentBonus(passiveDefinition.Additive)} damage after prep skill",
+                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} after prep skill",
 
             PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
@@ -407,25 +423,25 @@ public static class SkillPlayerDescriptionBuilder
                       $"(max. {FormatTurnCount(passiveDefinition.IntValue2)})"
                     : $"passive: {DotDisplayName(passiveDefinition.DotType.Value)} lasts +{FormatTurnCount(passiveDefinition.IntValue)}",
 
-            PassiveEffectKind.OutgoingDamagePenaltyWhenToken
+            PassiveEffectKind.DamageCausedPenaltyWhenToken
                 when passiveDefinition.TokenType.HasValue &&
                      context.Actor!.Tokens.GetStacks(passiveDefinition.TokenType.Value) > 0 &&
                      passiveDefinition.Additive != 0 =>
-                $"passive: {FormatSignedPercentBonus(passiveDefinition.Additive)} damage with " +
+                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} with " +
                 $"{TokenDisplayName(passiveDefinition.TokenType.Value)}",
 
-            PassiveEffectKind.OutgoingDamageVsDotOnTarget
+            PassiveEffectKind.DamageCausedVsDotOnTarget
                 when HasDirectDamage(skill) &&
                      passiveDefinition.DotType.HasValue &&
                      context.PreviewTarget != null &&
                      PassiveRuleApplier.CountDotStacks(context.PreviewTarget, passiveDefinition.DotType.Value) > 0 =>
-                DescribeOutgoingDamageVsDotOnTargetPassive(passiveDefinition),
+                DescribeDamageCausedVsDotOnTargetPassive(passiveDefinition),
 
             _ => string.Empty,
         };
     }
 
-    private static string DescribeOutgoingDamageVsDotOnTargetPassive(PassiveDefinition passiveDefinition)
+    private static string DescribeDamageCausedVsDotOnTargetPassive(PassiveDefinition passiveDefinition)
     {
         if (!passiveDefinition.DotType.HasValue)
         {
@@ -436,13 +452,13 @@ public static class SkillPlayerDescriptionBuilder
         if (passiveDefinition.AdditivePerStack > 0 && passiveDefinition.Cap > 0)
         {
             return
-                $"passive: +{FormatPercentFromFraction(passiveDefinition.AdditivePerStack)} damage per " +
+                $"passive: Damage Caused +{FormatPercentFromFraction(passiveDefinition.AdditivePerStack)} per " +
                 $"{dotName} stack on target (max. +{FormatPercentFromFraction(passiveDefinition.Cap)})";
         }
 
         if (passiveDefinition.Additive != 0)
         {
-            return $"passive: {FormatSignedPercentBonus(passiveDefinition.Additive)} damage against target with {dotName}";
+            return $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} against target with {dotName}";
         }
 
         return string.Empty;
@@ -451,14 +467,6 @@ public static class SkillPlayerDescriptionBuilder
     private static bool SkillAppliesDotType(SkillDefinition skill, DotType dotType)
     {
         foreach (var effect in skill.EffectsOnHit)
-        {
-            if (effect.Type == EffectType.ApplyDot && effect.Dot == dotType)
-            {
-                return true;
-            }
-        }
-
-        foreach (var effect in skill.ComboBonus)
         {
             if (effect.Type == EffectType.ApplyDot && effect.Dot == dotType)
             {
@@ -490,17 +498,41 @@ public static class SkillPlayerDescriptionBuilder
     private static string FormatPlainNumber(double value) =>
         value.ToString("0.##", EnglishCulture);
 
+    public static string FormatStatusDisplayName(TokenType tokenType) => TokenDisplayName(tokenType);
+
     private static string TokenDisplayName(TokenType tokenType) =>
         tokenType switch
         {
-            TokenType.Block => "Block",
-            TokenType.BlockPlus => "Block Plus",
-            TokenType.Dodge => "Dodge",
-            TokenType.Blind => "Blind",
             TokenType.Taunt => "Taunt",
             TokenType.Stealth => "Stealth",
-            TokenType.Combo => "Combo",
             TokenType.Stun => "Stun",
+            TokenType.ControlledInstability => "Controlled Instability",
+            TokenType.Destabilization => "Destabilization",
+            TokenType.Strength => "Strength",
+            TokenType.Defense => "Defense",
+            TokenType.Weaken => "Weaken",
+            TokenType.Vulnerability => "Vulnerability",
+            TokenType.Confusion => "Confusion",
+            TokenType.Bleeding => "Bleeding",
+            TokenType.LuckyShot => "Lucky Shot",
+            TokenType.Dexterity => "Dexterity",
+            TokenType.Exposition => "Exposition",
+            TokenType.Corrosion => "Corrosion",
+            TokenType.Mark => "Mark",
+            TokenType.Regeneration => "Regeneration",
+            TokenType.Clumsy => "Clumsy",
+            TokenType.BonusAction => "Bonus Action",
+            TokenType.Hypnosis => "Hypnosis",
+            TokenType.Dizzy => "Dizzy",
+            TokenType.Burn => "Burn",
+            TokenType.PermaStrength => "Perma Strength",
+            TokenType.PermaDefense => "Perma Defense",
+            TokenType.PermaWeaken => "Perma Weaken",
+            TokenType.PermaVulnerability => "Perma Vulnerability",
+            TokenType.PermaDexterity => "Perma Dexterity",
+            TokenType.PermaClumsy => "Perma Clumsy",
+            TokenType.PermaExposition => "Perma Exposition",
+            TokenType.PermaStealth => "Perma Stealth",
             _ => tokenType.ToString(),
         };
 

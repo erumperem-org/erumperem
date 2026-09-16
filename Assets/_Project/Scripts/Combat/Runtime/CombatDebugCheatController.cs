@@ -13,6 +13,11 @@ namespace Erumperem.Combat.Runtime
         public static event Action<string, bool> OnCheatToggled;
         public static event Action<string> OnCheatExecuted;
 
+        private const string InfiniteAllyHealthCheatDisplayName = "Vida Infinita";
+        private const string DoubleAllyDamageCheatDisplayName = "Dano Dobrado (x2)";
+        private const string KillAllEnemiesCheatDisplayName = "Eliminar Todos os Inimigos";
+        private const string KillAllAlliesCheatDisplayName = "Eliminar Todos os Aliados";
+
         private readonly CombatSessionRuntime _session;
         private readonly CombatUnitVisualSynchronizer _unitVisualSynchronizer;
         private readonly float _enemyDeathClipMarginSeconds;
@@ -52,7 +57,7 @@ namespace Erumperem.Combat.Runtime
             _session.IsInfiniteAllyHealthCheatActive = true;
             _session.State.AlliesHaveInfiniteHealth = true;
             Debug.Log("Cheat F9: vida infinita dos aliados LIGADA.");
-            OnCheatToggled?.Invoke("Vida Infinita", true);
+            OnCheatToggled?.Invoke(InfiniteAllyHealthCheatDisplayName, true);
         }
 
         public void ToggleDoubleAllyDamageCheat()
@@ -79,7 +84,7 @@ namespace Erumperem.Combat.Runtime
             _session.IsDoubleAllyDamageCheatActive = true;
             _session.State.AllyOutgoingDamageMultiplier = 2.0;
             Debug.Log("Cheat F10: dano ×2 dos aliados LIGADO.");
-            OnCheatToggled?.Invoke("Dano Dobrado (x2)", true);
+            OnCheatToggled?.Invoke(DoubleAllyDamageCheatDisplayName, true);
         }
 
         public void DebugKillAllEnemiesInstantly(Action clearSkillBarSelection)
@@ -124,7 +129,7 @@ namespace Erumperem.Combat.Runtime
             }
 
             Debug.Log("Cheat F6 acionado: inimigos mortos instantaneamente para testar a tela de vitória.");
-            OnCheatExecuted?.Invoke("Eliminar Todos os Inimigos");
+            OnCheatExecuted?.Invoke(KillAllEnemiesCheatDisplayName);
             _session.NeedsPlayerInput = false;
             _session.PendingPlayerActor = null;
             clearSkillBarSelection?.Invoke();
@@ -172,7 +177,7 @@ namespace Erumperem.Combat.Runtime
             }
 
             Debug.Log("Cheat F7 acionado: aliados mortos instantaneamente para testar a tela de derrota.");
-            OnCheatExecuted?.Invoke("Eliminar Todos os Aliados");
+            OnCheatExecuted?.Invoke(KillAllAlliesCheatDisplayName);
             _session.NeedsPlayerInput = false;
             _session.PendingPlayerActor = null;
             clearSkillBarSelection?.Invoke();
@@ -196,7 +201,7 @@ namespace Erumperem.Combat.Runtime
 
         private void DisableInfiniteAllyHealthCheat(bool restoreSavedHealth)
         {
-            bool wasActive = _session.IsInfiniteAllyHealthCheatActive;
+            var wasActive = _session.IsInfiniteAllyHealthCheatActive;
             _session.IsInfiniteAllyHealthCheatActive = false;
             if (_session.State != null)
             {
@@ -206,6 +211,7 @@ namespace Erumperem.Combat.Runtime
             if (!restoreSavedHealth || _session.State == null)
             {
                 _session.AllyHealthBeforeInfiniteHealthCheat.Clear();
+                NotifyCheatDisabledIfWasActive(wasActive, InfiniteAllyHealthCheatDisplayName);
                 return;
             }
 
@@ -223,26 +229,29 @@ namespace Erumperem.Combat.Runtime
 
             _session.AllyHealthBeforeInfiniteHealthCheat.Clear();
             InvalidateAllyHealthBarDisplays();
-
-            if (wasActive)
-            {
-                OnCheatToggled?.Invoke("Vida Infinita", false);
-            }
+            NotifyCheatDisabledIfWasActive(wasActive, InfiniteAllyHealthCheatDisplayName);
         }
 
         private void DisableDoubleAllyDamageCheat()
         {
-            bool wasActive = _session.IsDoubleAllyDamageCheatActive;
+            var wasActive = _session.IsDoubleAllyDamageCheatActive;
             _session.IsDoubleAllyDamageCheatActive = false;
             if (_session.State != null)
             {
                 _session.State.AllyOutgoingDamageMultiplier = 1.0;
             }
 
-            if (wasActive)
+            NotifyCheatDisabledIfWasActive(wasActive, DoubleAllyDamageCheatDisplayName);
+        }
+
+        private static void NotifyCheatDisabledIfWasActive(bool wasActive, string cheatDisplayName)
+        {
+            if (!wasActive)
             {
-                OnCheatToggled?.Invoke("Dano Dobrado (x2)", false);
+                return;
             }
+
+            OnCheatToggled?.Invoke(cheatDisplayName, false);
         }
 
         private static void InvalidateAllyHealthBarDisplays()

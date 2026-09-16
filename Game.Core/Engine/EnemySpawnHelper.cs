@@ -1,7 +1,7 @@
 using System.Linq;
+using Game.Core.Almanac;
 using Game.Core.Abstractions;
 using Game.Core.Domain;
-using Game.Core.Engine;
 using Game.Core.Models;
 using Game.Core.Passives;
 
@@ -185,12 +185,27 @@ public static class EnemySpawnHelper
         combatant.Progression = new ProgressionComponent { Level = 0, SpentPoints = 0 };
         combatant.PassiveRuntime = new PassiveRuntimeState();
         combatant.AI = new AIComponent { DecisionPolicyId = template.AiPolicy };
+        combatant.PartyRole = CombatantPartyRole.None;
 
         combatant.SkillLoadout.Skills.Clear();
         var skillsToAssign = template.Skills.Count > 0 ? template.Skills : skillIds;
         foreach (var skillId in skillsToAssign)
         {
             combatant.SkillLoadout.Skills.Add(skillId);
+        }
+
+        EnemyCatalogIdentity.AssignArchetypeTag(combatant, template.Id);
+        if (template.PassiveIds == null)
+        {
+            return;
+        }
+
+        foreach (var passiveId in template.PassiveIds)
+        {
+            if (!string.IsNullOrWhiteSpace(passiveId))
+            {
+                combatant.Progression.UnlockedNodes[passiveId] = true;
+            }
         }
     }
 

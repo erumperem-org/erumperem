@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Erumperem.Characters;
+using Game.Core.Almanac;
 using Game.Core.Analytics;
 using Game.Core.Data;
 using Game.Core.Domain;
@@ -241,6 +242,7 @@ namespace Erumperem.Combat.Runtime
             OverrideEnemySkillLoadoutFromVisualDefinition(spawnedCombatant, enemyVisualDefinition);
             ApplyEnemyCharacterStatsFromCatalog(spawnedCombatant, enemyVisualDefinition);
             ApplyEnemyPassiveIdsFromVisualDefinition(spawnedCombatant, enemyVisualDefinition);
+            AssignEnemyAlmanacCatalogIdentity(spawnedCombatant, enemyVisualDefinition);
             EnsureCombatCapsuleTagOnUnit(instantiatedEnemyRoot, spawnedCombatant.Identity.Id);
             RegisterUnitVisual(spawnedCombatant.Identity.Id, instantiatedEnemyRoot);
             _session.EnemyVisualByCombatantId[spawnedCombatant.Identity.Id] = enemyVisualDefinition;
@@ -285,6 +287,7 @@ namespace Erumperem.Combat.Runtime
             OverrideEnemySkillLoadoutFromVisualDefinition(enemy, enemyVisualDefinition);
             ApplyEnemyCharacterStatsFromCatalog(enemy, enemyVisualDefinition);
             ApplyEnemyPassiveIdsFromVisualDefinition(enemy, enemyVisualDefinition);
+            AssignEnemyAlmanacCatalogIdentity(enemy, enemyVisualDefinition);
             _session.EnemyVisualByCombatantId[enemy.Identity.Id] = enemyVisualDefinition;
             return true;
         }
@@ -335,6 +338,7 @@ namespace Erumperem.Combat.Runtime
             OverrideEnemySkillLoadoutFromVisualDefinition(enemy, horseBossVisual);
             ApplyEnemyCharacterStatsFromCatalog(enemy, horseBossVisual);
             ApplyEnemyPassiveIdsFromVisualDefinition(enemy, horseBossVisual);
+            AssignEnemyAlmanacCatalogIdentity(enemy, horseBossVisual);
             _session.EnemyVisualByCombatantId[enemy.Identity.Id] = horseBossVisual;
 
             Debug.Log(
@@ -424,6 +428,27 @@ namespace Erumperem.Combat.Runtime
 
                 enemy.Progression.UnlockedNodes[passiveId] = true;
             }
+        }
+
+        private void AssignEnemyAlmanacCatalogIdentity(Combatant enemy, EnemyVisualDefinition enemyVisualDefinition)
+        {
+            if (enemy == null)
+            {
+                return;
+            }
+
+            var visualStatId = enemyVisualDefinition != null
+                ? enemyVisualDefinition.ResolveCharacterStatId()
+                : string.Empty;
+            var catalogId = EnemyCatalogIdentity.NormalizeCatalogId(
+                visualStatId,
+                _session.State?.EnemyDefinitionsById);
+            if (string.IsNullOrWhiteSpace(catalogId))
+            {
+                return;
+            }
+
+            EnemyCatalogIdentity.AssignArchetypeTag(enemy, catalogId);
         }
 
         private bool TryResolveHorseBossVisualDefinition(out EnemyVisualDefinition resolvedHorseBossVisualDefinition)

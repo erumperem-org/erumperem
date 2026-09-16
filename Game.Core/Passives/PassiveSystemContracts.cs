@@ -6,16 +6,16 @@ namespace Game.Core.Passives;
 /// </summary>
 public enum PassiveEffectKind
 {
-    OutgoingDamageVsSkillId = 0,
-    OutgoingDamageVsDotOnTarget = 1,
+    DamageCausedVsSkillId = 0,
+    DamageCausedVsDotOnTarget = 1,
     DotDurationBonus = 2,
     IncomingDamageMultiplierWhenHpBelow = 3,
-    OutgoingDamagePenaltyWhenToken = 4,
-    OutgoingDamageAfterPrerequisiteSkill = 5,
+    DamageCausedPenaltyWhenToken = 4,
+    DamageCausedAfterPrerequisiteSkill = 5,
     ExtraTokenOnSelfSkill = 6,
     ExtraHealPercentOnSelfSkill = 7,
     ApplyExtraDotAfterSkillIfTargetHasDot = 8,
-    OutgoingDamageVsSkillIfTargetHasDot = 9,
+    DamageCausedVsSkillIfTargetHasDot = 9,
     DotTickDamageBonusWhenTargetHpBelow = 10,
     GrantTokenAtTurnStartIfCondition = 11,
     SummonEnemyAtTurnStartWhenHpBelowTiered = 12,
@@ -26,14 +26,14 @@ public enum PassiveEffectKind
 /// </summary>
 public struct DamageModifierAccumulator
 {
-    public double OutgoingDamageAdditiveSum;
-    public double OutgoingDamageMultiplicativeProduct;
+    public double DamageCausedAdditiveSum;
+    public double DamageCausedMultiplicativeProduct;
     public double IncomingDamageMultiplicativeProduct;
 
     public DamageModifierAccumulator()
     {
-        OutgoingDamageAdditiveSum = 0;
-        OutgoingDamageMultiplicativeProduct = 1.0;
+        DamageCausedAdditiveSum = 0;
+        DamageCausedMultiplicativeProduct = 1.0;
         IncomingDamageMultiplicativeProduct = 1.0;
     }
 }

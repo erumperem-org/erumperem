@@ -51,6 +51,7 @@ public sealed class CorruptionRewardGenerator : MonoBehaviour
     /// <summary>
     /// Lê a corrupção do disco, resolve o tier, gera recompensas,
     /// transfere ao inventário e salva. Tudo numa única chamada async.
+    /// Use <see cref="GenerateRewardsForCombatExit"/> when the combat-exit corruption is already known.
     /// </summary>
     public async void GenerateRewards()
     {
@@ -60,8 +61,20 @@ public sealed class CorruptionRewardGenerator : MonoBehaviour
         Log(LogLevel.Debug, $"[GenerateRewards] Iniciando leitura de corrupção. Diretório: {saveDirectory}");
 
         double corruption = await ReadCorruptionFromFileAsync(saveDirectory);
+        ApplyGeneratedRewards(corruption, sourceDescription: "disk");
+    }
 
-        Log(LogLevel.Debug, $"[GenerateRewards] Valor de corrupção lido: {corruption:F2}%");
+    /// <summary>
+    /// Combat loot is generated from the corruption value at <b>exit</b>, not at battle entry.
+    /// </summary>
+    public void GenerateRewardsForCombatExit(double combatExitCorruptionValue)
+    {
+        ApplyGeneratedRewards(combatExitCorruptionValue, sourceDescription: "combat-exit");
+    }
+
+    private void ApplyGeneratedRewards(double corruption, string sourceDescription)
+    {
+        Log(LogLevel.Debug, $"[GenerateRewards] Valor de corrupção ({sourceDescription}): {corruption:F2}%");
 
         ResolvedTier = CorruptionTierCalculator.GetTier(corruption);
 

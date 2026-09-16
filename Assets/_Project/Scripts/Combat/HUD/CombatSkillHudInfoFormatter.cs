@@ -1,4 +1,5 @@
 using System;
+using Game.Core.Config;
 using Game.Core.Presentation;
 
 namespace Erumperem.Combat
@@ -17,11 +18,27 @@ namespace Erumperem.Combat
 
             if (skillStats.DamageMin == skillStats.DamageMax)
             {
-                return $"{skillStats.DamageMin}\nDMG";
+                return $"{skillStats.DamageMin}\n{ResolveDamageLineSuffix(skillStats)}";
             }
 
-            return $"{skillStats.DamageMin}-{skillStats.DamageMax}\nDMG";
+            return $"{skillStats.DamageMin}-{skillStats.DamageMax}\n{ResolveDamageLineSuffix(skillStats)}";
         }
+
+        public static string FormatElementMatchupLine(SkillCombatHudStats skillStats) =>
+            skillStats.ElementMatchup switch
+            {
+                ElementMatchupKind.Advantage => "ADV\nELM",
+                ElementMatchupKind.Disadvantage => "DIS\nELM",
+                _ => "—\nELM",
+            };
+
+        private static string ResolveDamageLineSuffix(SkillCombatHudStats skillStats) =>
+            skillStats.ElementMatchup switch
+            {
+                ElementMatchupKind.Advantage => "ADV",
+                ElementMatchupKind.Disadvantage => "DIS",
+                _ => "DMG",
+            };
 
         public static string FormatCriticalChanceLine(double criticalChanceFraction)
         {

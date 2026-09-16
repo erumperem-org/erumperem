@@ -10,10 +10,12 @@ using Erumperem.Progression;
 using Erumperem.UI;
 using Game.Core.Abstractions;
 using Game.Core.Analytics;
+using Game.Core.Almanac;
 using Game.Core.Data;
 using Game.Core.Diagnostics;
 using Game.Core.Domain;
 using Game.Core.Engine;
+using Game.Core.Items;
 using Game.Core.Models;
 using Game.Core.Progression;
 using UnityEngine;
@@ -72,11 +74,6 @@ namespace Erumperem.Combat
 
         [Tooltip("Desbloqueia todas as passivas do JSON para aliados (teste). Skills activas vêm do save via árvore.")]
         [SerializeField] private bool _devUnlockAllPassives;
-
-        [Header("Combat authoring (overrides JSON by node id)")]
-        [Tooltip("Para cada entrada: se passiva → entra em PassivesById; se activa → substitui/define SkillDefinition em SkillsById. JSON continua base para o que não listares aqui.")]
-        [SerializeField] private SkillTreeNodeAsset[] _skillTreeAuthoringAssets =
-            System.Array.Empty<SkillTreeNodeAsset>();
 
         [Header("Painéis de resultado")]
         [SerializeField] private GameObject victoryPanel;
@@ -302,45 +299,18 @@ namespace Erumperem.Combat
             var passivesPath = Path.Combine(dataDir, "passives.json");
             var enemiesPath = Path.Combine(dataDir, "enemies.json");
 
-            var hasAnyPassiveAuthoring = _skillTreeAuthoringAssets != null &&
-                                         _skillTreeAuthoringAssets.Any(asset =>
-                                             asset != null && asset.IsPassiveNode &&
-                                             !string.IsNullOrWhiteSpace(asset.NodeId));
-            var passiveJsonExists = File.Exists(passivesPath);
-            if (!File.Exists(skillsPath) || !File.Exists(skillTreesPath))
+            if (!File.Exists(skillsPath) || !File.Exists(skillTreesPath) || !File.Exists(passivesPath))
             {
                 Debug.LogError(
-                    $"Faltam JSON em StreamingAssets. Esperado: {skillsPath} e {skillTreesPath}. " +
-                    "Copie a partir de Game.Simulations/Data/ ou rode tools/PublishGameCoreForUnity.ps1.");
+                    $"Faltam JSON em StreamingAssets. Esperado: {skillsPath}, {skillTreesPath}, {passivesPath}. " +
+                    "Exporte o catálogo com Erumperem/Combat/Export Catalog.");
                 enabled = false;
                 return;
             }
 
-            if (!passiveJsonExists && !hasAnyPassiveAuthoring)
-            {
-                Debug.LogError(
-                    $"Passivas: falta {passivesPath} ou pelo menos um {nameof(SkillTreeNodeAsset)} passivo em _skillTreeAuthoringAssets.");
-                enabled = false;
-                return;
-            }
-
-            var skillsById = CombatDataLoader.LoadSkills(skillsPath)
-                .ToDictionary(skillDefinition => skillDefinition.Id, skillDefinition => skillDefinition);
-            MergeActiveSkillsFromAuthoringAssets(skillsById);
-            var skills = skillsById.Values.ToList();
-
-            Dictionary<string, PassiveDefinition> passives;
-            if (passiveJsonExists)
-            {
-                passives = CombatDataLoader.LoadPassives(passivesPath)
-                    .ToDictionary(passiveDefinition => passiveDefinition.Id, passiveDefinition => passiveDefinition);
-            }
-            else
-            {
-                passives = new Dictionary<string, PassiveDefinition>(StringComparer.Ordinal);
-            }
-
-            MergePassiveDefinitionsFromAuthoringAssets(passives);
+            var skills = CombatDataLoader.LoadSkills(skillsPath).ToList();
+            var passives = CombatDataLoader.LoadPassives(passivesPath)
+                .ToDictionary(passiveDefinition => passiveDefinition.Id, passiveDefinition => passiveDefinition);
 
             IReadOnlyDictionary<string, EnemyDefinition> enemyDefinitionsById =
                 new Dictionary<string, EnemyDefinition>(StringComparer.OrdinalIgnoreCase);
@@ -378,6 +348,7 @@ namespace Erumperem.Combat
                 passivesById: passives,
                 unlockAllPassiveNodesForAllies: false,
                 enemyDefinitionsById: enemyDefinitionsById);
+            _runtime.State.EnemyAlmanac = EnemyAlmanacPersistentStore.Load();
 
             ApplyCharacterStatsFromCatalog(partyCharacterNames, applyHealth: true);
 
@@ -392,6 +363,10 @@ namespace Erumperem.Combat
         {
             _battleOutcomeMonitor.End();
             _debugCheats?.ClearAllCombatCheats();
+            if (_runtime.State?.EnemyAlmanac != null)
+            {
+                EnemyAlmanacPersistentStore.Save(_runtime.State.EnemyAlmanac);
+            }
             HealDebugTrace.OnLog = null;
             UnsubscribeFromInputEvents();
             _actionPresentation?.StopActorActionRock();
@@ -453,6 +428,25 @@ namespace Erumperem.Combat
             };
         }
 
+        private void EnsurePhaseGHudPresenters()
+        {
+            var hudHost = _sessionHub != null ? _sessionHub.gameObject : gameObject;
+            if (FindFirstObjectByType<CombatFlowHudPresenter>() == null)
+            {
+                hudHost.AddComponent<CombatFlowHudPresenter>();
+            }
+
+            if (FindFirstObjectByType<CombatElementMatchupHudPresenter>() == null)
+            {
+                hudHost.AddComponent<CombatElementMatchupHudPresenter>();
+            }
+
+            if (FindFirstObjectByType<EnemyAlmanacPanelPresenter>() == null)
+            {
+                hudHost.AddComponent<EnemyAlmanacPanelPresenter>();
+            }
+        }
+
         private CombatActionPresentationSettings BuildActionPresentationSettings() =>
             new()
             {
@@ -512,6 +506,7 @@ namespace Erumperem.Combat
             }
 
             CombatExplorationBridge.Instance?.SeedBattleFromExploration(_runtime.State);
+            ApplyCombatItemBonusesFromLedger(partyCharacterNames);
 
             ApplyPerAllyLoadoutsAndProgression(
                 partyCharacterNames,
@@ -527,7 +522,13 @@ namespace Erumperem.Combat
 
             _runtime.Simulator.EmitBattleStarted(_runtime.State);
             _battleOutcomeMonitor.Begin(_runtime.State, _runtime.EventCollector, EndBattle);
+            EnsurePhaseGHudPresenters();
             ApplyDebugInitiativeOverrides();
+            if (_runtime.State.Initiative != null)
+            {
+                _sessionHub?.RaiseBattleInitiativeResolved(_runtime.State.Initiative.FirstActingSide);
+            }
+
             _turnAdvanceDriver.BeginRound(_runtime);
             _sessionHub?.RaiseCombatSessionReadyForUi(this);
 
@@ -737,12 +738,14 @@ namespace Erumperem.Combat
             for (var allyIndex = 0; allyIndex < _runtime.State.Allies.Count && allyIndex < partyCharacterNames.Count; allyIndex++)
             {
                 var characterName = partyCharacterNames[allyIndex];
+                var ally = _runtime.State.Allies[allyIndex];
+                ally.PartyRole = CombatPartyRoleRules.FromAllyPartyIndex(allyIndex);
+
                 if (!allyCharacterStatCatalog.TryGetDefinition(characterName, out var allyCharacterStatDefinition))
                 {
                     continue;
                 }
 
-                var ally = _runtime.State.Allies[allyIndex];
                 allyCharacterStatDefinition.ApplyToCombatant(
                     ally,
                     preserveCurrentHitPoints: false,
@@ -752,6 +755,47 @@ namespace Erumperem.Combat
                 {
                     ally.Position.FrontRank = Mathf.Max(1, allyCharacterStatDefinition.BattleFormationRank);
                 }
+            }
+        }
+
+        private void ApplyCombatItemBonusesFromLedger(IReadOnlyList<string> partyCharacterNames)
+        {
+            if (_runtime.State == null || allyCharacterStatCatalog == null)
+            {
+                return;
+            }
+
+            var ledger = CombatItemBonusPersistentStore.Load();
+            var itemsById = CombatItemRuntimeService.LoadItemsById();
+            partyCharacterNames ??= CombatPartyResolver.GetCombatAllyCharacterNames();
+
+            for (var allyIndex = 0; allyIndex < _runtime.State.Allies.Count && allyIndex < partyCharacterNames.Count; allyIndex++)
+            {
+                var characterName = partyCharacterNames[allyIndex];
+                var ally = _runtime.State.Allies[allyIndex];
+                if (!allyCharacterStatCatalog.TryGetDefinition(characterName, out var allyCharacterStatDefinition))
+                {
+                    continue;
+                }
+
+                var progressionCharacterId = !string.IsNullOrWhiteSpace(allyCharacterStatDefinition.ProgressionCharacterId)
+                    ? allyCharacterStatDefinition.ProgressionCharacterId
+                    : ResolveProgressionCharacterId(characterName);
+                if (string.IsNullOrWhiteSpace(progressionCharacterId))
+                {
+                    continue;
+                }
+
+                var baseline = new CombatantBaseStatSnapshot
+                {
+                    MaxHp = allyCharacterStatDefinition.MaxHitPoints,
+                    DefenseChance = allyCharacterStatDefinition.DefenseChance,
+                    CritChance = allyCharacterStatDefinition.CritChance,
+                    Speed = ally.Stats.Speed,
+                    Accuracy = ally.Stats.Accuracy,
+                };
+                var modified = ledger.ComputeModifiedStats(progressionCharacterId, baseline, itemsById);
+                CombatItemStatApplier.WriteStatsToCombatant(ally, ally.Health.MaxHp, modified);
             }
         }
 
@@ -788,7 +832,13 @@ namespace Erumperem.Combat
                             unlockedForBattle,
                             innateSkillIds);
                         var pointsSpent = SkillTreeLookup.SumUnlockedNodeCosts(characterTrees, unlockedForBattle);
-                        ApplyLoadoutAndProgressionToAlly(ally, allySkillIds, unlockedForBattle, pointsSpent);
+                        ApplyLoadoutAndProgressionToAlly(
+                            ally,
+                            allySkillIds,
+                            unlockedForBattle,
+                            pointsSpent,
+                            progressionCharacterId,
+                            passivesById);
                         continue;
                     }
 
@@ -798,7 +848,13 @@ namespace Erumperem.Combat
                             characterTrees,
                             unlockedForBattle,
                             innateSkillIds);
-                        ApplyLoadoutAndProgressionToAlly(ally, allySkillIds, unlockedForBattle, pointsSpent: 0);
+                        ApplyLoadoutAndProgressionToAlly(
+                            ally,
+                            allySkillIds,
+                            unlockedForBattle,
+                            pointsSpent: 0,
+                            progressionCharacterId,
+                            passivesById);
                         continue;
                     }
                 }
@@ -806,7 +862,13 @@ namespace Erumperem.Combat
                 allySkillIds = innateSkillIds.Count > 0
                     ? innateSkillIds.ToList()
                     : BattleFactory.DefaultAllySkillIds.ToList();
-                ApplyLoadoutAndProgressionToAlly(ally, allySkillIds, unlockedForBattle, pointsSpent: 0);
+                ApplyLoadoutAndProgressionToAlly(
+                    ally,
+                    allySkillIds,
+                    unlockedForBattle,
+                    pointsSpent: 0,
+                    progressionCharacterId,
+                    passivesById);
             }
 
             if (_devUnlockAllPassives && passivesById != null)
@@ -819,7 +881,9 @@ namespace Erumperem.Combat
             Combatant ally,
             IReadOnlyList<string> allySkillIds,
             IReadOnlyDictionary<string, bool> unlockedForBattle,
-            int pointsSpent)
+            int pointsSpent,
+            string progressionCharacterId,
+            IReadOnlyDictionary<string, PassiveDefinition> passivesById)
         {
             ally.SkillLoadout.Skills.Clear();
             if (allySkillIds != null)
@@ -839,6 +903,7 @@ namespace Erumperem.Combat
                 ally.Progression.UnlockedNodes[nodeIdAndUnlocked.Key] = nodeIdAndUnlocked.Value;
             }
 
+            BattleFactory.UnlockAlwaysOnKitPassives(ally, progressionCharacterId, passivesById);
             ally.Progression.SpentPoints = pointsSpent;
         }
 
@@ -856,59 +921,5 @@ namespace Erumperem.Combat
 
         private static IReadOnlyList<string> ResolveInnateSkillIds(string progressionCharacterId) =>
             BattleFactory.ResolveInnateSkillIds(progressionCharacterId);
-
-        private void MergeActiveSkillsFromAuthoringAssets(Dictionary<string, SkillDefinition> skillsById)
-        {
-            if (_skillTreeAuthoringAssets == null)
-            {
-                return;
-            }
-
-            foreach (var asset in _skillTreeAuthoringAssets)
-            {
-                if (asset == null || asset.IsPassiveNode || string.IsNullOrWhiteSpace(asset.NodeId))
-                {
-                    continue;
-                }
-
-                try
-                {
-                    skillsById[asset.NodeId] = asset.ToRuntimeSkillDefinition();
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogWarning(
-                        $"CombatPrototypeController: activo SO '{asset.name}' ignorado — {ex.Message}",
-                        asset);
-                }
-            }
-        }
-
-        private void MergePassiveDefinitionsFromAuthoringAssets(Dictionary<string, PassiveDefinition> passivesById)
-        {
-            if (_skillTreeAuthoringAssets == null)
-            {
-                return;
-            }
-
-            foreach (var asset in _skillTreeAuthoringAssets)
-            {
-                if (asset == null || !asset.IsPassiveNode || string.IsNullOrWhiteSpace(asset.NodeId))
-                {
-                    continue;
-                }
-
-                try
-                {
-                    passivesById[asset.NodeId] = asset.ToRuntimePassiveDefinition();
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogWarning(
-                        $"CombatPrototypeController: passiva SO '{asset.name}' ignorada — {ex.Message}",
-                        asset);
-                }
-            }
-        }
     }
 }

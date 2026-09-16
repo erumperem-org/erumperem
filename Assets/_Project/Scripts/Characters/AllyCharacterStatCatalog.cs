@@ -63,8 +63,9 @@ namespace Erumperem.Characters
             return characterName switch
             {
                 "Wulfric" => 100f,
-                "Buck" => 200f,
+                "Buck" => 85f,
                 "Matsuda" => 100f,
+                "Maria" => 70f,
                 _ => 100f,
             };
         }

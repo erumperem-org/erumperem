@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Game.Core\Game.Core.csproj" />
+    <None Include="..\Assets\StreamingAssets\Data\*.json" Link="Data\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <PropertyGroup>

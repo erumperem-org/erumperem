@@ -63,7 +63,7 @@ namespace Erumperem.Combat
     [Serializable]
     public sealed class SkillVisualDefinition
     {
-        [Tooltip("Must match skills.json / SkillDefinition.Id (e.g. f_t1_a1).")]
+        [Tooltip("Must match skills.json / SkillDefinition.Id (e.g. wulfric_innate_active1).")]
         public string skillId = "";
 
         [Tooltip("Optional label for editor lists; not shown on the combat button.")]

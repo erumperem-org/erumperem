@@ -1,329 +1,35 @@
 [
   {
-    "id": "wulfric_innate_cleave",
-    "name": "Talho direto",
-    "corruptionCost": 1,
-    "element": "Fire",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 5,
-      "max": 9
-    },
-    "baseCritChance": 0.1,
-    "accuracy": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
-  },
-  {
-    "id": "wulfric_innate_shove",
-    "name": "Empurr\u00E3o brutal",
-    "corruptionCost": 1,
-    "element": "Metal",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 2,
-      "max": 5
-    },
-    "baseCritChance": 0.05,
-    "accuracy": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
-  },
-  {
-    "id": "wulfric_innate_guard",
-    "name": "Postura de lobo",
-    "corruptionCost": 0,
-    "element": "Metal",
-    "type": "Active",
-    "targetKind": "Self",
-    "baseDamage": {
-      "min": 0,
-      "max": 0
-    },
-    "baseCritChance": 0,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyToken",
-        "token": "Block",
-        "stacks": 1,
-        "chance": 1.0
-      },
-      {
-        "type": "ApplyToken",
-        "token": "Taunt",
-        "stacks": 1,
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "f_t1_a1",
-    "name": "Rasgar tend\u00E3o",
-    "corruptionCost": 1,
-    "element": "Fire",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 6,
-      "max": 10
-    },
-    "baseCritChance": 0.08,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyDot",
-        "dot": "Bleed",
-        "potency": 3,
-        "duration": 3,
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "f_t2_a1",
-    "name": "Fio candente",
-    "corruptionCost": 6,
-    "element": "Fire",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 8,
-      "max": 12
-    },
-    "baseCritChance": 0.1,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyDot",
-        "dot": "Bleed",
-        "potency": 2,
-        "duration": 2,
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "f_t3_a1",
-    "name": "Execu\u00E7\u00E3o de leil\u00E3o",
-    "element": "Fire",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 10,
-      "max": 16
-    },
-    "baseCritChance": 0.12,
-    "accuracy": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
-  },
-  {
-    "id": "m_t1_a1",
-    "name": "Remendar coura\u00E7a",
-    "corruptionCost": 1,
-    "element": "Metal",
-    "type": "Active",
-    "targetKind": "Ally",
-    "baseDamage": {
-      "min": 0,
-      "max": 0
-    },
-    "baseCritChance": 0,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "HealHpPercent",
-        "potency": 6,
-        "chance": 1.0
-      },
-      {
-        "type": "ApplyToken",
-        "token": "Block",
-        "stacks": 1,
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "m_t2_a1",
-    "name": "Muralha",
-    "corruptionCost": 1,
-    "element": "Metal",
-    "type": "Active",
-    "targetKind": "Self",
-    "baseDamage": {
-      "min": 0,
-      "max": 0
-    },
-    "baseCritChance": 0,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyToken",
-        "token": "Taunt",
-        "stacks": 1,
-        "effectScope": "Default",
-        "chance": 1.0
-      },
-      {
-        "type": "ApplyToken",
-        "token": "BlockPlus",
-        "stacks": 1,
-        "effectScope": "Default",
-        "chance": 1.0
-      },
-      {
-        "type": "ApplyToken",
-        "token": "Block",
-        "stacks": 1,
-        "effectScope": "AllAllies",
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "m_t3_a1",
-    "name": "Salvaguarda",
-    "corruptionCost": -6,
-    "element": "Metal",
-    "type": "Active",
-    "targetKind": "Ally",
-    "baseDamage": {
-      "min": 0,
-      "max": 0
-    },
-    "baseCritChance": 0,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyToken",
-        "token": "BlockPlus",
-        "stacks": 2,
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "a_t1_a1",
-    "name": "Fio da anomalia",
-    "corruptionCost": 4,
-    "element": "Anomaly",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 3,
-      "max": 6
-    },
-    "baseCritChance": 0.06,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyDot",
-        "dot": "Blight",
-        "potency": 3,
-        "duration": 3,
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "a_t2_a1",
-    "name": "Puxar o v\u00E9u",
-    "corruptionCost": 1,
-    "element": "Anomaly",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 4,
-      "max": 7
-    },
-    "baseCritChance": 0.06,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyDot",
-        "dot": "Blight",
-        "potency": 2,
-        "duration": 2,
-        "chance": 1.0
-      },
-      {
-        "type": "ApplyToken",
-        "token": "Blind",
-        "stacks": 1,
-        "effectScope": "Self",
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "a_t3_a1",
-    "name": "Abrir o v\u00E3o",
-    "corruptionCost": 13,
-    "element": "Anomaly",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 5,
-      "max": 9
-    },
-    "baseCritChance": 0.08,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyDot",
-        "dot": "Blight",
-        "potency": 4,
-        "duration": 3,
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
     "id": "corrupted_miner_punch",
     "name": "Soco Normal",
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 4,
       "max": 7
     },
     "baseCritChance": 0.05,
     "accuracy": 0.9,
-    "chanceToUse": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "chanceToUse": 1,
+    "effectsOnHit": []
   },
   {
     "id": "corrupted_miner_throw_rock",
-    "name": "Lan\u00E7a Pedra",
+    "name": "Lança Pedra",
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 3,
       "max": 8
     },
     "baseCritChance": 0.18,
     "accuracy": 0.85,
-    "chanceToUse": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "chanceToUse": 1,
+    "effectsOnHit": []
   },
   {
     "id": "corrupted_miner_lightning_rod",
@@ -337,28 +43,21 @@
       "max": 0
     },
     "baseCritChance": 0,
-    "accuracy": 1.0,
+    "accuracy": 1,
     "chanceToUse": 0.6,
     "effectsOnHit": [
       {
         "type": "HealHpPercent",
         "potency": 20,
-        "chance": 1.0
+        "chance": 1
       },
       {
         "type": "ApplyToken",
-        "token": "Block",
+        "token": "Defense",
         "stacks": 2,
-        "chance": 1.0
-      },
-      {
-        "type": "ApplyToken",
-        "token": "Combo",
-        "stacks": 1,
-        "chance": 1.0
+        "chance": 1
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "corrupted_miner_distorted_laser",
@@ -366,7 +65,7 @@
     "corruptionCost": 0,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 2,
       "max": 3
@@ -377,12 +76,11 @@
     "effectsOnHit": [
       {
         "type": "ApplyToken",
-        "token": "Blind",
+        "token": "Clumsy",
         "stacks": 1,
-        "chance": 1.0
+        "chance": 1
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "corrupted_miner_amethist_giro_turbina",
@@ -390,7 +88,7 @@
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 7,
       "max": 10
@@ -399,16 +97,15 @@
     "accuracy": 0.95,
     "chanceToUse": 0.2,
     "selfHpPercentBelow": 0.15,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "corrupted_miner_aghata_giro_turbina",
-    "name": "Giro Turbina (\u00C1gata)",
+    "name": "Giro Turbina (Ágata)",
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 6,
       "max": 9
@@ -417,8 +114,7 @@
     "accuracy": 0.95,
     "chanceToUse": 0.2,
     "selfHpPercentBelow": 0.15,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "corrupted_miner_citrine_giro_turbina",
@@ -426,7 +122,7 @@
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 6,
       "max": 8
@@ -435,8 +131,7 @@
     "accuracy": 0.95,
     "chanceToUse": 0.2,
     "selfHpPercentBelow": 0.15,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "corrupted_miner_emerald_giro_turbina",
@@ -444,7 +139,7 @@
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 8,
       "max": 11
@@ -453,33 +148,31 @@
     "accuracy": 0.95,
     "chanceToUse": 0.2,
     "selfHpPercentBelow": 0.15,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "beacon_of_desire_iron_lash",
-    "name": "A\u00E7oite Met\u00E1lico",
+    "name": "Açoite Metálico",
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 3,
       "max": 7
     },
     "baseCritChance": 0.08,
     "accuracy": 0.92,
-    "chanceToUse": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "chanceToUse": 1,
+    "effectsOnHit": []
   },
   {
     "id": "beacon_of_desire_hypnotic_glare",
-    "name": "Brilho Hipn\u00F3tico",
+    "name": "Brilho Hipnótico",
     "corruptionCost": 0,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 1,
       "max": 3
@@ -490,20 +183,19 @@
     "effectsOnHit": [
       {
         "type": "ApplyToken",
-        "token": "Blind",
+        "token": "Clumsy",
         "stacks": 1,
-        "chance": 1.0
+        "chance": 1
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "beacon_of_desire_addiction_whisper",
-    "name": "Sussurro do V\u00EDcio",
+    "name": "Sussurro do Vício",
     "corruptionCost": 0,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 2,
       "max": 4
@@ -517,10 +209,9 @@
         "dot": "Blight",
         "potency": 3,
         "duration": 3,
-        "chance": 1.0
+        "chance": 1
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "beacon_of_desire_armor_collapse",
@@ -534,29 +225,22 @@
       "max": 0
     },
     "baseCritChance": 0,
-    "accuracy": 1.0,
+    "accuracy": 1,
     "chanceToUse": 0.5,
     "selfHpPercentBelow": 0.5,
     "effectsOnHit": [
       {
         "type": "HealHpPercent",
         "potency": 15,
-        "chance": 1.0
+        "chance": 1
       },
       {
         "type": "ApplyToken",
-        "token": "Block",
+        "token": "Defense",
         "stacks": 2,
-        "chance": 1.0
-      },
-      {
-        "type": "ApplyToken",
-        "token": "Combo",
-        "stacks": 1,
-        "chance": 1.0
+        "chance": 1
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "enemy_claw",
@@ -564,15 +248,14 @@
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 3,
       "max": 6
     },
     "baseCritChance": 0.06,
     "accuracy": 0.88,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "spider_bite",
@@ -580,7 +263,7 @@
     "corruptionCost": 0,
     "element": "Fire",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 2,
       "max": 4
@@ -593,10 +276,9 @@
         "dot": "Blight",
         "potency": 2,
         "duration": 2,
-        "chance": 1.0
+        "chance": 1
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "spider_web",
@@ -604,7 +286,7 @@
     "corruptionCost": 0,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 1,
       "max": 2
@@ -613,312 +295,13 @@
     "accuracy": 0.85,
     "effectsOnHit": [
       {
-        "type": "ApplyToken",
-        "token": "Combo",
-        "stacks": 1,
-        "chance": 1.0
-      },
-      {
         "type": "ApplyDot",
         "dot": "Blight",
         "potency": 2,
         "duration": 2,
-        "chance": 1.0
+        "chance": 1
       }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "buck_innate_cleave",
-    "name": "Disparo r\u00E1pido",
-    "corruptionCost": 1,
-    "element": "Fire",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 6,
-      "max": 11
-    },
-    "baseCritChance": 0.1,
-    "accuracy": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
-  },
-  {
-    "id": "buck_innate_shove",
-    "name": "Empurr\u00E3o do coldre",
-    "corruptionCost": 1,
-    "element": "Metal",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 3,
-      "max": 7
-    },
-    "baseCritChance": 0.05,
-    "accuracy": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
-  },
-  {
-    "id": "buck_innate_guard",
-    "name": "Postura do duelista",
-    "corruptionCost": 0,
-    "element": "Metal",
-    "type": "Active",
-    "targetKind": "Self",
-    "baseDamage": {
-      "min": 1,
-      "max": 2
-    },
-    "baseCritChance": 0,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyToken",
-        "token": "Block",
-        "stacks": 1,
-        "chance": 1.0
-      },
-      {
-        "type": "ApplyToken",
-        "token": "Taunt",
-        "stacks": 1,
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "b_f_t1_a1",
-    "name": "Tiro incendi\u00E1rio",
-    "corruptionCost": 1,
-    "element": "Fire",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 7,
-      "max": 12
-    },
-    "baseCritChance": 0.08,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyDot",
-        "dot": "Burn",
-        "potency": 3,
-        "duration": 3,
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "b_f_t2_a1",
-    "name": "Rajada flamejante",
-    "corruptionCost": 6,
-    "element": "Fire",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 9,
-      "max": 14
-    },
-    "baseCritChance": 0.1,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyDot",
-        "dot": "Burn",
-        "potency": 2,
-        "duration": 2,
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "b_f_t3_a1",
-    "name": "Execu\u00E7\u00E3o do pistoleiro",
-    "element": "Fire",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 11,
-      "max": 18
-    },
-    "baseCritChance": 0.12,
-    "accuracy": 1.0,
-    "effectsOnHit": [],
-    "comboBonus": []
-  },
-  {
-    "id": "b_m_t1_a1",
-    "name": "Refor\u00E7o de couro",
-    "corruptionCost": 1,
-    "element": "Metal",
-    "type": "Active",
-    "targetKind": "Ally",
-    "baseDamage": {
-      "min": 1,
-      "max": 2
-    },
-    "baseCritChance": 0,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "HealHpPercent",
-        "potency": 6,
-        "chance": 1.0
-      },
-      {
-        "type": "ApplyToken",
-        "token": "Block",
-        "stacks": 1,
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "b_m_t2_a1",
-    "name": "Barricada",
-    "corruptionCost": 1,
-    "element": "Metal",
-    "type": "Active",
-    "targetKind": "Self",
-    "baseDamage": {
-      "min": 1,
-      "max": 2
-    },
-    "baseCritChance": 0,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyToken",
-        "token": "Taunt",
-        "stacks": 1,
-        "effectScope": "Default",
-        "chance": 1.0
-      },
-      {
-        "type": "ApplyToken",
-        "token": "BlockPlus",
-        "stacks": 1,
-        "effectScope": "Default",
-        "chance": 1.0
-      },
-      {
-        "type": "ApplyToken",
-        "token": "Block",
-        "stacks": 1,
-        "effectScope": "AllAllies",
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "b_m_t3_a1",
-    "name": "\u00DAltimo recurso",
-    "corruptionCost": -6,
-    "element": "Metal",
-    "type": "Active",
-    "targetKind": "Ally",
-    "baseDamage": {
-      "min": 1,
-      "max": 2
-    },
-    "baseCritChance": 0,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyToken",
-        "token": "BlockPlus",
-        "stacks": 2,
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "b_a_t1_a1",
-    "name": "Fio do rev\u00F3lver",
-    "corruptionCost": 4,
-    "element": "Anomaly",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 4,
-      "max": 8
-    },
-    "baseCritChance": 0.06,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyDot",
-        "dot": "Blight",
-        "potency": 3,
-        "duration": 3,
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "b_a_t2_a1",
-    "name": "Puxar o gatilho",
-    "corruptionCost": 1,
-    "element": "Anomaly",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 5,
-      "max": 9
-    },
-    "baseCritChance": 0.06,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyDot",
-        "dot": "Blight",
-        "potency": 2,
-        "duration": 2,
-        "chance": 1.0
-      },
-      {
-        "type": "ApplyToken",
-        "token": "Blind",
-        "stacks": 1,
-        "effectScope": "Self",
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
-  },
-  {
-    "id": "b_a_t3_a1",
-    "name": "Abrir fogo",
-    "corruptionCost": 13,
-    "element": "Anomaly",
-    "type": "Active",
-    "targetKind": "Enemy",
-    "baseDamage": {
-      "min": 6,
-      "max": 11
-    },
-    "baseCritChance": 0.08,
-    "accuracy": 1.0,
-    "effectsOnHit": [
-      {
-        "type": "ApplyDot",
-        "dot": "Blight",
-        "potency": 4,
-        "duration": 3,
-        "chance": 1.0
-      }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "horse_boss_sharp_claws",
@@ -926,25 +309,24 @@
     "corruptionCost": 0,
     "element": "Metal",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 5,
       "max": 9
     },
     "baseCritChance": 0.08,
     "accuracy": 0.9,
-    "chanceToUse": 1.0,
-    "selfHpPercentBelow": 1.0,
+    "chanceToUse": 1,
+    "selfHpPercentBelow": 1,
     "effectsOnHit": [
       {
         "type": "ApplyDot",
         "dot": "Bleed",
         "potency": 2,
         "duration": 3,
-        "chance": 1.0
+        "chance": 1
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "horse_boss_painful_bite",
@@ -952,7 +334,7 @@
     "corruptionCost": 0,
     "element": "Fire",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 16,
       "max": 24
@@ -961,8 +343,7 @@
     "accuracy": 0.85,
     "chanceToUse": 0.4,
     "selfHpPercentBelow": 0.5,
-    "effectsOnHit": [],
-    "comboBonus": []
+    "effectsOnHit": []
   },
   {
     "id": "horse_boss_chilling_howl",
@@ -970,7 +351,7 @@
     "corruptionCost": 0,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 0,
       "max": 2
@@ -978,16 +359,15 @@
     "baseCritChance": 0.05,
     "accuracy": 0.88,
     "chanceToUse": 0.55,
-    "selfHpPercentBelow": 1.0,
+    "selfHpPercentBelow": 1,
     "effectsOnHit": [
       {
         "type": "ApplyRandomDot",
         "potency": 2,
         "duration": 3,
-        "chance": 1.0
+        "chance": 1
       }
-    ],
-    "comboBonus": []
+    ]
   },
   {
     "id": "horse_boss_blinding_vomit",
@@ -995,7 +375,7 @@
     "corruptionCost": 0,
     "element": "Anomaly",
     "type": "Active",
-    "targetKind": "Enemy",
+    "targetKind": "OneEnemy",
     "baseDamage": {
       "min": 3,
       "max": 7
@@ -1003,22 +383,920 @@
     "baseCritChance": 0.06,
     "accuracy": 0.82,
     "chanceToUse": 0.45,
-    "selfHpPercentBelow": 1.0,
+    "selfHpPercentBelow": 1,
     "effectsOnHit": [
       {
         "type": "ApplyToken",
-        "token": "Blind",
+        "token": "Clumsy",
         "stacks": 1,
-        "chance": 1.0
+        "chance": 1
       },
       {
         "type": "ApplyDot",
         "dot": "Blight",
         "potency": 3,
         "duration": 3,
-        "chance": 1.0
+        "chance": 1
       }
+    ]
+  },
+  {
+    "id": "wulfric_innate_active1",
+    "name": "Sword cleave",
+    "corruptionCost": 0,
+    "element": "Metal",
+    "type": "Active",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 6,
+      "max": 10
+    },
+    "baseCritChance": 0.02,
+    "accuracy": 0.8,
+    "effectsOnHit": []
+  },
+  {
+    "id": "wulfric_innate_active2",
+    "name": "Taunt",
+    "corruptionCost": 2,
+    "element": "Metal",
+    "type": "Active",
+    "targetKind": "Self",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 1,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Taunt",
+        "stacks": 1,
+        "chance": 1
+      },
+      {
+        "type": "ApplyToken",
+        "token": "ControlledInstability",
+        "stacks": 2,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_innate_active3",
+    "name": "Iron Maiden",
+    "corruptionCost": 3,
+    "element": "Metal",
+    "type": "Active",
+    "targetKind": "UpToThreeEnemies",
+    "baseDamage": {
+      "min": 5,
+      "max": 8
+    },
+    "baseCritChance": 0.03,
+    "accuracy": 0.7,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Destabilization",
+        "stacks": 2,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_innate_active4",
+    "name": "Raise Shield",
+    "corruptionCost": 2,
+    "element": "Metal",
+    "type": "Active",
+    "targetKind": "Self",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 1,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Defense",
+        "stacks": 3,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree1_tier1_active",
+    "name": "Focused Instability",
+    "corruptionCost": 4,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "Self",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 1,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "ControlledInstability",
+        "stacks": 6,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree1_tier2_active",
+    "name": "Re-Stabilization",
+    "corruptionCost": 4,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "Self",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 1,
+    "effectsOnHit": [
+      {
+        "chance": 1,
+        "type": "ConsumeAllTokenStacksHealPerStack",
+        "token": "ControlledInstability",
+        "potency": 1,
+        "effectScope": "Self"
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree1_tier3_active",
+    "name": "Loss of control",
+    "corruptionCost": 6,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "AllEnemies",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 0.75,
+    "effectsOnHit": [
+      {
+        "chance": 1,
+        "type": "ConsumeAllTokenStacksDealDamagePerStack",
+        "token": "ControlledInstability",
+        "potency": 6,
+        "steps": 1,
+        "effectScope": "AllEnemies"
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree2_tier1_active",
+    "name": "Whip Sword",
+    "corruptionCost": 4,
+    "element": "Metal",
+    "type": "Active",
+    "targetKind": "AllEnemies",
+    "baseDamage": {
+      "min": 3,
+      "max": 5
+    },
+    "baseCritChance": 0.03,
+    "accuracy": 0.9,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Destabilization",
+        "stacks": 1,
+        "chance": 1,
+        "scaleFromToken": "ControlledInstability",
+        "scaleStacksPerSourceStack": 2
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree2_tier2_active",
+    "name": "From Body to Blade",
+    "corruptionCost": 6,
+    "element": "Metal",
+    "type": "Active",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 25,
+      "max": 30
+    },
+    "baseCritChance": 0.05,
+    "accuracy": 2,
+    "effectsOnHit": [
+      {
+        "chance": 1,
+        "type": "SelfDamageFlat",
+        "potency": 10,
+        "effectScope": "Self"
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree2_tier3_active",
+    "name": "Unleash Instability",
+    "corruptionCost": 5,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "AllEnemies",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 2,
+    "effectsOnHit": [
+      {
+        "chance": 1,
+        "type": "TriggerDestabilizationOnTargets",
+        "effectScope": "Default"
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree3_tier1_active",
+    "name": "Shield Charge",
+    "corruptionCost": 2,
+    "element": "Metal",
+    "type": "Active",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 2,
+      "max": 4
+    },
+    "baseCritChance": 0.02,
+    "accuracy": 0.9,
+    "bonusDamagePerOwnToken": "Defense",
+    "bonusDamagePerOwnTokenStacks": 1,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Confusion",
+        "stacks": 1,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree3_tier2_active",
+    "name": "Protect The Weak",
+    "corruptionCost": 3,
+    "element": "Metal",
+    "type": "Active",
+    "targetKind": "OneAlly",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 1,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Defense",
+        "stacks": 3,
+        "chance": 1,
+        "scaleFromToken": "ControlledInstability",
+        "scaleStacksPerSourceStack": 1,
+        "scaleStacksSourceDivisor": 2
+      }
+    ]
+  },
+  {
+    "id": "wulfric_tree3_tier3_active",
+    "name": "Shape Shifting Swordsmanship",
+    "corruptionCost": 10,
+    "element": "Metal",
+    "type": "Active",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 7,
+      "max": 9
+    },
+    "baseCritChance": 0.02,
+    "accuracy": 0.6,
+    "hitCount": 5,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Bleeding",
+        "stacks": 1,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "buck_innate_active1",
+    "name": "revolver shot",
+    "type": "Active",
+    "corruptionCost": 0,
+    "element": "Fire",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 8,
+      "max": 13
+    },
+    "baseCritChance": 0.05,
+    "accuracy": 0.55,
+    "effectsOnHit": []
+  },
+  {
+    "id": "buck_innate_active2",
+    "name": "Pistol Draw",
+    "type": "Active",
+    "corruptionCost": 2,
+    "element": "Fire",
+    "targetKind": "UpToThreeEnemies",
+    "baseDamage": {
+      "min": 4,
+      "max": 8
+    },
+    "baseCritChance": 0.07,
+    "accuracy": 0.5,
+    "chanceToNotEndTurn": 0.75,
+    "effectsOnHit": []
+  },
+  {
+    "id": "buck_innate_active3",
+    "name": "Unload ammo",
+    "type": "Active",
+    "corruptionCost": 3,
+    "element": "Fire",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 5,
+      "max": 10
+    },
+    "baseCritChance": 0.06,
+    "accuracy": 0.4,
+    "hitCount": 3,
+    "effectsOnHit": []
+  },
+  {
+    "id": "buck_innate_active4",
+    "name": "Hunting Rifle",
+    "type": "Active",
+    "corruptionCost": 4,
+    "element": "Anomaly",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 15,
+      "max": 25
+    },
+    "baseCritChance": 0.05,
+    "accuracy": 0.8,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Vulnerability",
+        "stacks": 3,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "buck_tree1_tier1_active",
+    "name": "More hands to aim with",
+    "type": "Active",
+    "corruptionCost": 4,
+    "element": "Anomaly",
+    "targetKind": "Self",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 1,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Strength",
+        "stacks": 3,
+        "chance": 1
+      },
+      {
+        "type": "ApplyToken",
+        "token": "Dexterity",
+        "stacks": 3,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "buck_tree1_tier2_active",
+    "name": "Guns for all",
+    "type": "Active",
+    "corruptionCost": 6,
+    "element": "Anomaly",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 0,
+    "followUpSkillIds": [
+      "buck_innate_active2",
+      "buck_innate_active3",
+      "buck_innate_active4"
     ],
-    "comboBonus": []
+    "effectsOnHit": []
+  },
+  {
+    "id": "buck_tree1_tier3_active",
+    "name": "Juggling",
+    "type": "Active",
+    "corruptionCost": 5,
+    "element": "Anomaly",
+    "targetKind": "Self",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 1,
+    "accuracyPenaltyPerLivingEnemy": 0.1,
+    "grantsBonusActionsToAllies": true,
+    "effectsOnHit": []
+  },
+  {
+    "id": "buck_tree2_tier1_active",
+    "name": "Heat Vision",
+    "type": "Active",
+    "corruptionCost": 4,
+    "element": "Anomaly",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 2,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Vulnerability",
+        "stacks": 3,
+        "chance": 1
+      },
+      {
+        "type": "ApplyToken",
+        "token": "Exposition",
+        "stacks": 3,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "buck_tree2_tier2_active",
+    "name": "Corrosive bite",
+    "type": "Active",
+    "corruptionCost": 3,
+    "element": "Anomaly",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 3,
+      "max": 8
+    },
+    "baseCritChance": 0.03,
+    "accuracy": 0.75,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Corrosion",
+        "stacks": 3,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "buck_tree2_tier3_active",
+    "name": "Strangle",
+    "type": "Active",
+    "corruptionCost": 5,
+    "element": "Anomaly",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 0,
+    "computeFromDebuffTypesOnTarget": true,
+    "damagePerDistinctDebuffType": 10,
+    "critChancePerDistinctDebuffType": 0.04,
+    "accuracyPerDistinctDebuffType": 0.3,
+    "effectsOnHit": []
+  },
+  {
+    "id": "buck_tree3_tier1_active",
+    "name": "Challenge for Duel",
+    "type": "Active",
+    "corruptionCost": 3,
+    "element": "Fire",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 0.8,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Mark",
+        "stacks": 3,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "buck_tree3_tier2_active",
+    "name": "Aim for the head",
+    "type": "Active",
+    "corruptionCost": 5,
+    "element": "Fire",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 4,
+      "max": 8
+    },
+    "baseCritChance": 0.25,
+    "accuracy": 0.4,
+    "hitCount": 3,
+    "chanceToNotEndTurn": 0.9,
+    "effectsOnHit": []
+  },
+  {
+    "id": "buck_tree3_tier3_active",
+    "name": "Lucky ammunition",
+    "type": "Active",
+    "corruptionCost": 6,
+    "element": "Anomaly",
+    "targetKind": "Self",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 1,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "LuckyShot",
+        "stacks": 6,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "phase_a_pipeline_test_active",
+    "name": "Phase A Pipeline Test",
+    "corruptionCost": 1,
+    "element": "None",
+    "type": "Active",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 1,
+      "max": 1
+    },
+    "baseCritChance": 0,
+    "accuracy": 1,
+    "hitCount": 1,
+    "effectsOnHit": []
+  },
+  {
+    "id": "maria_innate_active1",
+    "name": "Sound strike",
+    "corruptionCost": 0,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 4,
+      "max": 8
+    },
+    "baseCritChance": 0.01,
+    "accuracy": 0.9,
+    "effectsOnHit": []
+  },
+  {
+    "id": "maria_innate_active2",
+    "name": "Healing voice",
+    "corruptionCost": 4,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "SelfOrAlly",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 0.8,
+    "effectsOnHit": [
+      {
+        "chance": 1,
+        "type": "HealHp",
+        "potency": 5,
+        "amountMax": 10
+      }
+    ]
+  },
+  {
+    "id": "maria_innate_active3",
+    "name": "Amplified Scream",
+    "corruptionCost": 3,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "AllEnemies",
+    "baseDamage": {
+      "min": 3,
+      "max": 6
+    },
+    "baseCritChance": 0,
+    "accuracy": 0.7,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Vulnerability",
+        "stacks": 2,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "maria_innate_active4",
+    "name": "Inspirational song",
+    "corruptionCost": 4,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "SelfAndAlly",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 0.75,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Strength",
+        "stacks": 3,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "maria_tree1_tier1_active",
+    "name": "Echoing regeneration",
+    "corruptionCost": 6,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "SelfAndAlly",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 0.75,
+    "effectsOnHit": [
+      {
+        "chance": 1,
+        "type": "HealHp",
+        "potency": 3,
+        "amountMax": 6
+      },
+      {
+        "type": "ApplyToken",
+        "token": "Regeneration",
+        "stacks": 3,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "maria_tree1_tier2_active",
+    "name": "Refreshing song",
+    "corruptionCost": 6,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "SelfAndAlly",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 0.6,
+    "effectsOnHit": [
+      {
+        "chance": 1,
+        "type": "HealHp",
+        "potency": 5,
+        "amountMax": 10
+      },
+      {
+        "chance": 1,
+        "type": "RemoveAllDebuffTokens"
+      }
+    ]
+  },
+  {
+    "id": "maria_tree1_tier3_active",
+    "name": "Resurrection Hymn",
+    "corruptionCost": 20,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "SelfAndAlly",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 1,
+    "canTargetDeadAllies": true,
+    "effectsOnHit": [
+      {
+        "chance": 1,
+        "type": "HealHp",
+        "potency": 40,
+        "amountMax": 50
+      },
+      {
+        "chance": 1,
+        "type": "RemoveAllDebuffTokens"
+      },
+      {
+        "type": "ApplyToken",
+        "token": "Strength",
+        "stacks": 2,
+        "chance": 1
+      },
+      {
+        "type": "ApplyToken",
+        "token": "Defense",
+        "stacks": 2,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "maria_tree2_tier1_active",
+    "name": "Higher Pitch",
+    "corruptionCost": 4,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "SelfOrAlly",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 0.85,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Dexterity",
+        "stacks": 3,
+        "chance": 1
+      },
+      {
+        "type": "ApplyToken",
+        "token": "LuckyShot",
+        "stacks": 2,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "maria_tree2_tier2_active",
+    "name": "Protection song",
+    "corruptionCost": 5,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "SelfAndAlly",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 0.75,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Defense",
+        "stacks": 4,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "maria_tree2_tier3_active",
+    "name": "Dance of the Revolution",
+    "corruptionCost": 9,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "SelfAndAlly",
+    "baseDamage": {
+      "min": 0,
+      "max": 0
+    },
+    "baseCritChance": 0,
+    "accuracy": 0.85,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Strength",
+        "stacks": 3,
+        "chance": 1
+      },
+      {
+        "type": "ApplyToken",
+        "token": "Defense",
+        "stacks": 3,
+        "chance": 1
+      },
+      {
+        "type": "ApplyToken",
+        "token": "Dexterity",
+        "stacks": 3,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "maria_tree3_tier1_active",
+    "name": "Screech Noise",
+    "corruptionCost": 4,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "OneEnemy",
+    "baseDamage": {
+      "min": 10,
+      "max": 12
+    },
+    "baseCritChance": 0,
+    "accuracy": 0.8,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Clumsy",
+        "stacks": 2,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "maria_tree3_tier2_active",
+    "name": "Piercing Yell",
+    "corruptionCost": 6,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "AllEnemies",
+    "baseDamage": {
+      "min": 7,
+      "max": 9
+    },
+    "baseCritChance": 0,
+    "accuracy": 0.7,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Clumsy",
+        "stacks": 3,
+        "chance": 1
+      }
+    ]
+  },
+  {
+    "id": "maria_tree3_tier3_active",
+    "name": "Chaos Melody",
+    "corruptionCost": 8,
+    "element": "Anomaly",
+    "type": "Active",
+    "targetKind": "AllEnemies",
+    "baseDamage": {
+      "min": 2,
+      "max": 6
+    },
+    "baseCritChance": 0,
+    "accuracy": 0.7,
+    "effectsOnHit": [
+      {
+        "type": "ApplyToken",
+        "token": "Confusion",
+        "stacks": 2,
+        "chance": 1
+      }
+    ]
   }
 ]
