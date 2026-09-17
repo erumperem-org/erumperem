@@ -2554,7 +2554,7 @@ MonoBehaviour:
   moveAction: {fileID: -1680190386980627800, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
   sprintAction: {fileID: 1781555164194001046, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   cameraTransform: {fileID: 967110773}
-  staminaBar: {fileID: 2122651095}
+  staminaBar: {fileID: 0}
   staminaCostPerSecond: 20
   minStaminaToResumeSprint: 15
 --- !u!114 &241325120
@@ -10274,6 +10274,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 2023383099}
   - {fileID: 841089083}
   - {fileID: 1885551068}
   - {fileID: 68310390}
@@ -11283,6 +11284,17 @@ MonoBehaviour:
   saveSubdirectory: TorchData
   saveFileName: torch_state.json
   isTorchLit: 0
+--- !u!114 &521972366 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4392963763336278260, guid: ae08eb99b18dc624a8dace5cd3813983, type: 3}
+  m_PrefabInstance: {fileID: 2122725727}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!114 &530468566 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6216938044915513289, guid: 40d16a26ea203754181b6c5b03817652, type: 3}
@@ -11508,7 +11520,7 @@ MonoBehaviour:
   moveAction: {fileID: -1680190386980627800, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
   sprintAction: {fileID: 1781555164194001046, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   cameraTransform: {fileID: 967110773}
-  staminaBar: {fileID: 2122651095}
+  staminaBar: {fileID: 0}
   staminaCostPerSecond: 20
   minStaminaToResumeSprint: 15
 --- !u!114 &558820879
@@ -14145,7 +14157,7 @@ MonoBehaviour:
   moveAction: {fileID: -1680190386980627800, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
   sprintAction: {fileID: 1781555164194001046, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   cameraTransform: {fileID: 967110773}
-  staminaBar: {fileID: 2122651095}
+  staminaBar: {fileID: 0}
   staminaCostPerSecond: 20
   minStaminaToResumeSprint: 15
 --- !u!114 &905384927
@@ -23720,6 +23732,74 @@ MonoBehaviour:
   labelOffset: 0.25
   data:
     halfExtents: {x: 1, y: 1, z: 1}
+--- !u!1 &2023383098
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2023383099}
+  - component: {fileID: 2023383100}
+  - component: {fileID: 2023383101}
+  m_Layer: 0
+  m_Name: CorruptionBarInstaller
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2023383099
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2023383098}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 72.88321, y: 0, z: 49.05326}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 334687993}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2023383100
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2023383098}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8144403e3f910948a1d44765bbac99c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BarSystem.Bars.Corruption.CorruptionBarInstaller
+  _config: {fileID: 11400000, guid: b96d5fec8776239448f4b48a66f8e132, type: 2}
+  _sliderView: {fileID: 2122651096}
+  _textView: {fileID: 2023383101}
+  _hub: {fileID: 708147244}
+  _growOverTime: 1
+  _growthPerSecond: 0.5
+  _useSmoothing: 1
+  _smoothingSpeed: 4
+  _viewScale: 2
+--- !u!114 &2023383101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2023383098}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87acc325e3736ef44942889b4a3a350c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BarSystem.View.UITextBarView
+  _label: {fileID: 521972366}
+  _format: '{0:0}%'
 --- !u!1 &2023599739
 GameObject:
   m_ObjectHideFlags: 0
@@ -23949,24 +24029,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Slider
---- !u!114 &2122651095
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2122651092}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 207a4c51f1878f74389e6293235480f9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BarSystem.Bars.Stamina.PlayableCharacterStaminaBarInstaller
-  _config: {fileID: 11400000, guid: f21e2c25556a13347b25f6a5a879b4c0, type: 2}
-  _sliderView: {fileID: 2122651096}
-  _regenPerSecond: 10
-  _secondsBeforeRegen: 1
-  _useSmoothing: 1
-  _smoothingSpeed: 8
 --- !u!114 &2122651096
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24432,9 +24494,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7703994878192142880, guid: ae08eb99b18dc624a8dace5cd3813983, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1110105836}
-    - targetCorrespondingSourceObject: {fileID: 6479019863842214678, guid: ae08eb99b18dc624a8dace5cd3813983, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2122651095}
     - targetCorrespondingSourceObject: {fileID: 6479019863842214678, guid: ae08eb99b18dc624a8dace5cd3813983, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2122651096}
