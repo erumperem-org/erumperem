@@ -10281,8 +10281,70 @@ Transform:
   - {fileID: 1306486570}
   - {fileID: 787812843}
   - {fileID: 1236285464}
+  - {fileID: 347610714}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &347610713
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 347610714}
+  - component: {fileID: 347610716}
+  - component: {fileID: 347610715}
+  m_Layer: 0
+  m_Name: UI Binds
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &347610714
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 347610713}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 334687993}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &347610715
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 347610713}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68f144bc51c42494da559501d788bb83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Core.UI.Panels.InputActionPanelToggleTrigger
+  _target: {fileID: 1756996371}
+  _actionReference: {fileID: 7040659881675835329, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+--- !u!114 &347610716
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 347610713}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68f144bc51c42494da559501d788bb83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Core.UI.Panels.InputActionPanelToggleTrigger
+  _target: {fileID: 1981270672}
+  _actionReference: {fileID: -2099379676528639254, guid: 052faaac586de48259a63d0c4782560b, type: 3}
 --- !u!1 &348349366 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 9063482067622149182, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
@@ -17881,6 +17943,32 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 7703994878192142880, guid: ae08eb99b18dc624a8dace5cd3813983, type: 3}
   m_PrefabInstance: {fileID: 2122725727}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1110105836
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1110105832}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82e9737b7ca39dc418236afb6760c232, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HudVisibilityController
+  _hud: {fileID: 1110105832}
+  _panels:
+  - {fileID: 957999874}
+  - {fileID: 1981270672}
+  - {fileID: 1756996371}
+  - {fileID: 78701600}
+  - {fileID: 1391700966}
+  - {fileID: 784414135}
+  - {fileID: 1798793974}
+  - {fileID: 564281241}
+  - {fileID: 2090554711}
+  - {fileID: 350919470}
+  - {fileID: 1547827373}
+  - {fileID: 100687787}
 --- !u!1 &1110114409
 GameObject:
   m_ObjectHideFlags: 0
@@ -24341,6 +24429,9 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7703994878192142880, guid: ae08eb99b18dc624a8dace5cd3813983, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1110105836}
     - targetCorrespondingSourceObject: {fileID: 6479019863842214678, guid: ae08eb99b18dc624a8dace5cd3813983, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2122651095}
