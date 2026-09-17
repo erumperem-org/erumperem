@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(PhysicsMovementService))]
 public class ChaserAI : MonoBehaviour
@@ -213,6 +214,8 @@ public class ChaserAI : MonoBehaviour
     {
         movement.SetMoveDirection(Vector3.zero);
         OnTargetCaught?.Invoke();
+        //Provisório
+        SceneManager.LoadScene("CombatScene");
     }
 
     // ------------------------------------------------------------------
