@@ -20,6 +20,8 @@ public class CursorManager : MonoBehaviour
 {
     public static CursorManager Instance;
 
+    private const string SpecialCursorPrefKey = "PrefSpecialCursorEnabled";
+
     [System.Serializable]
     public class CursorState
     {
@@ -30,7 +32,6 @@ public class CursorManager : MonoBehaviour
 
         [Header("Animated Cursor")]
         public bool animated;
-
         public Texture2D[] frames;
 
         [Min(0.01f)]
@@ -41,23 +42,20 @@ public class CursorManager : MonoBehaviour
     }
 
     [Header("Cursor States")]
-    [SerializeField]
-    private List<CursorState> cursorStates = new();
-
-    private Dictionary<CursorType, CursorState> stateLookup;
-
-    private Coroutine animationRoutine;
-    private Coroutine clickFeedbackRoutine;
-
-    private CursorType currentState;
-
-    private readonly List<RaycastResult> raycastResults = new();
-
-    private PointerEventData pointerEventData;
+    [SerializeField] private List<CursorState> cursorStates = new();
 
     [Header("Click Settings")]
-    [SerializeField]
-    private float clickDuration = 0.15f;
+    [SerializeField] private float clickDuration = 0.15f;
+
+    private Dictionary<CursorType, CursorState> stateLookup;
+    private Coroutine animationRoutine;
+    private Coroutine clickFeedbackRoutine;
+    private CursorType currentState;
+    private readonly List<RaycastResult> raycastResults = new();
+    private PointerEventData pointerEventData;
+    private bool specialCursorEnabled = true;
+
+    public bool SpecialCursorEnabled => specialCursorEnabled;
 
     #region Unity
 
@@ -70,7 +68,6 @@ public class CursorManager : MonoBehaviour
         }
 
         Instance = this;
-
         DontDestroyOnLoad(gameObject);
 
         stateLookup = new Dictionary<CursorType, CursorState>();
@@ -82,17 +79,33 @@ public class CursorManager : MonoBehaviour
                 stateLookup.Add(state.stateType, state);
             }
         }
+
+        specialCursorEnabled = GetSavedSpecialCursorEnabled();
     }
 
     private void Start()
     {
-        SetState(CursorType.Normal);
+        if (specialCursorEnabled)
+        {
+            ApplyState(CursorType.Normal, true);
+        }
+        else
+        {
+            UseSystemCursor();
+        }
     }
 
     private void Update()
     {
-        if (Mouse.current == null)
+        if (!specialCursorEnabled)
+        {
             return;
+        }
+
+        if (Mouse.current == null)
+        {
+            return;
+        }
 
         UpdateCursorState();
     }
@@ -113,12 +126,68 @@ public class CursorManager : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        StopAllCoroutines();
+        StopCursorRoutines();
 
-        animationRoutine = null;
-        clickFeedbackRoutine = null;
+        if (specialCursorEnabled)
+        {
+            ApplyState(CursorType.Normal, true);
+        }
+        else
+        {
+            UseSystemCursor();
+        }
+    }
 
-        SetState(CursorType.Normal);
+    #endregion
+
+    #region Special Cursor Settings
+
+    public void SetSpecialCursorEnabled(bool enabled)
+    {
+        specialCursorEnabled = enabled;
+        SaveSpecialCursorEnabledPreference(enabled);
+        StopCursorRoutines();
+
+        if (specialCursorEnabled)
+        {
+            ApplyState(CursorType.Normal, true);
+        }
+        else
+        {
+            UseSystemCursor();
+        }
+    }
+
+    public static bool GetSavedSpecialCursorEnabled()
+    {
+        return PlayerPrefs.GetInt(SpecialCursorPrefKey, 1) == 1;
+    }
+
+    public static void SaveSpecialCursorEnabledPreference(bool enabled)
+    {
+        PlayerPrefs.SetInt(SpecialCursorPrefKey, enabled ? 1 : 0);
+        PlayerPrefs.Save();
+    }
+
+    private void UseSystemCursor()
+    {
+        StopCursorRoutines();
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+    }
+
+    private void StopCursorRoutines()
+    {
+        if (animationRoutine != null)
+        {
+            StopCoroutine(animationRoutine);
+            animationRoutine = null;
+        }
+
+        if (clickFeedbackRoutine != null)
+        {
+            StopCoroutine(clickFeedbackRoutine);
+            clickFeedbackRoutine = null;
+        }
     }
 
     #endregion
@@ -140,15 +209,16 @@ public class CursorManager : MonoBehaviour
                     StopCoroutine(clickFeedbackRoutine);
                 }
 
-                clickFeedbackRoutine =
-                    StartCoroutine(ClickFeedbackRoutine());
+                clickFeedbackRoutine = StartCoroutine(ClickFeedbackRoutine());
             }
 
             return;
         }
 
         if (clickFeedbackRoutine != null)
+        {
             return;
+        }
 
         if (hoveringInteractable)
         {
@@ -166,6 +236,11 @@ public class CursorManager : MonoBehaviour
 
         clickFeedbackRoutine = null;
 
+        if (!specialCursorEnabled)
+        {
+            yield break;
+        }
+
         bool hoveringInteractable = IsHoveringInteractableUI();
 
         if (hoveringInteractable)
@@ -181,26 +256,26 @@ public class CursorManager : MonoBehaviour
     private bool IsHoveringInteractableUI()
     {
         if (EventSystem.current == null)
+        {
             return false;
+        }
+
+        if (Mouse.current == null)
+        {
+            return false;
+        }
 
         pointerEventData = new PointerEventData(EventSystem.current);
-        pointerEventData.position =
-            Mouse.current.position.ReadValue();
+        pointerEventData.position = Mouse.current.position.ReadValue();
 
         raycastResults.Clear();
-
-        EventSystem.current.RaycastAll(
-            pointerEventData,
-            raycastResults
-        );
+        EventSystem.current.RaycastAll(pointerEventData, raycastResults);
 
         foreach (RaycastResult result in raycastResults)
         {
-            Selectable selectable =
-                result.gameObject.GetComponentInParent<Selectable>();
+            Selectable selectable = result.gameObject.GetComponentInParent<Selectable>();
 
-            if (selectable != null &&
-                selectable.IsInteractable())
+            if (selectable != null && selectable.IsInteractable())
             {
                 return true;
             }
@@ -215,17 +290,24 @@ public class CursorManager : MonoBehaviour
 
     public void SetState(CursorType stateType)
     {
-        if (currentState == stateType &&
-            stateType != CursorType.Click)
+        ApplyState(stateType, false);
+    }
+
+    private void ApplyState(CursorType stateType, bool force)
+    {
+        if (!specialCursorEnabled)
+        {
+            return;
+        }
+
+        if (!force && currentState == stateType && stateType != CursorType.Click)
         {
             return;
         }
 
         if (!stateLookup.TryGetValue(stateType, out CursorState state))
         {
-            Debug.LogWarning(
-                $"Cursor State '{stateType}' não encontrado."
-            );
+            Debug.LogWarning($"Cursor State '{stateType}' não encontrado.");
             return;
         }
 
@@ -237,20 +319,13 @@ public class CursorManager : MonoBehaviour
             animationRoutine = null;
         }
 
-        if (state.animated &&
-            state.frames != null &&
-            state.frames.Length > 0)
+        if (state.animated && state.frames != null && state.frames.Length > 0)
         {
-            animationRoutine =
-                StartCoroutine(AnimateCursor(state));
+            animationRoutine = StartCoroutine(AnimateCursor(state));
         }
         else
         {
-            Cursor.SetCursor(
-                state.staticTexture,
-                state.hotspot,
-                CursorMode.Auto
-            );
+            Cursor.SetCursor(state.staticTexture, state.hotspot, CursorMode.Auto);
         }
     }
 
@@ -258,13 +333,9 @@ public class CursorManager : MonoBehaviour
     {
         int frameIndex = 0;
 
-        while (true)
+        while (specialCursorEnabled)
         {
-            Cursor.SetCursor(
-                state.frames[frameIndex],
-                state.hotspot,
-                CursorMode.Auto
-            );
+            Cursor.SetCursor(state.frames[frameIndex], state.hotspot, CursorMode.Auto);
 
             frameIndex++;
 
@@ -275,6 +346,8 @@ public class CursorManager : MonoBehaviour
 
             yield return new WaitForSeconds(state.frameRate);
         }
+
+        animationRoutine = null;
     }
 
     public CursorType GetCurrentState()
