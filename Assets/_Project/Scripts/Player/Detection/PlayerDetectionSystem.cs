@@ -150,9 +150,9 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
         {
             _available.Remove(interactable);
             var characterSelectionNpc = interactable.GetComponent<CharacterSelectionNpc>();
-            if (characterSelectionNpc != null)
+            if (characterSelectionNpc != null && characterSelectionNpc._canvas != null)
             {
-                characterSelectionNpc._canvas._panel.SetActive(false);
+                characterSelectionNpc._canvas.Close();
             }
         }
 
