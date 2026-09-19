@@ -414,7 +414,7 @@ public sealed class CombatInputController : MonoBehaviour
             return;
         }
 
-        if (skill.TargetKind != SkillTargetKind.Enemy)
+        if (!IsEnemyTarget(skill))
         {
             return;
         }
@@ -435,13 +435,13 @@ public sealed class CombatInputController : MonoBehaviour
             return;
         }
 
-        if (skill.TargetKind == SkillTargetKind.Self)
+        if (IsSelfTarget(skill))
         {
             SetFocusedTarget(actor.Identity.Id);
             return;
         }
 
-        if (skill.TargetKind == SkillTargetKind.Ally)
+        if (IsAllyTarget(skill))
         {
             if (candidates.Count > 0)
             {
@@ -588,14 +588,30 @@ public sealed class CombatInputController : MonoBehaviour
         return true;
     }
 
+
+    private static bool IsEnemyTarget(SkillDefinition skill)
+    {
+        return skill != null && (int)skill.TargetKind == 0;
+    }
+
+    private static bool IsAllyTarget(SkillDefinition skill)
+    {
+        return skill != null && (int)skill.TargetKind == 1;
+    }
+
+    private static bool IsSelfTarget(SkillDefinition skill)
+    {
+        return skill != null && (int)skill.TargetKind == 2;
+    }
+
     private static List<Combatant> ResolveCandidatePool(BattleState battleState, Combatant actor, SkillDefinition skill)
     {
-        if (skill.TargetKind == SkillTargetKind.Self)
+        if (IsSelfTarget(skill))
         {
             return new List<Combatant> { actor };
         }
 
-        if (skill.TargetKind == SkillTargetKind.Ally)
+        if (IsAllyTarget(skill))
         {
             return (actor.Position.Side == Side.Allies ? battleState.Allies : battleState.Enemies).ToList();
         }
