@@ -67,7 +67,11 @@ namespace Erumperem.Progression
         {
             if (_button != null)
             {
-                _button.interactable = state == SkillTreeNodeVisualState.AvailableToUnlock;
+                var canUnlock = state == SkillTreeNodeVisualState.AvailableToUnlock;
+                // Overworld SkillTreeNonInteractPanel disables Buttons in the scene;
+                // re-enable the component so Available nodes can actually unlock.
+                _button.enabled = true;
+                _button.interactable = canUnlock;
             }
 
             if (_resolvedTintTargetImage != null)

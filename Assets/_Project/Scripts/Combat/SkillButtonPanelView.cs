@@ -66,6 +66,10 @@ namespace Erumperem.Combat
 
         private bool _isInteractable;
         private bool _isSelected;
+        private Color _skillIconColor = Color.white;
+        private Selectable.Transition _buttonTransitionBeforeSelectionLock =
+            Selectable.Transition.ColorTint;
+        private bool _isButtonTransitionLockedForSelection;
         private string _playerDescriptionLine = string.Empty;
         private bool _isDescriptionPanelVisible;
         private bool _descriptionLayoutInitialized;
@@ -181,6 +185,12 @@ namespace Erumperem.Combat
             {
                 ForceHideDescriptionPanelImmediate();
                 _lastAppliedIsSelected = null;
+                _isSelected = false;
+                if (_isButtonTransitionLockedForSelection && _skillButton != null)
+                {
+                    _skillButton.transition = _buttonTransitionBeforeSelectionLock;
+                    _isButtonTransitionLockedForSelection = false;
+                }
             }
 
             gameObject.SetActive(visible);
@@ -197,6 +207,7 @@ namespace Erumperem.Combat
             _playerDescriptionLine = PlayerFacingText.PresentForUi(playerDescriptionLine ?? string.Empty);
             _isInteractable = interactable;
             _isSelected = selected;
+            _skillIconColor = skillIconColor;
             TryCacheHotkeyDigitLabel();
             if (_hotkeyDigitLabel != null && hotkeyLabelOneToSeven >= 1 && hotkeyLabelOneToSeven <= 6)
             {
@@ -222,6 +233,7 @@ namespace Erumperem.Combat
 
             if (_rootRectTransform == null)
             {
+                SyncSelectedPressedChrome();
                 return;
             }
 
@@ -244,10 +256,7 @@ namespace Erumperem.Combat
                 {
                     if (selected)
                     {
-                        var targetScale = new Vector3(
-                            SelectedLocalScale * _rootLocalScaleBase.x,
-                            SelectedLocalScale * _rootLocalScaleBase.y,
-                            SelectedLocalScale * _rootLocalScaleBase.z);
+                        var targetScale = GetSelectedRootScale();
                         _rootRectTransform
                             .DOScale(targetScale, SelectionTweenDuration)
                             .SetEase(Ease.OutCubic)
@@ -268,6 +277,13 @@ namespace Erumperem.Combat
                     RestoreRootLayoutForCurrentSelection();
                 }
             }
+            else
+            {
+                // Keep the pressed scale even when Refresh re-applies the same selection.
+                RestoreRootLayoutForCurrentSelection();
+            }
+
+            SyncSelectedPressedChrome();
 
             if (_isDescriptionPanelVisible && _descriptionText != null)
             {
@@ -386,7 +402,7 @@ namespace Erumperem.Combat
 
         private void TweenButtonHoverEnter()
         {
-            if (_buttonRect == null)
+            if (_buttonRect == null || _isSelected)
             {
                 return;
             }
@@ -464,9 +480,69 @@ namespace Erumperem.Combat
             }
 
             _buttonImage.preserveAspect = false;
-            var tintedIconColor = skillIconColor;
-            tintedIconColor.a = interactable ? 1f : 0.45f;
-            _buttonImage.color = tintedIconColor;
+            _skillIconColor = skillIconColor;
+            _buttonImage.color = BuildDisplayedSkillIconColor(skillIconColor, interactable, _isSelected);
+        }
+
+        /// <summary>
+        /// Keeps the currently selected cast skill looking pressed (tint + locked transition),
+        /// independent of hover / ColorTint fighting the icon refresh.
+        /// </summary>
+        private void SyncSelectedPressedChrome()
+        {
+            EnsureButtonReferencesResolved();
+            if (_skillButton == null || _buttonImage == null)
+            {
+                return;
+            }
+
+            if (_isSelected)
+            {
+                if (!_isButtonTransitionLockedForSelection)
+                {
+                    _buttonTransitionBeforeSelectionLock = _skillButton.transition;
+                    _isButtonTransitionLockedForSelection = true;
+                }
+
+                // Prevent Selectable ColorTint from overriding the pressed look on hover/release.
+                _skillButton.transition = Selectable.Transition.None;
+                _buttonImage.color = BuildDisplayedSkillIconColor(
+                    _skillIconColor,
+                    _isInteractable,
+                    isSelected: true);
+                _buttonImage.CrossFadeColor(_buttonImage.color, 0f, true, true);
+                return;
+            }
+
+            if (_isButtonTransitionLockedForSelection)
+            {
+                _skillButton.transition = _buttonTransitionBeforeSelectionLock;
+                _isButtonTransitionLockedForSelection = false;
+            }
+
+            _buttonImage.color = BuildDisplayedSkillIconColor(
+                _skillIconColor,
+                _isInteractable,
+                isSelected: false);
+            _buttonImage.CrossFadeColor(_buttonImage.color, 0f, true, true);
+        }
+
+        private Color BuildDisplayedSkillIconColor(Color skillIconColor, bool interactable, bool isSelected)
+        {
+            var displayedColor = skillIconColor;
+            displayedColor.a = interactable ? skillIconColor.a : skillIconColor.a * 0.45f;
+
+            if (!isSelected || _skillButton == null)
+            {
+                return displayedColor;
+            }
+
+            var pressedTint = _skillButton.colors.pressedColor;
+            return new Color(
+                displayedColor.r * pressedTint.r,
+                displayedColor.g * pressedTint.g,
+                displayedColor.b * pressedTint.b,
+                displayedColor.a * pressedTint.a);
         }
 
         private void CacheParentRow() =>
@@ -476,6 +552,12 @@ namespace Erumperem.Combat
         {
             ForceHideDescriptionPanelImmediate();
             KillTweensOnButtonChrome();
+            if (_isButtonTransitionLockedForSelection && _skillButton != null)
+            {
+                _skillButton.transition = _buttonTransitionBeforeSelectionLock;
+                _isButtonTransitionLockedForSelection = false;
+            }
+
             if (_rootRectTransform != null)
             {
                 RestoreRootLayout();

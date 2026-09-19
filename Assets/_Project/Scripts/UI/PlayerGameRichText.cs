@@ -294,18 +294,7 @@ namespace Erumperem.UI
             };
 
         private static string TokenTypeDisplayName(TokenType tokenType) =>
-            tokenType switch
-            {
-                TokenType.Block => "Block",
-                TokenType.BlockPlus => "Block Plus",
-                TokenType.Dodge => "Dodge",
-                TokenType.Blind => "Blind",
-                TokenType.Taunt => "Taunt",
-                TokenType.Stealth => "Stealth",
-                TokenType.Combo => "Combo",
-                TokenType.Stun => "Stun",
-                _ => tokenType.ToString(),
-            };
+            PlayerFacingText.FormatTokenTypeDisplayName(tokenType);
 
         private static string DotTypeAccentColorHex(DotType dotType) =>
             dotType switch

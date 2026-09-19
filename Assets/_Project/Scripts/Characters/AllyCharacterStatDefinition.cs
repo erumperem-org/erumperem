@@ -36,6 +36,10 @@ namespace Erumperem.Characters
         [Min(0)]
         [SerializeField] private double critChance = 0.05;
 
+        [Tooltip("Incoming damage reduction as a fraction (0.25 = 25%).")]
+        [Min(0)]
+        [SerializeField] private double defenseChance;
+
         [SerializeField] private double burnResistance = 0.15;
         [SerializeField] private double blightResistance = 0.15;
         [SerializeField] private double stunResistance = 0.15;
@@ -64,6 +68,7 @@ namespace Erumperem.Characters
         public int Speed => speed;
         public double Accuracy => accuracy;
         public double CritChance => critChance;
+        public double DefenseChance => defenseChance;
 
         public double BurnResistance => burnResistance;
         public double BlightResistance => blightResistance;
@@ -88,6 +93,7 @@ namespace Erumperem.Characters
                 speed,
                 accuracy,
                 critChance,
+                defenseChance,
                 burnResistance,
                 blightResistance,
                 stunResistance,

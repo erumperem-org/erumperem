@@ -537,6 +537,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: e9950e45d36ee8c4ab0d80afb39cb082, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5531313033600689712}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: e9950e45d36ee8c4ab0d80afb39cb082, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4847117549570778733}
   m_SourcePrefab: {fileID: 100100000, guid: e9950e45d36ee8c4ab0d80afb39cb082, type: 3}
 --- !u!1 &954375284019023373 stripped
 GameObject:
@@ -578,7 +581,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.EnemyAnimationController
   unitAnimator: {fileID: 140942004187059195}
-  idleStateName: Idle
+  _idleStateName: Idle
   attackStateName: Attack
   hitTakenStateName: HitTaken
   deathStateName: Death
@@ -616,3 +619,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2.2001991, y: 3.5049803, z: 1.4575754}
   m_Center: {x: 0.19490041, y: 1.6212535, z: -0.36102748}
+--- !u!114 &4847117549570778733
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 954375284019023373}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e2fa43ff361f14438625a701d6826f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Systems.Audio.CombatantSkillAudio
+  sfxMixerGroup: {fileID: 0}
+  skillSounds: []
+  minDistance: 2
+  maxDistance: 20
