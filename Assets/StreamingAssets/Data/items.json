@@ -1,0 +1,705 @@
+[
+  {
+    "id": "health_potion_small",
+    "displayName": "Health Potion (Small)",
+    "description": "Permanently changes Health (absolute +).",
+    "rarity": "Common",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "health_potion",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Absolute",
+        "intensityRank": 1
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "health_potion_medium",
+    "displayName": "Health Potion (Medium)",
+    "description": "Permanently changes Health (absolute ++).",
+    "rarity": "Rare",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "health_potion",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Absolute",
+        "intensityRank": 2
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "health_potion_big",
+    "displayName": "Health Potion (Big)",
+    "description": "Permanently changes Health (absolute +++).",
+    "rarity": "Epic",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "health_potion",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Absolute",
+        "intensityRank": 3
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "vitality_charm_small",
+    "displayName": "Vitality Charm (Small)",
+    "description": "Permanently changes Health (relative +).",
+    "rarity": "Common",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "vitality_charm",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Relative",
+        "intensityRank": 1
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "vitality_charm_medium",
+    "displayName": "Vitality Charm (Medium)",
+    "description": "Permanently changes Health (relative ++).",
+    "rarity": "Rare",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "vitality_charm",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Relative",
+        "intensityRank": 2
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "vitality_charm_big",
+    "displayName": "Vitality Charm (Big)",
+    "description": "Permanently changes Health (relative +++).",
+    "rarity": "Epic",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "vitality_charm",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Relative",
+        "intensityRank": 3
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "iron_plate_small",
+    "displayName": "Iron Plate (Small)",
+    "description": "Permanently changes Defense (absolute +).",
+    "rarity": "Common",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "iron_plate",
+    "statModifiers": [
+      {
+        "stat": "Defense",
+        "scale": "Absolute",
+        "intensityRank": 1
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "iron_plate_medium",
+    "displayName": "Iron Plate (Medium)",
+    "description": "Permanently changes Defense (absolute ++).",
+    "rarity": "Rare",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "iron_plate",
+    "statModifiers": [
+      {
+        "stat": "Defense",
+        "scale": "Absolute",
+        "intensityRank": 2
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "iron_plate_big",
+    "displayName": "Iron Plate (Big)",
+    "description": "Permanently changes Defense (absolute +++).",
+    "rarity": "Epic",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "iron_plate",
+    "statModifiers": [
+      {
+        "stat": "Defense",
+        "scale": "Absolute",
+        "intensityRank": 3
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "ward_sigil_small",
+    "displayName": "Ward Sigil (Small)",
+    "description": "Permanently changes Defense (relative +).",
+    "rarity": "Common",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "ward_sigil",
+    "statModifiers": [
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": 1
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "ward_sigil_medium",
+    "displayName": "Ward Sigil (Medium)",
+    "description": "Permanently changes Defense (relative ++).",
+    "rarity": "Rare",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "ward_sigil",
+    "statModifiers": [
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": 2
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "ward_sigil_big",
+    "displayName": "Ward Sigil (Big)",
+    "description": "Permanently changes Defense (relative +++).",
+    "rarity": "Epic",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "ward_sigil",
+    "statModifiers": [
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": 3
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "sharp_edge_small",
+    "displayName": "Sharp Edge (Small)",
+    "description": "Permanently changes CriticalChance (absolute +).",
+    "rarity": "Common",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "sharp_edge",
+    "statModifiers": [
+      {
+        "stat": "CriticalChance",
+        "scale": "Absolute",
+        "intensityRank": 1
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "sharp_edge_medium",
+    "displayName": "Sharp Edge (Medium)",
+    "description": "Permanently changes CriticalChance (absolute ++).",
+    "rarity": "Rare",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "sharp_edge",
+    "statModifiers": [
+      {
+        "stat": "CriticalChance",
+        "scale": "Absolute",
+        "intensityRank": 2
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "sharp_edge_big",
+    "displayName": "Sharp Edge (Big)",
+    "description": "Permanently changes CriticalChance (absolute +++).",
+    "rarity": "Epic",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "sharp_edge",
+    "statModifiers": [
+      {
+        "stat": "CriticalChance",
+        "scale": "Absolute",
+        "intensityRank": 3
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "focus_lens_small",
+    "displayName": "Focus Lens (Small)",
+    "description": "Permanently changes CriticalChance (relative +).",
+    "rarity": "Common",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "focus_lens",
+    "statModifiers": [
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": 1
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "focus_lens_medium",
+    "displayName": "Focus Lens (Medium)",
+    "description": "Permanently changes CriticalChance (relative ++).",
+    "rarity": "Rare",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "focus_lens",
+    "statModifiers": [
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": 2
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "focus_lens_big",
+    "displayName": "Focus Lens (Big)",
+    "description": "Permanently changes CriticalChance (relative +++).",
+    "rarity": "Epic",
+    "kind": "IndividualStatus",
+    "iconFamilyId": "focus_lens",
+    "statModifiers": [
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": 3
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "paladin_small",
+    "displayName": "Paladino (Small)",
+    "description": "Paladino (Small): Health +, Defense +, CriticalChance +.",
+    "rarity": "Rare",
+    "kind": "Thematic",
+    "iconFamilyId": "paladin",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Absolute",
+        "intensityRank": 1
+      },
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": 1
+      },
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": 1
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "paladin_big",
+    "displayName": "Paladino (Big)",
+    "description": "Paladino (Big): Health ++, Defense ++, CriticalChance ++.",
+    "rarity": "Epic",
+    "kind": "Thematic",
+    "iconFamilyId": "paladin",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Absolute",
+        "intensityRank": 2
+      },
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": 2
+      },
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": 2
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "paladin_extreme",
+    "displayName": "Paladino (Extreme)",
+    "description": "Paladino (Extreme): Health +++, Defense +++, CriticalChance +++.",
+    "rarity": "Legendary",
+    "kind": "Thematic",
+    "iconFamilyId": "paladin",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Absolute",
+        "intensityRank": 3
+      },
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": 3
+      },
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": 3
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "vampiric_small",
+    "displayName": "Vampírico (Small)",
+    "description": "Vampírico (Small): Health ++, Defense -, CriticalChance ++.",
+    "rarity": "Rare",
+    "kind": "Thematic",
+    "iconFamilyId": "vampiric",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Absolute",
+        "intensityRank": 2
+      },
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": -1
+      },
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": 2
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "vampiric_big",
+    "displayName": "Vampírico (Big)",
+    "description": "Vampírico (Big): Health +++, Defense --, CriticalChance +++.",
+    "rarity": "Epic",
+    "kind": "Thematic",
+    "iconFamilyId": "vampiric",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Absolute",
+        "intensityRank": 3
+      },
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": -2
+      },
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": 3
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "vampiric_extreme",
+    "displayName": "Vampírico (Extreme)",
+    "description": "Vampírico (Extreme): Health ++++, Defense ---, CriticalChance ++++.",
+    "rarity": "Legendary",
+    "kind": "Thematic",
+    "iconFamilyId": "vampiric",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Absolute",
+        "intensityRank": 4
+      },
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": -3
+      },
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": 4
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "living_shield_small",
+    "displayName": "Escudo Vivo (Small)",
+    "description": "Escudo Vivo (Small): Health ++, Defense ++, CriticalChance ---.",
+    "rarity": "Rare",
+    "kind": "Thematic",
+    "iconFamilyId": "living_shield",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Absolute",
+        "intensityRank": 2
+      },
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": 2
+      },
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": -3
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "living_shield_big",
+    "displayName": "Escudo Vivo (Big)",
+    "description": "Escudo Vivo (Big): Health +++, Defense +++, CriticalChance ----.",
+    "rarity": "Epic",
+    "kind": "Thematic",
+    "iconFamilyId": "living_shield",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Absolute",
+        "intensityRank": 3
+      },
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": 3
+      },
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": -4
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "living_shield_extreme",
+    "displayName": "Escudo Vivo (Extreme)",
+    "description": "Escudo Vivo (Extreme): Health ++++, Defense ++++, CriticalChance ----.",
+    "rarity": "Legendary",
+    "kind": "Thematic",
+    "iconFamilyId": "living_shield",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Absolute",
+        "intensityRank": 4
+      },
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": 4
+      },
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": -4
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "cold_blood_small",
+    "displayName": "Sangue Frio (Small)",
+    "description": "Sangue Frio (Small): Defense -, CriticalChance ++.",
+    "rarity": "Rare",
+    "kind": "Thematic",
+    "iconFamilyId": "cold_blood",
+    "statModifiers": [
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": -1
+      },
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": 2
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "cold_blood_big",
+    "displayName": "Sangue Frio (Big)",
+    "description": "Sangue Frio (Big): Defense --, CriticalChance +++.",
+    "rarity": "Epic",
+    "kind": "Thematic",
+    "iconFamilyId": "cold_blood",
+    "statModifiers": [
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": -2
+      },
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": 3
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "cold_blood_extreme",
+    "displayName": "Sangue Frio (Extreme)",
+    "description": "Sangue Frio (Extreme): Defense ---, CriticalChance ++++.",
+    "rarity": "Legendary",
+    "kind": "Thematic",
+    "iconFamilyId": "cold_blood",
+    "statModifiers": [
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": -3
+      },
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": 4
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "berserker_small",
+    "displayName": "Berserker (Small)",
+    "description": "Berserker (Small): Health --, Defense ++, CriticalChance +++.",
+    "rarity": "Rare",
+    "kind": "Thematic",
+    "iconFamilyId": "berserker",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Absolute",
+        "intensityRank": -2
+      },
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": 2
+      },
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": 3
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "berserker_big",
+    "displayName": "Berserker (Big)",
+    "description": "Berserker (Big): Health ---, Defense +++, CriticalChance ++++.",
+    "rarity": "Epic",
+    "kind": "Thematic",
+    "iconFamilyId": "berserker",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Absolute",
+        "intensityRank": -3
+      },
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": 3
+      },
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": 4
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "berserker_extreme",
+    "displayName": "Berserker (Extreme)",
+    "description": "Berserker (Extreme): Health ----, Defense ++++, CriticalChance ++++.",
+    "rarity": "Legendary",
+    "kind": "Thematic",
+    "iconFamilyId": "berserker",
+    "statModifiers": [
+      {
+        "stat": "Health",
+        "scale": "Absolute",
+        "intensityRank": -4
+      },
+      {
+        "stat": "Defense",
+        "scale": "Relative",
+        "intensityRank": 4
+      },
+      {
+        "stat": "CriticalChance",
+        "scale": "Relative",
+        "intensityRank": 4
+      }
+    ],
+    "utilityKind": "None"
+  },
+  {
+    "id": "reset_skill_tree_all",
+    "displayName": "Reset Skill Tree (All)",
+    "description": "Resets invested skill-tree points for Wulfric, Buck Wyatt, and Maria.",
+    "rarity": "Legendary",
+    "kind": "Utility",
+    "iconFamilyId": "reset_skill_tree_all",
+    "statModifiers": [],
+    "utilityKind": "ResetAllSkillTrees"
+  },
+  {
+    "id": "reset_skill_tree_buck",
+    "displayName": "Reset Skill Tree — Buck Wyatt",
+    "description": "Resets invested skill-tree points for Buck Wyatt.",
+    "rarity": "Epic",
+    "kind": "Utility",
+    "iconFamilyId": "reset_skill_tree_buck",
+    "statModifiers": [],
+    "utilityKind": "ResetBuckSkillTree"
+  },
+  {
+    "id": "reset_skill_tree_wulfric",
+    "displayName": "Reset Skill Tree — Wulfric",
+    "description": "Resets invested skill-tree points for Wulfric.",
+    "rarity": "Epic",
+    "kind": "Utility",
+    "iconFamilyId": "reset_skill_tree_wulfric",
+    "statModifiers": [],
+    "utilityKind": "ResetWulfricSkillTree"
+  },
+  {
+    "id": "reset_skill_tree_maria",
+    "displayName": "Reset Skill Tree — Maria",
+    "description": "Resets invested skill-tree points for Maria (The Star). Spec name Matsuda maps to characterId maria; there is no Matsuda combat kit.",
+    "rarity": "Epic",
+    "kind": "Utility",
+    "iconFamilyId": "reset_skill_tree_maria",
+    "statModifiers": [],
+    "utilityKind": "ResetMariaSkillTree"
+  }
+]

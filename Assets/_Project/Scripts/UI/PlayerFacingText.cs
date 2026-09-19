@@ -7,6 +7,7 @@ using Game.Core.Domain;
 using Game.Core.Models;
 using Game.Core.Passives;
 using Game.Core.Presentation;
+using Erumperem.Combat;
 using Erumperem.Progression;
 using UnityEngine;
 
@@ -69,53 +70,6 @@ namespace Erumperem.UI
             ["Puxar o gatilho"] = "Pull the Trigger",
             ["Abrir fogo"] = "Open Fire",
             ["Aranha Stunadora"] = "Stunner Spider"
-        };
-
-        private static readonly Dictionary<string, string> SkillIdToDisplayName = new(StringComparer.OrdinalIgnoreCase)
-        {
-            ["wulfric_innate_cleave"] = "Talho direto",
-            ["wulfric_innate_shove"] = "Empurrão brutal",
-            ["wulfric_innate_guard"] = "Postura de lobo",
-            ["f_t1_a1"] = "Rasgar tendão",
-            ["f_t2_a1"] = "Fio candente",
-            ["f_t3_a1"] = "Execução de leilão",
-            ["m_t1_a1"] = "Remendar couraça",
-            ["m_t2_a1"] = "Muralha",
-            ["m_t3_a1"] = "Salvaguarda",
-            ["a_t1_a1"] = "Fio da anomalia",
-            ["a_t2_a1"] = "Puxar o véu",
-            ["a_t3_a1"] = "Abrir o vão",
-            ["corrupted_miner_punch"] = "Soco Normal",
-            ["corrupted_miner_throw_rock"] = "Lança Pedra",
-            ["corrupted_miner_lightning_rod"] = "Para-raio",
-            ["corrupted_miner_distorted_laser"] = "Laser Distorcido",
-            ["corrupted_miner_amethist_giro_turbina"] = "Giro Turbina (Ametista)",
-            ["corrupted_miner_aghata_giro_turbina"] = "Giro Turbina (Ágata)",
-            ["corrupted_miner_citrine_giro_turbina"] = "Giro Turbina (Citrino)",
-            ["corrupted_miner_emerald_giro_turbina"] = "Giro Turbina (Esmeralda)",
-            ["beacon_of_desire_iron_lash"] = "Açoite Metálico",
-            ["beacon_of_desire_hypnotic_glare"] = "Brilho Hipnótico",
-            ["beacon_of_desire_addiction_whisper"] = "Sussurro do Vício",
-            ["beacon_of_desire_armor_collapse"] = "Colapso da Armadura",
-            ["enemy_claw"] = "Garra",
-            ["spider_bite"] = "Bite",
-            ["spider_web"] = "Web",
-            ["buck_innate_cleave"] = "Disparo rápido",
-            ["buck_innate_shove"] = "Empurrão do coldre",
-            ["buck_innate_guard"] = "Postura do duelista",
-            ["b_f_t1_a1"] = "Tiro incendiário",
-            ["b_f_t2_a1"] = "Rajada flamejante",
-            ["b_f_t3_a1"] = "Execução do pistoleiro",
-            ["b_m_t1_a1"] = "Reforço de couro",
-            ["b_m_t2_a1"] = "Barricada",
-            ["b_m_t3_a1"] = "Último recurso",
-            ["b_a_t1_a1"] = "Fio do revólver",
-            ["b_a_t2_a1"] = "Puxar o gatilho",
-            ["b_a_t3_a1"] = "Abrir fogo",
-            ["horse_boss_sharp_claws"] = "Garras afiadas",
-            ["horse_boss_painful_bite"] = "Mordida dilacerante",
-            ["horse_boss_chilling_howl"] = "Uivo gelado",
-            ["horse_boss_blinding_vomit"] = "Vómito cegante",
         };
 
         public static string FormatCombatantName(string name)
@@ -215,11 +169,47 @@ namespace Erumperem.UI
         public static string ApplyRichMarkupForTextMeshPro(string alreadyLocalizedText) =>
             PlayerGameRichText.ExpandAuthoringMarkupToTextMeshPro(alreadyLocalizedText ?? string.Empty);
 
+        public static string FormatSkillTreeNodeTitle(SkillTreeNodeAsset nodeAsset)
+        {
+            if (nodeAsset == null)
+            {
+                return string.Empty;
+            }
+
+            if (CombatCatalogRuntimeLookup.TryGetSkill(nodeAsset.NodeId, out var catalogSkill))
+            {
+                return TranslateToEnglish(catalogSkill.Name);
+            }
+
+            if (nodeAsset.IsPassiveNode)
+            {
+                if (!string.IsNullOrWhiteSpace(nodeAsset.DisplayName) &&
+                    !string.Equals(nodeAsset.DisplayName, nodeAsset.NodeId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return TranslateToEnglish(nodeAsset.DisplayName);
+                }
+
+                return "Passive";
+            }
+
+            return TranslateToEnglish(nodeAsset.DisplayName);
+        }
+
         public static string FormatSkillTreeNodeDescription(SkillTreeNodeAsset nodeAsset)
         {
             if (nodeAsset == null)
             {
                 return string.Empty;
+            }
+
+            if (CombatCatalogRuntimeLookup.TryGetPassive(nodeAsset.NodeId, out var catalogPassive))
+            {
+                return PresentForUi(DescribePassiveDefinitionInDetail(catalogPassive));
+            }
+
+            if (CombatCatalogRuntimeLookup.TryGetSkill(nodeAsset.NodeId, out var catalogSkill))
+            {
+                return PresentForUi(SkillPlayerDescriptionBuilder.BuildSummaryLine(catalogSkill));
             }
 
             if (nodeAsset.IsPassiveNode)
@@ -282,20 +272,18 @@ namespace Erumperem.UI
                 return $"Passive «{passiveLabel}» activated.";
             }
 
-            var relatedSkillRef = string.IsNullOrEmpty(combatEvent.PassiveRelatedSkillId)
-                ? string.Empty
-                : FormatSkillReference(combatEvent.PassiveRelatedSkillId);
+            var relatedSkill = NodeOrSkillDisplayName(combatEvent.PassiveRelatedSkillId);
             var bonusPct = FormatPercentFromFraction(combatEvent.PassiveMagnitude);
 
             return kind switch
             {
-                PassiveEffectKind.OutgoingDamageVsSkillId or
-                    PassiveEffectKind.OutgoingDamageVsDotOnTarget or
-                    PassiveEffectKind.OutgoingDamagePenaltyWhenToken or
-                    PassiveEffectKind.OutgoingDamageAfterPrerequisiteSkill or
-                    PassiveEffectKind.OutgoingDamageVsSkillIfTargetHasDot =>
-                    $"Passive «{passiveLabel}»: +{bonusPct} damage on this hit " +
-                    $"{(string.IsNullOrEmpty(relatedSkillRef) ? string.Empty : $"(skill {relatedSkillRef})")}.",
+                PassiveEffectKind.DamageCausedVsSkillId or
+                    PassiveEffectKind.DamageCausedVsDotOnTarget or
+                    PassiveEffectKind.DamageCausedPenaltyWhenToken or
+                    PassiveEffectKind.DamageCausedAfterPrerequisiteSkill or
+                    PassiveEffectKind.DamageCausedVsSkillIfTargetHasDot =>
+                    $"Passive «{passiveLabel}»: Damage Caused +{bonusPct} on this hit " +
+                    $"{(string.IsNullOrEmpty(relatedSkill) ? string.Empty : $"(skill «{relatedSkill}»)")}.",
                 PassiveEffectKind.IncomingDamageMultiplierWhenHpBelow =>
                     $"Passive «{passiveLabel}»: incoming damage ×{FormatMultiplier(combatEvent.PassiveMagnitude)} (low HP).",
                 PassiveEffectKind.ExtraHealPercentOnSelfSkill when combatEvent.PassiveAuxInt > 0 =>
@@ -366,35 +354,14 @@ namespace Erumperem.UI
 
         private static string NodeOrSkillDisplayName(string nodeOrSkillId)
         {
-            if (string.IsNullOrEmpty(nodeOrSkillId))
+            if (string.IsNullOrEmpty(nodeOrSkillId)) return string.Empty;
+            if (CombatCatalogRuntimeLookup.TryGetSkill(nodeOrSkillId, out var catalogSkill))
             {
-                return string.Empty;
-            }
-
-            if (SkillIdToDisplayName.TryGetValue(nodeOrSkillId, out var skillDisplayName))
-            {
-                return TranslateToEnglish(skillDisplayName);
+                return TranslateToEnglish(catalogSkill.Name);
             }
 
             EnsureNodeNameCache();
-            return _nodeIdToDisplayName.TryGetValue(nodeOrSkillId, out var name)
-                ? name
-                : TranslateToEnglish(nodeOrSkillId);
-        }
-
-        private static string FormatTechnicalIdentifierForUi(string technicalId)
-        {
-            if (string.IsNullOrEmpty(technicalId))
-            {
-                return string.Empty;
-            }
-
-            if (SkillIdToDisplayName.ContainsKey(technicalId))
-            {
-                return FormatSkillReference(technicalId);
-            }
-
-            return NodeOrSkillDisplayName(technicalId);
+            return _nodeIdToDisplayName.TryGetValue(nodeOrSkillId, out var name) ? name : TranslateToEnglish(nodeOrSkillId);
         }
 
         private static string PresentLine(string line, BattleState battleContext)
@@ -420,12 +387,12 @@ namespace Erumperem.UI
             trimmed = Regex.Replace(
                 trimmed,
                 @"(?i)\bskill\s*:\s*(\S+)",
-                match => $"Skill: {FormatSkillReference(match.Groups[1].Value)}");
+                match => $"Skill: '{NodeOrSkillDisplayName(match.Groups[1].Value)}'");
 
             trimmed = Regex.Replace(
                 trimmed,
                 @"\b([a-z]+_[a-z0-9_]+)\b",
-                match => FormatTechnicalIdentifierForUi(match.Groups[1].Value));
+                match => NodeOrSkillDisplayName(match.Groups[1].Value));
 
             trimmed = Regex.Replace(
                 trimmed,
@@ -446,6 +413,17 @@ namespace Erumperem.UI
 
         public static string DescribePassiveDefinitionInDetail(PassiveDefinition def)
         {
+            if (def.HasDataDrivenEffects)
+            {
+                var dataDrivenSummary = PassivePlayerDescriptionBuilder.BuildSummaryLine(
+                    def,
+                    CombatCatalogRuntimeLookup.SkillsById);
+                if (!string.IsNullOrWhiteSpace(dataDrivenSummary))
+                {
+                    return dataDrivenSummary;
+                }
+            }
+
             var skillRef = FormatSkillReference(def.SkillId);
             var prerequisiteSkillRef = FormatSkillReference(def.PrerequisiteSkillId);
             var dotName = def.DotType.HasValue ? FormatDotTypeDisplayName(def.DotType.Value) : string.Empty;
@@ -459,15 +437,15 @@ namespace Erumperem.UI
 
             return def.EffectKind switch
             {
-                PassiveEffectKind.OutgoingDamageVsSkillId =>
-                    $"When using {skillRef}, deals +{additivePercent} damage.",
+                PassiveEffectKind.DamageCausedVsSkillId =>
+                    $"When using {skillRef}, Damage Caused +{additivePercent}.",
 
-                PassiveEffectKind.OutgoingDamageVsDotOnTarget when def.AdditivePerStack > 0 && def.Cap > 0 =>
-                    $"Deals +{perStackPercent} damage against targets with {dotName} for each stack of {dotName} " +
+                PassiveEffectKind.DamageCausedVsDotOnTarget when def.AdditivePerStack > 0 && def.Cap > 0 =>
+                    $"Damage Caused +{perStackPercent} against targets with {dotName} for each stack of {dotName} " +
                     $"(up to +{capPercent}).",
 
-                PassiveEffectKind.OutgoingDamageVsDotOnTarget =>
-                    $"Deals +{additivePercent} damage against targets with {dotName}.",
+                PassiveEffectKind.DamageCausedVsDotOnTarget =>
+                    $"Damage Caused +{additivePercent} against targets with {dotName}.",
 
                 PassiveEffectKind.DotDurationBonus when def.IntValue2 > 0 =>
                     $"Your {dotName} effects last +{FormatTurnCountWithUnit(def.IntValue)} " +
@@ -479,16 +457,16 @@ namespace Erumperem.UI
                 PassiveEffectKind.IncomingDamageMultiplierWhenHpBelow =>
                     FormatIncomingDamageMultiplierBelowHp(def.Additive, hpThresholdPercent),
 
-                PassiveEffectKind.OutgoingDamagePenaltyWhenToken =>
-                    FormatOutgoingDamageWhileTokenIsActive(def.Additive, def.TokenType),
+                PassiveEffectKind.DamageCausedPenaltyWhenToken =>
+                    FormatDamageCausedWhileTokenIsActive(def.Additive, def.TokenType),
 
-                PassiveEffectKind.OutgoingDamageAfterPrerequisiteSkill =>
-                    $"After using {prerequisiteSkillRef}, the next {skillRef} deals +{additivePercent} damage.",
+                PassiveEffectKind.DamageCausedAfterPrerequisiteSkill =>
+                    $"After using {prerequisiteSkillRef}, the next {skillRef} has Damage Caused +{additivePercent}.",
 
                 PassiveEffectKind.ExtraTokenOnSelfSkill =>
                     $"When using {skillRef} on self, gains " +
                     $"{FormatTokenStackCountWithUnit(Math.Max(1, def.IntValue))} additional " +
-                    $"{(def.TokenType.HasValue ? FormatTokenTypeDisplayName(def.TokenType.Value) : "token")}.",
+                    $"{(def.TokenType.HasValue ? FormatTokenTypeDisplayName(def.TokenType.Value) : "Status")}.",
 
                 PassiveEffectKind.ExtraHealPercentOnSelfSkill =>
                     $"When using {skillRef} on self, would restore {FormatPlainPercent(def.Additive)} of Max HP, " +
@@ -497,8 +475,8 @@ namespace Erumperem.UI
                 PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot =>
                     FormatApplyExtraDot(def, skillRef, dotName),
 
-                PassiveEffectKind.OutgoingDamageVsSkillIfTargetHasDot =>
-                    $"When using {skillRef} against a target with {dotName}, deals +{additivePercent} damage.",
+                PassiveEffectKind.DamageCausedVsSkillIfTargetHasDot =>
+                    $"When using {skillRef} against a target with {dotName}, Damage Caused +{additivePercent}.",
 
                 PassiveEffectKind.DotTickDamageBonusWhenTargetHpBelow =>
                     $"Your {dotName} effects deal +{additivePercent} damage per turn while " +
@@ -518,7 +496,7 @@ namespace Erumperem.UI
                 return "this skill";
             }
 
-            return $"[c buff]{NodeOrSkillDisplayName(skillId)}[/c]";
+            return $"«{NodeOrSkillDisplayName(skillId)}»";
         }
 
         private static string FormatIncomingDamageMultiplierBelowHp(double multiplier, string hpThresholdPercent)
@@ -540,17 +518,17 @@ namespace Erumperem.UI
                    $"more damage (multiplier ×{FormatMultiplier(multiplier)}).";
         }
 
-        private static string FormatOutgoingDamageWhileTokenIsActive(double additive, TokenType? tokenType)
+        private static string FormatDamageCausedWhileTokenIsActive(double additive, TokenType? tokenType)
         {
-            var tokenName = tokenType.HasValue ? FormatTokenTypeDisplayName(tokenType.Value) : "this token";
+            var tokenName = tokenType.HasValue ? FormatTokenTypeDisplayName(tokenType.Value) : "this Status";
             if (additive < 0)
             {
                 var penaltyPercent = FormatPercentFromFraction(-additive);
-                return $"Deals {penaltyPercent} less damage while carrying {tokenName}.";
+                return $"Damage Caused -{penaltyPercent} while carrying {tokenName}.";
             }
 
             var bonusPercent = FormatPercentFromFraction(additive);
-            return $"Deals +{bonusPercent} damage while carrying {tokenName}.";
+            return $"Damage Caused +{bonusPercent} while carrying {tokenName}.";
         }
 
         private static string FormatApplyExtraDot(PassiveDefinition def, string skillRef, string dotName)
@@ -565,7 +543,7 @@ namespace Erumperem.UI
         {
             if (def.GrantTokenType is null)
             {
-                return "At the start of your turn, gain a token based on configured conditions.";
+                return "At the start of your turn, gain a Status based on configured conditions.";
             }
 
             var stacks = Math.Max(1, def.IntValue);
@@ -600,14 +578,36 @@ namespace Erumperem.UI
         public static string FormatTokenTypeDisplayName(TokenType tokenType) =>
             tokenType switch
             {
-                TokenType.Block => "Block",
-                TokenType.BlockPlus => "Block+",
-                TokenType.Dodge => "Dodge",
-                TokenType.Blind => "Blind",
                 TokenType.Taunt => "Taunt",
                 TokenType.Stealth => "Stealth",
-                TokenType.Combo => "Combo",
                 TokenType.Stun => "Stun",
+                TokenType.ControlledInstability => "Controlled Instability",
+                TokenType.Destabilization => "Destabilization",
+                TokenType.Strength => "Strength",
+                TokenType.Defense => "Defense",
+                TokenType.Weaken => "Weaken",
+                TokenType.Vulnerability => "Vulnerability",
+                TokenType.Confusion => "Confusion",
+                TokenType.Bleeding => "Bleeding",
+                TokenType.LuckyShot => "Lucky Shot",
+                TokenType.Dexterity => "Dexterity",
+                TokenType.Exposition => "Exposition",
+                TokenType.Corrosion => "Corrosion",
+                TokenType.Mark => "Mark",
+                TokenType.Regeneration => "Regeneration",
+                TokenType.Clumsy => "Clumsy",
+                TokenType.BonusAction => "Bonus Action",
+                TokenType.Hypnosis => "Hypnosis",
+                TokenType.Dizzy => "Dizzy",
+                TokenType.Burn => "Burn",
+                TokenType.PermaStrength => "Perma Strength",
+                TokenType.PermaDefense => "Perma Defense",
+                TokenType.PermaWeaken => "Perma Weaken",
+                TokenType.PermaVulnerability => "Perma Vulnerability",
+                TokenType.PermaDexterity => "Perma Dexterity",
+                TokenType.PermaClumsy => "Perma Clumsy",
+                TokenType.PermaExposition => "Perma Exposition",
+                TokenType.PermaStealth => "Perma Stealth",
                 _ => tokenType.ToString(),
             };
 
@@ -638,19 +638,19 @@ namespace Erumperem.UI
         public static string DescribePassiveEffectKind(PassiveEffectKind kind) =>
             kind switch
             {
-                PassiveEffectKind.OutgoingDamageVsSkillId =>
-                    "Increases damage dealt when using a specific skill.",
-                PassiveEffectKind.OutgoingDamageVsDotOnTarget =>
-                    "Increases damage against targets suffering from a specific damage-over-time (DoT) effect.",
-                PassiveEffectKind.OutgoingDamageVsSkillIfTargetHasDot =>
-                    "Increases damage of a specific skill if the target already carries a specific DoT.",
+                PassiveEffectKind.DamageCausedVsSkillId =>
+                    "Increases Damage Caused when using a specific skill.",
+                PassiveEffectKind.DamageCausedVsDotOnTarget =>
+                    "Increases Damage Caused against targets suffering from a specific damage-over-time (DoT) effect.",
+                PassiveEffectKind.DamageCausedVsSkillIfTargetHasDot =>
+                    "Increases Damage Caused of a specific skill if the target already carries a specific DoT.",
                 PassiveEffectKind.DotDurationBonus => "Increases the duration of a DoT applied by you.",
                 PassiveEffectKind.IncomingDamageMultiplierWhenHpBelow =>
                     "Modifies incoming damage when your HP is below a threshold.",
-                PassiveEffectKind.OutgoingDamagePenaltyWhenToken =>
-                    "Modifies your damage while you carry certain tokens.",
-                PassiveEffectKind.OutgoingDamageAfterPrerequisiteSkill =>
-                    "After using a setup skill, the next cast of another skill gains bonus damage.",
+                PassiveEffectKind.DamageCausedPenaltyWhenToken =>
+                    "Modifies Damage Caused while you carry certain tokens.",
+                PassiveEffectKind.DamageCausedAfterPrerequisiteSkill =>
+                    "After using a setup skill, the next cast of another skill gains Damage Caused.",
                 PassiveEffectKind.ExtraTokenOnSelfSkill =>
                     "Gain extra tokens when using specific self-targeted skills.",
                 PassiveEffectKind.ExtraHealPercentOnSelfSkill =>

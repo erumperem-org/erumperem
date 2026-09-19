@@ -125,7 +125,8 @@ namespace Erumperem.Progression
             var path = Path.Combine(Application.streamingAssetsPath, _skillTreesResourceRelativePath);
             if (!File.Exists(path))
             {
-                Debug.LogError($"PlayerProgressionService: missing {path}. Copy skill_trees.json to StreamingAssets/Data.");
+                Debug.LogError(
+                    $"PlayerProgressionService: missing {path}. Run Erumperem/Combat/Export Catalog so skill_trees.json lives in StreamingAssets/Data.");
                 _skillTreesCatalog = Array.Empty<CharacterSkillTreesDefinition>();
                 _isSkillTreesCatalogLoaded = false;
                 return;

@@ -15,7 +15,7 @@ namespace Erumperem.Combat
         [SerializeField] private Animator unitAnimator;
 
         [Header("Animator state names (Base Layer)")]
-        [SerializeField] private string _idleStateName = "Idle";
+        [SerializeField] private string idleStateName = "Idle";
         [SerializeField] private string attackStateName = "Attack";
         [SerializeField] private string hitTakenStateName = "HitTaken";
         [SerializeField] private string deathStateName = "Death";
@@ -66,23 +66,21 @@ namespace Erumperem.Combat
         /// <summary>Duração do clip de Attack (nome do estado ou do clip) + margem.</summary>
         public float ComputeAttackPresentationDurationSeconds(float marginSeconds)
         {
-            // Escala a duração base da animação com base no multiplicador de velocidade de combate
-            float rawDuration = TryResolveClipLengthSeconds(attackStateName, attackClipLengthFallbackSeconds) + marginSeconds;
-            return Mathf.Max(0.05f, rawDuration / CombatSpeedSettings.SpeedMultiplier);
+            return Mathf.Max(0.05f, TryResolveClipLengthSeconds(attackStateName, attackClipLengthFallbackSeconds) + marginSeconds);
         }
 
         /// <summary>Duração do clip de HitTaken (nome do estado ou do clip) + margem.</summary>
         public float ComputeHitTakenPresentationDurationSeconds(float marginSeconds)
         {
-            float rawDuration = TryResolveClipLengthSeconds(hitTakenStateName, hitTakenClipLengthFallbackSeconds) + marginSeconds;
-            return Mathf.Max(0.05f, rawDuration / CombatSpeedSettings.SpeedMultiplier);
+            return Mathf.Max(0.05f,
+                TryResolveClipLengthSeconds(hitTakenStateName, hitTakenClipLengthFallbackSeconds) +
+                marginSeconds);
         }
 
         /// <summary>Duração do clip de Death + margem após o clip (ex.: 1 s).</summary>
         public float ComputeDeathPresentationWaitSeconds(float marginAfterClipSeconds)
         {
-            float rawDuration = TryResolveClipLengthSeconds(deathStateName, deathClipLengthFallbackSeconds) + marginAfterClipSeconds;
-            return Mathf.Max(0.05f, rawDuration / CombatSpeedSettings.SpeedMultiplier);
+            return Mathf.Max(0.05f, TryResolveClipLengthSeconds(deathStateName, deathClipLengthFallbackSeconds) + marginAfterClipSeconds);
         }
 
         /// <summary>Chamado uma vez por ação do ator: reproduz Attack durante <paramref name="holdAttackStateSeconds"/> e volta a Idle.</summary>
@@ -94,12 +92,11 @@ namespace Erumperem.Combat
             }
 
             StopAttackReturnRoutine();
-            unitAnimator.speed = CombatSpeedSettings.SpeedMultiplier; // Define velocidade acelerada
             unitAnimator.CrossFade(attackStateName, crossFadeSeconds, 0, 0f);
             _attackReturnToIdleRoutine = StartCoroutine(AttackHoldThenIdleRoutine(holdAttackStateSeconds));
         }
 
-        /// <summary>Chamado uma vez por ação do ator: reproduz HitTaken durante <paramref name="holdHitTakenStateSeconds"/> e volta a Idle.</summary>
+        /// <summary>Chamado uma vez por ação do ator: reproduz HitTaken durante <paramref name="hitTakenStateSeconds"/> e volta a Idle.</summary>
         public void NotifyHitTakenPresentationBegin(float holdHitTakenStateSeconds)
         {
             if (_deathVisualSequenceStarted || unitAnimator == null)
@@ -108,10 +105,11 @@ namespace Erumperem.Combat
             }
 
             StopHitTakenReturnRoutine();
+
             SpawnHitTakenVfx();
 
-            unitAnimator.speed = CombatSpeedSettings.SpeedMultiplier; // Define velocidade acelerada
             unitAnimator.CrossFade(hitTakenStateName, crossFadeSeconds, 0, 0f);
+
             _hitTakenReturnToIdleRoutine =
                 StartCoroutine(HitTakenHoldThenIdleRoutine(holdHitTakenStateSeconds));
         }
@@ -144,7 +142,6 @@ namespace Erumperem.Combat
 
             _deathVisualSequenceStarted = true;
             StopAttackReturnRoutine();
-            unitAnimator.speed = CombatSpeedSettings.SpeedMultiplier; // Define velocidade acelerada
             unitAnimator.CrossFade(deathStateName, crossFadeSeconds, 0, 0f);
             var waitSeconds = ComputeDeathPresentationWaitSeconds(marginAfterClipSeconds);
             _deathVisualRoutine = StartCoroutine(DeathWaitThenDespawnRoutine(waitSeconds));
@@ -171,13 +168,12 @@ namespace Erumperem.Combat
 
         private void StopHitTakenReturnRoutine()
         {
-            if (_hitTakenReturnToRoutine() != null)
+            if (_hitTakenReturnToIdleRoutine != null)
             {
-                StopCoroutine(_hitTakenReturnToRoutine());
+                StopCoroutine(_hitTakenReturnToIdleRoutine);
+                _hitTakenReturnToIdleRoutine = null;
             }
         }
-
-        private Coroutine _hitTakenReturnToRoutine() => _hitTakenReturnToIdleRoutine;
 
         private IEnumerator AttackHoldThenIdleRoutine(float holdAttackStateSeconds)
         {
@@ -185,28 +181,29 @@ namespace Erumperem.Combat
             _attackReturnToIdleRoutine = null;
             if (!_deathVisualSequenceStarted && unitAnimator != null)
             {
-                unitAnimator.speed = 1.0f; // Restaura para velocidade padrão
-                unitAnimator.CrossFade(_idleStateName, crossFadeSeconds, 0, 0f);
+                unitAnimator.CrossFade(idleStateName, crossFadeSeconds, 0, 0f);
             }
         }
 
         private IEnumerator HitTakenHoldThenIdleRoutine(float holdHitTakenStateSeconds)
         {
             yield return new WaitForSeconds(holdHitTakenStateSeconds);
+
             _hitTakenReturnToIdleRoutine = null;
+
             if (!_deathVisualSequenceStarted && unitAnimator != null)
             {
-                unitAnimator.speed = 1.0f; // Restaura para velocidade padrão
-                unitAnimator.CrossFade(_idleStateName, crossFadeSeconds, 0, 0f);
+                unitAnimator.CrossFade(idleStateName, crossFadeSeconds, 0, 0f);
             }
         }
+
 
         private IEnumerator DeathWaitThenDespawnRoutine(float waitBeforeShrinkSeconds)
         {
             yield return new WaitForSeconds(waitBeforeShrinkSeconds);
             var despawnTweenId = GetInstanceID();
             transform.DOKill(false);
-            var punch = transform.DOPunchScale(
+            transform.DOPunchScale(
                     deathDespawnPunchScale,
                     deathDespawnPunchDurationSeconds,
                     deathDespawnPunchVibrato,
@@ -214,9 +211,6 @@ namespace Erumperem.Combat
                 .SetId(despawnTweenId)
                 .SetLink(gameObject)
                 .OnComplete(PlayDeathScaleDownTween);
-
-            // Escala a velocidade do punch de desaparecimento
-            punch.timeScale = CombatSpeedSettings.SpeedMultiplier;
             _deathVisualRoutine = null;
         }
 
@@ -224,14 +218,11 @@ namespace Erumperem.Combat
         {
             var despawnTweenId = GetInstanceID();
             transform.DOKill(false);
-            var scaleDown = transform.DOScale(Vector3.zero, deathDespawnScaleDownDurationSeconds)
+            transform.DOScale(Vector3.zero, deathDespawnScaleDownDurationSeconds)
                 .SetEase(Ease.InCubic)
                 .SetId(despawnTweenId)
                 .SetLink(gameObject)
                 .OnComplete(FinishDeathVisualSequence);
-
-            // Escala a velocidade do encolhimento
-            scaleDown.timeScale = CombatSpeedSettings.SpeedMultiplier;
         }
 
         private void FinishDeathVisualSequence()

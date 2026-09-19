@@ -32,58 +32,68 @@ public static class PlayerActionBuilder
             return null;
         }
 
-        Combatant target;
-        if (skill.TargetKind == SkillTargetKind.Self)
+        if (!IsValidPlayerClickTarget(state, actor, skill, selectedTarget))
         {
-            target = actor;
+            return null;
         }
-        else if (skill.TargetKind == SkillTargetKind.Ally)
+
+        var primaryTargets = SkillTargetResolver.ResolvePrimaryTargets(state, actor, skill, selectedTarget);
+        if (primaryTargets.Count == 0)
         {
-            var sameSide = actor.Position.Side == Side.Allies ? state.Allies : state.Enemies;
-            var allies = sameSide.Where(combatant => !combatant.Health.IsDead).ToList();
-            var pick = selectedTarget is not null && allies.Contains(selectedTarget) ? selectedTarget : actor;
-            if (!allies.Contains(pick))
-            {
-                return null;
-            }
-
-            if (pick.Tokens.GetStacks(TokenType.Stealth) > 0)
-            {
-                return null;
-            }
-
-            target = pick;
+            return null;
         }
-        else
-        {
-            var enemies = actor.Position.Side == Side.Allies ? state.Enemies : state.Allies;
-            var living = enemies.Where(enemy => !enemy.Health.IsDead).ToList();
-            if (selectedTarget is null || !living.Contains(selectedTarget))
-            {
-                return null;
-            }
 
-            var taunt = living.Where(enemy => enemy.Tokens.GetStacks(TokenType.Taunt) > 0).ToList();
-            var pool = taunt.Count > 0 ? taunt : living;
-            if (!pool.Contains(selectedTarget))
-            {
-                return null;
-            }
-
-            if (selectedTarget.Tokens.GetStacks(TokenType.Stealth) > 0)
-            {
-                return null;
-            }
-
-            target = selectedTarget;
-        }
+        var chosenTarget = selectedTarget != null &&
+            primaryTargets.Any(combatant =>
+                string.Equals(combatant.Identity.Id, selectedTarget.Identity.Id, StringComparison.Ordinal))
+            ? selectedTarget
+            : primaryTargets[0];
 
         return new ChosenAction
         {
             Actor = actor,
-            Target = target,
+            Target = chosenTarget,
             Skill = skill,
             ActionType = ActionType.Skill,
         };
+    }
+
+    /// <summary>
+    /// Self skills must be clicked on the caster. Ally skills need a same-side click.
+    /// Enemy skills need a living enemy in the valid pool — clicking an ally must not fire them.
+    /// </summary>
+    private static bool IsValidPlayerClickTarget(
+        BattleState state,
+        Combatant actor,
+        SkillDefinition skill,
+        Combatant? selectedTarget)
+    {
+        if (selectedTarget == null)
+        {
+            return false;
+        }
+
+        if (SkillTargetKindRules.IsSelfOnly(skill.TargetKind))
+        {
+            return string.Equals(selectedTarget.Identity.Id, actor.Identity.Id, StringComparison.Ordinal);
+        }
+
+        if (SkillTargetKindRules.DirectsPrimaryDamageAtAllies(skill.TargetKind))
+        {
+            if (selectedTarget.Position.Side != actor.Position.Side)
+            {
+                return false;
+            }
+
+            return !selectedTarget.Health.IsDead || skill.CanTargetDeadAllies;
+        }
+
+        if (SkillTargetKindRules.DirectsPrimaryDamageAtEnemies(skill.TargetKind))
+        {
+            return SkillTargetResolver.GetValidEnemyPool(state, actor)
+                .Any(enemy => string.Equals(enemy.Identity.Id, selectedTarget.Identity.Id, StringComparison.Ordinal));
+        }
+
+        return false;
     }
 }

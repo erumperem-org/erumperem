@@ -6,8 +6,8 @@ using UnityEngine;
 namespace Erumperem.Combat.HealthBars
 {
     /// <summary>
-    /// Mostra previsão de dano na barra de vida do inimigo sob o rato quando há uma skill de dano
-    /// seleccionada na hotbar e o jogador pode executá-la contra esse alvo.
+    /// Overlay amarelo de previsão de dano na barra do inimigo em hover.
+    /// Desligado: o componente desactiva-se no Awake.
     /// </summary>
     [DefaultExecutionOrder(30)]
     public sealed class CombatSkillDamagePreviewBinder : MonoBehaviour
@@ -34,6 +34,8 @@ namespace Erumperem.Combat.HealthBars
             {
                 skillButtonBarUIManager = FindFirstObjectByType<CombatSkillButtonBarUIManager>();
             }
+
+            enabled = false;
         }
 
         private void LateUpdate()

@@ -9,6 +9,8 @@ using UnityEngine;
 ///   • corruption_save.json
 ///   • inventory_save.json
 ///   • player_skill_progression.json
+///   • enemy_almanac.json
+///   • combat_item_bonuses.json
 ///   • ShopState/*.sav
 /// </summary>
 public sealed class SaveFileWiper : MonoBehaviour
@@ -25,6 +27,12 @@ public sealed class SaveFileWiper : MonoBehaviour
     private string SkillProgressionFilePath =>
         Path.Combine(Application.persistentDataPath, "player_skill_progression.json");
 
+    private string EnemyAlmanacFilePath =>
+        Path.Combine(SaveDirectory, "enemy_almanac.json");
+
+    private string CombatItemBonusesFilePath =>
+        Path.Combine(SaveDirectory, "combat_item_bonuses.json");
+
     private string[] SaveFileNames => new[]
     {
         "exploration_save.json",
@@ -40,6 +48,8 @@ public sealed class SaveFileWiper : MonoBehaviour
             DeleteFile(Path.Combine(SaveDirectory, fileName));
 
         DeleteFile(SkillProgressionFilePath);
+        DeleteFile(EnemyAlmanacFilePath);
+        DeleteFile(CombatItemBonusesFilePath);
         DeleteDirectory(ShopStateDirectory);
 
         LoggerService.PrintLogMessage(LogLevel.Debug,

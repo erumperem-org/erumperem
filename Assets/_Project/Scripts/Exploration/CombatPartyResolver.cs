@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Game.Core.Domain;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,12 +9,8 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public static class CombatPartyResolver
 {
-    private const string DefaultMainCharacterName = "Wulfric";
-    private const string DefaultCompanionCharacterName = "Buck";
-    private const string IgnoredCombatCharacterName = "Matsuda";
-
     private static readonly string[] FallbackCombatAllyCharacterNames =
-        { DefaultMainCharacterName, DefaultCompanionCharacterName };
+        { CombatPartyRoleRules.DefaultLeaderCharacterName, CombatPartyRoleRules.DefaultCompanionCharacterName };
 
     public static bool TryGetCombatPartyNames(
         PlayableCharactersManager playableCharactersManager,
@@ -46,7 +43,7 @@ public static class CombatPartyResolver
         var pendingCombatParty = CombatExplorationBridge.Instance?.TryGetPendingCombatAllyCharacterNames();
         if (pendingCombatParty != null && pendingCombatParty.Count > 0)
         {
-            return pendingCombatParty;
+            return NormalizeCombatParty(pendingCombatParty);
         }
 
         if (IsCombatSceneActive())
@@ -111,58 +108,7 @@ public static class CombatPartyResolver
 
     public static IReadOnlyList<string> NormalizeCombatParty(IReadOnlyList<string> rawPartyCharacterNames)
     {
-        string mainCharacterName = null;
-        string companionCharacterName = null;
-
-        if (rawPartyCharacterNames != null)
-        {
-            for (var partyIndex = 0; partyIndex < rawPartyCharacterNames.Count; partyIndex++)
-            {
-                var candidateCharacterName = rawPartyCharacterNames[partyIndex];
-                if (ShouldIgnoreCombatCharacter(candidateCharacterName))
-                {
-                    continue;
-                }
-
-                if (string.Equals(
-                        candidateCharacterName,
-                        DefaultMainCharacterName,
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    mainCharacterName = DefaultMainCharacterName;
-                    continue;
-                }
-
-                if (companionCharacterName == null &&
-                    !string.Equals(
-                        candidateCharacterName,
-                        DefaultMainCharacterName,
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    companionCharacterName = candidateCharacterName;
-                }
-            }
-        }
-
-        mainCharacterName ??= DefaultMainCharacterName;
-
-        if (string.IsNullOrWhiteSpace(companionCharacterName) ||
-            ShouldIgnoreCombatCharacter(companionCharacterName) ||
-            string.Equals(companionCharacterName, mainCharacterName, StringComparison.OrdinalIgnoreCase))
-        {
-            companionCharacterName = DefaultCompanionCharacterName;
-        }
-
-        return new[]
-        {
-            mainCharacterName,
-            companionCharacterName,
-        };
-    }
-
-    private static bool ShouldIgnoreCombatCharacter(string characterName)
-    {
-        return string.Equals(characterName, IgnoredCombatCharacterName, StringComparison.OrdinalIgnoreCase);
+        return CombatPartyRoleRules.NormalizeOverworldCombatParty(rawPartyCharacterNames);
     }
 
     private static bool IsCombatSceneActive()

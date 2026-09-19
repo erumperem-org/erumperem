@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using Erumperem.Progression;
 using UnityEditor;
 using UnityEngine;
@@ -182,9 +183,13 @@ namespace Erumperem.Editor.Progression
                     continue;
                 }
 
-                var buckNodeId = wulfricNodeAsset.NodeId.StartsWith("b_", StringComparison.Ordinal)
-                    ? wulfricNodeAsset.NodeId
-                    : $"b_{wulfricNodeAsset.NodeId}";
+                var buckNodeId = MapSourceNodeIdToCurrentBuckNodeId(wulfricNodeAsset.NodeId);
+                if (string.IsNullOrWhiteSpace(buckNodeId))
+                {
+                    Debug.LogWarning(
+                        $"SkillTreePanelMultiCharacterSetup: cannot map '{wulfricNodeAsset.NodeId}' to a Buck node.");
+                    continue;
+                }
 
                 var buckNodeAssetPath = $"{SkillTreeNodesFolder}/{buckNodeId}.asset";
                 var buckNodeAsset = AssetDatabase.LoadAssetAtPath<SkillTreeNodeAsset>(buckNodeAssetPath);
@@ -198,6 +203,120 @@ namespace Erumperem.Editor.Progression
                 nodeAssetProperty.objectReferenceValue = buckNodeAsset;
                 presenterSerializedObject.ApplyModifiedPropertiesWithoutUndo();
             }
+        }
+
+        /// <summary>
+        /// Maps legacy (b_f_t1_p1 / f_t1_a1 / b_ar_* / camelCase) onto Buck snake_case kit ids.
+        /// </summary>
+        private static string MapSourceNodeIdToCurrentBuckNodeId(string sourceNodeId)
+        {
+            if (sourceNodeId.StartsWith("buck_tree", StringComparison.Ordinal)
+                || sourceNodeId.StartsWith("buck_innate", StringComparison.Ordinal))
+            {
+                return sourceNodeId;
+            }
+
+            if (TryMapLegacyBuckTreePrefix(sourceNodeId, out var remappedFromCurrentPrefix))
+            {
+                return remappedFromCurrentPrefix;
+            }
+
+            if (LegacyBuckActiveIds.TryGetValue(sourceNodeId, out var remappedActiveId))
+            {
+                return remappedActiveId;
+            }
+
+            var legacyBuckMatch = System.Text.RegularExpressions.Regex.Match(
+                sourceNodeId,
+                @"^b_([fma])_t(\d+)_(p\d+|a\d+)$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (legacyBuckMatch.Success)
+            {
+                return ResolveBuckNodeIdFromElementTierSlot(
+                    legacyBuckMatch.Groups[1].Value.ToLowerInvariant(),
+                    int.Parse(legacyBuckMatch.Groups[2].Value),
+                    legacyBuckMatch.Groups[3].Value.ToLowerInvariant());
+            }
+
+            var legacyWulfricMatch = System.Text.RegularExpressions.Regex.Match(
+                sourceNodeId,
+                @"^([fma])_t(\d+)_(p\d+|a\d+)$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (legacyWulfricMatch.Success)
+            {
+                return ResolveBuckNodeIdFromElementTierSlot(
+                    legacyWulfricMatch.Groups[1].Value.ToLowerInvariant(),
+                    int.Parse(legacyWulfricMatch.Groups[2].Value),
+                    legacyWulfricMatch.Groups[3].Value.ToLowerInvariant());
+            }
+
+            return null;
+        }
+
+        private static readonly Dictionary<string, string> LegacyBuckActiveIds = new(StringComparer.Ordinal)
+        {
+            ["buckSpiderHands"] = "buck_tree1_tier1_active",
+            ["buckAllGuns"] = "buck_tree1_tier2_active",
+            ["buckJuggle"] = "buck_tree1_tier3_active",
+            ["buckSnakeVision"] = "buck_tree2_tier1_active",
+            ["buckSnakeBite"] = "buck_tree2_tier2_active",
+            ["buckSnakeTail"] = "buck_tree2_tier3_active",
+            ["buckMark"] = "buck_tree3_tier1_active",
+            ["buckPistolHeadShot"] = "buck_tree3_tier2_active",
+            ["buckLuckManipulation"] = "buck_tree3_tier3_active",
+        };
+
+        private static bool TryMapLegacyBuckTreePrefix(string sourceNodeId, out string remappedNodeId)
+        {
+            remappedNodeId = null;
+            var match = System.Text.RegularExpressions.Regex.Match(
+                sourceNodeId,
+                @"^b_(ar|sn|du)_t(\d+)_p(\d+)$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (!match.Success)
+            {
+                return false;
+            }
+
+            var treeIndex = match.Groups[1].Value.ToLowerInvariant() switch
+            {
+                "ar" => 1,
+                "sn" => 2,
+                "du" => 3,
+                _ => 0,
+            };
+            if (treeIndex == 0)
+            {
+                return false;
+            }
+
+            remappedNodeId = $"buck_tree{treeIndex}_tier{match.Groups[2].Value}_passive{match.Groups[3].Value}";
+            return true;
+        }
+
+        private static string ResolveBuckNodeIdFromElementTierSlot(
+            string elementKey,
+            int tierNumber,
+            string slotKey)
+        {
+            var treeIndex = elementKey switch
+            {
+                "f" => 1,
+                "m" => 2,
+                "a" => 3,
+                _ => 0,
+            };
+            if (treeIndex == 0 || tierNumber < 1 || tierNumber > 3)
+            {
+                return null;
+            }
+
+            if (slotKey.StartsWith("p", StringComparison.Ordinal) && slotKey.Length > 1)
+            {
+                return $"buck_tree{treeIndex}_tier{tierNumber}_passive{slotKey[1..]}";
+            }
+
+            return $"buck_tree{treeIndex}_tier{tierNumber}_active";
         }
 
         private static Sprite LoadPortraitSpriteFromPrefab(string prefabPath)

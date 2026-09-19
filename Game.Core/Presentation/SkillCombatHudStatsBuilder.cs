@@ -1,4 +1,4 @@
-using Game.Core.Domain;
+using Game.Core.Config;
 using Game.Core.Engine;
 using Game.Core.Models;
 
@@ -12,6 +12,8 @@ public readonly struct SkillCombatHudStats
     public required int DamageMax { get; init; }
     public required double CriticalChanceFraction { get; init; }
     public required double CorruptionCost { get; init; }
+    public required double ElementalMultiplier { get; init; }
+    public required ElementMatchupKind ElementMatchup { get; init; }
 }
 
 /// <summary>
@@ -25,7 +27,7 @@ public static class SkillCombatHudStatsBuilder
         SkillDefinition skill,
         Combatant previewTargetOrNull)
     {
-        var targetCount = CountSkillTargets(battleState, actor, skill);
+        var targetCount = CountSkillTargets(battleState, actor, skill, previewTargetOrNull);
         var hasDirectDamage = SkillDamagePreviewCalculator.HasDirectDamage(skill);
         var damageMin = skill.BaseDamage.Min;
         var damageMax = skill.BaseDamage.Max;
@@ -49,6 +51,17 @@ public static class SkillCombatHudStatsBuilder
             actor,
             criticalTarget,
             skill);
+        var elementMatchupTarget = previewTargetOrNull ?? criticalTarget;
+        var elementalMultiplier = elementMatchupTarget == null
+            ? 1.0
+            : CombatDamageCalculator.GetElementalMultiplier(
+                battleState,
+                actor,
+                elementMatchupTarget,
+                skill);
+        var elementMatchup = elementMatchupTarget == null
+            ? ElementMatchupKind.Neutral
+            : CombatDamageCalculator.GetElementMatchup(actor, elementMatchupTarget, skill);
 
         return new SkillCombatHudStats
         {
@@ -58,51 +71,27 @@ public static class SkillCombatHudStatsBuilder
             DamageMax = damageMax,
             CriticalChanceFraction = criticalChanceFraction,
             CorruptionCost = skill.CorruptionCost,
+            ElementalMultiplier = elementalMultiplier,
+            ElementMatchup = elementMatchup,
         };
     }
 
-    public static int CountSkillTargets(BattleState battleState, Combatant actor, SkillDefinition skill)
-    {
-        var targetCount = 1;
-        ConsiderEffectScopes(skill.EffectsOnHit, battleState, actor, ref targetCount);
-        ConsiderEffectScopes(skill.ComboBonus, battleState, actor, ref targetCount);
-        return Math.Max(1, targetCount);
-    }
-
-    private static void ConsiderEffectScopes(
-        IReadOnlyList<EffectSpec> effects,
+    public static int CountSkillTargets(
         BattleState battleState,
         Combatant actor,
-        ref int targetCount)
+        SkillDefinition skill,
+        Combatant? previewTargetOrNull = null)
     {
-        if (effects == null || effects.Count == 0)
+        var affectedCombatantIds = SkillCombatTargetPreviewResolver.ResolveAffectedCombatantIds(
+            battleState,
+            actor,
+            skill,
+            previewTargetOrNull);
+        if (affectedCombatantIds.Count > 0)
         {
-            return;
+            return affectedCombatantIds.Count;
         }
 
-        foreach (var effect in effects)
-        {
-            if (string.Equals(effect.EffectScope, EffectScopes.AllAllies, StringComparison.OrdinalIgnoreCase))
-            {
-                var sameSideCombatants = actor.Position.Side == Side.Allies
-                    ? battleState.Allies
-                    : battleState.Enemies;
-
-                var livingCombatantsOnSameSide = sameSideCombatants.Count(combatant => !combatant.Health.IsDead);
-                targetCount = Math.Max(targetCount, livingCombatantsOnSameSide);
-                continue;
-            }
-
-            if (string.Equals(effect.EffectScope, EffectScopes.AllEnemies, StringComparison.OrdinalIgnoreCase))
-            {
-                var oppositeSideCombatants = actor.Position.Side == Side.Allies
-                    ? battleState.Enemies
-                    : battleState.Allies;
-
-                var livingCombatantsOnOppositeSide =
-                    oppositeSideCombatants.Count(combatant => !combatant.Health.IsDead);
-                targetCount = Math.Max(targetCount, livingCombatantsOnOppositeSide);
-            }
-        }
+        return SkillTargetResolver.EstimatePrimaryTargetCount(battleState, actor, skill);
     }
 }
