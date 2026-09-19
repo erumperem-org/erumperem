@@ -154,9 +154,7 @@ namespace Erumperem.Combat.Tokens
                 }
 
                 var followTarget = ResolveStripParent(unitRoot);
-                var stripOffsetFromColliderTop = CombatUnitColliderVerticalExtents.ComposeLocalOffsetAnchoredToColliderTop(
-                    followTarget,
-                    stripLocalOffset);
+                var stripOffsetFromColliderTop = stripLocalOffset;
                 Transform hierarchyParent;
                 if (sharedStripParent != null)
                 {

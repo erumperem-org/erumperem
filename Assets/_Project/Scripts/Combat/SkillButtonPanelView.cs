@@ -22,7 +22,7 @@ namespace Erumperem.Combat
         private const float ClickPunchDuration = 0.12f;
         private const int ClickPunchVibrato = 6;
         private const float ClickPunchElasticity = 0.4f;
-        private const float SelectedLocalScale = 0.8f;
+        private const float SelectedLocalScale = 1.2f;
         private const float SelectionTweenDuration = 0.1f;
         private const string DefaultDescriptionPanelName = "SkillDescriptionPanel";
         private const string DefaultDescriptionTextName = "SkillDescriptionText";
@@ -539,10 +539,10 @@ namespace Erumperem.Combat
 
             var pressedTint = _skillButton.colors.pressedColor;
             return new Color(
-                displayedColor.r * pressedTint.r,
-                displayedColor.g * pressedTint.g,
-                displayedColor.b * pressedTint.b,
-                displayedColor.a * pressedTint.a);
+                displayedColor.r * 1,
+                displayedColor.g * 1,
+                displayedColor.b * 1,
+                displayedColor.a * 1);
         }
 
         private void CacheParentRow() =>
