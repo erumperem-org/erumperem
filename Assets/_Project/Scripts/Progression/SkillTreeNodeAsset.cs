@@ -87,6 +87,9 @@ namespace Erumperem.Progression
         [Tooltip("Player-facing display name. If empty, the node id is shown instead.")]
         [SerializeField] private string _displayName = "";
 
+        [Tooltip("Ícone representativo da skill para exibição na UI / painel de detalhes.")]
+        [SerializeField] private Sprite _icon;
+
         [Tooltip("Player-facing description shown in the skill tree details panel.")]
         [TextArea(3, 12)]
         [SerializeField] private string _descriptionForUi = "";
@@ -268,6 +271,8 @@ namespace Erumperem.Progression
 
         public string DisplayName =>
             string.IsNullOrEmpty(_displayName) ? _nodeId : _displayName;
+
+        public Sprite Icon => _icon;
 
         public string DescriptionForUi => _descriptionForUi;
 
