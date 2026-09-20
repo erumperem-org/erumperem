@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Erumperem.Combat;
 using Erumperem.UI;
 using TMPro;
 using UnityEngine;
@@ -29,8 +30,9 @@ namespace Erumperem.Progression
         {
             public TMP_Text Title;
             public TMP_Text Body;
+            public Image Icon;
 
-            public void Apply(SkillTreeNodeAsset nodeAsset)
+            public void Apply(SkillTreeNodeAsset nodeAsset, Sprite icon = null)
             {
                 if (Title != null)
                 {
@@ -40,6 +42,21 @@ namespace Erumperem.Progression
                 if (Body != null)
                 {
                     Body.text = PlayerFacingText.FormatSkillTreeNodeDescription(nodeAsset);
+                }
+
+                if (Icon != null)
+                {
+                    if (icon != null)
+                    {
+                        Icon.sprite = icon;
+                        Icon.enabled = true;
+                        Icon.gameObject.SetActive(true);
+                    }
+                    else
+                    {
+                        Icon.sprite = null;
+                        Icon.enabled = false;
+                    }
                 }
             }
 
@@ -54,6 +71,12 @@ namespace Erumperem.Progression
                 {
                     Body.text = string.Empty;
                 }
+
+                if (Icon != null)
+                {
+                    Icon.sprite = null;
+                    Icon.enabled = false;
+                }
             }
         }
 
@@ -62,6 +85,7 @@ namespace Erumperem.Progression
 
         [Header("Data")]
         [SerializeField] private PlayerProgressionService _progressionService;
+        [SerializeField] private SkillVisualCatalog _skillVisualCatalog;
 
         [Header("Navigation")]
         [SerializeField] private Button _arrowLeftButton;
@@ -295,6 +319,11 @@ namespace Erumperem.Progression
             {
                 _detailPanel.Body = FindChildComponent<TMP_Text>("SkillDescription");
             }
+            if (_detailPanel.Icon == null)
+            {
+                _detailPanel.Icon = FindChildComponent<Image>("SkillIcon")
+                                    ?? FindChildComponent<Image>("DetailSkillIcon");
+            }
 
             if (_characterProfiles == null || _characterProfiles.Length < 2)
             {
@@ -473,9 +502,24 @@ namespace Erumperem.Progression
             }
         }
 
-        public void ShowDetails(SkillTreeNodeAsset nodeAsset)
+        public void ShowDetails(SkillTreeNodeAsset nodeAsset, Sprite icon = null)
         {
-            _detailPanel.Apply(nodeAsset);
+            var resolvedIcon = icon;
+
+            if (resolvedIcon == null && nodeAsset != null)
+            {
+                resolvedIcon = nodeAsset.Icon;
+            }
+
+            if (resolvedIcon == null && _skillVisualCatalog != null && nodeAsset != null && !string.IsNullOrWhiteSpace(nodeAsset.NodeId))
+            {
+                if (_skillVisualCatalog.TryGet(nodeAsset.NodeId, out var def) && def.icon != null)
+                {
+                    resolvedIcon = def.icon;
+                }
+            }
+
+            _detailPanel.Apply(nodeAsset, resolvedIcon);
         }
 
         public void RefreshNow() => RefreshAllPresenters();

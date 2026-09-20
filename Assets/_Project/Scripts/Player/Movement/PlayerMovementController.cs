@@ -6,7 +6,7 @@ using UnityEngine.AI;
 
 namespace Player
 {
-    public enum MovementMode { None, Player, Follow, WalkToPoint }
+    public enum MovementMode { None, Player, Follow, WalkToPoint, ClickToMove }
 
     [RequireComponent(typeof(NavMeshAgentAdapter))]
     [RequireComponent(typeof(Rigidbody))]
@@ -21,6 +21,10 @@ namespace Player
 
         [Header("Rotação")]
         [SerializeField] private float _rotationSpeed = 10f;
+
+        [Header("Movimento por clique")]
+        [SerializeField, Min(1f)] private float _clickAcceleration = 60f;
+        [SerializeField, Min(1f)] private float _clickRotationSharpness = 22f;
 
         [Header("Follow (Companion)")]
         [SerializeField] private float _followMinDistance = 2f;
@@ -56,6 +60,75 @@ namespace Player
             : _navMesh != null && _adapter != null && _navMesh.IsMoving(_adapter);
 
         public void SetService(INavMeshService service) => _navMesh = service;
+
+        public bool IsClickMoving => _mode == MovementMode.ClickToMove;
+        public Vector3 ClickDestination => _adapter.Agent.destination;
+
+        public bool TryMoveByClick(Vector3 destination, float sampleRadius = 1f)
+        {
+            if (!isActiveAndEnabled || (_mode != MovementMode.Player && !IsClickMoving)) return false;
+            var agent = _adapter.Agent;
+            if (agent == null) return false;
+            var filter = new NavMeshQueryFilter { agentTypeID = agent.agentTypeID, areaMask = agent.areaMask };
+            for (int i = 0; i < 32; i++) filter.SetAreaCost(i, agent.GetAreaCost(i));
+            if (!NavMesh.SamplePosition(transform.position, out var start, 1f, filter)
+                || !NavMesh.SamplePosition(destination, out var end, sampleRadius, filter)) return false;
+            var path = new NavMeshPath();
+            if (!NavMesh.CalculatePath(start.position, end.position, filter, path)
+                || path.status != NavMeshPathStatus.PathComplete) return false;
+            bool retargeting = IsClickMoving;
+            float previousSpeed = retargeting ? agent.velocity.magnitude : 0f;
+            if (!retargeting) SetMode(MovementMode.ClickToMove, start.position);
+            if (!agent.isOnNavMesh || !agent.SetPath(path))
+            {
+                CancelClickMovement();
+                return false;
+            }
+            agent.stoppingDistance = _stoppingDistance;
+            agent.speed = _speed;
+            agent.acceleration = _clickAcceleration;
+            agent.autoBraking = true;
+            agent.updateRotation = false;
+            agent.isStopped = false;
+            if (retargeting && previousSpeed > 0.1f && !agent.isOnOffMeshLink)
+            {
+                var corners = path.corners;
+                for (int i = 1; i < corners.Length; i++)
+                {
+                    Vector3 direction = corners[i] - agent.nextPosition;
+                    direction.y = 0f;
+                    if (direction.sqrMagnitude < 0.0025f) continue;
+                    agent.velocity = direction.normalized * Mathf.Min(previousSpeed, _speed);
+                    break;
+                }
+            }
+            return true;
+        }
+
+        public void CancelClickMovement()
+        {
+            if (!IsClickMoving) return;
+            EnableMovement();
+            animationController?.SetIsMoving(false);
+        }
+
+        private void TickClickMovement()
+        {
+            var agent = _adapter.Agent;
+            if (_inputReader == null || !_inputReader.CanAcceptWorldInput || _inputReader.MoveInput.sqrMagnitude > 0.01f
+                || (!agent.pathPending && (!agent.hasPath || agent.pathStatus != NavMeshPathStatus.PathComplete
+                    || agent.remainingDistance <= _stoppingDistance + 0.05f)))
+            {
+                CancelClickMovement();
+                return;
+            }
+            var direction = agent.desiredVelocity;
+            direction.y = 0f;
+            animationController?.SetIsMoving(agent.velocity.sqrMagnitude > 0.01f);
+            if (direction.sqrMagnitude > 0.001f)
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction),
+                    1f - Mathf.Exp(-_clickRotationSharpness * Time.deltaTime));
+        }
 
         // ── Unity lifecycle ───────────────────────────────────────────────
 
@@ -140,19 +213,20 @@ namespace Player
         private void SetMovementBackend(MovementMode mode, Vector3? startPosition = null)
         {
             var useRigidbodyPhysics = mode == MovementMode.Player;
-            var useNavMeshAgent = mode is MovementMode.Follow or MovementMode.WalkToPoint;
+            var useNavMeshAgent = mode is MovementMode.Follow or MovementMode.WalkToPoint or MovementMode.ClickToMove;
 
-            _rb.isKinematic = !useRigidbodyPhysics;
-            if (!useRigidbodyPhysics)
+            if (!_rb.isKinematic)
             {
                 _rb.linearVelocity = Vector3.zero;
             }
+            _rb.isKinematic = !useRigidbodyPhysics;
 
             var navMeshAgent = _adapter.Agent;
             if (navMeshAgent == null) return;
 
             navMeshAgent.enabled = useNavMeshAgent;
             if (!useNavMeshAgent) return;
+            navMeshAgent.acceleration = mode == MovementMode.ClickToMove ? _clickAcceleration : _acceleration;
 
             var sampleOrigin = startPosition ?? transform.position;
             if (NavMesh.SamplePosition(sampleOrigin, out var navMeshHit, 2f, NavMesh.AllAreas))
@@ -166,6 +240,7 @@ namespace Player
 
         private IEnumerator MovementLoop()
         {
+            yield return null;
             while (true)
             {
                 if (_mode == MovementMode.Player)
@@ -196,6 +271,7 @@ namespace Player
             {
                 case MovementMode.Follow: TickFollow(); break;
                 case MovementMode.WalkToPoint: TickWalkToPoint(); break;
+                case MovementMode.ClickToMove: TickClickMovement(); break;
             }
         }
 

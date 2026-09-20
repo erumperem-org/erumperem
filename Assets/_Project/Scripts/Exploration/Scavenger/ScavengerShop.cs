@@ -1,4 +1,6 @@
 using UnityEngine;
+
+[RequireComponent(typeof(InteractionOutline))]
 public sealed class ScavengerShop : Interactable
 {
     [Header("Shop Panel")]
@@ -16,6 +18,7 @@ public sealed class ScavengerShop : Interactable
     protected override void Awake()
     {
         base.Awake();
+        EnsureInteractionOutline();
 
         if (shopPanelRoot != null)
         {

@@ -11,9 +11,8 @@ namespace Erumperem.Combat
 	}
 
 	/// <summary>
-	/// Marker displayed above hovered combatants.
-	/// Supports allies and enemies.
-	/// Preserves prefab local rotation.
+	/// Marcador e feedback sonoro exibido sobre combatentes focados.
+	/// Suporta canal de Mouse e canal de Teclado/Gamepad de forma unificada e sem conflito de frames.
 	/// </summary>
 	public sealed class CombatHoverFocusMarker : MonoBehaviour
 	{
@@ -41,11 +40,25 @@ namespace Erumperem.Combat
 		[SerializeField] private HoverMarkerSpinAxis spinAxis = HoverMarkerSpinAxis.WorldY;
 		[SerializeField] private float spinPeriodSeconds = 3.5f;
 
+		public Vector3 MarkerOffset => markerOffset;
+
 		private GameObject _instance;
 		private Vector3 _baseLocalScale = Vector3.one;
 		private Quaternion _baseLocalRotation = Quaternion.identity;
 		private string _lastCombatantId;
 		private readonly CombatPointerRaycastService _pointerRaycast = new();
+
+		// Canal Externo (Teclado / Gamepad)
+		private bool _hasExternalTarget;
+		private Vector3 _externalPosition;
+		private string _externalCombatantId;
+
+		// Filtros acústicos anti-spam e histerese de borda
+		private string _lastAudioCombatantId;
+		private float _lastAudioPlayTime = -1f;
+		private float _lastExitTime = -1f;
+		private const float MinAudioInterval = 0.08f;
+		private const float ReenterGracePeriod = 0.35f;
 
 		private void Awake()
 		{
@@ -63,56 +76,67 @@ namespace Erumperem.Combat
 		private void OnDisable()
 		{
 			Hide();
+			ClearExternalTarget();
 		}
 
 		private void LateUpdate()
 		{
+			EnsureCreated();
+
 			if (_instance == null || !isActiveAndEnabled)
 				return;
 
-			if (!_pointerRaycast.TryRaycastCombatCapsuleTagFromInputManager(out var capsuleTag))
+			// 1. Canal do Mouse: se o cursor estiver sobre uma unidade válida, tem prioridade
+			if (_pointerRaycast.TryRaycastCombatCapsuleTagFromInputManager(out var capsuleTag) &&
+			    !string.IsNullOrEmpty(capsuleTag.combatantId) &&
+			    capsuleTag.isActiveAndEnabled)
 			{
-				Hide();
+				if (showOnEnemies || !capsuleTag.combatantId.StartsWith("enemy", System.StringComparison.OrdinalIgnoreCase))
+				{
+					var unitRoot = capsuleTag.transform;
+					if (unitRoot.gameObject.activeInHierarchy)
+					{
+						var topWorldY = CombatUnitColliderVerticalExtents.TryGetTopWorldY(
+							unitRoot,
+							out var colliderTopWorldY)
+							? colliderTopWorldY
+							: unitRoot.position.y;
+
+						var markerPosition = unitRoot.position;
+						markerPosition.y = topWorldY;
+						markerPosition += markerOffset;
+
+						PresentAt(markerPosition, capsuleTag.combatantId);
+						return;
+					}
+				}
+			}
+
+			// 2. Canal Externo (Teclado / Gamepad): se o mouse está no vazio, mantém o alvo do teclado
+			if (_hasExternalTarget && !string.IsNullOrEmpty(_externalCombatantId))
+			{
+				PresentAt(_externalPosition, _externalCombatantId);
 				return;
 			}
 
-			if (string.IsNullOrEmpty(capsuleTag.combatantId) ||
-				!capsuleTag.isActiveAndEnabled)
-			{
-				Hide();
-				return;
-			}
-
-			if (!showOnEnemies &&
-				capsuleTag.combatantId.StartsWith("enemy",
-					System.StringComparison.OrdinalIgnoreCase))
-			{
-				Hide();
-				return;
-			}
-
-			var unitRoot = capsuleTag.transform;
-
-			if (!unitRoot.gameObject.activeInHierarchy)
-			{
-				Hide();
-				return;
-			}
-
-			var topWorldY = CombatUnitColliderVerticalExtents.TryGetTopWorldY(
-				unitRoot,
-				out var colliderTopWorldY)
-				? colliderTopWorldY
-				: unitRoot.position.y;
-
-			var markerPosition = unitRoot.position;
-			markerPosition.y = topWorldY;
-			markerPosition += markerOffset;
-
-			PresentAt(markerPosition, capsuleTag.combatantId);
+			// 3. Nenhum alvo sob o mouse e nenhum alvo ativo no teclado: oculta o marcador
+			Hide();
 		}
 
-		private void EnsureCreated()
+		public void PresentExternal(Vector3 position, string combatantId)
+		{
+			_hasExternalTarget = true;
+			_externalPosition = position;
+			_externalCombatantId = combatantId;
+		}
+
+		public void ClearExternalTarget()
+		{
+			_hasExternalTarget = false;
+			_externalCombatantId = null;
+		}
+
+		public void EnsureCreated()
 		{
 			if (_instance != null || markerPrefab == null)
 				return;
@@ -131,27 +155,28 @@ namespace Erumperem.Combat
 				SetLayerRecursively(_instance, ignoreRaycastLayer);
 		}
 
-		private void PresentAt(Vector3 position, string combatantId)
+		public void PresentAt(Vector3 position, string combatantId)
 		{
+			EnsureCreated();
+
 			_instance.SetActive(true);
 
 			var markerTransform = _instance.transform;
 			markerTransform.position = position;
 
-			if (_lastCombatantId == combatantId)
+			if (string.Equals(_lastCombatantId, combatantId, System.StringComparison.Ordinal))
 				return;
 
 			_lastCombatantId = combatantId;
 
 			PlayAppearJuice(markerTransform);
-
-			if (AudioManager.instance != null)
-				AudioManager.instance.PlaySFX("CharacterHover");
+			PlayHoverAudio(combatantId);
 		}
 
-		private void Hide()
+		public void Hide()
 		{
 			_lastCombatantId = null;
+			_lastExitTime = Time.unscaledTime;
 
 			if (_instance == null)
 				return;
@@ -163,6 +188,32 @@ namespace Erumperem.Combat
 			markerTransform.localRotation = _baseLocalRotation;
 
 			_instance.SetActive(false);
+		}
+
+		private void PlayHoverAudio(string combatantId)
+		{
+			float now = Time.unscaledTime;
+
+			// Histerese de borda: ignora oscilações na borda do colisor dentro de 0.35s
+			if (string.Equals(_lastAudioCombatantId, combatantId, System.StringComparison.Ordinal) &&
+			    (now - _lastExitTime) < ReenterGracePeriod)
+			{
+				return;
+			}
+
+			// Cadência mínima absoluta entre sons
+			if (now - _lastAudioPlayTime < MinAudioInterval)
+			{
+				return;
+			}
+
+			_lastAudioCombatantId = combatantId;
+			_lastAudioPlayTime = now;
+
+			if (AudioManager.instance != null)
+			{
+				AudioManager.instance.PlaySFX("CharacterHover");
+			}
 		}
 
 		private void PlayAppearJuice(Transform markerTransform)
@@ -225,3 +276,5 @@ namespace Erumperem.Combat
 		}
 	}
 }
+
+//fiz umas mudanças nesses códigos de hover marker p evitar uns erros de áudio que estavam acontecendo

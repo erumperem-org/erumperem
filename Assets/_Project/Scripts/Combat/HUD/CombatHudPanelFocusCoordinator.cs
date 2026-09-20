@@ -9,7 +9,13 @@ using UnityEngine;
 namespace Erumperem.Combat.HealthBars
 {
     /// <summary>
-    /// Resolve qual combatente mostrar nos painéis esquerdo (aliado) e direito (foco contextual) da HUD.
+    /// Coordena quais combatentes aparecem nos painéis da HUD:
+    /// - Rodada do Player:
+    ///     Esquerda = Jogador agindo.
+    ///     Direita = Alvo (inimigo focado, ou aliado/self se a skill mirar em suporte/cura).
+    /// - Rodada do Inimigo:
+    ///     Direita = Inimigo agindo (atualiza para cada inimigo 1, 2, 3 e 4).
+    ///     Esquerda = Alvo atacado (personagem player ou outro inimigo se for buff/cura).
     /// </summary>
     [DefaultExecutionOrder(20)]
     public sealed class CombatHudPanelFocusCoordinator : MonoBehaviour
@@ -21,12 +27,18 @@ namespace Erumperem.Combat.HealthBars
         private readonly CombatSessionHubSubscription _sessionHubSubscription = new();
         private CombatPrototypeController _combatSession;
 
+        // Armazena a ação atual que está em apresentação ou foi recentemente despachada
+        private string _activePresentationActorId = string.Empty;
+        private string _activePresentationTargetId = string.Empty;
         private bool _isActionPresentationActive;
-        private string _presentationActorCombatantId = string.Empty;
-        private string _presentationTargetCombatantId = string.Empty;
 
         public string LeftAllyCombatantId { get; private set; } = string.Empty;
         public string RightFocusCombatantId { get; private set; } = string.Empty;
+
+        /// <summary>
+        /// Disparado quando os IDs em foco mudam, permitindo que os painéis atualizem imediatamente.
+        /// </summary>
+        public event Action OnFocusChanged;
 
         private void Awake()
         {
@@ -37,51 +49,37 @@ namespace Erumperem.Combat.HealthBars
         {
             ResolveCombatServices();
             _sessionHubSubscription.Subscribe(_sessionHub, HandleCombatSessionReady, HandleCombatSessionClosed);
-            SubscribeToPresentationEventsIfAvailable();
+            SubscribeToSessionHubEvents();
             _sessionHubSubscription.TryCatchUpWithActiveCombatSession(_combatSession);
-        }
-
-        private void SubscribeToPresentationEventsIfAvailable()
-        {
-            if (_sessionHub == null)
-            {
-                return;
-            }
-
-            _sessionHub.OnCombatSkillExecutionPresentationStarted -= HandleSkillPresentationStarted;
-            _sessionHub.OnActionPresentationEnded -= HandleActionPresentationEnded;
-            _sessionHub.OnCombatSkillExecutionPresentationStarted += HandleSkillPresentationStarted;
-            _sessionHub.OnActionPresentationEnded += HandleActionPresentationEnded;
-        }
-
-        private void UnsubscribeFromPresentationEvents()
-        {
-            if (_sessionHub == null)
-            {
-                return;
-            }
-
-            _sessionHub.OnCombatSkillExecutionPresentationStarted -= HandleSkillPresentationStarted;
-            _sessionHub.OnActionPresentationEnded -= HandleActionPresentationEnded;
         }
 
         private void OnDisable()
         {
             _sessionHubSubscription.Unsubscribe();
-            UnsubscribeFromPresentationEvents();
+            UnsubscribeFromSessionHubEvents();
         }
 
-        private void LateUpdate()
+        private void SubscribeToSessionHubEvents()
         {
-            if (_combatSession == null || !_combatSession.IsBattleOngoing)
-            {
-                LeftAllyCombatantId = string.Empty;
-                RightFocusCombatantId = string.Empty;
-                return;
-            }
+            if (_sessionHub == null) return;
 
-            LeftAllyCombatantId = ResolveLeftAllyCombatantId();
-            RightFocusCombatantId = ResolveRightFocusCombatantId();
+            _sessionHub.OnCombatSkillExecutionPresentationStarted -= HandleSkillExecutionStarted;
+            _sessionHub.OnCombatSkillExecutionPresentationStarted += HandleSkillExecutionStarted;
+
+            _sessionHub.OnActionPresentationEnded -= HandleActionPresentationEnded;
+            _sessionHub.OnActionPresentationEnded += HandleActionPresentationEnded;
+
+            _sessionHub.OnTurnStarted -= HandleTurnOrRoundAdvanced;
+            _sessionHub.OnTurnStarted += HandleTurnOrRoundAdvanced;
+        }
+
+        private void UnsubscribeFromSessionHubEvents()
+        {
+            if (_sessionHub == null) return;
+
+            _sessionHub.OnCombatSkillExecutionPresentationStarted -= HandleSkillExecutionStarted;
+            _sessionHub.OnActionPresentationEnded -= HandleActionPresentationEnded;
+            _sessionHub.OnTurnStarted -= HandleTurnOrRoundAdvanced;
         }
 
         private void ResolveCombatServices()
@@ -109,185 +107,227 @@ namespace Erumperem.Combat.HealthBars
         private void HandleCombatSessionReady(CombatPrototypeController controller)
         {
             _combatSession = controller;
+            RefreshFocusNow();
         }
 
         private void HandleCombatSessionClosed()
         {
             _combatSession = null;
             _isActionPresentationActive = false;
-            _presentationActorCombatantId = string.Empty;
-            _presentationTargetCombatantId = string.Empty;
+            _activePresentationActorId = string.Empty;
+            _activePresentationTargetId = string.Empty;
             LeftAllyCombatantId = string.Empty;
             RightFocusCombatantId = string.Empty;
+            OnFocusChanged?.Invoke();
         }
 
-        private void HandleSkillPresentationStarted(string actorCombatantId, string targetCombatantId)
+        private void HandleSkillExecutionStarted(string actorCombatantId, string targetCombatantId)
         {
             _isActionPresentationActive = true;
-            _presentationActorCombatantId = actorCombatantId ?? string.Empty;
-            _presentationTargetCombatantId = targetCombatantId ?? string.Empty;
+            _activePresentationActorId = actorCombatantId ?? string.Empty;
+            _activePresentationTargetId = targetCombatantId ?? string.Empty;
+            RefreshFocusNow();
         }
 
         private void HandleActionPresentationEnded()
         {
             _isActionPresentationActive = false;
-            _presentationActorCombatantId = string.Empty;
-            _presentationTargetCombatantId = string.Empty;
+            RefreshFocusNow();
         }
 
-        private string ResolveLeftAllyCombatantId()
+        private void HandleTurnOrRoundAdvanced()
         {
-            if (_isActionPresentationActive)
-            {
-                if (IsAllyCombatantId(_presentationActorCombatantId))
-                {
-                    return _presentationActorCombatantId;
-                }
-
-                if (IsAllyCombatantId(_presentationTargetCombatantId))
-                {
-                    return _presentationTargetCombatantId;
-                }
-            }
-
-            var pendingPlayerCombatantId = _combatSession.PendingPlayerCombatantId;
-            if (!string.IsNullOrEmpty(pendingPlayerCombatantId) &&
-                IsLivingCombatant(pendingPlayerCombatantId))
-            {
-                return pendingPlayerCombatantId;
-            }
-
-            return FindFirstLivingAllyCombatantId();
+            RefreshFocusNow();
         }
 
-        private string ResolveRightFocusCombatantId()
+        private void LateUpdate()
         {
-            if (_isActionPresentationActive)
+            if (_combatSession == null || !_combatSession.IsBattleOngoing)
             {
-                if (IsAllyCombatantId(_presentationActorCombatantId))
-                {
-                    return _presentationTargetCombatantId;
-                }
+                return;
+            }
 
-                if (IsEnemyCombatantId(_presentationActorCombatantId))
+            ResolvePanelCombatants(out var newLeftId, out var newRightId);
+
+            if (!string.Equals(LeftAllyCombatantId, newLeftId, StringComparison.Ordinal) ||
+                !string.Equals(RightFocusCombatantId, newRightId, StringComparison.Ordinal))
+            {
+                LeftAllyCombatantId = newLeftId;
+                RightFocusCombatantId = newRightId;
+                OnFocusChanged?.Invoke();
+            }
+        }
+
+        public void RefreshFocusNow()
+        {
+            if (_combatSession == null || !_combatSession.IsBattleOngoing)
+            {
+                LeftAllyCombatantId = string.Empty;
+                RightFocusCombatantId = string.Empty;
+                OnFocusChanged?.Invoke();
+                return;
+            }
+
+            ResolvePanelCombatants(out var newLeftId, out var newRightId);
+            LeftAllyCombatantId = newLeftId;
+            RightFocusCombatantId = newRightId;
+            OnFocusChanged?.Invoke();
+        }
+
+        private void ResolvePanelCombatants(out string leftId, out string rightId)
+        {
+            // 1. Prioridade: Se estiver em apresentação de ação (seja Player ou Inimigo)
+            if (_isActionPresentationActive && !string.IsNullOrEmpty(_activePresentationActorId))
+            {
+                var actor = _combatSession.FindCombatantById(_activePresentationActorId);
+                var isEnemyAction = actor != null && actor.Position.Side == Side.Enemies;
+
+                if (isEnemyAction)
                 {
-                    return _presentationActorCombatantId;
+                    // Na rodada do inimigo:
+                    // Direita = Inimigo agindo (Inimigo 1, 2, 3 ou 4)
+                    // Esquerda = Alvo (Herói ou outro inimigo)
+                    rightId = _activePresentationActorId;
+                    leftId = !string.IsNullOrEmpty(_activePresentationTargetId)
+                        ? _activePresentationTargetId
+                        : FindFirstLivingAllyCombatantId();
+                    return;
+                }
+                else
+                {
+                    // Na rodada do player atacando:
+                    // Esquerda = Herói agindo
+                    // Direita = Alvo (inimigo ou aliado)
+                    leftId = _activePresentationActorId;
+                    rightId = !string.IsNullOrEmpty(_activePresentationTargetId)
+                        ? _activePresentationTargetId
+                        : _activePresentationActorId;
+                    return;
                 }
             }
 
-            var playerTurnTargetId = TryResolvePlayerTurnTargetCombatantId();
-            if (!string.IsNullOrEmpty(playerTurnTargetId))
+            // 2. Consulta quem é o combatente atual do combate
+            var pendingPlayerId = _combatSession.PendingPlayerCombatantId;
+
+            // Turno do Jogador (esperando input):
+            if (!string.IsNullOrEmpty(pendingPlayerId) && IsLivingCombatant(pendingPlayerId))
             {
-                return playerTurnTargetId;
+                leftId = pendingPlayerId;
+                rightId = ResolvePlayerTurnTargetFocus(pendingPlayerId);
+                return;
             }
 
+            // Turno do Inimigo (calculando ou aguardando próximo inimigo da rodada):
+            // Descobre o inimigo que acabou de agir ou que é o próximo da fila
+            var currentEnemyActorId = !string.IsNullOrEmpty(_activePresentationActorId) && IsEnemyCombatantId(_activePresentationActorId)
+                ? _activePresentationActorId
+                : ResolveCurrentRoundEnemyActorId();
+
+            rightId = currentEnemyActorId;
+            leftId = !string.IsNullOrEmpty(_activePresentationTargetId) && IsLivingCombatant(_activePresentationTargetId)
+                ? _activePresentationTargetId
+                : ResolveEnemyTargetFocus();
+        }
+
+        private string ResolvePlayerTurnTargetFocus(string actingAllyId)
+        {
+            var actingAlly = _combatSession.FindCombatantById(actingAllyId);
+
+            // A) Hover com o mouse sobre qualquer unidade viva válida (inimigo OU aliado)
+            if (skillButtonBarUIManager != null &&
+                skillButtonBarUIManager.TryGetHoveredLivingCombatant(out var hovered))
+            {
+                return hovered.Identity.Id;
+            }
+
+            // B) Alvo pela skill selecionada na hotbar
+            _combatSession.GetSkillBarSelection(out var selectedSlot, out var ownerId);
+            if (selectedSlot.HasValue &&
+                string.Equals(ownerId, actingAllyId, StringComparison.Ordinal) &&
+                actingAlly != null)
+            {
+                var battleState = _combatSession.BattleState;
+                var skillIds = actingAlly.SkillLoadout.Skills
+                    .Where(id => battleState.SkillsById.ContainsKey(id))
+                    .Take(7)
+                    .ToList();
+
+                if (selectedSlot.Value >= 0 && selectedSlot.Value < skillIds.Count)
+                {
+                    var selectedSkill = battleState.SkillsById[skillIds[selectedSlot.Value]];
+
+                    if (SkillTargetKindRules.IsSelfOnly(selectedSkill.TargetKind))
+                    {
+                        return actingAllyId;
+                    }
+
+                    if (SkillTargetKindRules.DirectsPrimaryDamageAtAllies(selectedSkill.TargetKind))
+                    {
+                        var preferredAlly = SkillTargetResolver.ResolvePreferredSelection(
+                            battleState,
+                            actingAlly,
+                            selectedSkill,
+                            actingAlly);
+
+                        if (preferredAlly != null && !preferredAlly.Health.IsDead)
+                        {
+                            return preferredAlly.Identity.Id;
+                        }
+
+                        return actingAllyId;
+                    }
+                }
+            }
+
+            // C) Inimigo selecionado anteriormente por clique
             var selectedEnemy = _combatSession.CurrentSelectedEnemy;
             if (selectedEnemy != null && !selectedEnemy.Health.IsDead)
             {
                 return selectedEnemy.Identity.Id;
             }
 
+            // D) Fallback
+            var firstEnemy = FindFirstLivingEnemyCombatantId();
+            return !string.IsNullOrEmpty(firstEnemy) ? firstEnemy : actingAllyId;
+        }
+
+        private string ResolveEnemyTargetFocus()
+        {
+            var battleState = _combatSession?.BattleState;
+            if (battleState == null) return FindFirstLivingAllyCombatantId();
+
+            // Aliado com Taunt tem prioridade de foco
+            var tauntAlly = battleState.Allies.FirstOrDefault(a => !a.Health.IsDead && a.Tokens.GetStacks(TokenType.Taunt) > 0);
+            if (tauntAlly != null)
+            {
+                return tauntAlly.Identity.Id;
+            }
+
+            return FindFirstLivingAllyCombatantId();
+        }
+
+        private string ResolveCurrentRoundEnemyActorId()
+        {
+            var battleState = _combatSession?.BattleState;
+            if (battleState == null) return string.Empty;
+
             return FindFirstLivingEnemyCombatantId();
-        }
-
-        private string TryResolvePlayerTurnTargetCombatantId()
-        {
-            var pendingPlayerCombatantId = _combatSession.PendingPlayerCombatantId;
-            if (string.IsNullOrEmpty(pendingPlayerCombatantId))
-            {
-                return null;
-            }
-
-            var actingAlly = _combatSession.FindCombatantById(pendingPlayerCombatantId);
-            if (actingAlly == null || !_combatSession.IsPlayerCommandingCombatant(actingAlly))
-            {
-                return null;
-            }
-
-            _combatSession.GetSkillBarSelection(out var selectedSlot, out var skillBarOwnerCombatantId);
-            if (selectedSlot.HasValue &&
-                string.Equals(skillBarOwnerCombatantId, pendingPlayerCombatantId, StringComparison.Ordinal) &&
-                TryResolveValidSkillTargetForSlot(actingAlly, selectedSlot.Value, out var skillTargetCombatantId))
-            {
-                return skillTargetCombatantId;
-            }
-
-            return null;
-        }
-
-        private bool TryResolveValidSkillTargetForSlot(
-            Combatant actingAlly,
-            int zeroBasedSlot,
-            out string skillTargetCombatantId)
-        {
-            skillTargetCombatantId = null;
-
-            if (skillButtonBarUIManager != null &&
-                skillButtonBarUIManager.TryGetHoveredLivingCombatant(out var hoveredCombatant) &&
-                PlayerActionBuilder.TryCreate(
-                    _combatSession.BattleState,
-                    _combatSession.BattleSimulator,
-                    actingAlly,
-                    zeroBasedSlot,
-                    hoveredCombatant) != null)
-            {
-                skillTargetCombatantId = hoveredCombatant.Identity.Id;
-                return true;
-            }
-
-            var battleState = _combatSession.BattleState;
-            var skillIds = actingAlly.SkillLoadout.Skills
-                .Where(skillId => battleState.SkillsById.ContainsKey(skillId))
-                .Take(7)
-                .ToList();
-            if (zeroBasedSlot < 0 || zeroBasedSlot >= skillIds.Count)
-            {
-                return false;
-            }
-
-            var selectedSkill = battleState.SkillsById[skillIds[zeroBasedSlot]];
-            Combatant? preferredCombatant = _combatSession.CurrentSelectedEnemy;
-            if (skillButtonBarUIManager != null &&
-                skillButtonBarUIManager.TryGetHoveredLivingCombatant(out var hoveredPreferredCombatant))
-            {
-                preferredCombatant = hoveredPreferredCombatant;
-            }
-
-            var resolvedSelection = SkillTargetResolver.ResolvePreferredSelection(
-                battleState,
-                actingAlly,
-                selectedSkill,
-                preferredCombatant);
-            if (resolvedSelection == null)
-            {
-                return false;
-            }
-
-            skillTargetCombatantId = resolvedSelection.Identity.Id;
-            return true;
         }
 
         private bool IsLivingCombatant(string combatantId)
         {
-            var combatant = _combatSession.FindCombatantById(combatantId);
+            var combatant = _combatSession?.FindCombatantById(combatantId);
             return combatant != null && !combatant.Health.IsDead;
         }
 
-        private bool IsAllyCombatantId(string combatantId) =>
-            !string.IsNullOrEmpty(combatantId) &&
-            combatantId.StartsWith("ally", StringComparison.OrdinalIgnoreCase);
-
-        private bool IsEnemyCombatantId(string combatantId) =>
+        private static bool IsEnemyCombatantId(string combatantId) =>
             !string.IsNullOrEmpty(combatantId) &&
             combatantId.StartsWith("enemy", StringComparison.OrdinalIgnoreCase);
 
         private string FindFirstLivingAllyCombatantId()
         {
-            var battleState = _combatSession.BattleState;
-            if (battleState == null)
-            {
-                return string.Empty;
-            }
+            var battleState = _combatSession?.BattleState;
+            if (battleState == null) return string.Empty;
 
             return battleState.Allies
                 .FirstOrDefault(ally => !ally.Health.IsDead)?
@@ -296,11 +336,8 @@ namespace Erumperem.Combat.HealthBars
 
         private string FindFirstLivingEnemyCombatantId()
         {
-            var battleState = _combatSession.BattleState;
-            if (battleState == null)
-            {
-                return string.Empty;
-            }
+            var battleState = _combatSession?.BattleState;
+            if (battleState == null) return string.Empty;
 
             return battleState.Enemies
                 .FirstOrDefault(enemy => !enemy.Health.IsDead)?

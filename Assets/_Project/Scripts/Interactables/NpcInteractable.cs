@@ -1,6 +1,8 @@
 using UnityEngine;
 using TMPro;
 using Player;
+
+[RequireComponent(typeof(InteractionOutline))]
 public sealed class NPCInteractable : Interactable
 {
     [TextArea]
@@ -16,6 +18,8 @@ public sealed class NPCInteractable : Interactable
 
     protected override void Awake()
     {
+        base.Awake();
+        EnsureInteractionOutline();
         cam = Camera.main.transform;
 
         if (dialogueCanvas != null)

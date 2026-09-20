@@ -87,6 +87,9 @@ namespace Erumperem.Progression
         [Tooltip("Player-facing display name. If empty, the node id is shown instead.")]
         [SerializeField] private string _displayName = "";
 
+        [Tooltip("Ícone representativo da skill para exibição na UI / painel de detalhes.")]
+        [SerializeField] private Sprite _icon;
+
         [Tooltip("Player-facing description shown in the skill tree details panel.")]
         [TextArea(3, 12)]
         [SerializeField] private string _descriptionForUi = "";
@@ -98,6 +101,13 @@ namespace Erumperem.Progression
         [Tooltip("Free-form label that classifies the active skill (e.g. Active, Innate). Defaults to \"Active\".")]
         [FormerlySerializedAs("_activeSkillType")]
         [SerializeField] private string _activeSkillTypeLabel = "Active";
+
+        [Tooltip("Independent hit/damage rolls against each primary target. Default 1.")]
+        [SerializeField] private int _hitCount = 1;
+
+        [Range(0f, 1f)]
+        [Tooltip("Chance the actor keeps their turn after a successful cast.")]
+        [SerializeField] private double _chanceToNotEndTurn = 0.0;
 
         [Tooltip("Damage element for this active skill (None falls back to the actor's affinity).")]
         [FormerlySerializedAs("_activeElement")]
@@ -269,6 +279,8 @@ namespace Erumperem.Progression
         public string DisplayName =>
             string.IsNullOrEmpty(_displayName) ? _nodeId : _displayName;
 
+        public Sprite Icon => _icon;
+
         public string DescriptionForUi => _descriptionForUi;
 
         public PassiveDefinition ToRuntimePassiveDefinition()
@@ -330,6 +342,8 @@ namespace Erumperem.Progression
                 ChanceToUse = _aiAbsoluteChanceToConsiderWhenEligible,
                 SelfHpPercentBelow = _aiOnlyEligibleWhenOwnHpFractionBelow,
                 CorruptionCost = _corruptionCostAddedWhenPlayerCasts,
+                HitCount = Math.Max(1, _hitCount),
+                ChanceToNotEndTurn = _chanceToNotEndTurn,
             };
         }
 

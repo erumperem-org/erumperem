@@ -11,6 +11,7 @@ using UnityEngine;
 ///   - <c>Camera.main</c> cacheado em Awake (era chamado a cada LateUpdate nas versões anteriores).
 ///   - <c>ExecuteInteraction</c> usa <see cref="InteractionContext"/> — não depende de controller.
 /// </summary>
+[RequireComponent(typeof(InteractionOutline))]
 public sealed class NpcInteractable : Interactable
 {
     [TextArea]
@@ -25,6 +26,7 @@ public sealed class NpcInteractable : Interactable
     protected override void Awake()
     {
         base.Awake();
+        EnsureInteractionOutline();
         // Camera.main é uma busca por tag — cacheamos uma única vez.
         _camTransform = Camera.main != null ? Camera.main.transform : null;
 

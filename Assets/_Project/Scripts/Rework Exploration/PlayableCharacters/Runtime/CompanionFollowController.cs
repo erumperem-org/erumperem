@@ -2,34 +2,52 @@ using UnityEngine;
 
 /// <summary>
 /// Controlador do papel "Companheiro": persegue o personagem Em Jogo
-/// eternamente (sem percepção - nunca "perde" o alvo), desviando de
-/// obstáculos no caminho via ObstacleAvoidanceValidator (mesmo validador do
-/// pacote ChaserAI). Para perto do líder e acelera (sprint) quando fica
-/// muito para trás, usando histerese entre duas distâncias para não ficar
-/// entrando e saindo de sprint na borda de um único limiar.
+/// eternamente, desviando de obstáculos no caminho.
 ///
-/// Muito perto do líder (abaixo de pathClearDistance), em vez de apenas
-/// parar - o que deixaria o companheiro parado bem na frente/no caminho do
-/// líder - ele se desloca lateralmente para o lado em que já está,
-/// perpendicular à direção que o líder está encarando, para abrir passagem.
+/// O estado de movimento do personagem é exposto através do
+/// CharacterStateExposed:
+/// - Idle: parado ou sem alvo.
+/// - Walk: seguindo o líder normalmente.
+/// - Run: realizando catch-up através de sprint.
+///
+/// Utiliza histerese entre duas distâncias para evitar que o sprint
+/// fique alternando próximo ao limite.
 /// </summary>
 [RequireComponent(typeof(PhysicsMovementService))]
+[RequireComponent(typeof(CharacterStateExposed))]
 public class CompanionFollowController : MonoBehaviour
 {
     private PhysicsMovementService movement;
+    private CharacterStateExposed characterState;
+
     private PlayableCharacterSettings settings;
     private Transform followTarget;
+
     private bool isSprinting;
 
-    /// <summary>Chamado uma vez pelo PlayableCharacters no Awake, com as configurações compartilhadas.</summary>
-    public void Initialize(PlayableCharacterSettings characterSettings)
+    /// <summary>
+    /// Chamado uma vez pelo PlayableCharacters no Awake.
+    /// </summary>
+    public void Initialize(
+        PlayableCharacterSettings characterSettings)
     {
         movement = GetComponent<PhysicsMovementService>();
+        characterState = GetComponent<CharacterStateExposed>();
+
         settings = characterSettings;
-        movement.SetValidator(new ObstacleAvoidanceValidator(settings.maxAvoidanceAngle, settings.avoidanceAngleStep));
+
+        movement.SetValidator(
+            new ObstacleAvoidanceValidator(
+                settings.maxAvoidanceAngle,
+                settings.avoidanceAngleStep
+            )
+        );
     }
 
-    /// <summary>Define quem este companheiro deve seguir. Deve ser atualizado sempre que o personagem Em Jogo mudar.</summary>
+    /// <summary>
+    /// Define quem este companheiro deve seguir.
+    /// Deve ser atualizado sempre que o personagem Em Jogo mudar.
+    /// </summary>
     public void SetFollowTarget(Transform target)
     {
         followTarget = target;
@@ -42,12 +60,20 @@ public class CompanionFollowController : MonoBehaviour
 
     private void OnDisable()
     {
-        if (movement == null)
+        isSprinting = false;
+
+        if (movement != null)
         {
-            return;
+            movement.SetMoveDirection(Vector3.zero);
+            movement.SetSprinting(false);
         }
-        movement.SetMoveDirection(Vector3.zero);
-        movement.SetSprinting(false);
+
+        if (characterState != null)
+        {
+            characterState.SetMovementState(
+                CharacterStateExposed.CharacterMovementState.Idle
+            );
+        }
     }
 
     private void FixedUpdate()
@@ -55,54 +81,110 @@ public class CompanionFollowController : MonoBehaviour
         if (followTarget == null)
         {
             movement.SetMoveDirection(Vector3.zero);
+            movement.SetSprinting(false);
+
+            SetMovementState(
+                CharacterStateExposed.CharacterMovementState.Idle
+            );
+
             return;
         }
 
-        float distance = Vector3.Distance(transform.position, followTarget.position);
+        float distance = Vector3.Distance(
+            transform.position,
+            followTarget.position
+        );
 
-        if (!isSprinting && distance >= settings.catchUpTriggerDistance)
-        {
-            isSprinting = true;
-        }
-        else if (isSprinting && distance <= settings.catchUpRecoverDistance)
-        {
-            isSprinting = false;
-        }
-
-        movement.SetSprinting(isSprinting);
+        UpdateSprint(distance);
 
         if (distance <= settings.pathClearDistance)
         {
-            movement.SetMoveDirection(ComputeSidestepDirection());
+            Vector3 direction = ComputeSidestepDirection();
+
+            movement.SetMoveDirection(direction);
+            movement.SetSprinting(isSprinting);
+
+            SetMovementState(
+                isSprinting
+                    ? CharacterStateExposed.CharacterMovementState.Run
+                    : CharacterStateExposed.CharacterMovementState.Walk
+            );
+
             return;
         }
 
         if (distance <= settings.stopDistance)
         {
             movement.SetMoveDirection(Vector3.zero);
+            movement.SetSprinting(false);
+
+            SetMovementState(
+                CharacterStateExposed.CharacterMovementState.Idle
+            );
+
             return;
         }
 
-        movement.SetMoveDirection(DirectionTo(followTarget.position));
+        Vector3 moveDirection =
+            DirectionTo(followTarget.position);
+
+        movement.SetMoveDirection(moveDirection);
+        movement.SetSprinting(isSprinting);
+
+        SetMovementState(
+            isSprinting
+                ? CharacterStateExposed.CharacterMovementState.Run
+                : CharacterStateExposed.CharacterMovementState.Walk
+        );
+    }
+
+    private void UpdateSprint(float distance)
+    {
+        if (!isSprinting &&
+            distance >= settings.catchUpTriggerDistance)
+        {
+            isSprinting = true;
+        }
+        else if (isSprinting &&
+                 distance <= settings.catchUpRecoverDistance)
+        {
+            isSprinting = false;
+        }
+    }
+
+    private void SetMovementState(
+        CharacterStateExposed.CharacterMovementState state)
+    {
+        if (characterState == null)
+        {
+            return;
+        }
+
+        characterState.SetMovementState(state);
     }
 
     private Vector3 DirectionTo(Vector3 worldPosition)
     {
-        Vector3 flatDelta = worldPosition - transform.position;
+        Vector3 flatDelta =
+            worldPosition - transform.position;
+
         flatDelta.y = 0f;
-        return flatDelta.sqrMagnitude > 0.0001f ? flatDelta.normalized : Vector3.zero;
+
+        return flatDelta.sqrMagnitude > 0.0001f
+            ? flatDelta.normalized
+            : Vector3.zero;
     }
 
     /// <summary>
-    /// Calcula uma direção lateral, perpendicular ao forward do líder, para
-    /// o lado em que o companheiro já está (evita alternar de lado a cada
-    /// frame). Fallback para o lado direito se o companheiro estiver quase
-    /// exatamente alinhado com o eixo forward do líder (produto escalar
-    /// perto de zero, lado ambíguo).
+    /// Calcula uma direção lateral perpendicular ao forward do líder,
+    /// para o lado em que o companheiro já está.
+    ///
+    /// Isso evita alternar de lado a cada frame.
     /// </summary>
     private Vector3 ComputeSidestepDirection()
     {
         Vector3 leaderForward = followTarget.forward;
+
         leaderForward.y = 0f;
 
         if (leaderForward.sqrMagnitude < 0.0001f)
@@ -114,13 +196,21 @@ public class CompanionFollowController : MonoBehaviour
             leaderForward.Normalize();
         }
 
-        Vector3 sideAxis = Vector3.Cross(Vector3.up, leaderForward); // "direita" do líder
+        Vector3 sideAxis =
+            Vector3.Cross(Vector3.up, leaderForward);
 
-        Vector3 toCompanion = transform.position - followTarget.position;
+        Vector3 toCompanion =
+            transform.position - followTarget.position;
+
         toCompanion.y = 0f;
 
-        float side = Vector3.Dot(toCompanion, sideAxis);
-        float sideSign = Mathf.Abs(side) > 0.01f ? Mathf.Sign(side) : 1f;
+        float side =
+            Vector3.Dot(toCompanion, sideAxis);
+
+        float sideSign =
+            Mathf.Abs(side) > 0.01f
+                ? Mathf.Sign(side)
+                : 1f;
 
         return sideAxis * sideSign;
     }
