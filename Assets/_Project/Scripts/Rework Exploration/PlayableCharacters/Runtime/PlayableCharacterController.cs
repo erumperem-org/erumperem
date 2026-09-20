@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Core.CharacterStats;
 using Erumperem.Characters;
+using InteractionSystem.Concrete;
 
 /// <summary>
 /// Controlador central do sistema de múltiplos personagens jogáveis. Guarda
@@ -24,9 +25,11 @@ public class PlayableCharacterController : MonoBehaviour
 
     public string InGameCharacterId { get; private set; }
     public string CompanionCharacterId { get; private set; }
+    public string RestingCharacterId { get; private set; }
 
     public PlayableCharacters InGameCharacter => GetCharacter(InGameCharacterId);
     public PlayableCharacters CompanionCharacter => GetCharacter(CompanionCharacterId);
+    public PlayableCharacters RestingCharacter => GetCharacter(RestingCharacterId);
 
     public event Action<PlayableCharacters> OnCharacterEnteredInGame;
     public event Action<PlayableCharacters> OnCharacterEnteredCompanion;
@@ -67,6 +70,7 @@ public class PlayableCharacterController : MonoBehaviour
         InGameCharacterId = character.CharacterId;
         character.SetState(CharacterState.InGame);
         OnCharacterEnteredInGame?.Invoke(character);
+        character.gameObject.GetComponent<PlayableNpcInteractable>().enabled = false;
     }
 
     internal void AssignCompanion(PlayableCharacters character)
@@ -75,12 +79,17 @@ public class PlayableCharacterController : MonoBehaviour
         character.SetState(CharacterState.Companion);
         character.SetFollowTarget(InGameCharacter != null ? InGameCharacter.transform : null);
         OnCharacterEnteredCompanion?.Invoke(character);
+        character.gameObject.GetComponent<PlayableNpcInteractable>().enabled = true;
+
     }
 
     internal void AssignResting(PlayableCharacters character)
     {
         character.SetState(CharacterState.Resting);
+        RestingCharacterId = character.CharacterId;
         OnCharacterEnteredResting?.Invoke(character);
+        character.gameObject.GetComponent<PlayableNpcInteractable>().enabled = true;
+
     }
 
     /// <summary>Atualiza o alvo de seguimento do Companheiro atual sem trocar de papel - usado quando o Em Jogo muda mas o Companheiro continua o mesmo.</summary>
