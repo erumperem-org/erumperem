@@ -110,6 +110,7 @@ namespace InteractionSystem
 
                 var interactable = col.GetComponentInParent<IInteractable>();
                 if (interactable == null || !IsAvailable(interactable)) continue;
+                if (ReferenceEquals(interactable, CurrentTarget)) continue; // <- exclui o alvo atual da escolha
 
                 var interactableTransform = (interactable as Component)?.transform;
                 if (interactableTransform == null) continue;

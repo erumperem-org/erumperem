@@ -52,19 +52,10 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Jump",
-                    "type": "Button",
-                    "id": "f1ba0d36-48eb-4cd5-b651-1c94a6531f70",
-                    "expectedControlType": "Button",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
                     "name": "Previous",
                     "type": "Button",
                     "id": "2776c80d-3c14-4091-8c56-d04ced07a2b0",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -82,7 +73,43 @@
                     "name": "Sprint",
                     "type": "Button",
                     "id": "641cd816-40e6-41b4-8c3d-04687c349290",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Pause",
+                    "type": "Button",
+                    "id": "eb325649-379e-447e-adeb-d473bbad3e34",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Inventory",
+                    "type": "Button",
+                    "id": "05fe4dc6-fdc4-4751-99aa-19cb477eba32",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "SkillTree",
+                    "type": "Button",
+                    "id": "008efb5a-ae40-4e6e-825f-2c8468f876e3",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Map",
+                    "type": "Button",
+                    "id": "f995fc14-f425-443c-9cde-a28a9d9b6f1f",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -377,34 +404,45 @@
                 },
                 {
                     "name": "",
-                    "id": "eb40bb66-4559-4dfa-9a2f-820438abb426",
-                    "path": "<Keyboard>/space",
+                    "id": "2df7c9e3-4f77-42b8-a5f4-2d77d03db2dd",
+                    "path": "<Keyboard>/escape",
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse",
-                    "action": "Jump",
+                    "action": "Pause",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
                 {
                     "name": "",
-                    "id": "daba33a1-ad0c-4742-a909-43ad1cdfbeb6",
-                    "path": "<Gamepad>/buttonSouth",
+                    "id": "e1c1df28-8bb5-4857-ad14-0c56ea7838a8",
+                    "path": "<Keyboard>/e",
                     "interactions": "",
                     "processors": "",
-                    "groups": "Gamepad",
-                    "action": "Jump",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Inventory",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
                 {
                     "name": "",
-                    "id": "603f3daf-40bd-4854-8724-93e8017f59e3",
-                    "path": "<XRController>/secondaryButton",
+                    "id": "b8c97324-0741-43da-843e-a1b9c9bf9844",
+                    "path": "<Keyboard>/t",
                     "interactions": "",
                     "processors": "",
-                    "groups": "XR",
-                    "action": "Jump",
+                    "groups": "Keyboard&Mouse",
+                    "action": "SkillTree",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "17a18142-6296-4c4f-af77-1f78d6aea55b",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Map",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
