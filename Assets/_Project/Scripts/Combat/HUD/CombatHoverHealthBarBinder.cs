@@ -14,6 +14,10 @@ using UnityEngine.UI;
 
 namespace Erumperem.Combat.HealthBars
 {
+    /// <summary>
+    /// Vincula os dados de vida, nome, descrição e portrait no painel da HUD (esquerdo ou direito).
+    /// Suporta dinamicamente aliados e inimigos em qualquer um dos dois lados.
+    /// </summary>
     [DefaultExecutionOrder(25)]
     [RequireComponent(typeof(HealthBarHudView))]
     public sealed class CombatHoverHealthBarBinder : MonoBehaviour
@@ -23,15 +27,15 @@ namespace Erumperem.Combat.HealthBars
         {
             [Tooltip("Arraste o PREFAB original da unidade aqui.")]
             public GameObject unitPrefab;
-            [Tooltip("Arraste o icone correspondente a esta unidade.")]
+            [Tooltip("Arraste o ícone correspondente a esta unidade.")]
             public Sprite unitIcon;
         }
 
-        [Header("Referencia central")]
+        [Header("Referência central")]
         [SerializeField] private GameObject combatLogicCenter;
 
         [Header("Painel")]
-        [Tooltip("TRUE = painel esquerdo (aliado). FALSE = painel direito (foco contextual).")]
+        [Tooltip("TRUE = painel esquerdo. FALSE = painel direito.")]
         [SerializeField] private bool isPlayerBar = false;
 
         [Header("UI de texto e imagem")]
@@ -39,7 +43,7 @@ namespace Erumperem.Combat.HealthBars
         [SerializeField] private TextMeshProUGUI unitDescriptionText;
         [SerializeField] private Image unitPortraitImage;
 
-        [Header("Icones")]
+        [Header("Ícones")]
         [SerializeField] private List<UnitIconMapping> iconMappings;
 
         private CombatSessionHub _sessionHub;
@@ -51,7 +55,7 @@ namespace Erumperem.Combat.HealthBars
         private string _currentTrackedCombatantId = string.Empty;
         private Coroutine _initializationRoutine;
 
-        private readonly Dictionary<string, Sprite> _iconCache = new();
+        private readonly Dictionary<string, Sprite> _iconCache = new(StringComparer.OrdinalIgnoreCase);
 
         private void Awake()
         {
@@ -84,65 +88,41 @@ namespace Erumperem.Combat.HealthBars
 
             if (_sessionHub == null)
             {
-                Debug.LogError($"{nameof(CombatHoverHealthBarBinder)}: CombatSessionHub nao encontrado na cena.", this);
+                Debug.LogError($"{nameof(CombatHoverHealthBarBinder)}: CombatSessionHub não encontrado na cena.", this);
             }
         }
 
         private void RebuildIconCache()
         {
             _iconCache.Clear();
-            if (iconMappings == null)
-            {
-                return;
-            }
+            if (iconMappings == null) return;
 
             foreach (var iconMapping in iconMappings)
             {
-                if (iconMapping.unitPrefab == null || iconMapping.unitIcon == null)
-                {
-                    continue;
-                }
+                if (iconMapping.unitPrefab == null || iconMapping.unitIcon == null) continue;
 
                 var lookupName = GetVisualLookupName(iconMapping.unitPrefab.name);
-                if (!_iconCache.ContainsKey(lookupName))
-                {
-                    _iconCache.Add(lookupName, iconMapping.unitIcon);
-                }
+                _iconCache[lookupName] = iconMapping.unitIcon;
             }
         }
 
         private void SupplementIconCacheFromVisualRoots(CombatPrototypeController controller)
         {
-            if (iconMappings == null || controller == null)
+            if (controller?.BattleState == null) return;
+
+            // Registra todos os combatentes (aliados e inimigos) no cache por ID e nome
+            foreach (var combatant in controller.BattleState.GetAllCombatants())
             {
-                return;
-            }
+                var visualRoot = controller.TryGetUnitVisualRoot(combatant.Identity.Id);
+                if (visualRoot == null) continue;
 
-            for (var mappingIndex = 0; mappingIndex < iconMappings.Count; mappingIndex++)
-            {
-                var iconMapping = iconMappings[mappingIndex];
-                if (iconMapping.unitIcon == null)
+                var cleanName = GetVisualLookupName(visualRoot.gameObject.name);
+
+                if (_iconCache.TryGetValue(cleanName, out var sprite))
                 {
-                    continue;
+                    _iconCache[combatant.Identity.Id] = sprite;
+                    _iconCache[combatant.Identity.DisplayName] = sprite;
                 }
-
-                if (iconMapping.unitPrefab != null)
-                {
-                    _iconCache[GetVisualLookupName(iconMapping.unitPrefab.name)] = iconMapping.unitIcon;
-                    continue;
-                }
-
-                var combatantId = isPlayerBar
-                    ? $"ally_{mappingIndex + 1}"
-                    : $"enemy_{mappingIndex + 1}";
-
-                var visualRoot = controller.TryGetUnitVisualRoot(combatantId);
-                if (visualRoot == null)
-                {
-                    continue;
-                }
-
-                _iconCache[GetVisualLookupName(visualRoot.gameObject.name)] = iconMapping.unitIcon;
             }
         }
 
@@ -150,6 +130,13 @@ namespace Erumperem.Combat.HealthBars
         {
             ResolveCombatServices();
             _sessionHubSubscription.Subscribe(_sessionHub, HandleCombatSessionReady, HandleCombatSessionClosed);
+
+            if (_panelFocusCoordinator != null)
+            {
+                _panelFocusCoordinator.OnFocusChanged -= HandleCoordinatorFocusChanged;
+                _panelFocusCoordinator.OnFocusChanged += HandleCoordinatorFocusChanged;
+            }
+
             _sessionHubSubscription.TryCatchUpWithActiveCombatSession(_activeCombatSession);
         }
 
@@ -157,10 +144,21 @@ namespace Erumperem.Combat.HealthBars
         {
             _sessionHubSubscription.Unsubscribe();
 
+            if (_panelFocusCoordinator != null)
+            {
+                _panelFocusCoordinator.OnFocusChanged -= HandleCoordinatorFocusChanged;
+            }
+
             if (_initializationRoutine != null)
             {
                 StopCoroutine(_initializationRoutine);
+                _initializationRoutine = null;
             }
+        }
+
+        private void HandleCoordinatorFocusChanged()
+        {
+            UpdateFromCurrentCoordinatorFocus();
         }
 
         private void HandleCombatSessionReady(CombatPrototypeController controller)
@@ -204,6 +202,11 @@ namespace Erumperem.Combat.HealthBars
 
         private void LateUpdate()
         {
+            UpdateFromCurrentCoordinatorFocus();
+        }
+
+        private void UpdateFromCurrentCoordinatorFocus()
+        {
             if (_activeCombatSession == null ||
                 !_activeCombatSession.IsBattleOngoing ||
                 _panelFocusCoordinator == null)
@@ -236,16 +239,10 @@ namespace Erumperem.Combat.HealthBars
 
         private void UpdateVisuals(string combatantId)
         {
-            if (_activeCombatSession == null)
-            {
-                return;
-            }
+            if (_activeCombatSession == null) return;
 
             var combatant = _activeCombatSession.FindCombatantById(combatantId);
-            if (combatant == null)
-            {
-                return;
-            }
+            if (combatant == null) return;
 
             var displayName = BuildDisplayName(combatant, combatantId);
             if (unitNameText != null)
@@ -258,48 +255,53 @@ namespace Erumperem.Combat.HealthBars
                 unitDescriptionText.text = BuildDescriptionLine(combatant, _activeCombatSession);
             }
 
-            if (unitPortraitImage == null)
+            if (unitPortraitImage != null)
             {
-                return;
-            }
-
-            var visualLookupName = TryGetVisualLookupNameForCombatant(combatantId);
-            if (TryResolvePortraitSprite(combatantId, visualLookupName, out var portraitSprite))
-            {
-                unitPortraitImage.gameObject.SetActive(true);
-                unitPortraitImage.sprite = portraitSprite;
-            }
-            else
-            {
-                unitPortraitImage.gameObject.SetActive(false);
+                var visualLookupName = TryGetVisualLookupNameForCombatant(combatantId);
+                if (TryResolvePortraitSprite(combatant, combatantId, visualLookupName, out var portraitSprite))
+                {
+                    unitPortraitImage.gameObject.SetActive(true);
+                    unitPortraitImage.sprite = portraitSprite;
+                }
+                else
+                {
+                    unitPortraitImage.gameObject.SetActive(false);
+                }
             }
         }
 
         private string BuildDisplayName(Combatant combatant, string combatantId)
         {
+            if (!string.IsNullOrWhiteSpace(combatant.Identity.DisplayName))
+            {
+                return combatant.Identity.DisplayName;
+            }
+
             var visualLookupName = TryGetVisualLookupNameForCombatant(combatantId);
             if (!string.IsNullOrEmpty(visualLookupName))
             {
                 return FormatVisualDisplayName(visualLookupName);
             }
 
-            if (!string.IsNullOrWhiteSpace(combatant.Identity.DisplayName))
-            {
-                return combatant.Identity.DisplayName;
-            }
-
             return combatantId;
         }
 
-        private static string BuildDescriptionLine(
-            Combatant combatant,
-            CombatPrototypeController combatSession)
+        private static string BuildDescriptionLine(Combatant combatant, CombatPrototypeController combatSession)
         {
             var maxHp = Math.Max(1, combatant.Health.MaxHp);
             var currentHp = Math.Clamp(combatant.Health.CurrentHp, 0, maxHp);
             var healthPercent = Mathf.RoundToInt((float)currentHp / maxHp * 100f);
             var healthLine = $"{currentHp}/{maxHp} HP ({healthPercent}%)";
-            if (combatant.Identity.Faction != Faction.Enemy || combatSession?.BattleState == null)
+
+            // Se for Herói/Aliado, mostra apenas papel e HP
+            if (combatant.Identity.Faction == Faction.Player)
+            {
+                var roleLabel = combatant.PartyRole == CombatantPartyRole.Leader ? "Leader" : "Companion";
+                return $"{healthLine} • {roleLabel}";
+            }
+
+            // Se for Inimigo, consulta o Almanaque
+            if (combatSession?.BattleState == null)
             {
                 return healthLine;
             }
@@ -318,6 +320,7 @@ namespace Erumperem.Combat.HealthBars
                 combatant,
                 EnemyAlmanacSkillMap.AsReadOnly(battleState.SkillsById),
                 battleState.PassivesById);
+
             return healthLine + "\n" + EnemyAlmanacEntryBuilder.FormatPlayerFacingText(almanacEntry);
         }
 
@@ -348,42 +351,46 @@ namespace Erumperem.Combat.HealthBars
             return Regex.Replace(displayName, @"\s+", " ").Trim();
         }
 
-        private bool TryResolvePortraitSprite(string combatantId, string visualLookupName, out Sprite portraitSprite)
+        private bool TryResolvePortraitSprite(Combatant combatant, string combatantId, string visualLookupName, out Sprite portraitSprite)
         {
-            if (!string.IsNullOrEmpty(visualLookupName) &&
-                _iconCache.TryGetValue(visualLookupName, out portraitSprite))
+            portraitSprite = null;
+
+            if (!string.IsNullOrEmpty(combatantId) && _iconCache.TryGetValue(combatantId, out portraitSprite))
             {
                 return true;
             }
 
-            if (iconMappings == null || string.IsNullOrEmpty(combatantId))
+            if (!string.IsNullOrEmpty(combatant.Identity.DisplayName) && _iconCache.TryGetValue(combatant.Identity.DisplayName, out portraitSprite))
             {
-                portraitSprite = null;
-                return false;
+                return true;
             }
 
-            var combatantIndex = ParseCombatantIndex(combatantId);
-            if (combatantIndex < 0 || combatantIndex >= iconMappings.Count)
+            if (!string.IsNullOrEmpty(visualLookupName) && _iconCache.TryGetValue(visualLookupName, out portraitSprite))
             {
-                portraitSprite = null;
-                return false;
+                return true;
             }
 
-            portraitSprite = iconMappings[combatantIndex].unitIcon;
-            return portraitSprite != null;
-        }
-
-        private static int ParseCombatantIndex(string combatantId)
-        {
-            var separatorIndex = combatantId.LastIndexOf('_');
-            if (separatorIndex < 0 || separatorIndex >= combatantId.Length - 1)
+            // Consulta o outro binder irmão da cena se ele tiver o mapeamento registrado
+            foreach (var otherBinder in FindObjectsByType<CombatHoverHealthBarBinder>(FindObjectsSortMode.None))
             {
-                return -1;
+                if (otherBinder == this || otherBinder.iconMappings == null) continue;
+
+                foreach (var mapping in otherBinder.iconMappings)
+                {
+                    if (mapping.unitPrefab != null && mapping.unitIcon != null)
+                    {
+                        var cleanPrefabName = GetVisualLookupName(mapping.unitPrefab.name);
+                        if (string.Equals(cleanPrefabName, visualLookupName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            portraitSprite = mapping.unitIcon;
+                            _iconCache[visualLookupName] = portraitSprite;
+                            return true;
+                        }
+                    }
+                }
             }
 
-            return int.TryParse(combatantId[(separatorIndex + 1)..], out var parsedIndex)
-                ? parsedIndex - 1
-                : -1;
+            return false;
         }
 
         private static string GetVisualLookupName(string rawObjectName)

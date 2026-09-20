@@ -24,7 +24,7 @@ namespace Erumperem.Combat
         [SerializeField] private CombatSkillButtonBarUIManager skillButtonBarUIManager;
 
         private CombatPrototypeController _combatSession;
-        private RectTransform _matchupRoot;
+        [SerializeField] private RectTransform _matchupRoot;
         private string _lastRenderedSignature = string.Empty;
 
         private void Awake()

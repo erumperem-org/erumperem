@@ -3,43 +3,73 @@ using UnityEngine;
 
 /// <summary>
 /// Controlador do papel "Resting": caminha até o ponto de descanso próprio
-/// do personagem (igual ao Investigating do ChaserAI indo até a última
-/// posição vista). Ao chegar, desliga a própria rotina (enabled = false) e
-/// dispara o callback de chegada - nenhuma checagem roda mais até a
-/// próxima vez que este componente for reativado.
+/// do personagem.
+///
+/// O estado de movimento é exposto através do CharacterStateExposed:
+/// - Walk: enquanto o personagem está se deslocando até o ponto.
+/// - Idle: quando chega ao ponto.
+///
+/// Ao chegar, a própria rotina é desativada.
 /// </summary>
 [RequireComponent(typeof(PhysicsMovementService))]
+[RequireComponent(typeof(CharacterStateExposed))]
 public class RestingMovementController : MonoBehaviour
 {
     private PhysicsMovementService movement;
+    private CharacterStateExposed characterState;
+
     private Transform restingPoint;
     private PlayableCharacterSettings settings;
     private Action onArrived;
+
     private bool hasArrived;
 
-    /// <summary>Chamado uma vez pelo PlayableCharacters no Awake.</summary>
-    public void Initialize(Transform destinationPoint, PlayableCharacterSettings characterSettings, Action onArrivedCallback)
+    /// <summary>
+    /// Chamado uma vez pelo PlayableCharacters no Awake.
+    /// </summary>
+    public void Initialize(
+        Transform destinationPoint,
+        PlayableCharacterSettings characterSettings,
+        Action onArrivedCallback)
     {
         movement = GetComponent<PhysicsMovementService>();
+        characterState = GetComponent<CharacterStateExposed>();
+
         restingPoint = destinationPoint;
         settings = characterSettings;
         onArrived = onArrivedCallback;
     }
 
-    /// <summary>Chamado pelo PlayableCharacters ao entrar em Resting, antes deste componente ser ativado - reseta o estado de "já chegou" de uma entrada anterior.</summary>
+    /// <summary>
+    /// Chamado pelo PlayableCharacters ao entrar em Resting,
+    /// antes deste componente ser ativado.
+    /// </summary>
     public void BeginResting()
     {
         hasArrived = false;
+
+        if (characterState != null)
+        {
+            characterState.SetMovementState(
+                CharacterStateExposed.CharacterMovementState.Walk
+            );
+        }
     }
 
     private void OnDisable()
     {
-        if (movement == null)
+        if (movement != null)
         {
-            return;
+            movement.SetMoveDirection(Vector3.zero);
+            movement.SetSprinting(false);
         }
-        movement.SetMoveDirection(Vector3.zero);
-        movement.SetSprinting(false);
+
+        if (characterState != null)
+        {
+            characterState.SetMovementState(
+                CharacterStateExposed.CharacterMovementState.Idle
+            );
+        }
     }
 
     private void FixedUpdate()
@@ -49,18 +79,46 @@ public class RestingMovementController : MonoBehaviour
             return;
         }
 
-        Vector3 flatDelta = restingPoint.position - transform.position;
+        Vector3 flatDelta =
+            restingPoint.position - transform.position;
+
         flatDelta.y = 0f;
 
-        if (flatDelta.sqrMagnitude <= settings.restingArrivalThreshold * settings.restingArrivalThreshold)
+        float arrivalDistance =
+            settings.restingArrivalThreshold;
+
+        if (flatDelta.sqrMagnitude <=
+            arrivalDistance * arrivalDistance)
         {
-            hasArrived = true;
-            movement.SetMoveDirection(Vector3.zero);
-            enabled = false; // desliga a própria rotina ao chegar
-            onArrived?.Invoke();
+            ArriveAtRestingPoint();
             return;
         }
 
-        movement.SetMoveDirection(flatDelta.normalized);
+        movement.SetMoveDirection(
+            flatDelta.normalized
+        );
+
+        movement.SetSprinting(false);
+
+        characterState.SetMovementState(
+            CharacterStateExposed.CharacterMovementState.Walk
+        );
+    }
+
+    private void ArriveAtRestingPoint()
+    {
+        hasArrived = true;
+
+        movement.SetMoveDirection(Vector3.zero);
+        movement.SetSprinting(false);
+
+        characterState.SetMovementState(
+            CharacterStateExposed.CharacterMovementState.Idle
+        );
+
+        // Desliga a própria rotina ao chegar.
+        enabled = false;
+
+        onArrived?.Invoke();
     }
 }

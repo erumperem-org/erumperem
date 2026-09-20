@@ -42,7 +42,7 @@ public class TorchManager : MonoBehaviour
     [SerializeField] private string saveFileName = "torch_state.json";
 
     [Header("Current State")]
-    [SerializeField] private bool isTorchLit = false; // Default: torches unlit
+    [SerializeField] private bool isTorchLit = true; // Default: torches unlit
 
     public bool IsTorchLit => isTorchLit;
 
@@ -215,7 +215,7 @@ public class TorchManager : MonoBehaviour
             }
         }
 
-        isTorchLit = loadedState;
+        isTorchLit = true;
         OnTorchStateChange?.Invoke(isTorchLit);
     }
 
