@@ -127,11 +127,13 @@ namespace Erumperem.Combat
         private Vector2 _pointerScreenPosition;
         private bool _hasPointerScreenPosition;
 
+        private bool _isBattleReady;
+
         public BattleState BattleState => _runtime.State;
         public BattleSimulator BattleSimulator => _runtime.Simulator;
         public Combatant CurrentSelectedEnemy => _runtime.SelectedEnemyTarget;
 
-        public bool IsBattleOngoing => _runtime.IsBattleOngoing;
+        public bool IsBattleOngoing => _isBattleReady && _runtime.IsBattleOngoing;
 
         public bool IsActionPresentationOngoing => _runtime.IsActionPresentationOngoing;
 
@@ -361,6 +363,7 @@ namespace Erumperem.Combat
 
         private void OnDisable()
         {
+            _isBattleReady = false;
             _battleOutcomeMonitor.End();
             _debugCheats?.ClearAllCombatCheats();
             if (_runtime.State?.EnemyAlmanac != null)
@@ -530,6 +533,7 @@ namespace Erumperem.Combat
             }
 
             _turnAdvanceDriver.BeginRound(_runtime);
+            _isBattleReady = true;
             _sessionHub?.RaiseCombatSessionReadyForUi(this);
 
             Debug.Log(
@@ -539,7 +543,7 @@ namespace Erumperem.Combat
 
         private void Update()
         {
-            if (_runtime.BattleEnded || _runtime.State == null)
+            if (!_isBattleReady || _runtime.BattleEnded || _runtime.State == null)
             {
                 ConsumeFrameInputFlags();
                 return;
