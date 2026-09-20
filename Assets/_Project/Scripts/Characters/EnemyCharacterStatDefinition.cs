@@ -49,6 +49,7 @@ namespace Erumperem.Characters
                 speed,
                 accuracy,
                 critChance,
+                0,
                 burnResistance,
                 blightResistance,
                 stunResistance,

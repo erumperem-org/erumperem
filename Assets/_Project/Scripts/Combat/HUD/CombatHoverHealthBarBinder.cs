@@ -5,6 +5,8 @@ using System.Text.RegularExpressions;
 using Erumperem.Combat;
 using Erumperem.Combat.HealthBars;
 using Erumperem.Combat.Runtime;
+using Game.Core.Almanac;
+using Game.Core.Domain;
 using Game.Core.Models;
 using TMPro;
 using UnityEngine;
@@ -221,8 +223,9 @@ namespace Erumperem.Combat.HealthBars
             if (!string.Equals(focusCombatantId, _currentTrackedCombatantId, StringComparison.Ordinal))
             {
                 ApplyTrackedCombatant(focusCombatantId);
-                UpdateVisuals(focusCombatantId);
             }
+
+            UpdateVisuals(focusCombatantId);
         }
 
         private void ApplyTrackedCombatant(string combatantId)
@@ -252,7 +255,7 @@ namespace Erumperem.Combat.HealthBars
 
             if (unitDescriptionText != null)
             {
-                unitDescriptionText.text = BuildDescriptionLine(combatant);
+                unitDescriptionText.text = BuildDescriptionLine(combatant, _activeCombatSession);
             }
 
             if (unitPortraitImage == null)
@@ -288,12 +291,34 @@ namespace Erumperem.Combat.HealthBars
             return combatantId;
         }
 
-        private static string BuildDescriptionLine(Combatant combatant)
+        private static string BuildDescriptionLine(
+            Combatant combatant,
+            CombatPrototypeController combatSession)
         {
             var maxHp = Math.Max(1, combatant.Health.MaxHp);
             var currentHp = Math.Clamp(combatant.Health.CurrentHp, 0, maxHp);
             var healthPercent = Mathf.RoundToInt((float)currentHp / maxHp * 100f);
-            return $"{currentHp}/{maxHp} HP ({healthPercent}%)";
+            var healthLine = $"{currentHp}/{maxHp} HP ({healthPercent}%)";
+            if (combatant.Identity.Faction != Faction.Enemy || combatSession?.BattleState == null)
+            {
+                return healthLine;
+            }
+
+            var battleState = combatSession.BattleState;
+            if (!EnemyCatalogIdentity.TryResolveEnemyCatalogId(combatant, out var enemyCatalogId))
+            {
+                enemyCatalogId = combatant.Identity.DisplayName;
+            }
+
+            battleState.EnemyDefinitionsById.TryGetValue(enemyCatalogId, out var catalogDefinition);
+            var almanacEntry = EnemyAlmanacEntryBuilder.Build(
+                enemyCatalogId,
+                battleState.EnemyAlmanac,
+                catalogDefinition,
+                combatant,
+                EnemyAlmanacSkillMap.AsReadOnly(battleState.SkillsById),
+                battleState.PassivesById);
+            return healthLine + "\n" + EnemyAlmanacEntryBuilder.FormatPlayerFacingText(almanacEntry);
         }
 
         private string TryGetVisualLookupNameForCombatant(string combatantId)

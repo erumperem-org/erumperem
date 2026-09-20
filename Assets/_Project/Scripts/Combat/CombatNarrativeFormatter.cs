@@ -109,34 +109,9 @@ namespace Erumperem.Combat
                 yield break;
             }
 
-            if (string.Equals(token, nameof(TokenType.Blind), StringComparison.OrdinalIgnoreCase))
-            {
-                yield return PlayerFacingText.PresentForUi($"{targetName} was blinded.");
-                yield break;
-            }
-
-            if (string.Equals(token, nameof(TokenType.Dodge), StringComparison.OrdinalIgnoreCase))
-            {
-                yield return PlayerFacingText.PresentForUi($"{targetName} gained dodge.");
-                yield break;
-            }
-
             if (string.Equals(token, nameof(TokenType.Taunt), StringComparison.OrdinalIgnoreCase))
             {
                 yield return PlayerFacingText.PresentForUi($"{targetName} taunted enemies.");
-                yield break;
-            }
-
-            if (string.Equals(token, nameof(TokenType.Combo), StringComparison.OrdinalIgnoreCase))
-            {
-                yield return PlayerFacingText.PresentForUi($"{targetName} gained combo (+{combatEvent.TokenDelta}).");
-                yield break;
-            }
-
-            if (string.Equals(token, nameof(TokenType.Block), StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(token, nameof(TokenType.BlockPlus), StringComparison.OrdinalIgnoreCase))
-            {
-                yield return PlayerFacingText.PresentForUi($"{targetName} gained block (+{combatEvent.TokenDelta}).");
                 yield break;
             }
 

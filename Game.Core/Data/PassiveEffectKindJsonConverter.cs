@@ -13,6 +13,11 @@ public sealed class PassiveEffectKindJsonConverter : JsonConverter<PassiveEffect
         new(StringComparer.Ordinal)
         {
             ["ExtraTokenOnSelfSkillWhenRank"] = PassiveEffectKind.ExtraTokenOnSelfSkill,
+            ["OutgoingDamageVsSkillId"] = PassiveEffectKind.DamageCausedVsSkillId,
+            ["OutgoingDamageVsDotOnTarget"] = PassiveEffectKind.DamageCausedVsDotOnTarget,
+            ["OutgoingDamagePenaltyWhenToken"] = PassiveEffectKind.DamageCausedPenaltyWhenToken,
+            ["OutgoingDamageAfterPrerequisiteSkill"] = PassiveEffectKind.DamageCausedAfterPrerequisiteSkill,
+            ["OutgoingDamageVsSkillIfTargetHasDot"] = PassiveEffectKind.DamageCausedVsSkillIfTargetHasDot,
         };
 
     public override PassiveEffectKind Read(

@@ -167,9 +167,7 @@ namespace Erumperem.Combat.HealthBars
 
                 var followTarget = ResolveFollowTargetUnderUnit(unitVisualRoot);
                 var hierarchyParent = sharedHealthBarParent != null ? sharedHealthBarParent : followTarget;
-                var healthBarOffsetFromColliderBottom = CombatUnitColliderVerticalExtents.ComposeLocalOffsetAnchoredToColliderBottom(
-                    followTarget,
-                    healthBarLocalOffset);
+                var healthBarOffsetFromColliderBottom = healthBarLocalOffset;
 
                 var healthBarInstance = Instantiate(healthBarRootPrefab, hierarchyParent);
                 healthBarInstance.transform.localRotation = Quaternion.identity;

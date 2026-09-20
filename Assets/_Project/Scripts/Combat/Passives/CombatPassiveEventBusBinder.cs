@@ -105,9 +105,6 @@ namespace Erumperem.Combat.Passives
                 PassiveTrigger.CombatantSlain =>
                     HasUnlockedPassive(context.Killer, passiveNodeId) ||
                     HasUnlockedPassive(context.Victim, passiveNodeId),
-                PassiveTrigger.ComboConsumed =>
-                    HasUnlockedPassive(context.Self, passiveNodeId) ||
-                    HasUnlockedPassive(context.Other, passiveNodeId),
                 _ => HasUnlockedPassive(context.Self, passiveNodeId),
             };
         }

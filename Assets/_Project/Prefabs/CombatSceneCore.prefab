@@ -1122,6 +1122,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8d8a6a5e6d0fab41b9d7bac5329a3c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FootstepEmitter
+  mainVolume: 1
+  companionVolume: 0.35
 --- !u!1 &693842547833524216
 GameObject:
   m_ObjectHideFlags: 0
@@ -8128,6 +8130,9 @@ GameObject:
   - component: {fileID: 8100000000000000003}
   - component: {fileID: 267978060972295176}
   - component: {fileID: 1800000010}
+  - component: {fileID: 5519811395993231715}
+  - component: {fileID: 3025603603602086385}
+  - component: {fileID: 5143901276616427757}
   m_Layer: 0
   m_Name: CombatLogic
   m_TagString: Untagged
@@ -8181,8 +8186,7 @@ MonoBehaviour:
   forceAlliesInitiativeFirst: 0
   _progressionService: {fileID: 267978060972295176}
   _devUnlockAllPassives: 0
-  _skillTreeAuthoringAssets:
-  - {fileID: 11400000, guid: bcf74d0508471f74890676505eeeb9c3, type: 2}
+  _skillTreeAuthoringAssets: []
   victoryPanel: {fileID: 5779153611788775055}
   defeatPanel: {fileID: 6638602940490860242}
   defaultPlaySeconds: 2.5
@@ -8311,6 +8315,57 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CorruptionManager
   mirrorCorruptionValue: 0
+--- !u!114 &5519811395993231715
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6656784344468029839}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f445355ad4e43c54ba48eec08a6332ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CombatInputReader
+  navigationThreshold: 0.55
+  firstRepeatDelay: 0.35
+  repeatInterval: 0.12
+  invertGamepadConfirmCancelByDefault: 0
+--- !u!114 &3025603603602086385
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6656784344468029839}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a62d4299e5c7ab841b6601aa6dc5f0b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CombatInputController
+  inputReader: {fileID: 5519811395993231715}
+  combatSession: {fileID: 7103085520931988737}
+  skillBarUiManager: {fileID: 5213722406700642896}
+  upEnemyRank: 1
+  downEnemyRank: 3
+  leftEnemyRank: 4
+  rightEnemyRank: 2
+--- !u!114 &5143901276616427757
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6656784344468029839}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02d7faab72c22344596c8c9e26aa4f9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CombatInputHoverMarkerBridge
+  inputController: {fileID: 3025603603602086385}
+  combatSession: {fileID: 7103085520931988737}
+  skillBarUiManager: {fileID: 5213722406700642896}
+  hoverFocusMarker: {fileID: 1677878620781844739}
 --- !u!1 &6731093102713405720
 GameObject:
   m_ObjectHideFlags: 0
@@ -10335,6 +10390,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8d8a6a5e6d0fab41b9d7bac5329a3c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FootstepEmitter
+  mainVolume: 1
+  companionVolume: 0.35
 --- !u!1 &8812232703128204443
 GameObject:
   m_ObjectHideFlags: 0
@@ -13026,6 +13083,14 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6344897000204196047, guid: c0b602d37e8b25644b7f45de886d814a, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6344897000204196047, guid: c0b602d37e8b25644b7f45de886d814a, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6348414338913707809, guid: c0b602d37e8b25644b7f45de886d814a, type: 3}
       propertyPath: m_AnchorMax.y
       value: 1
@@ -15335,12 +15400,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4841712296501805057, guid: 6bfc6449b4a85c148a3365f90e9c0516, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8814032051153444459}
-    - targetCorrespondingSourceObject: {fileID: 4918527283113538925, guid: 6bfc6449b4a85c148a3365f90e9c0516, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2741490835321360527}
-    - targetCorrespondingSourceObject: {fileID: 8914449346722121534, guid: 6bfc6449b4a85c148a3365f90e9c0516, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2444958002511057296}
   m_SourcePrefab: {fileID: 100100000, guid: 6bfc6449b4a85c148a3365f90e9c0516, type: 3}
 --- !u!1 &131316646943341510 stripped
 GameObject:
@@ -15354,26 +15413,6 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 131316646943341510}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
-  hoverSound: Hover
-  clickSound: Press
-  dragTickInterval: 0.1
---- !u!1 &191055067617411152 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8914449346722121534, guid: 6bfc6449b4a85c148a3365f90e9c0516, type: 3}
-  m_PrefabInstance: {fileID: 8723683453088434030}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &2444958002511057296
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 191055067617411152}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
@@ -15419,26 +15458,6 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4188779001515050863}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
-  hoverSound: Hover
-  clickSound: Press
-  dragTickInterval: 0.1
---- !u!1 &4418771619204739587 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4918527283113538925, guid: 6bfc6449b4a85c148a3365f90e9c0516, type: 3}
-  m_PrefabInstance: {fileID: 8723683453088434030}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &2741490835321360527
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4418771619204739587}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}

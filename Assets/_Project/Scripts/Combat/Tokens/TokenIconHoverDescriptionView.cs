@@ -21,8 +21,10 @@ namespace Erumperem.Combat.Tokens
         public const string TokenDescriptionPanelChildName = "TokenDescriptionPanel";
         public const string TokenDescriptionTextChildName = "TokenDescriptionText";
 
+        private const string HoverHitboxChildName = "TokenHoverHitbox";
         private const string PanelPunchTweenId = "TokenDescPanelPunch";
         private const string PanelFadeTweenId = "TokenDescPanelFade";
+        private const float HoverHitboxExpandPixels = 28f;
 
         [Header("Bindings (auto-resolved by name if empty)")]
         [Tooltip("Painel raiz da tooltip; é activado/desactivado e recebe o punch.")]
@@ -74,6 +76,7 @@ namespace Erumperem.Combat.Tokens
 
             EnsureCanvasGroup();
             ApplyRaycastBlockingPolicy();
+            EnsureExpandedHoverHitbox();
             HidePanelImmediate();
         }
 
@@ -212,6 +215,71 @@ namespace Erumperem.Combat.Tokens
             foreach (var graphic in _descriptionPanelRoot.GetComponentsInChildren<Graphic>(includeInactive: true))
             {
                 graphic.raycastTarget = false;
+            }
+        }
+
+        private void EnsureExpandedHoverHitbox()
+        {
+            var slotRect = (RectTransform)transform;
+            var hitboxRect = FindDescendantRectTransformByName(slotRect, HoverHitboxChildName);
+            if (hitboxRect == null)
+            {
+                var hitboxObject = new GameObject(
+                    HoverHitboxChildName,
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(Image));
+                hitboxRect = (RectTransform)hitboxObject.transform;
+                hitboxRect.SetParent(slotRect, false);
+            }
+
+            hitboxRect.SetSiblingIndex(0);
+            hitboxRect.anchorMin = Vector2.zero;
+            hitboxRect.anchorMax = Vector2.one;
+            hitboxRect.pivot = new Vector2(0.5f, 0.5f);
+            hitboxRect.offsetMin = new Vector2(-HoverHitboxExpandPixels, -HoverHitboxExpandPixels);
+            hitboxRect.offsetMax = new Vector2(HoverHitboxExpandPixels, HoverHitboxExpandPixels);
+
+            var hitboxImage = hitboxRect.GetComponent<Image>();
+            if (hitboxImage == null)
+            {
+                hitboxImage = hitboxRect.gameObject.AddComponent<Image>();
+            }
+
+            hitboxImage.color = Color.clear;
+            hitboxImage.raycastTarget = true;
+            hitboxImage.raycastPadding = Vector4.zero;
+
+            ExpandRaycastOnSlotGraphics();
+        }
+
+        private void ExpandRaycastOnSlotGraphics()
+        {
+            foreach (var graphic in GetComponentsInChildren<Graphic>(includeInactive: true))
+            {
+                if (graphic.name == HoverHitboxChildName)
+                {
+                    continue;
+                }
+
+                if (_descriptionPanelRoot != null &&
+                    (graphic.transform == _descriptionPanelRoot ||
+                     graphic.transform.IsChildOf(_descriptionPanelRoot)))
+                {
+                    continue;
+                }
+
+                if (graphic is TextMeshProUGUI)
+                {
+                    graphic.raycastTarget = false;
+                    continue;
+                }
+
+                graphic.raycastPadding = new Vector4(
+                    HoverHitboxExpandPixels,
+                    HoverHitboxExpandPixels,
+                    HoverHitboxExpandPixels,
+                    HoverHitboxExpandPixels);
             }
         }
 

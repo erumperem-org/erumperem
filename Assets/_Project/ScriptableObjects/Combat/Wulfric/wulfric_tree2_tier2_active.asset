@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0ab11117e8f4d2e9a3b5c6d7e8f9012, type: 3}
+  m_Name: wulfric_tree2_tier2_active
+  m_EditorClassIdentifier: 
+  _abilityId: wulfric_tree2_tier2_active
+  _displayName: From Body to Blade
+  _ownerCharacterId: wulfric
+  _abilityKind: 0
+  _placement: 1
+  _treeIndex: 2
+  _tierIndex: 2
+  _passiveIndex: 1
+  _corruptionMinTier: 0
+  _designerNotes: Wulfric kit. Duplicate this asset, change abilityId, Export Catalog.
+  _activeSkillTypeLabel: Active
+  _activeSkillDamageElement: 2
+  _baseDamageMinimum: 25
+  _baseDamageMaximum: 30
+  _baseCriticalHitChanceFraction: 0.05
+  _baseHitAccuracyFraction: 2
+  _targetSelectionKind: 0
+  _aiAbsoluteChanceToConsiderWhenEligible: 1
+  _aiOnlyEligibleWhenOwnHpFractionBelow: 1
+  _corruptionCostAddedWhenPlayerCasts: 6
+  _hitCount: 1
+  _chanceToNotEndTurn: 0
+  _followUpSkillIds: []
+  _grantsBonusActionsToAllies: 0
+  _accuracyPenaltyPerLivingEnemy: 0
+  _hasBonusDamagePerOwnToken: 0
+  _bonusDamagePerOwnToken: 0
+  _bonusDamagePerOwnTokenStacks: 1
+  _computeFromDebuffTypesOnTarget: 0
+  _damagePerDistinctDebuffType: 0
+  _critChancePerDistinctDebuffType: 0
+  _accuracyPerDistinctDebuffType: 0
+  _canTargetDeadAllies: 0
+  _effectsAppliedAfterSuccessfulHit:
+  - Type: 11
+    Chance: 1
+    Stacks: 0
+    Potency: 10
+    AmountMax: 0
+    Duration: 0
+    Steps: 0
+    EffectScope: 2
+    HasToken: 0
+    Token: 0
+    HasDot: 0
+    Dot: 0
+    HasScaleFromToken: 0
+    ScaleFromToken: 0
+    ScaleStacksPerSourceStack: 0
+    ScaleStacksSourceDivisor: 1
+  _requiredPartyRole: 0
+  _chanceToTrigger: 1
+  _maxTriggersPerBattle: 0
+  _maxTriggersPerTurn: 0
+  _passiveConditions: []
+  _passiveEffects: []
+  _treeNodeUnlockCost: 1
+  _treeNodePrerequisiteAbilityIds:
+  - wulfric_tree2_tier2_passive1
+  - wulfric_tree2_tier2_passive2
+  - wulfric_tree2_tier2_passive3

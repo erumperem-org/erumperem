@@ -16,9 +16,7 @@ public static class CombatDamageCalculator
         Combatant target,
         SkillDefinition skill)
     {
-        var attackElement = skill.Element == ElementType.None
-            ? actor.ElementAffinity.Element
-            : skill.Element;
+        var attackElement = ResolveAttackElement(actor, skill);
         var defenseElement = target.ElementAffinity.Element;
         if (ElementTriangle.HasAdvantage(attackElement, defenseElement))
         {
@@ -31,6 +29,28 @@ public static class CombatDamageCalculator
         }
 
         return 1.0;
+    }
+
+    public static ElementType ResolveAttackElement(Combatant actor, SkillDefinition skill)
+    {
+        if (skill == null || actor == null)
+        {
+            return ElementType.None;
+        }
+
+        return skill.Element == ElementType.None
+            ? actor.ElementAffinity.Element
+            : skill.Element;
+    }
+
+    public static ElementMatchupKind GetElementMatchup(
+        Combatant actor,
+        Combatant target,
+        SkillDefinition skill)
+    {
+        var attackElement = ResolveAttackElement(actor, skill);
+        var defenseElement = target?.ElementAffinity.Element ?? ElementType.None;
+        return ElementTriangle.GetMatchup(attackElement, defenseElement);
     }
 
     public static double CorruptionDamageMultiplier(BattleState state, Combatant actor, Combatant target)
@@ -55,7 +75,8 @@ public static class CombatDamageCalculator
         Combatant target,
         SkillDefinition skill)
     {
-        var baseChance = skill.BaseCritChance + actor.Stats.CritChance;
+        var actorModifiers = PassiveDataDrivenEngine.GetPermanentStatModifiers(state, actor, target, skill);
+        var baseChance = skill.BaseCritChance + actor.Stats.CritChance + actorModifiers.CritChanceAdditive;
         var tierModifiers = state.BalanceConfig.GetTierModifiers(state.CorruptionTier);
 
         if (actor.Identity.Faction == Faction.Player)
@@ -68,6 +89,17 @@ public static class CombatDamageCalculator
             baseChance += tierModifiers.EnemyCritBonusAgainstPlayer;
         }
 
+        baseChance += CombatStatusRules.CritChanceBonusFromAttackerTokens(actor.Tokens);
+        baseChance += CombatStatusRules.CritChanceBonusFromDefenderTokens(
+            target.Tokens,
+            PassiveDataDrivenEngine.CreateTokenEfficiencyLookup(state, target, actor));
+
+        if (skill.ComputeFromDebuffTypesOnTarget)
+        {
+            var distinctDebuffCount = CombatStatusRules.CountDistinctDebuffTypes(target.Tokens);
+            baseChance += skill.CritChancePerDistinctDebuffType * distinctDebuffCount;
+        }
+
         return Math.Clamp(baseChance, 0, 1);
     }
 
@@ -77,26 +109,24 @@ public static class CombatDamageCalculator
         int damage,
         bool consumeMitigationTokens)
     {
-        if (target.Tokens.GetStacks(TokenType.BlockPlus) > 0)
-        {
-            if (consumeMitigationTokens)
-            {
-                target.Tokens.ConsumeOne(TokenType.BlockPlus);
-            }
-
-            damage = (int)Math.Round(damage * state.BalanceConfig.BlockPlusDamageMultiplier);
-        }
-        else if (target.Tokens.GetStacks(TokenType.Block) > 0)
-        {
-            if (consumeMitigationTokens)
-            {
-                target.Tokens.ConsumeOne(TokenType.Block);
-            }
-
-            damage = (int)Math.Round(damage * state.BalanceConfig.BlockDamageMultiplier);
-        }
-
+        _ = state;
+        _ = target;
+        _ = consumeMitigationTokens;
         return Math.Max(0, damage);
+    }
+
+    public static int ApplyMitigationForConnectedHit(
+        BattleState state,
+        Combatant target,
+        int damageBeforeMitigation,
+        bool consumeMitigationTokens)
+    {
+        var damageAfterMitigation = ApplyMitigation(
+            state,
+            target,
+            damageBeforeMitigation,
+            consumeMitigationTokens);
+        return FloorConnectedHitDamage(damageAfterMitigation, damageBeforeMitigation);
     }
 
     public readonly record struct DirectDamageBeforeMitigation(
@@ -118,12 +148,18 @@ public static class CombatDamageCalculator
         var incomingPassiveNotes = capturePassiveNotes ? new List<PassiveCombatNote>() : null;
         var notifyPassiveObservers = capturePassiveNotes;
 
-        var damage = baseDamageAmount;
+        var actorModifiers = PassiveDataDrivenEngine.GetPermanentStatModifiers(state, actor, target, skill);
+        var defenderModifiers = PassiveDataDrivenEngine.GetPermanentStatModifiers(state, target, actor, skill);
+        var actorTokenEfficiency = PassiveDataDrivenEngine.CreateTokenEfficiencyLookup(state, actor, target);
+        var targetTokenEfficiency = PassiveDataDrivenEngine.CreateTokenEfficiencyLookup(state, target, actor);
+
+        var damage = baseDamageAmount + actorModifiers.SkillDamageFlat;
         damage *= GetElementalMultiplier(state, actor, target, skill);
 
         if (isCriticalStrike)
         {
-            damage *= CorruptionRules.BaseCriticalStrikeDamageMultiplier;
+            damage *= CombatStatusRules.CritDamageMultiplierFromDefenderMark(target.Tokens, targetTokenEfficiency);
+            damage *= 1.0 + actorModifiers.CritDamageAdditive;
             if (actor.Identity.Faction == Faction.Enemy &&
                 target.Identity.Faction == Faction.Player)
             {
@@ -133,20 +169,25 @@ public static class CombatDamageCalculator
         }
 
         damage *= CorruptionDamageMultiplier(state, actor, target);
+        damage *= CombatStatusRules.DamageCausedMultiplierFromTokens(actor.Tokens, actorTokenEfficiency);
+        damage *= CombatStatusRules.IncomingDamageMultiplierFromTokens(target.Tokens, targetTokenEfficiency);
+        damage = CombatStatusRules.ApplyBaseDefenseChance(
+            damage,
+            target.Stats.DefenseChance + defenderModifiers.DefenseChanceAdditive);
 
         var shouldClearImpetoCleaveBonus = false;
         if (damage > 0 && target.Identity.Id != actor.Identity.Id)
         {
-            var (outgoingAccumulator, consumeImpeto, _) =
-                state.PassiveBus.AccumulateOutgoingDamageModifiers(
+            var (damageCausedAccumulator, consumeImpeto, _) =
+                state.PassiveBus.AccumulateDamageCausedModifiers(
                     state,
                     actor,
                     target,
                     skill,
                     notifyObservers: notifyPassiveObservers,
                     noteSink: outgoingPassiveNotes);
-            damage *= (1.0 + outgoingAccumulator.OutgoingDamageAdditiveSum) *
-                      outgoingAccumulator.OutgoingDamageMultiplicativeProduct;
+            damage *= (1.0 + damageCausedAccumulator.DamageCausedAdditiveSum + actorModifiers.DamageCausedAdditive) *
+                      damageCausedAccumulator.DamageCausedMultiplicativeProduct;
             damage = Math.Max(0, damage);
             shouldClearImpetoCleaveBonus = consumeImpeto;
         }
@@ -180,7 +221,7 @@ public static class CombatDamageCalculator
             : Array.Empty<PassiveCombatNote>();
 
         return new DirectDamageBeforeMitigation(
-            (int)Math.Round(damage),
+            FloorConnectedHitDamage((int)Math.Round(damage), damage),
             shouldClearImpetoCleaveBonus,
             resolvedOutgoingNotes,
             resolvedIncomingNotes);
@@ -203,7 +244,7 @@ public static class CombatDamageCalculator
             baseRollDamage,
             isCriticalStrike,
             capturePassiveNotes: false);
-        return ApplyMitigation(
+        return ApplyMitigationForConnectedHit(
             state,
             target,
             damageBeforeMitigation.DamageBeforeMitigation,
@@ -226,10 +267,87 @@ public static class CombatDamageCalculator
             averageBaseDamage,
             isCriticalStrike: false,
             capturePassiveNotes: false);
-        return ApplyMitigation(
+        return ApplyMitigationForConnectedHit(
             state,
             target,
             damageBeforeMitigation.DamageBeforeMitigation,
             consumeMitigationTokens);
+    }
+
+    public static double ComputeEffectiveHitChanceFraction(
+        BattleState state,
+        Combatant actor,
+        Combatant target,
+        SkillDefinition skill)
+    {
+        var actorModifiers = PassiveDataDrivenEngine.GetPermanentStatModifiers(state, actor, target, skill);
+        var actorTokenEfficiency = PassiveDataDrivenEngine.CreateTokenEfficiencyLookup(state, actor, target);
+        var targetTokenEfficiency = PassiveDataDrivenEngine.CreateTokenEfficiencyLookup(state, target, actor);
+        var hitChance = skill.Accuracy * actor.Stats.Accuracy;
+        hitChance += actorModifiers.AccuracyAdditive + actorModifiers.SkillAccuracyAdditive;
+        hitChance += CombatStatusRules.AccuracyModifierFromActorTokens(actor.Tokens, actorTokenEfficiency);
+        hitChance += CombatStatusRules.AccuracyBonusFromTargetExposition(target.Tokens, targetTokenEfficiency);
+        hitChance -= CombatStatusRules.AccuracyPenaltyFromTargetStealth(target.Tokens);
+
+        if (skill.AccuracyPenaltyPerLivingEnemy > 0)
+        {
+            var livingEnemyCount = state.GetAllCombatants().Count(combatant =>
+                !combatant.Health.IsDead &&
+                combatant.Position.Side != actor.Position.Side);
+            hitChance -= skill.AccuracyPenaltyPerLivingEnemy * livingEnemyCount;
+        }
+
+        if (skill.ComputeFromDebuffTypesOnTarget)
+        {
+            var distinctDebuffCount = CombatStatusRules.CountDistinctDebuffTypes(target.Tokens);
+            hitChance += skill.AccuracyPerDistinctDebuffType * distinctDebuffCount;
+        }
+
+        if (actor.Identity.Faction == Faction.Enemy)
+        {
+            var enemyAccuracyTierModifiers = state.BalanceConfig.GetTierModifiers(state.CorruptionTier);
+            hitChance += enemyAccuracyTierModifiers.EnemyAccuracyBonus;
+        }
+
+        if (skill.Accuracy <= 0 && hitChance <= 0)
+        {
+            return Math.Max(0, hitChance);
+        }
+
+        return Math.Clamp(
+            hitChance,
+            CombatStatusRules.MinimumHitChanceFraction,
+            CombatStatusRules.MaximumHitChanceFraction);
+    }
+
+    public static int FloorConnectedHitDamage(int roundedDamage, double unroundedDamage)
+    {
+        if (unroundedDamage > 0)
+        {
+            return Math.Max(1, roundedDamage);
+        }
+
+        return Math.Max(0, roundedDamage);
+    }
+
+    public static int ComputeBonusDamageFromSkillTokens(
+        Combatant actor,
+        Combatant target,
+        SkillDefinition skill)
+    {
+        var bonusDamage = 0;
+        if (skill.BonusDamagePerOwnToken.HasValue)
+        {
+            var ownTokenStacks = actor.Tokens.GetStacks(skill.BonusDamagePerOwnToken.Value);
+            bonusDamage += ownTokenStacks * Math.Max(1, skill.BonusDamagePerOwnTokenStacks);
+        }
+
+        if (skill.ComputeFromDebuffTypesOnTarget)
+        {
+            var distinctDebuffCount = CombatStatusRules.CountDistinctDebuffTypes(target.Tokens);
+            bonusDamage += distinctDebuffCount * Math.Max(0, skill.DamagePerDistinctDebuffType);
+        }
+
+        return bonusDamage;
     }
 }

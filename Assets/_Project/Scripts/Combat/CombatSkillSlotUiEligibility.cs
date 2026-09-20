@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using Game.Core.Domain;
 using Game.Core.Engine;
@@ -39,28 +38,22 @@ namespace Erumperem.Combat
                 return true;
             }
 
-            if (skill.TargetKind != SkillTargetKind.Enemy)
+            if (SkillTargetKindRules.DirectsPrimaryDamageAtEnemies(skill.TargetKind))
             {
-                return false;
+                return HasAnyValidEnemyForSlot(state, simulator, actor, hotkeyIndexZeroBased);
             }
 
-            return HasAnyValidEnemyForSlot(state, simulator, actor, hotkeyIndexZeroBased);
+            return HasAnyValidSameSideTargetForSlot(state, simulator, actor, hotkeyIndexZeroBased);
         }
 
-        private static bool HasAnyValidEnemyForSlot(
+        private static bool HasAnyValidSameSideTargetForSlot(
             BattleState state,
             BattleSimulator simulator,
             Combatant actor,
             int hotkeyIndexZeroBased)
         {
-            var enemies = actor.Position.Side == Side.Allies ? state.Enemies : state.Allies;
-            var living = enemies.Where(c => !c.Health.IsDead).ToList();
-            if (living.Count == 0)
-            {
-                return false;
-            }
-
-            foreach (var candidate in GetEnemyIntentPoolForUiProbe(living))
+            var sameSideRoster = actor.Position.Side == Side.Allies ? state.Allies : state.Enemies;
+            foreach (var candidate in sameSideRoster)
             {
                 if (PlayerActionBuilder.TryCreate(state, simulator, actor, hotkeyIndexZeroBased, candidate) != null)
                 {
@@ -71,10 +64,21 @@ namespace Erumperem.Combat
             return false;
         }
 
-        private static List<Combatant> GetEnemyIntentPoolForUiProbe(IReadOnlyList<Combatant> living)
+        private static bool HasAnyValidEnemyForSlot(
+            BattleState state,
+            BattleSimulator simulator,
+            Combatant actor,
+            int hotkeyIndexZeroBased)
         {
-            var taunt = living.Where(c => c.Tokens.GetStacks(TokenType.Taunt) > 0).ToList();
-            return taunt.Count > 0 ? taunt : living.ToList();
+            foreach (var candidate in SkillTargetResolver.GetValidEnemyPool(state, actor))
+            {
+                if (PlayerActionBuilder.TryCreate(state, simulator, actor, hotkeyIndexZeroBased, candidate) != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
