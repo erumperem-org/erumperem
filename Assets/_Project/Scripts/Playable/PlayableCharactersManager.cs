@@ -56,6 +56,8 @@ public sealed class PlayableCharactersManager : MonoBehaviour
         EnsureSceneReferencesResolved();
         if (GetComponent<Player.ExplorationPointerController>() == null)
             gameObject.AddComponent<Player.ExplorationPointerController>();
+        if (GetComponent<CameraOcclusionCutaway>() == null)
+            gameObject.AddComponent<CameraOcclusionCutaway>();
     }
 
     private void EnsureSceneReferencesResolved()
