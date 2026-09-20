@@ -20,6 +20,7 @@ public class PlayableCharacterControllerEditor : Editor
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Em Jogo", string.IsNullOrEmpty(controller.InGameCharacterId) ? "-" : controller.InGameCharacterId);
         EditorGUILayout.LabelField("Companheiro", string.IsNullOrEmpty(controller.CompanionCharacterId) ? "-" : controller.CompanionCharacterId);
+        EditorGUILayout.LabelField("Resting", string.IsNullOrEmpty(controller.RestingCharacterId) ? "-" : controller.RestingCharacterId);
 
         using (new EditorGUI.DisabledScope(!Application.isPlaying))
         {

@@ -23,7 +23,7 @@ public class PlayableCharacters : MonoBehaviour
 
     [Header("Configuração")]
     [SerializeField] private PlayableCharacterSettings settings;
-    [SerializeField] private AllyCharacterStatDefinition info;
+    [SerializeField] public AllyCharacterStatDefinition info;
 
     [Header("Vida")]
     [SerializeField] private PlayableCharacterHealthBarInstaller healthBar;

@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 public sealed class UiNavigationSession
 {
     private readonly List<UiNavigationTarget> _targets = new();
     private readonly UiEventSystemNavigationGuard _eventSystemNavigationGuard = new();
+    private readonly UiGameplayInputBlocker _gameplayInputBlocker = new();
     private readonly bool _debugActivation;
 
     private KeyboardNavigablePanel _activePanel;
@@ -20,6 +20,7 @@ public sealed class UiNavigationSession
     public void Tick()
     {
         SyncActivePanel();
+        _gameplayInputBlocker.SetBlocked(_activePanel != null);
     }
 
     public void Navigate(UiNavigationDirection direction)
@@ -109,6 +110,7 @@ public sealed class UiNavigationSession
         _activePanel = null;
         _targets.Clear();
         _eventSystemNavigationGuard.Restore();
+        _gameplayInputBlocker.Release();
     }
 
     private void SyncActivePanel()

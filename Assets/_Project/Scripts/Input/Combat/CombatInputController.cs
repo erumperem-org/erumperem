@@ -6,7 +6,6 @@ using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public enum CombatInputPhase
@@ -19,25 +18,25 @@ public enum CombatInputPhase
 [DisallowMultipleComponent]
 public sealed class CombatInputController : MonoBehaviour
 {
-    [SerializeField] private InfinitySkillScroll skillScroll;
     [Header("Input")]
     [SerializeField] private CombatInputReader inputReader;
 
     [Header("Combat")]
     [SerializeField] private CombatPrototypeController combatSession;
     [SerializeField] private CombatSkillButtonBarUIManager skillBarUiManager;
+    [SerializeField] private InfinitySkillScroll skillScroll;
 
-    [Header("Enemy Direction Mapping")]
-    [Tooltip("FrontRank do inimigo selecionado quando o jogador aperta Cima.")]
+    [Header("Enemy Direction Mapping - Stable Slots")]
+    [Tooltip("Slot lógico fixo do inimigo selecionado quando o jogador aperta Cima. O slot não muda quando outro inimigo morre ou quando FrontRank é compactado.")]
     [SerializeField, Min(1)] private int upEnemyRank = 1;
 
-    [Tooltip("FrontRank do inimigo selecionado quando o jogador aperta Baixo.")]
+    [Tooltip("Slot lógico fixo do inimigo selecionado quando o jogador aperta Baixo. O slot não muda quando outro inimigo morre ou quando FrontRank é compactado.")]
     [SerializeField, Min(1)] private int downEnemyRank = 3;
 
-    [Tooltip("FrontRank do inimigo selecionado quando o jogador aperta Esquerda.")]
+    [Tooltip("Slot lógico fixo do inimigo selecionado quando o jogador aperta Esquerda. O slot não muda quando outro inimigo morre ou quando FrontRank é compactado.")]
     [SerializeField, Min(1)] private int leftEnemyRank = 4;
 
-    [Tooltip("FrontRank do inimigo selecionado quando o jogador aperta Direita.")]
+    [Tooltip("Slot lógico fixo do inimigo selecionado quando o jogador aperta Direita. O slot não muda quando outro inimigo morre ou quando FrontRank é compactado.")]
     [SerializeField, Min(1)] private int rightEnemyRank = 2;
 
     private CombatInputPhase _phase;
@@ -94,11 +93,19 @@ public sealed class CombatInputController : MonoBehaviour
         {
             skillBarUiManager = FindFirstObjectByType<CombatSkillButtonBarUIManager>();
         }
+
+        if (skillScroll == null)
+        {
+            skillScroll = FindFirstObjectByType<InfinitySkillScroll>();
+        }
     }
 
     private void SubscribeInput()
     {
-        if (inputReader == null) return;
+        if (inputReader == null)
+        {
+            return;
+        }
 
         inputReader.NavigateRequested -= HandleNavigateRequested;
         inputReader.ConfirmRequested -= HandleConfirmRequested;
@@ -110,7 +117,10 @@ public sealed class CombatInputController : MonoBehaviour
 
     private void UnsubscribeInput()
     {
-        if (inputReader == null) return;
+        if (inputReader == null)
+        {
+            return;
+        }
 
         inputReader.NavigateRequested -= HandleNavigateRequested;
         inputReader.ConfirmRequested -= HandleConfirmRequested;
@@ -184,7 +194,10 @@ public sealed class CombatInputController : MonoBehaviour
 
     private void SetPhase(CombatInputPhase phase)
     {
-        if (_phase == phase) return;
+        if (_phase == phase)
+        {
+            return;
+        }
 
         _phase = phase;
         PhaseChanged?.Invoke(_phase);
@@ -250,7 +263,6 @@ public sealed class CombatInputController : MonoBehaviour
 
         var step = direction == CombatInputDirection.Left || direction == CombatInputDirection.Up ? -1 : 1;
         var nextIndex = (currentIndex + step + panels.Count) % panels.Count;
-    
         FocusSkillPanel(panels[nextIndex]);
     }
 
@@ -294,7 +306,10 @@ public sealed class CombatInputController : MonoBehaviour
         var result = new List<SkillButtonPanelView>();
         var row = skillBarUiManager != null ? skillBarUiManager.SkillsRowView : null;
 
-        if (row == null) return result;
+        if (row == null)
+        {
+            return result;
+        }
 
         var panels = row.GetComponentsInChildren<SkillButtonPanelView>(true);
 
@@ -302,11 +317,17 @@ public sealed class CombatInputController : MonoBehaviour
         {
             var panel = panels[panelIndex];
 
-            if (panel == null || !panel.gameObject.activeInHierarchy) continue;
+            if (panel == null || !panel.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
 
             var button = panel.GetComponentInChildren<Button>(true);
 
-            if (button == null || !button.interactable) continue;
+            if (button == null || !button.interactable)
+            {
+                continue;
+            }
 
             result.Add(panel);
         }
@@ -331,19 +352,29 @@ public sealed class CombatInputController : MonoBehaviour
         _focusedSkillSlotIndex = panel.ZeroBasedSlotIndex;
         _focusedSkillPanel.HandlePointerEnter();
 
-        var button = _focusedSkillPanel.GetComponentInChildren<Button>(true);
-
-        if (button != null && EventSystem.current != null)
-        {
-            EventSystem.current.SetSelectedGameObject(button.gameObject);
-        }
-
-        if (skillScroll != null)
-        {
-            skillScroll.ScrollToItem(panel.transform.GetSiblingIndex());
-        }
+        CenterFocusedSkill();
 
         SkillFocusChanged?.Invoke(_focusedSkillSlotIndex);
+    }
+
+    private void CenterFocusedSkill()
+    {
+        if (!_focusedSkillSlotIndex.HasValue)
+        {
+            return;
+        }
+
+        if (skillScroll == null)
+        {
+            skillScroll = FindFirstObjectByType<InfinitySkillScroll>();
+        }
+
+        if (skillScroll == null)
+        {
+            return;
+        }
+
+        skillScroll.ScrollToItem(_focusedSkillSlotIndex.Value);
     }
 
     private void ClearSkillHover()
@@ -353,27 +384,31 @@ public sealed class CombatInputController : MonoBehaviour
             _focusedSkillPanel.HandlePointerExit();
             _focusedSkillPanel = null;
         }
-
-        if (EventSystem.current != null)
-        {
-            EventSystem.current.SetSelectedGameObject(null);
-        }
     }
 
     private void ConfirmSkill()
     {
-        if (combatSession == null) return;
+        if (combatSession == null)
+        {
+            return;
+        }
 
         if (_focusedSkillPanel == null)
         {
             FocusInitialSkill();
         }
 
-        if (_focusedSkillPanel == null) return;
+        if (_focusedSkillPanel == null)
+        {
+            return;
+        }
 
         var ownerCombatantId = combatSession.PendingPlayerCombatantId;
 
-        if (string.IsNullOrEmpty(ownerCombatantId)) return;
+        if (string.IsNullOrEmpty(ownerCombatantId))
+        {
+            return;
+        }
 
         var selectedSlot = _focusedSkillPanel.ZeroBasedSlotIndex;
 
@@ -387,21 +422,21 @@ public sealed class CombatInputController : MonoBehaviour
         SyncPhaseWithCombat();
     }
 
-    // ── Target Navigation (Teclado / Gamepad) ────────────────────────────
-
     private void NavigateTargets(CombatInputDirection direction)
     {
-        if (!TryGetSelectedSkillContext(out _, out _, out var skill, out var candidates))
+        if (!TryGetSelectedSkillContext(out var actor, out _, out var skill, out var candidates))
         {
             return;
         }
 
-        if (!IsEnemyTarget(skill))
+        if (!IsEnemyTarget(skill) || combatSession == null || combatSession.BattleState == null)
         {
             return;
         }
 
-        if (!CombatDirectionalTargetResolver.TryResolve(candidates, direction, upEnemyRank, downEnemyRank, leftEnemyRank, rightEnemyRank, out var target))
+        var stableEnemyRoster = ResolveEnemyRoster(combatSession.BattleState, actor);
+
+        if (!CombatDirectionalTargetResolver.TryResolve(stableEnemyRoster, candidates, direction, upEnemyRank, downEnemyRank, leftEnemyRank, rightEnemyRank, out var target))
         {
             return;
         }
@@ -467,7 +502,10 @@ public sealed class CombatInputController : MonoBehaviour
 
     private void ConfirmTarget()
     {
-        if (combatSession == null) return;
+        if (combatSession == null)
+        {
+            return;
+        }
 
         if (string.IsNullOrEmpty(_focusedTargetCombatantId))
         {
@@ -481,7 +519,10 @@ public sealed class CombatInputController : MonoBehaviour
 
         var target = combatSession.FindCombatantById(_focusedTargetCombatantId);
 
-        if (target == null) return;
+        if (target == null)
+        {
+            return;
+        }
 
         if (!CombatExistingTargetInputAdapter.TryConfirmTarget(combatSession, target))
         {
@@ -550,7 +591,10 @@ public sealed class CombatInputController : MonoBehaviour
         {
             var candidate = candidatePool[candidateIndex];
 
-            if (candidate == null || candidate.Health.IsDead) continue;
+            if (candidate == null || candidate.Health.IsDead)
+            {
+                continue;
+            }
 
             if (PlayerActionBuilder.TryCreate(battleState, combatSession.BattleSimulator, actor, zeroBasedSlot, candidate) != null)
             {
@@ -560,6 +604,7 @@ public sealed class CombatInputController : MonoBehaviour
 
         return true;
     }
+
 
     private static bool IsEnemyTarget(SkillDefinition skill)
     {
@@ -574,6 +619,16 @@ public sealed class CombatInputController : MonoBehaviour
     private static bool IsSelfTarget(SkillDefinition skill)
     {
         return skill != null && (int)skill.TargetKind == 2;
+    }
+
+    private static IReadOnlyList<Combatant> ResolveEnemyRoster(BattleState battleState, Combatant actor)
+    {
+        if (battleState == null || actor == null)
+        {
+            return Array.Empty<Combatant>();
+        }
+
+        return actor.Position.Side == Side.Allies ? battleState.Enemies.ToList() : battleState.Allies.ToList();
     }
 
     private static List<Combatant> ResolveCandidatePool(BattleState battleState, Combatant actor, SkillDefinition skill)
@@ -591,5 +646,3 @@ public sealed class CombatInputController : MonoBehaviour
         return (actor.Position.Side == Side.Allies ? battleState.Enemies : battleState.Allies).ToList();
     }
 }
-
-//fiz umas mudanças nesses códigos que referenciam ou são o proprio hover marker p evitar uns erros de áudio que estavam acontecendo

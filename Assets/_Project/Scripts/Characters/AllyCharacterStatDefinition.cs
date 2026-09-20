@@ -1,6 +1,7 @@
 using Game.Core.Domain;
 using Game.Core.Models;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Erumperem.Characters
 {
@@ -17,6 +18,7 @@ namespace Erumperem.Characters
         [SerializeField] private string characterId;
 
         [SerializeField] private string displayName;
+        [SerializeField] private Sprite icon;
 
         [Header("Exploração")]
         [SerializeField] private PlayableCharacterState defaultExplorationState = PlayableCharacterState.Resting;
@@ -61,6 +63,7 @@ namespace Erumperem.Characters
 
         public string CharacterId => characterId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? characterId : displayName;
+        public Sprite Icon => icon;
         public PlayableCharacterState DefaultExplorationState => defaultExplorationState;
 
         public int MaxHitPoints => maxHitPoints;

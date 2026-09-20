@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 7383286039283634478}
   - component: {fileID: 7416488466462243716}
   - component: {fileID: 7049038911637844777}
+  - component: {fileID: 3504003075534502572}
   m_Layer: 0
   m_Name: Playable Character
   m_TagString: Untagged
@@ -146,7 +147,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInputMovementController
   moveAction: {fileID: -1680190386980627800, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  sprintAction: {fileID: 1781555164194001046, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  sprintAction: {fileID: -7471211009204490832, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   cameraTransform: {fileID: 0}
   staminaBar: {fileID: 0}
   staminaCostPerSecond: 20
@@ -221,6 +222,31 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayableCharacterAnimation
   animator: {fileID: 5359032152775628257}
   characterState: {fileID: 7416488466462243716}
+--- !u!114 &3504003075534502572
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5098464914717200541}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62cbd49b6b3ac8848ac88802d226bbdb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InteractionSystem.Concrete.PlayableNpcInteractable
+  startAvailable: 1
+  onInteractionStarted:
+    m_PersistentCalls:
+      m_Calls: []
+  onBecameAvailable:
+    m_PersistentCalls:
+      m_Calls: []
+  onBecameUnavailable:
+    m_PersistentCalls:
+      m_Calls: []
+  instigatorProviderSource: {fileID: 0}
+  hub: {fileID: 0}
+  sensor: {fileID: 0}
 --- !u!1001 &2628287554072782092
 PrefabInstance:
   m_ObjectHideFlags: 0
