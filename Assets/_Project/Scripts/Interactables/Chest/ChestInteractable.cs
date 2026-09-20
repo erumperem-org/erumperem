@@ -4,6 +4,7 @@ using Services.DebugUtilities;
 using Services.Loot;
 using UnityEngine;
 
+[RequireComponent(typeof(InteractionOutline))]
 public sealed class ChestInteractable : Interactable
 {
     [Header("Conteúdo")]
@@ -27,6 +28,7 @@ public sealed class ChestInteractable : Interactable
     protected override void Awake()
     {
         base.Awake();
+        EnsureInteractionOutline();
         IsOpened = _startOpened;
     }
 

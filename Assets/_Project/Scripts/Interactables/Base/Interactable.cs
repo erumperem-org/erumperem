@@ -46,7 +46,21 @@ public abstract class Interactable : MonoBehaviour
 
     public abstract bool CanInteract { get; }
 
+    /// <summary>Permissão contextual para texto e outline, independente do fade por proximidade.</summary>
+    public virtual bool CanShowInteractionFeedback => true;
+
     public virtual void ExecuteInteraction(InteractionContext context) { }
+
+    /// <summary>
+    /// Garante a presença do componente visual de interação em interactables
+    /// que optarem por usá-lo. A configuração continua sendo editável no
+    /// Inspector quando o componente é adicionado manualmente ao prefab.
+    /// </summary>
+    protected void EnsureInteractionOutline()
+    {
+        if (GetComponent<InteractionOutline>() == null)
+            gameObject.AddComponent<InteractionOutline>();
+    }
 
     // ── Unity lifecycle ───────────────────────────────────────────────────
 

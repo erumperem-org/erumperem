@@ -12,8 +12,6 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
     [SerializeField] private PlayableAnimationController _animationController;
     [SerializeField] private PlayableCharacter _character;
     [SerializeField] private PlayerInventorySystem _inventory;
-    [SerializeField] private GameObject center;
-    private readonly int centerOffsetForCharacterInteraction = 20;
     public IReadOnlyList<Interactable> Available => _available;
     [SerializeField] private List<Interactable> _available = new();
     private Detector _detector;
@@ -78,6 +76,7 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
         if (_available.Count == 0) return;
 
         var closest = _available
+            .Where(t => t.isActiveAndEnabled && t.CanInteract)
             .OrderBy(t => (transform.position - t.transform.position).sqrMagnitude)
             .FirstOrDefault();
 
@@ -106,7 +105,8 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
 
         closest.ExecuteInteraction(ctx);
 
-        if (!closest.CanInteract)
+        // Personagens podem voltar a ficar disponíveis sem sair do range.
+        if (!closest.CanInteract && closest is not CharacterSelectionNpc)
             _available.Remove(closest);
     }
 
@@ -117,29 +117,25 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
         while (true) { _detector.Scan(); yield return null; }
     }
 
-    private void OnEnter(Collider col, string label, int _)
+    private void OnEnter(Collider col, string label, int shapeIndex)
     {
 
 
 
         if (!IsRelevant(label)) return;
 
-        if (Vector3.Distance(this.transform.position, center.transform.position) < centerOffsetForCharacterInteraction)
-        {
-            TryToggleCharacterInteractPrompt(col, label, shouldShow: true);
-        }
+        TryToggleCharacterInteractPrompt(col, label, shouldShow: true);
         var interactable = ResolveInteractable(col);
-        if (interactable is CharacterSelectionNpc selectionNpc && Vector3.Distance(this.transform.position, center.transform.position) > centerOffsetForCharacterInteraction)
-        {
-            return;
-        }
-        if (interactable == null || _available.Contains(interactable)) return;
+        if (interactable == null) return;
+
+        NotifyInteractionOutline(interactable, label, shapeIndex, shouldShow: true);
+        if (_available.Contains(interactable)) return;
 
         _available.Add(interactable);
         LoggerService.PrintLogMessage(LogLevel.Debug, $"Interactable [{col.gameObject.name}] found");
     }
 
-    private void OnExit(Collider col, string label, int _)
+    private void OnExit(Collider col, string label, int shapeIndex)
     {
         TryToggleCharacterInteractPrompt(col, label, shouldShow: false);
 
@@ -148,6 +144,7 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
         var interactable = ResolveInteractable(col);
         if (interactable != null)
         {
+            NotifyInteractionOutline(interactable, label, shapeIndex, shouldShow: false);
             _available.Remove(interactable);
             var characterSelectionNpc = interactable.GetComponent<CharacterSelectionNpc>();
             if (characterSelectionNpc != null && characterSelectionNpc._canvas != null)
@@ -190,6 +187,23 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
         }
 
         return collider.GetComponentInParent<Interactable>();
+    }
+
+    private void NotifyInteractionOutline(
+        Interactable interactable,
+        string shapeLabel,
+        int shapeIndex,
+        bool shouldShow)
+    {
+        var outline = interactable.GetComponent<InteractionOutline>()
+                      ?? interactable.GetComponentInChildren<InteractionOutline>();
+
+        if (outline == null) return;
+
+        if (shouldShow)
+            outline.RegisterPlayerProximity(_detector, shapeLabel, shapeIndex);
+        else
+            outline.UnregisterPlayerProximity(_detector, shapeLabel, shapeIndex);
     }
 
     private static bool IsRelevant(string label) =>
