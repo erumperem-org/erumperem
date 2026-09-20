@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using BarSystem.Bars.Health;
+using Erumperem.Characters;
 
 /// <summary>
 /// Um personagem jogável, com 3 papéis possíveis (Em Jogo, Companheiro,
@@ -19,10 +20,10 @@ public class PlayableCharacters : MonoBehaviour
              "Por enquanto é uma string livre definida no Inspector - " +
              "deve ser substituído pela fonte externa de identidade de " +
              "personagens quando ela existir (ver README).")]
-    [SerializeField] private string characterId;
 
     [Header("Configuração")]
     [SerializeField] private PlayableCharacterSettings settings;
+    [SerializeField] private AllyCharacterStatDefinition info;
 
     [Header("Vida")]
     [SerializeField] private PlayableCharacterHealthBarInstaller healthBar;
@@ -38,7 +39,7 @@ public class PlayableCharacters : MonoBehaviour
     [SerializeField] private CompanionFollowController companionFollowController;
     [SerializeField] private RestingMovementController restingMovementController;
 
-    public string CharacterId => characterId;
+    public string CharacterId => info.CharacterId;
     public CharacterState CurrentState { get; private set; }
 
     /// <summary>
