@@ -62,9 +62,9 @@ public class Torch : MonoBehaviour
     private void HandleTorchStateChange(bool isLit)
     {
         if (isLit)
-            ActivateObjects();
-        else
             DeactivateObjects();
+        else
+            ActivateObjects();
     }
 
     /// <summary>

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 using Core.CharacterStats;
+using Erumperem.Characters;
 
 /// <summary>
 /// Controlador central do sistema de múltiplos personagens jogáveis. Guarda
@@ -18,8 +19,8 @@ public class PlayableCharacterController : MonoBehaviour
     [SerializeField] private List<PlayableCharacters> characters = new List<PlayableCharacters>();
 
     [Header("Papéis iniciais (usados apenas se não houver arquivo de save)")]
-    [SerializeField] private string initialInGameCharacterId;
-    [SerializeField] private string initialCompanionCharacterId;
+    [SerializeField] private AllyCharacterStatDefinition initialInGameCharacterInfo;
+    [SerializeField] private AllyCharacterStatDefinition initialInCompanionCharacterInfo;
 
     public string InGameCharacterId { get; private set; }
     public string CompanionCharacterId { get; private set; }
@@ -152,11 +153,11 @@ public class PlayableCharacterController : MonoBehaviour
     {
         foreach (var character in characters)
         {
-            if (character.CharacterId == initialInGameCharacterId)
+            if (character.CharacterId == initialInGameCharacterInfo.CharacterId)
             {
                 AssignInGame(character);
             }
-            else if (character.CharacterId == initialCompanionCharacterId)
+            else if (character.CharacterId == initialInCompanionCharacterInfo.CharacterId)
             {
                 AssignCompanion(character);
             }
