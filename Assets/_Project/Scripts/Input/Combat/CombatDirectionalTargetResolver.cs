@@ -3,60 +3,69 @@ using Game.Core.Models;
 
 public static class CombatDirectionalTargetResolver
 {
-    public static bool TryResolve(IReadOnlyList<Combatant> candidates, CombatInputDirection direction, int upRank, int downRank, int leftRank, int rightRank, out Combatant target)
+    public static bool TryResolve(IReadOnlyList<Combatant> stableRoster, IReadOnlyList<Combatant> validCandidates, CombatInputDirection direction, int upSlot, int downSlot, int leftSlot, int rightSlot, out Combatant target)
     {
         target = null;
 
-        if (candidates == null || candidates.Count == 0)
+        if (stableRoster == null || stableRoster.Count == 0 || validCandidates == null || validCandidates.Count == 0)
         {
             return false;
         }
 
-        var desiredRank = ResolveRank(direction, upRank, downRank, leftRank, rightRank);
+        var desiredSlot = ResolveSlot(direction, upSlot, downSlot, leftSlot, rightSlot);
+        var desiredIndex = desiredSlot - 1;
 
-        for (var candidateIndex = 0; candidateIndex < candidates.Count; candidateIndex++)
+        if (desiredIndex < 0 || desiredIndex >= stableRoster.Count)
         {
-            var candidate = candidates[candidateIndex];
+            return false;
+        }
 
-            if (candidate == null || candidate.Health.IsDead)
+        var candidate = stableRoster[desiredIndex];
+
+        if (candidate == null || candidate.Health.IsDead || !ContainsCandidate(validCandidates, candidate))
+        {
+            return false;
+        }
+
+        target = candidate;
+        return true;
+    }
+
+    private static bool ContainsCandidate(IReadOnlyList<Combatant> validCandidates, Combatant candidate)
+    {
+        for (var candidateIndex = 0; candidateIndex < validCandidates.Count; candidateIndex++)
+        {
+            if (ReferenceEquals(validCandidates[candidateIndex], candidate))
             {
-                continue;
+                return true;
             }
-
-            if (candidate.Position.FrontRank != desiredRank)
-            {
-                continue;
-            }
-
-            target = candidate;
-            return true;
         }
 
         return false;
     }
 
-    private static int ResolveRank(CombatInputDirection direction, int upRank, int downRank, int leftRank, int rightRank)
+    private static int ResolveSlot(CombatInputDirection direction, int upSlot, int downSlot, int leftSlot, int rightSlot)
     {
         switch (direction)
         {
             case CombatInputDirection.Up:
             {
-                return upRank;
+                return upSlot;
             }
 
             case CombatInputDirection.Down:
             {
-                return downRank;
+                return downSlot;
             }
 
             case CombatInputDirection.Left:
             {
-                return leftRank;
+                return leftSlot;
             }
 
             case CombatInputDirection.Right:
             {
-                return rightRank;
+                return rightSlot;
             }
 
             default:
