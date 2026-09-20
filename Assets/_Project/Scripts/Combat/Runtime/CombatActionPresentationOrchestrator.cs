@@ -11,9 +11,6 @@ using UnityEngine;
 
 namespace Erumperem.Combat.Runtime
 {
-    /// <summary>
-    /// Resolves a chosen action in the simulator and publishes presentation (camera, narrative, VFX, audio).
-    /// </summary>
     public sealed class CombatActionPresentationOrchestrator
     {
         private const string ActionRockTweenId = "CombatActionRock";
@@ -28,6 +25,7 @@ namespace Erumperem.Combat.Runtime
 
         private Transform _actionRockTransform;
         private Vector3 _actionRockBaseLocalPosition;
+        private Animator _currentActingAnimator;
 
         public CombatActionPresentationOrchestrator(
             MonoBehaviour coroutineHost,
@@ -61,8 +59,7 @@ namespace Erumperem.Combat.Runtime
                 AudioManager.instance.PlaySFX("Damage");
             }
 
-            if (!_session.UnitVisualRootsByCombatantId.TryGetValue(targetCombatantId, out var unitRoot) ||
-                unitRoot == null)
+            if (!_session.UnitVisualRootsByCombatantId.TryGetValue(targetCombatantId, out var unitRoot) || unitRoot == null)
             {
                 return;
             }
@@ -73,6 +70,8 @@ namespace Erumperem.Combat.Runtime
                 return;
             }
 
+            float speedMultiplier = Mathf.Max(0.2f, CombatSpeedSettings.SpeedMultiplier);
+
             _session.DamageFeedbackBusy.Add(targetCombatantId);
             unitRoot.DOKill(false);
             var sequence = DOTween.Sequence();
@@ -80,13 +79,13 @@ namespace Erumperem.Combat.Runtime
             sequence.Append(
                 unitRoot.DOPunchScale(
                     _settings.DamagePunchScale,
-                    _settings.DamagePunchDuration,
+                    _settings.DamagePunchDuration / speedMultiplier,
                     _settings.DamagePunchVibrato,
                     _settings.DamagePunchElasticity));
             if (_settings.SyncHpAsVerticalScale)
             {
                 var targetY = Mathf.Max(0.3f, combatant.Health.CurrentHp / (float)combatant.Health.MaxHp);
-                sequence.Append(unitRoot.DOScaleY(targetY, _settings.DamageShrinkDuration).SetEase(Ease.OutCubic));
+                sequence.Append(unitRoot.DOScaleY(targetY, _settings.DamageShrinkDuration / speedMultiplier).SetEase(Ease.OutCubic));
             }
 
             sequence.OnComplete(() => _session.DamageFeedbackBusy.Remove(targetCombatantId));
@@ -94,20 +93,33 @@ namespace Erumperem.Combat.Runtime
 
         private IEnumerator PresentActionRoutine(ChosenAction action, Action onStepComplete)
         {
+            float speedMultiplier = Mathf.Max(0.2f, CombatSpeedSettings.SpeedMultiplier);
+
             try
             {
                 StopActorActionRock();
                 _sessionHub?.RaiseCinemachineFocusEnded();
                 GetTimingForSkill(action.Skill.Id, out var playSeconds, out var postPauseSeconds);
+
                 EnemyAnimationController enemyActorVisual = null;
                 if (action.Actor.Identity.Faction == Faction.Enemy &&
-                    _unitVisualSynchronizer.TryGetAnimationController(
-                        action.Actor.Identity.Id,
-                        out enemyActorVisual))
+                    _unitVisualSynchronizer.TryGetAnimationController(action.Actor.Identity.Id, out enemyActorVisual))
                 {
-                    var attackHoldSeconds = enemyActorVisual.ComputeAttackPresentationDurationSeconds(
-                        _settings.EnemyAttackClipMarginSeconds);
+                    var attackHoldSeconds = enemyActorVisual.ComputeAttackPresentationDurationSeconds(_settings.EnemyAttackClipMarginSeconds);
                     playSeconds = Mathf.Max(playSeconds, attackHoldSeconds);
+                }
+
+                // Ajusta as esperas e acelera o Animator do ator sem alterar Time.timeScale
+                playSeconds /= speedMultiplier;
+                postPauseSeconds /= speedMultiplier;
+
+                if (_session.UnitVisualRootsByCombatantId.TryGetValue(action.Actor.Identity.Id, out var actorVisual))
+                {
+                    _currentActingAnimator = actorVisual.GetComponentInChildren<Animator>(true);
+                    if (_currentActingAnimator != null)
+                    {
+                        _currentActingAnimator.speed = speedMultiplier;
+                    }
                 }
 
                 _sessionHub?.RaiseActionPresentationStarted();
@@ -116,13 +128,15 @@ namespace Erumperem.Combat.Runtime
                 _sessionHub?.RaiseCombatSkillExecutionPresentationStarted(
                     _session.OngoingPresentationActorCombatantId,
                     _session.OngoingPresentationTargetCombatantId);
-                enemyActorVisual?.NotifyAttackPresentationBegin(playSeconds);
+
+                enemyActorVisual?.NotifyAttackPresentationBegin(playSeconds, speedMultiplier);
                 var rockDuration = Mathf.Max(0f, playSeconds + postPauseSeconds);
 
                 var startEventIndex = _session.EventCollector.Events.Count;
                 _session.Simulator.ResolveChosenAction(_session.State, action);
                 var endEventIndex = _session.EventCollector.Events.Count;
                 var eventCount = endEventIndex - startEventIndex;
+
                 if (eventCount > 0)
                 {
                     var eventSlice = _session.EventCollector.Events.GetRange(startEventIndex, eventCount);
@@ -139,16 +153,12 @@ namespace Erumperem.Combat.Runtime
                             PublishCorruptionPresentation(combatEvent);
                         }
 
-                        if (combatEvent.EventType == BattleEventType.CombatantDied &&
-                            !string.IsNullOrEmpty(combatEvent.TargetId))
+                        if (combatEvent.EventType == BattleEventType.CombatantDied && !string.IsNullOrEmpty(combatEvent.TargetId))
                         {
                             _sessionHub?.RaiseCombatantPresentationDeath(combatEvent.TargetId);
-                            if (_unitVisualSynchronizer.TryGetAnimationController(
-                                    combatEvent.TargetId,
-                                    out var deadEnemyVisual))
+                            if (_unitVisualSynchronizer.TryGetAnimationController(combatEvent.TargetId, out var deadEnemyVisual))
                             {
-                                deadEnemyVisual.EnsureDeathVisualSequenceStarted(
-                                    _settings.EnemyDeathClipMarginSeconds);
+                                deadEnemyVisual.EnsureDeathVisualSequenceStarted(_settings.EnemyDeathClipMarginSeconds, speedMultiplier);
                             }
                         }
 
@@ -156,12 +166,11 @@ namespace Erumperem.Combat.Runtime
                         {
                             PlayDamageVisualFeedback(combatEvent.TargetId);
 
-                            if (_unitVisualSynchronizer.TryGetAnimationController(
-                                    combatEvent.TargetId,
-                                    out var hitEnemyAnimationController))
+                            if (_unitVisualSynchronizer.TryGetAnimationController(combatEvent.TargetId, out var hitEnemyAnimationController))
                             {
                                 hitEnemyAnimationController.NotifyHitTakenPresentationBegin(
-                                    hitEnemyAnimationController.ComputeHitTakenPresentationDurationSeconds(0f));
+                                    hitEnemyAnimationController.ComputeHitTakenPresentationDurationSeconds(0f) / speedMultiplier,
+                                    speedMultiplier);
                             }
                         }
                     }
@@ -170,13 +179,10 @@ namespace Erumperem.Combat.Runtime
                 }
 
                 var actorAfter = _session.FindCombatantById(action.Actor.Identity.Id);
-                if (actorAfter != null &&
-                    !actorAfter.Health.IsDead &&
+                if (actorAfter != null && !actorAfter.Health.IsDead &&
                     _session.UnitVisualRootsByCombatantId.TryGetValue(action.Actor.Identity.Id, out var actorVisualRoot))
                 {
-                    _session.UnitVisualRootsByCombatantId.TryGetValue(
-                        action.Target.Identity.Id,
-                        out var targetVisualRoot);
+                    _session.UnitVisualRootsByCombatantId.TryGetValue(action.Target.Identity.Id, out var targetVisualRoot);
                     _sessionHub?.RaiseCinemachineFocusBegan(actorVisualRoot, targetVisualRoot);
                 }
 
@@ -202,6 +208,12 @@ namespace Erumperem.Combat.Runtime
             }
             finally
             {
+                if (_currentActingAnimator != null)
+                {
+                    _currentActingAnimator.speed = 1f;
+                    _currentActingAnimator = null;
+                }
+
                 _sessionHub?.RaiseCinemachineFocusEnded();
                 StopActorActionRock();
                 _session.OngoingPresentationActorCombatantId = string.Empty;
@@ -227,8 +239,7 @@ namespace Erumperem.Combat.Runtime
                 return;
             }
 
-            if (!_session.UnitVisualRootsByCombatantId.TryGetValue(action.Actor.Identity.Id, out var actorRoot) ||
-                actorRoot == null)
+            if (!_session.UnitVisualRootsByCombatantId.TryGetValue(action.Actor.Identity.Id, out var actorRoot) || actorRoot == null)
             {
                 return;
             }
@@ -290,10 +301,11 @@ namespace Erumperem.Combat.Runtime
                 return;
             }
 
+            float speedMultiplier = Mathf.Max(0.2f, CombatSpeedSettings.SpeedMultiplier);
             DOTween.Kill(CorruptionPulseTweenId, false);
             _settings.CorruptionIncreaseFeedbackRoot.DOPunchScale(
                     _settings.CorruptionPulseScale,
-                    _settings.CorruptionPulseDuration,
+                    _settings.CorruptionPulseDuration / speedMultiplier,
                     _settings.CorruptionPulseVibrato,
                     _settings.CorruptionPulseElasticity)
                 .SetId(CorruptionPulseTweenId)
@@ -304,22 +316,12 @@ namespace Erumperem.Combat.Runtime
         {
             playSeconds = _settings.DefaultPlaySeconds;
             postPauseSeconds = _settings.DefaultPostPauseSeconds;
-            if (_settings.SkillTimings == null)
-            {
-                return;
-            }
+            if (_settings.SkillTimings == null) return;
 
             foreach (var timingEntry in _settings.SkillTimings)
             {
-                if (timingEntry == null || string.IsNullOrEmpty(timingEntry.skillId))
-                {
-                    continue;
-                }
-
-                if (!string.Equals(timingEntry.skillId, skillId, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
+                if (timingEntry == null || string.IsNullOrEmpty(timingEntry.skillId)) continue;
+                if (!string.Equals(timingEntry.skillId, skillId, StringComparison.OrdinalIgnoreCase)) continue;
 
                 playSeconds = Mathf.Max(0f, timingEntry.playSeconds);
                 postPauseSeconds = Mathf.Max(0f, timingEntry.postPauseSeconds);
@@ -329,10 +331,7 @@ namespace Erumperem.Combat.Runtime
 
         private void LogLastCombatEvent()
         {
-            if (!_logEventsToConsole || _session.EventCollector.Events.Count == 0)
-            {
-                return;
-            }
+            if (!_logEventsToConsole || _session.EventCollector.Events.Count == 0) return;
 
             var lastEvent = _session.EventCollector.Events[^1];
             Debug.Log(
@@ -341,6 +340,9 @@ namespace Erumperem.Combat.Runtime
         }
     }
 
+    /// <summary>
+    /// Configurações e referências visuais para apresentação de ações em combate.
+    /// </summary>
     public sealed class CombatActionPresentationSettings
     {
         public float DefaultPlaySeconds { get; set; }

@@ -6,8 +6,8 @@ using Erumperem.Combat;
 namespace Erumperem.UI
 {
     /// <summary>
-    /// Vincula um Slider e um Toggle opcional à configuração global de velocidade de combate.
-    /// Permite alternar entre ajuste contínuo (esparso) e discreto (múltiplos fixos).
+    /// Vincula o Slider e o Toggle à configuração de velocidade de combate.
+    /// Não modifica Time.timeScale.
     /// </summary>
     [RequireComponent(typeof(Slider))]
     public sealed class CombatSpeedSlider : MonoBehaviour
@@ -16,7 +16,7 @@ namespace Erumperem.UI
         [SerializeField] private Slider speedSlider;
         [SerializeField] private TextMeshProUGUI speedTextLabel;
 
-        [Tooltip("Opcional: Permite ao jogador alternar entre passos fixos e valores livres/esparsos.")]
+        [Tooltip("Opcional: Permite alternar entre passos fixos e valores contínuos.")]
         [SerializeField] private Toggle snapToStepsToggle;
 
         [Header("Limites de Velocidade")]
@@ -24,7 +24,7 @@ namespace Erumperem.UI
         [SerializeField] private float maxSpeed = 4.0f;
 
         [Header("Configuração de Passos")]
-        [Tooltip("Incremento de velocidade ao usar passos fixos (ex: 0.5f para 0.5, 1.0, 1.5, 2.0...).")]
+        [Tooltip("Incremento de velocidade ao usar passos fixos.")]
         [SerializeField] private float stepIncrement = 0.5f;
 
         private const string SnapPrefKey = "CombatSpeedSnapToSteps";
@@ -61,7 +61,6 @@ namespace Erumperem.UI
         {
             if (snapToStepsToggle == null) return;
 
-            // Carrega a preferência de snap do jogador
             snapToStepsToggle.isOn = PlayerPrefs.GetInt(SnapPrefKey, 0) == 1;
             snapToStepsToggle.onValueChanged.RemoveListener(HandleToggleChanged);
             snapToStepsToggle.onValueChanged.AddListener(HandleToggleChanged);
@@ -90,14 +89,12 @@ namespace Erumperem.UI
 
             if (speedSlider != null)
             {
-                // Ajusta imediatamente a posição do slider ao novo modo ao alternar o toggle
                 HandleSpeedChanged(speedSlider.value);
             }
         }
 
         private void HandleSpeedChanged(float value)
         {
-            // Impede loops infinitos ao modificar o valor do slider programaticamente
             if (_isUpdatingValue) return;
 
             float finalValue;
@@ -105,11 +102,9 @@ namespace Erumperem.UI
 
             if (shouldSnap)
             {
-                // Arredonda para o múltiplo mais próximo do incremento definido (ex: 0.5)
                 finalValue = Mathf.Round(value / stepIncrement) * stepIncrement;
                 finalValue = Mathf.Clamp(finalValue, minSpeed, maxSpeed);
 
-                // Move o handle visual do slider para a posição discreta correspondente
                 if (!Mathf.Approximately(speedSlider.value, finalValue))
                 {
                     _isUpdatingValue = true;
@@ -119,7 +114,6 @@ namespace Erumperem.UI
             }
             else
             {
-                // Arredonda para uma casa decimal (x1.3, x2.7, etc.) para visualização limpa
                 finalValue = Mathf.Round(value * 10f) / 10f;
             }
 

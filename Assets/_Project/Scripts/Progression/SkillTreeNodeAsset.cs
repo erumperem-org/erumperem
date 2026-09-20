@@ -102,6 +102,13 @@ namespace Erumperem.Progression
         [FormerlySerializedAs("_activeSkillType")]
         [SerializeField] private string _activeSkillTypeLabel = "Active";
 
+        [Tooltip("Independent hit/damage rolls against each primary target. Default 1.")]
+        [SerializeField] private int _hitCount = 1;
+
+        [Range(0f, 1f)]
+        [Tooltip("Chance the actor keeps their turn after a successful cast.")]
+        [SerializeField] private double _chanceToNotEndTurn = 0.0;
+
         [Tooltip("Damage element for this active skill (None falls back to the actor's affinity).")]
         [FormerlySerializedAs("_activeElement")]
         [SerializeField] private ElementType _activeSkillDamageElement;
@@ -335,6 +342,8 @@ namespace Erumperem.Progression
                 ChanceToUse = _aiAbsoluteChanceToConsiderWhenEligible,
                 SelfHpPercentBelow = _aiOnlyEligibleWhenOwnHpFractionBelow,
                 CorruptionCost = _corruptionCostAddedWhenPlayerCasts,
+                HitCount = Math.Max(1, _hitCount),
+                ChanceToNotEndTurn = _chanceToNotEndTurn,
             };
         }
 
