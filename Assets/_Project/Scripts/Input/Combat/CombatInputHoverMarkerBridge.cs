@@ -1,4 +1,3 @@
-using System.Reflection;
 using Erumperem.Combat;
 using UnityEngine;
 
@@ -6,24 +5,15 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class CombatInputHoverMarkerBridge : MonoBehaviour
 {
-    private const string PresentAtMethodName = "PresentAt";
-    private const string EnsureCreatedMethodName = "EnsureCreated";
-    private const string MarkerOffsetFieldName = "markerOffset";
-
     [Header("References")]
     [SerializeField] private CombatInputController inputController;
     [SerializeField] private CombatPrototypeController combatSession;
     [SerializeField] private CombatSkillButtonBarUIManager skillBarUiManager;
     [SerializeField] private CombatHoverFocusMarker hoverFocusMarker;
 
-    private MethodInfo _presentAtMethod;
-    private MethodInfo _ensureCreatedMethod;
-    private FieldInfo _markerOffsetField;
-
     private void Awake()
     {
         ResolveReferences();
-        ResolveHoverMarkerMembers();
     }
 
     private void LateUpdate()
@@ -35,18 +25,18 @@ public sealed class CombatInputHoverMarkerBridge : MonoBehaviour
             return;
         }
 
-        if (inputController.CurrentPhase != CombatInputPhase.TargetSelection)
+        // Se não estiver na fase de seleção de alvos ou não houver alvo no teclado, libera o marcador externo
+        if (inputController.CurrentPhase != CombatInputPhase.TargetSelection ||
+            string.IsNullOrEmpty(inputController.FocusedTargetCombatantId))
         {
+            hoverFocusMarker.ClearExternalTarget();
             return;
         }
 
-        if (string.IsNullOrEmpty(inputController.FocusedTargetCombatantId))
-        {
-            return;
-        }
-
+        // Se o mouse estiver sobre a barra de UI de habilidades, libera o marcador externo
         if (skillBarUiManager != null && skillBarUiManager.TryGetHoveredLivingCombatant(out _))
         {
+            hoverFocusMarker.ClearExternalTarget();
             return;
         }
 
@@ -54,6 +44,7 @@ public sealed class CombatInputHoverMarkerBridge : MonoBehaviour
 
         if (target == null || target.Health.IsDead)
         {
+            hoverFocusMarker.ClearExternalTarget();
             return;
         }
 
@@ -61,27 +52,28 @@ public sealed class CombatInputHoverMarkerBridge : MonoBehaviour
 
         if (unitRoot == null || !unitRoot.gameObject.activeInHierarchy)
         {
+            hoverFocusMarker.ClearExternalTarget();
             return;
         }
 
-        if (_presentAtMethod == null || _markerOffsetField == null)
-        {
-            ResolveHoverMarkerMembers();
-        }
+        var topWorldY = CombatUnitColliderVerticalExtents.TryGetTopWorldY(unitRoot, out var colliderTopWorldY)
+            ? colliderTopWorldY
+            : unitRoot.position.y;
 
-        if (_presentAtMethod == null || _markerOffsetField == null)
-        {
-            return;
-        }
-
-        _ensureCreatedMethod?.Invoke(hoverFocusMarker, null);
-
-        var topWorldY = CombatUnitColliderVerticalExtents.TryGetTopWorldY(unitRoot, out var colliderTopWorldY) ? colliderTopWorldY : unitRoot.position.y;
         var markerPosition = unitRoot.position;
         markerPosition.y = topWorldY;
-        markerPosition += (Vector3)_markerOffsetField.GetValue(hoverFocusMarker);
+        markerPosition += hoverFocusMarker.MarkerOffset;
 
-        _presentAtMethod.Invoke(hoverFocusMarker, new object[] { markerPosition, target.Identity.Id });
+        // Alimenta o marcador pelo canal externo limpo (sem reflection)
+        hoverFocusMarker.PresentExternal(markerPosition, target.Identity.Id);
+    }
+
+    private void OnDisable()
+    {
+        if (hoverFocusMarker != null)
+        {
+            hoverFocusMarker.ClearExternalTarget();
+        }
     }
 
     private void ResolveReferences()
@@ -106,28 +98,6 @@ public sealed class CombatInputHoverMarkerBridge : MonoBehaviour
             hoverFocusMarker = FindFirstObjectByType<CombatHoverFocusMarker>();
         }
     }
-
-    private void ResolveHoverMarkerMembers()
-    {
-        if (hoverFocusMarker == null)
-        {
-            return;
-        }
-
-        var markerType = hoverFocusMarker.GetType();
-        var privateInstanceFlags = BindingFlags.Instance | BindingFlags.NonPublic;
-        _presentAtMethod = markerType.GetMethod(PresentAtMethodName, privateInstanceFlags);
-        _ensureCreatedMethod = markerType.GetMethod(EnsureCreatedMethodName, privateInstanceFlags);
-        _markerOffsetField = markerType.GetField(MarkerOffsetFieldName, privateInstanceFlags);
-
-        if (_presentAtMethod == null)
-        {
-            Debug.LogError($"CombatInputHoverMarkerBridge: método privado '{PresentAtMethodName}' não encontrado em CombatHoverFocusMarker.", this);
-        }
-
-        if (_markerOffsetField == null)
-        {
-            Debug.LogError($"CombatInputHoverMarkerBridge: campo privado '{MarkerOffsetFieldName}' não encontrado em CombatHoverFocusMarker.", this);
-        }
-    }
 }
+
+//fiz umas mudanças nesses códigos de hover marker p evitar uns erros de áudio que estavam acontecendo
