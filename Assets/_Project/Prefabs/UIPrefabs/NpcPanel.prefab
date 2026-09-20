@@ -18,7 +18,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &5780608729370233862
 RectTransform:
   m_ObjectHideFlags: 0
@@ -237,6 +237,7 @@ GameObject:
   - component: {fileID: 5934971476069182074}
   - component: {fileID: 3893907729510690629}
   - component: {fileID: 322496683786154251}
+  - component: {fileID: 5387624210009296762}
   m_Layer: 5
   m_Name: OptionButton (1)
   m_TagString: Untagged
@@ -342,6 +343,21 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!114 &5387624210009296762
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2407180223493900828}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
+  hoverSound: Hover
+  clickSound: Press
+  dragTickInterval: 0.1
 --- !u!1 &2440998696603873408
 GameObject:
   m_ObjectHideFlags: 0
@@ -652,6 +668,7 @@ GameObject:
   - component: {fileID: 2239948915739600268}
   - component: {fileID: 7058288589559823458}
   - component: {fileID: 3153783601780850831}
+  - component: {fileID: 6029636509915243724}
   m_Layer: 5
   m_Name: OptionButton
   m_TagString: Untagged
@@ -757,6 +774,21 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!114 &6029636509915243724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2810667231297472703}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
+  hoverSound: Hover
+  clickSound: Press
+  dragTickInterval: 0.1
 --- !u!1 &3175446254539375615
 GameObject:
   m_ObjectHideFlags: 0
@@ -1040,6 +1072,7 @@ GameObject:
   - component: {fileID: 4678474043074143517}
   - component: {fileID: 8547823689979269538}
   - component: {fileID: 8897216336998249170}
+  - component: {fileID: 3127496681921775373}
   m_Layer: 5
   m_Name: Leave
   m_TagString: Untagged
@@ -1145,6 +1178,21 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 1
         m_CallState: 2
+--- !u!114 &3127496681921775373
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4391521691061376853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
+  hoverSound: Hover
+  clickSound: Press
+  dragTickInterval: 0.1
 --- !u!1 &5274870365928053824
 GameObject:
   m_ObjectHideFlags: 0

@@ -242,7 +242,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 150, y: -337.65768}
+  m_AnchoredPosition: {x: 150, y: -337.85822}
   m_SizeDelta: {x: 300, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2216500118846208535
@@ -638,7 +638,6 @@ GameObject:
   - component: {fileID: 534896057992087599}
   - component: {fileID: 2689392890741368564}
   - component: {fileID: 4489636531749850566}
-  - component: {fileID: 3082528045804464829}
   m_Layer: 5
   m_Name: Settings
   m_TagString: Untagged
@@ -663,7 +662,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 150, y: -479.12076}
+  m_AnchoredPosition: {x: 150, y: -479.40152}
   m_SizeDelta: {x: 300, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &9206766316034541261
@@ -802,21 +801,6 @@ MonoBehaviour:
   panelTransition: {fileID: 0}
   useCloseTransition: 1
 --- !u!114 &4489636531749850566
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1805303628286468856}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
-  hoverSound: Hover
-  clickSound: Press
-  dragTickInterval: 0.1
---- !u!114 &3082528045804464829
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1140,7 +1124,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.000061035156, y: 0}
+  m_AnchoredPosition: {x: -0.00012207031, y: 0}
   m_SizeDelta: {x: 0.00012207, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3054532246010681140
@@ -1180,7 +1164,6 @@ GameObject:
   - component: {fileID: 2101158914504422030}
   - component: {fileID: 787862782820251996}
   - component: {fileID: 1600111064108958852}
-  - component: {fileID: 9217541661555106579}
   m_Layer: 5
   m_Name: Continue
   m_TagString: Untagged
@@ -1205,7 +1188,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 150, y: -54.731537}
+  m_AnchoredPosition: {x: 150, y: -54.771645}
   m_SizeDelta: {x: 300, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6501071377505739672
@@ -1375,21 +1358,6 @@ MonoBehaviour:
   isDisabled: 0
   panelTransition: {fileID: 0}
   useCloseTransition: 1
---- !u!114 &9217541661555106579
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3669765849265535150}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
-  hoverSound: Hover
-  clickSound: Press
-  dragTickInterval: 0.1
 --- !u!1 &3836119062884614072
 GameObject:
   m_ObjectHideFlags: 0
@@ -1479,7 +1447,6 @@ GameObject:
   - component: {fileID: 2458544750415670159}
   - component: {fileID: 1023492366742717864}
   - component: {fileID: 8391243304467903000}
-  - component: {fileID: 4951727083909704379}
   - component: {fileID: 43609329185003215}
   m_Layer: 5
   m_Name: Give Up
@@ -1505,7 +1472,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 150, y: -196.19461}
+  m_AnchoredPosition: {x: 150, y: -196.31494}
   m_SizeDelta: {x: 300, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8362347686629275439
@@ -1634,21 +1601,6 @@ MonoBehaviour:
   playerInventorySaveSystem: {fileID: 0}
   loadContext: {fileID: 0}
   manager: {fileID: 0}
---- !u!114 &4951727083909704379
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4016659781743702863}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
-  hoverSound: Hover
-  clickSound: Press
-  dragTickInterval: 0.1
 --- !u!114 &43609329185003215
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1691,6 +1643,7 @@ GameObject:
   - component: {fileID: 9214696309875456041}
   - component: {fileID: 4039883378400202339}
   - component: {fileID: 6351743023494948353}
+  - component: {fileID: 2671349193298338818}
   m_Layer: 5
   m_Name: PausePanel
   m_TagString: Untagged
@@ -1783,6 +1736,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Systems.Audio.UIMenuAudio
   onOpenSound: MenuOpen
   onCloseSound: MenuClose
+--- !u!225 &2671349193298338818
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5282935465979357104}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &7432530787520420135
 GameObject:
   m_ObjectHideFlags: 0
@@ -1936,7 +1901,6 @@ GameObject:
   - component: {fileID: 4026903134885706963}
   - component: {fileID: 2225606648068579411}
   - component: {fileID: 3126643887233513665}
-  - component: {fileID: 3302099145773625832}
   m_Layer: 5
   m_Name: Return
   m_TagString: Untagged
@@ -1961,7 +1925,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 150, y: -620.58386}
+  m_AnchoredPosition: {x: 150, y: -620.9448}
   m_SizeDelta: {x: 300, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2304095505429028449
@@ -2175,18 +2139,3 @@ MonoBehaviour:
     _disabledEnterEffects: []
     _disabledExitEffects: []
   isDisabled: 0
---- !u!114 &3302099145773625832
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7819761611404954466}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe77452b858b7964a8d0913d3e8dc450, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UIElementSound
-  hoverSound: Hover
-  clickSound: Press
-  dragTickInterval: 0.1

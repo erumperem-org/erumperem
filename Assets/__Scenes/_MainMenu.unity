@@ -380,6 +380,9 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8319396466051191009, guid: d5b554d3237689e49a9ede2b71394a57, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1131697336}
     - targetCorrespondingSourceObject: {fileID: 4348352132389857587, guid: d5b554d3237689e49a9ede2b71394a57, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1890448047}
@@ -895,6 +898,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: AudioManager
       objectReference: {fileID: 0}
+    - target: {fileID: 5981630444755087549, guid: b064fab4eb9baf64eb434a1349372ce8, type: 3}
+      propertyPath: bgmPlaylists.Array.data[2].volume
+      value: 0.1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1279,6 +1286,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1131697335 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8319396466051191009, guid: d5b554d3237689e49a9ede2b71394a57, type: 3}
+  m_PrefabInstance: {fileID: 149102965}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1131697336
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1131697335}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 851df550535d6eb4f97a7fcdaa36ea59, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KeyboardNavigablePanel
+  defaultSelected: {fileID: 0}
+  cancelTarget: {fileID: 0}
+  wrapNavigation: 1
+  navigationPriority: 0
 --- !u!1 &1406374899 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 951261273339214515, guid: d5b554d3237689e49a9ede2b71394a57, type: 3}
@@ -1299,37 +1327,6 @@ MonoBehaviour:
   hoverSound: Hover
   clickSound: Press
   dragTickInterval: 0.1
---- !u!1 &1474461721
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1474461722}
-  m_Layer: 0
-  m_Name: DeleteTihs
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1474461722
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1474461721}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5798.9897, y: 0.00001, z: 83002.63}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1518573157 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6300670214211365976, guid: d5b554d3237689e49a9ede2b71394a57, type: 3}
@@ -1360,6 +1357,22 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 5054801247652651834, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
   m_PrefabInstance: {fileID: 2042240644}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1602517745
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1602517743}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 851df550535d6eb4f97a7fcdaa36ea59, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KeyboardNavigablePanel
+  defaultSelected: {fileID: 0}
+  cancelTarget: {fileID: 0}
+  wrapNavigation: 1
+  navigationPriority: 0
 --- !u!1 &1618626634
 GameObject:
   m_ObjectHideFlags: 0
@@ -1672,7 +1685,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 642538465528033302, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1602517745}
   m_SourcePrefab: {fileID: 100100000, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
 --- !u!1 &2051272776
 GameObject:
@@ -1825,16 +1841,64 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 3078351552162298326, guid: ed4761c513f0747439ea5060bb3f5e99, type: 3}
   m_PrefabInstance: {fileID: 5200924929006624988}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &4651408949291208956
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4082849419005940703}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 851df550535d6eb4f97a7fcdaa36ea59, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KeyboardNavigablePanel
+  defaultSelected: {fileID: 0}
+  cancelTarget: {fileID: 0}
+  wrapNavigation: 1
+  navigationPriority: 0
 --- !u!1 &4727352689921361428 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2525024734406328705, guid: de3c9b3543dfd3144a9f7be8012bc4ca, type: 3}
   m_PrefabInstance: {fileID: 7739027535460681891}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &4727352689921361429
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4727352689921361428}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 851df550535d6eb4f97a7fcdaa36ea59, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KeyboardNavigablePanel
+  defaultSelected: {fileID: 0}
+  cancelTarget: {fileID: 0}
+  wrapNavigation: 1
+  navigationPriority: 0
 --- !u!224 &4914761622764688151 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7937064299157103423, guid: 6bfc6449b4a85c148a3365f90e9c0516, type: 3}
   m_PrefabInstance: {fileID: 6956487501428997911}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &4914761622764688153
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2994137724258588016}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 851df550535d6eb4f97a7fcdaa36ea59, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KeyboardNavigablePanel
+  defaultSelected: {fileID: 0}
+  cancelTarget: {fileID: 0}
+  wrapNavigation: 1
+  navigationPriority: 0
 --- !u!114 &4982109522425349814 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8013771204616533662, guid: 6bfc6449b4a85c148a3365f90e9c0516, type: 3}
@@ -1949,7 +2013,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5952824452889115378, guid: ed4761c513f0747439ea5060bb3f5e99, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4651408949291208956}
   m_SourcePrefab: {fileID: 100100000, guid: ed4761c513f0747439ea5060bb3f5e99, type: 3}
 --- !u!114 &5352554706398588362 stripped
 MonoBehaviour:
@@ -2066,7 +2133,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 261191327686501720, guid: 6bfc6449b4a85c148a3365f90e9c0516, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4914761622764688153}
   m_SourcePrefab: {fileID: 100100000, guid: 6bfc6449b4a85c148a3365f90e9c0516, type: 3}
 --- !u!1001 &7342086467934533906
 PrefabInstance:
@@ -2167,7 +2237,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3099180201512443213, guid: 90af3c911195d2e45be4b7196a0ffed3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8632126812108429331}
   m_SourcePrefab: {fileID: 100100000, guid: 90af3c911195d2e45be4b7196a0ffed3, type: 3}
 --- !u!1001 &7739027535460681891
 PrefabInstance:
@@ -2340,13 +2413,32 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2525024734406328705, guid: de3c9b3543dfd3144a9f7be8012bc4ca, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4727352689921361429}
   m_SourcePrefab: {fileID: 100100000, guid: de3c9b3543dfd3144a9f7be8012bc4ca, type: 3}
 --- !u!1 &8632126812108429330 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3099180201512443213, guid: 90af3c911195d2e45be4b7196a0ffed3, type: 3}
   m_PrefabInstance: {fileID: 7342086467934533906}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &8632126812108429331
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8632126812108429330}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 851df550535d6eb4f97a7fcdaa36ea59, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KeyboardNavigablePanel
+  defaultSelected: {fileID: 0}
+  cancelTarget: {fileID: 0}
+  wrapNavigation: 1
+  navigationPriority: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -2361,5 +2453,4 @@ SceneRoots:
   - {fileID: 360213581}
   - {fileID: 523723421}
   - {fileID: 938329852}
-  - {fileID: 1474461722}
   - {fileID: 157248322}

@@ -153,6 +153,16 @@ public sealed class VillageArea : MonoBehaviour
         return _sphereCollider.radius * Mathf.Max(lossyScale.x, lossyScale.y, lossyScale.z);
     }
 
+    public bool ContainsPosition(Vector3 position)
+    {
+        if (_sphereCollider == null)
+            _sphereCollider = GetComponent<SphereCollider>();
+        if (_sphereCollider == null || !_sphereCollider.enabled) return false;
+        var worldRadius = ResolveWorldRadius();
+        return (position - transform.TransformPoint(_sphereCollider.center)).sqrMagnitude
+            <= worldRadius * worldRadius;
+    }
+
     private bool IsMainCharacterCollider(Collider otherCollider)
     {
         if (otherCollider == null || _playableCharactersManager?.Main == null)

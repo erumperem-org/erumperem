@@ -22,12 +22,14 @@ public class DetectionPromptToggle : MonoBehaviour
 
     private Detector _localDetector;
     private DetectionReceiver _detectionReceiver;
+    private Interactable _interactable;
     private int _collidersInsideCount;
 
     private void Awake()
     {
         _localDetector = GetComponent<Detector>();
         _detectionReceiver = GetComponent<DetectionReceiver>();
+        _interactable = GetComponentInParent<Interactable>();
 
         if (_localDetector == null && _detectionReceiver == null)
         {
@@ -100,6 +102,9 @@ public class DetectionPromptToggle : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (_interactable is CharacterSelectionNpc)
+            SetPromptActive(_collidersInsideCount > 0);
+
         if (!faceMainCamera || promptRoot == null || !promptRoot.activeInHierarchy)
         {
             return;
@@ -120,6 +125,7 @@ public class DetectionPromptToggle : MonoBehaviour
 
     private void HandleColliderEntered(Collider otherCollider, string shapeLabel, int shapeIndex)
     {
+        if (_interactable is CharacterSelectionNpc) return;
         if (this.tag != "Player")
         {
             _collidersInsideCount++;
@@ -129,6 +135,7 @@ public class DetectionPromptToggle : MonoBehaviour
 
     private void HandleColliderExited(Collider otherCollider, string shapeLabel, int shapeIndex)
     {
+        if (_interactable is CharacterSelectionNpc) return;
         _collidersInsideCount = Mathf.Max(0, _collidersInsideCount - 1);
 
         if (_collidersInsideCount == 0)
@@ -177,6 +184,7 @@ public class DetectionPromptToggle : MonoBehaviour
 
     private void SetPromptActive(bool isActive)
     {
+        isActive &= _interactable == null || _interactable.CanShowInteractionFeedback;
         if (promptRoot == null)
         {
             return;

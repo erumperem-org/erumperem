@@ -46,7 +46,15 @@ public abstract class Interactable : MonoBehaviour
 
     public abstract bool CanInteract { get; }
 
+    public virtual bool CanShowInteractionFeedback => true;
+
     public virtual void ExecuteInteraction(InteractionContext context) { }
+
+    protected void EnsureInteractionOutline()
+    {
+        if (GetComponent<InteractionOutline>() == null)
+            gameObject.AddComponent<InteractionOutline>();
+    }
 
     // ── Unity lifecycle ───────────────────────────────────────────────────
 
