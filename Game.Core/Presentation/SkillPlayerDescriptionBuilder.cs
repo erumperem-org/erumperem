@@ -1,7 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
+using System.Text;
 using Game.Core.Config;
 using Game.Core.Domain;
 using Game.Core.Models;
@@ -10,7 +8,7 @@ using Game.Core.Passives;
 namespace Game.Core.Presentation;
 
 /// <summary>
-/// Generates the skill summary line and detailed effects explanation for UI tooltips and the skill tree.
+/// Generates the skill summary line for the UI in English.
 /// </summary>
 public static class SkillPlayerDescriptionBuilder
 {
@@ -96,12 +94,6 @@ public static class SkillPlayerDescriptionBuilder
             DescribeDirectDamage(skill),
         };
 
-        // Multi-hit destacado
-        if (skill.HitCount > 1)
-        {
-            detailParts.Add($"attacks {skill.HitCount} times");
-        }
-
         var hitChancePart = DescribeHitChance(skill, context);
         if (!string.IsNullOrEmpty(hitChancePart))
         {
@@ -113,42 +105,10 @@ public static class SkillPlayerDescriptionBuilder
             detailParts.Add(DescribeCriticalChance(skill, context));
         }
 
-        // Efeitos aplicados on hit
         var effectsPart = DescribeEffects(skill.EffectsOnHit, skill, context, prefix: null);
         if (!string.IsNullOrEmpty(effectsPart))
         {
             detailParts.Add(effectsPart);
-        }
-
-        // Chance de não encerrar o turno (agir novamente)
-        if (skill.ChanceToNotEndTurn > 0)
-        {
-            detailParts.Add($"{FormatPercentFromFraction(skill.ChanceToNotEndTurn)} chance to not end turn");
-        }
-
-        if (skill.GrantsBonusActionsToAllies)
-        {
-            detailParts.Add("grants extra action to self and all allies");
-        }
-
-        if (skill.FollowUpSkillIds is { Count: > 0 })
-        {
-            detailParts.Add($"casts {skill.FollowUpSkillIds.Count} follow-up skills");
-        }
-
-        if (skill.BonusDamagePerOwnToken.HasValue)
-        {
-            detailParts.Add($"+{skill.BonusDamagePerOwnTokenStacks} dmg per {TokenDisplayName(skill.BonusDamagePerOwnToken.Value)} on self");
-        }
-
-        if (skill.ComputeFromDebuffTypesOnTarget)
-        {
-            detailParts.Add($"per target debuff: +{skill.DamagePerDistinctDebuffType} dmg, +{FormatPercentFromFraction(skill.CritChancePerDistinctDebuffType)} crit, +{FormatPercentFromFraction(skill.AccuracyPerDistinctDebuffType)} acc");
-        }
-
-        if (skill.CanTargetDeadAllies)
-        {
-            detailParts.Add("can target defeated allies");
         }
 
         detailParts.Add(DescribeCorruptionCost(skill));
@@ -157,16 +117,8 @@ public static class SkillPlayerDescriptionBuilder
         detailParts.AddRange(passiveParts);
 
         var translatedName = TranslateToEnglish(skill.Name);
-        var mainSummary = $"{translatedName}: {string.Join(" | ", detailParts.Where(part => !string.IsNullOrEmpty(part)))}.";
 
-        // Explicação de cada Token/Status concedido ou utilizado pela habilidade
-        var statusGlossary = BuildStatusGlossaryForSkill(skill);
-        if (!string.IsNullOrEmpty(statusGlossary))
-        {
-            return $"{mainSummary}\n{statusGlossary}";
-        }
-
-        return mainSummary;
+        return $"{translatedName}: {string.Join(" | ", detailParts.Where(part => !string.IsNullOrEmpty(part)))}.";
     }
 
     private static string DescribeTarget(SkillDefinition skill) =>
@@ -206,7 +158,7 @@ public static class SkillPlayerDescriptionBuilder
     {
         var actorAccuracy = context?.Actor?.Stats.Accuracy ?? 1.0;
         var combinedHitChance = skill.Accuracy * actorAccuracy;
-        if (combinedHitChance >= 0.9995 && skill.Accuracy <= 1.0005)
+        if (combinedHitChance >= 0.9995)
         {
             return string.Empty;
         }
@@ -306,9 +258,7 @@ public static class SkillPlayerDescriptionBuilder
             EffectType.HealHpPercent =>
                 $"{chancePrefix}heals {FormatPlainNumber(Math.Max(0, effect.Potency))}% HP",
             EffectType.HealHp =>
-                effect.AmountMax > effect.Potency
-                    ? $"{chancePrefix}heals {effect.Potency}–{effect.AmountMax} HP"
-                    : $"{chancePrefix}heals {Math.Max(0, effect.Potency)} HP",
+                $"{chancePrefix}heals {Math.Max(0, effect.Potency)} HP",
             EffectType.ApplyRandomDot =>
                 $"{chancePrefix}applies a random DoT",
             EffectType.RemoveAllDebuffTokens =>
@@ -344,18 +294,9 @@ public static class SkillPlayerDescriptionBuilder
             scopePrefix = string.Empty;
         }
 
-        var basePhrase = string.IsNullOrEmpty(scopePrefix)
+        return string.IsNullOrEmpty(scopePrefix)
             ? $"+{stackPhrase} {tokenName}"
             : $"{scopePrefix}: +{stackPhrase} {tokenName}";
-
-        if (effect.ScaleFromToken.HasValue && effect.ScaleStacksPerSourceStack > 0)
-        {
-            var scaleTokenName = TokenDisplayName(effect.ScaleFromToken.Value);
-            var divisorText = effect.ScaleStacksSourceDivisor > 1 ? $"{effect.ScaleStacksSourceDivisor} " : "";
-            basePhrase += $" (+{effect.ScaleStacksPerSourceStack} per {divisorText}{scaleTokenName})";
-        }
-
-        return basePhrase;
     }
 
     private static string FormatDotGrantPhrase(
@@ -381,9 +322,20 @@ public static class SkillPlayerDescriptionBuilder
 
     private static string DescribeEffectScopePrefix(EffectScope effectScope, SkillDefinition skill)
     {
-        if (effectScope == EffectScope.AllAllies) return "all allies";
-        if (effectScope == EffectScope.AllEnemies) return "all enemies";
-        if (effectScope == EffectScope.Self) return "on self";
+        if (effectScope == EffectScope.AllAllies)
+        {
+            return "all allies";
+        }
+
+        if (effectScope == EffectScope.AllEnemies)
+        {
+            return "all enemies";
+        }
+
+        if (effectScope == EffectScope.Self)
+        {
+            return "on self";
+        }
 
         if (effectScope == EffectScope.Default)
         {
@@ -399,89 +351,6 @@ public static class SkillPlayerDescriptionBuilder
 
         return string.Empty;
     }
-
-    private static string BuildStatusGlossaryForSkill(SkillDefinition skill)
-    {
-        var seenTokens = new HashSet<TokenType>();
-        var seenDots = new HashSet<DotType>();
-        var glossaryLines = new List<string>();
-
-        foreach (var effect in skill.EffectsOnHit)
-        {
-            if (effect.Token.HasValue && seenTokens.Add(effect.Token.Value))
-            {
-                var explanation = GetStatusDefinitionText(effect.Token.Value);
-                if (!string.IsNullOrEmpty(explanation))
-                {
-                    glossaryLines.Add($"• {TokenDisplayName(effect.Token.Value)}: {explanation}");
-                }
-            }
-
-            if (effect.ScaleFromToken.HasValue && seenTokens.Add(effect.ScaleFromToken.Value))
-            {
-                var explanation = GetStatusDefinitionText(effect.ScaleFromToken.Value);
-                if (!string.IsNullOrEmpty(explanation))
-                {
-                    glossaryLines.Add($"• {TokenDisplayName(effect.ScaleFromToken.Value)}: {explanation}");
-                }
-            }
-
-            if (effect.Dot.HasValue && seenDots.Add(effect.Dot.Value))
-            {
-                var dotExp = GetDotDefinitionText(effect.Dot.Value);
-                if (!string.IsNullOrEmpty(dotExp))
-                {
-                    glossaryLines.Add($"• {DotDisplayName(effect.Dot.Value)}: {dotExp}");
-                }
-            }
-        }
-
-        if (skill.BonusDamagePerOwnToken.HasValue && seenTokens.Add(skill.BonusDamagePerOwnToken.Value))
-        {
-            var explanation = GetStatusDefinitionText(skill.BonusDamagePerOwnToken.Value);
-            if (!string.IsNullOrEmpty(explanation))
-            {
-                glossaryLines.Add($"• {TokenDisplayName(skill.BonusDamagePerOwnToken.Value)}: {explanation}");
-            }
-        }
-
-        return glossaryLines.Count > 0 ? string.Join("\n", glossaryLines) : string.Empty;
-    }
-
-    public static string GetStatusDefinitionText(TokenType tokenType) => tokenType switch
-    {
-        TokenType.Taunt => "Enemies attacks must target this character. -1 stack when hit.",
-        TokenType.ControlledInstability => "Enemies who hit you receive 2 damage back per stack.",
-        TokenType.Destabilization => "On death, explodes dealing 3 damage per stack to nearby units.",
-        TokenType.Strength => "Deals 25% more damage per stack. -1 stack at end of turn.",
-        TokenType.Defense => "Takes 25% less damage per stack. -1 stack at end of turn.",
-        TokenType.Weaken => "Deals 50% less damage per stack. -1 stack at end of turn.",
-        TokenType.Vulnerability => "Takes 50% more damage per stack. -1 stack at end of turn.",
-        TokenType.Confusion => "Each skill has 33% chance to swap Ally/Enemy/Self targets. -1 stack at end of turn.",
-        TokenType.Bleeding => "Takes damage equal to 5% maximum health per stack at end of turn. -1 stack.",
-        TokenType.LuckyShot => "+4% critical strike chance per stack. -1 stack at end of turn.",
-        TokenType.Dexterity => "+10% accuracy per stack. -1 stack at end of turn.",
-        TokenType.Exposition => "Skills targeting this character gain +20% accuracy. -1 stack at end of turn.",
-        TokenType.Corrosion => "Other debuffs are +10% more effective per stack. Takes 5 damage at end of turn.",
-        TokenType.Mark => "+10% chance to receive a critical hit. Crits deal +50% damage per stack. -1 stack at end of turn.",
-        TokenType.Regeneration => "Restores 1 HP per stack at end of turn. -1 stack.",
-        TokenType.Clumsy => "-20% accuracy per stack. -1 stack at end of turn.",
-        TokenType.BonusAction => "Allows an extra action during this turn.",
-        TokenType.Hypnosis => "Restricted to using only the last resolved skill. -1 stack at end of turn.",
-        TokenType.Dizzy => "50% chance to redirect skill to another valid target. -1 stack at end of turn.",
-        TokenType.Burn => "Takes damage equal to stacks at end of turn. -1 stack.",
-        TokenType.Stun => "Loses the next turn completely.",
-        TokenType.Stealth => "Skills targeting this character suffer -40% accuracy.",
-        _ => string.Empty,
-    };
-
-    public static string GetDotDefinitionText(DotType dotType) => dotType switch
-    {
-        DotType.Bleed => "Suffers bleed damage over time at the start of turn.",
-        DotType.Blight => "Suffers blight damage over time at the start of turn.",
-        DotType.Burn => "Suffers fire damage over time at the start of turn.",
-        _ => string.Empty,
-    };
 
     private static IEnumerable<string> DescribePassiveModifiersForSkill(
         SkillDefinition skill,
@@ -513,7 +382,8 @@ public static class SkillPlayerDescriptionBuilder
                 when skill.TargetKind == SkillTargetKind.Self &&
                      string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
                      passiveDefinition.TokenType.HasValue =>
-                $"passive: +{FormatTokenStackCount(Math.Max(1, passiveDefinition.IntValue))} {TokenDisplayName(passiveDefinition.TokenType.Value)}",
+                $"passive: +{FormatTokenStackCount(Math.Max(1, passiveDefinition.IntValue))} " +
+                $"{TokenDisplayName(passiveDefinition.TokenType.Value)}",
 
             PassiveEffectKind.ExtraHealPercentOnSelfSkill
                 when skill.TargetKind == SkillTargetKind.Self &&
@@ -530,7 +400,8 @@ public static class SkillPlayerDescriptionBuilder
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
                      passiveDefinition.DotType.HasValue &&
                      passiveDefinition.Additive != 0 =>
-                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} if target has {DotDisplayName(passiveDefinition.DotType.Value)}",
+                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} if target has " +
+                $"{DotDisplayName(passiveDefinition.DotType.Value)}",
 
             PassiveEffectKind.DamageCausedAfterPrerequisiteSkill
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
@@ -540,21 +411,24 @@ public static class SkillPlayerDescriptionBuilder
             PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
                      passiveDefinition.DotType.HasValue =>
-                $"passive: applies extra {DotDisplayName(passiveDefinition.DotType.Value)} if target already has {DotDisplayName(passiveDefinition.DotType.Value)}",
+                $"passive: applies extra {DotDisplayName(passiveDefinition.DotType.Value)} if target already has " +
+                $"{DotDisplayName(passiveDefinition.DotType.Value)}",
 
             PassiveEffectKind.DotDurationBonus
                 when passiveDefinition.DotType.HasValue &&
                      SkillAppliesDotType(skill, passiveDefinition.DotType.Value) &&
                      passiveDefinition.IntValue > 0 =>
                 passiveDefinition.IntValue2 > 0
-                    ? $"passive: {DotDisplayName(passiveDefinition.DotType.Value)} lasts +{FormatTurnCount(passiveDefinition.IntValue)} (max. {FormatTurnCount(passiveDefinition.IntValue2)})"
+                    ? $"passive: {DotDisplayName(passiveDefinition.DotType.Value)} lasts +{FormatTurnCount(passiveDefinition.IntValue)} " +
+                      $"(max. {FormatTurnCount(passiveDefinition.IntValue2)})"
                     : $"passive: {DotDisplayName(passiveDefinition.DotType.Value)} lasts +{FormatTurnCount(passiveDefinition.IntValue)}",
 
             PassiveEffectKind.DamageCausedPenaltyWhenToken
                 when passiveDefinition.TokenType.HasValue &&
                      context.Actor!.Tokens.GetStacks(passiveDefinition.TokenType.Value) > 0 &&
                      passiveDefinition.Additive != 0 =>
-                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} with {TokenDisplayName(passiveDefinition.TokenType.Value)}",
+                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} with " +
+                $"{TokenDisplayName(passiveDefinition.TokenType.Value)}",
 
             PassiveEffectKind.DamageCausedVsDotOnTarget
                 when HasDirectDamage(skill) &&
@@ -569,12 +443,17 @@ public static class SkillPlayerDescriptionBuilder
 
     private static string DescribeDamageCausedVsDotOnTargetPassive(PassiveDefinition passiveDefinition)
     {
-        if (!passiveDefinition.DotType.HasValue) return string.Empty;
+        if (!passiveDefinition.DotType.HasValue)
+        {
+            return string.Empty;
+        }
 
         var dotName = DotDisplayName(passiveDefinition.DotType.Value);
         if (passiveDefinition.AdditivePerStack > 0 && passiveDefinition.Cap > 0)
         {
-            return $"passive: Damage Caused +{FormatPercentFromFraction(passiveDefinition.AdditivePerStack)} per {dotName} stack on target (max. +{FormatPercentFromFraction(passiveDefinition.Cap)})";
+            return
+                $"passive: Damage Caused +{FormatPercentFromFraction(passiveDefinition.AdditivePerStack)} per " +
+                $"{dotName} stack on target (max. +{FormatPercentFromFraction(passiveDefinition.Cap)})";
         }
 
         if (passiveDefinition.Additive != 0)
@@ -610,7 +489,8 @@ public static class SkillPlayerDescriptionBuilder
 
     private static string FormatTokenStackCount(int stacks) => stacks == 1 ? "1" : stacks.ToString(CultureInfo.InvariantCulture);
 
-    private static string FormatTurnCount(int turns) => turns == 1 ? "1 turn" : $"{turns} turns";
+    private static string FormatTurnCount(int turns) =>
+        turns == 1 ? "1 turn" : $"{turns} turns";
 
     private static string FormatPercentFromFraction(double fraction) =>
         (fraction * 100.0).ToString("0.##", EnglishCulture) + "%";
