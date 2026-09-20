@@ -18,6 +18,7 @@ using Game.Core.Engine;
 using Game.Core.Items;
 using Game.Core.Models;
 using Game.Core.Progression;
+using Unity.Cinemachine;
 using UnityEngine;
 
 namespace Erumperem.Combat
@@ -82,6 +83,8 @@ namespace Erumperem.Combat
         [Header("Apresentação por ação (timings)")]
         [SerializeField] private float defaultPlaySeconds = 2.5f;
         [SerializeField] private float defaultPostPauseSeconds = 1.5f;
+        [SerializeField, Min(0f)] private float _pauseBeforeEnemyRoundSeconds = 1f;
+        [SerializeField] private CinemachineCamera _wideBattleCamera;
         [SerializeField] private CombatSkillPresentationTiming[] skillTimings = Array.Empty<CombatSkillPresentationTiming>();
 
         [Header("Inimigos — apresentação (EnemyAnimationController)")]
@@ -126,6 +129,8 @@ namespace Erumperem.Combat
         private bool _rightClickPressedThisFrame;
         private Vector2 _pointerScreenPosition;
         private bool _hasPointerScreenPosition;
+        private bool _isWaitingForEnemyRoundPause;
+        private Coroutine _enemyRoundPauseCoroutine;
 
         private bool _isBattleReady;
 
@@ -363,6 +368,7 @@ namespace Erumperem.Combat
 
         private void OnDisable()
         {
+            CancelEnemyRoundPause();
             _isBattleReady = false;
             _battleOutcomeMonitor.End();
             _debugCheats?.ClearAllCombatCheats();
@@ -549,8 +555,18 @@ namespace Erumperem.Combat
                 return;
             }
 
-            while (!_runtime.BattleEnded && !_runtime.NeedsPlayerInput && !_runtime.PresentationBusy)
+            while (!_runtime.BattleEnded && !_runtime.NeedsPlayerInput && !_runtime.PresentationBusy && !_isWaitingForEnemyRoundPause)
             {
+                if (_runtime.ActorIndex >= _runtime.RoundOrder.Count)
+                {
+                    _turnAdvanceDriver.BeginRound(_runtime);
+                }
+
+                if (_runtime.RoundOrder.Count == 0 || TryBeginEnemyRoundPause())
+                {
+                    break;
+                }
+
                 if (!_turnAdvanceDriver.TryAdvanceCombatStep(_runtime, _turnAdvanceCallbacks))
                 {
                     break;
@@ -571,8 +587,65 @@ namespace Erumperem.Combat
             ConsumeFrameInputFlags();
         }
 
+        private bool TryBeginEnemyRoundPause()
+        {
+            var actor = _runtime.RoundOrder[_runtime.ActorIndex];
+            if (actor.Health.IsDead || actor.Position.Side != Side.Enemies ||
+                _runtime.AnnouncedRoundSide == Side.Enemies)
+            {
+                return false;
+            }
+
+            _runtime.AnnouncedRoundSide = Side.Enemies;
+            _enemyRoundPauseCoroutine = StartCoroutine(WaitBeforeEnemyRound());
+            _sessionHub?.RaiseCombatRoundSideBegan(Side.Enemies);
+            return true;
+        }
+
+        private IEnumerator WaitBeforeEnemyRound()
+        {
+            _isWaitingForEnemyRoundPause = true;
+            var mainCamera = Camera.main;
+            var brain = mainCamera != null ? mainCamera.GetComponent<CinemachineBrain>() : null;
+            if (_wideBattleCamera == null)
+            {
+                foreach (var camera in FindObjectsByType<CinemachineCamera>(FindObjectsSortMode.None))
+                {
+                    if (string.Equals(camera.name, "WideBattle_CinemachineCamera", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _wideBattleCamera = camera;
+                        break;
+                    }
+                }
+            }
+
+            _sessionHub?.RaiseCinemachineFocusEnded();
+            yield return new WaitForSeconds(Mathf.Max(0f, _pauseBeforeEnemyRoundSeconds));
+            while (brain != null && brain.isActiveAndEnabled &&
+                   (brain.IsBlending || (_wideBattleCamera != null && _wideBattleCamera.isActiveAndEnabled &&
+                                         !ReferenceEquals(brain.ActiveVirtualCamera, _wideBattleCamera))))
+            {
+                yield return null;
+            }
+
+            _isWaitingForEnemyRoundPause = false;
+            _enemyRoundPauseCoroutine = null;
+        }
+
+        private void CancelEnemyRoundPause()
+        {
+            if (_enemyRoundPauseCoroutine != null)
+            {
+                StopCoroutine(_enemyRoundPauseCoroutine);
+                _enemyRoundPauseCoroutine = null;
+            }
+
+            _isWaitingForEnemyRoundPause = false;
+        }
+
         private void EndBattle()
         {
+            CancelEnemyRoundPause();
             if (_runtime.BattleEnded)
             {
                 return;
