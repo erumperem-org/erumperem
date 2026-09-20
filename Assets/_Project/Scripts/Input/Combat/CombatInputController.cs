@@ -6,7 +6,6 @@ using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public enum CombatInputPhase
@@ -25,6 +24,7 @@ public sealed class CombatInputController : MonoBehaviour
     [Header("Combat")]
     [SerializeField] private CombatPrototypeController combatSession;
     [SerializeField] private CombatSkillButtonBarUIManager skillBarUiManager;
+    [SerializeField] private InfinitySkillScroll skillScroll;
 
     [Header("Enemy Direction Mapping - Stable Slots")]
     [Tooltip("Slot lógico fixo do inimigo selecionado quando o jogador aperta Cima. O slot não muda quando outro inimigo morre ou quando FrontRank é compactado.")]
@@ -92,6 +92,11 @@ public sealed class CombatInputController : MonoBehaviour
         if (skillBarUiManager == null)
         {
             skillBarUiManager = FindFirstObjectByType<CombatSkillButtonBarUIManager>();
+        }
+
+        if (skillScroll == null)
+        {
+            skillScroll = FindFirstObjectByType<InfinitySkillScroll>();
         }
     }
 
@@ -347,14 +352,29 @@ public sealed class CombatInputController : MonoBehaviour
         _focusedSkillSlotIndex = panel.ZeroBasedSlotIndex;
         _focusedSkillPanel.HandlePointerEnter();
 
-        var button = _focusedSkillPanel.GetComponentInChildren<Button>(true);
-
-        if (button != null && EventSystem.current != null)
-        {
-            EventSystem.current.SetSelectedGameObject(button.gameObject);
-        }
+        CenterFocusedSkill();
 
         SkillFocusChanged?.Invoke(_focusedSkillSlotIndex);
+    }
+
+    private void CenterFocusedSkill()
+    {
+        if (!_focusedSkillSlotIndex.HasValue)
+        {
+            return;
+        }
+
+        if (skillScroll == null)
+        {
+            skillScroll = FindFirstObjectByType<InfinitySkillScroll>();
+        }
+
+        if (skillScroll == null)
+        {
+            return;
+        }
+
+        skillScroll.ScrollToItem(_focusedSkillSlotIndex.Value);
     }
 
     private void ClearSkillHover()
@@ -363,11 +383,6 @@ public sealed class CombatInputController : MonoBehaviour
         {
             _focusedSkillPanel.HandlePointerExit();
             _focusedSkillPanel = null;
-        }
-
-        if (EventSystem.current != null)
-        {
-            EventSystem.current.SetSelectedGameObject(null);
         }
     }
 
