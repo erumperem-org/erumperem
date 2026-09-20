@@ -15,7 +15,11 @@ namespace Erumperem.Combat
     [DisallowMultipleComponent]
     public sealed class CharacterSkillButtonsRowView : MonoBehaviour
     {
-        public const int MaxVisibleSlots = 6;
+        /// <summary>
+        /// 4 innates + up to 3 unlocked tree actives (one fully unlocked tree) = 7.
+        /// Must stay aligned with PlayerActionBuilder / keys 1–7.
+        /// </summary>
+        public const int MaxVisibleSlots = 7;
         private const int MaxSlots = MaxVisibleSlots;
         private const float RowIntroScaleFrom = 0.94f;
         private const float RowIntroDuration = 0.2f;
