@@ -22,6 +22,10 @@ namespace Player
         [Header("Rotação")]
         [SerializeField] private float _rotationSpeed = 10f;
 
+        [Header("Movimento por clique")]
+        [SerializeField, Min(1f)] private float _clickAcceleration = 60f;
+        [SerializeField, Min(1f)] private float _clickRotationSharpness = 22f;
+
         [Header("Follow (Companion)")]
         [SerializeField] private float _followMinDistance = 2f;
         [SerializeField] private float _followStopDistance = 1.5f;
@@ -73,7 +77,7 @@ namespace Player
             if (!NavMesh.CalculatePath(start.position, end.position, filter, path)
                 || path.status != NavMeshPathStatus.PathComplete) return false;
             bool retargeting = IsClickMoving;
-            Vector3 previousVelocity = retargeting ? agent.velocity : Vector3.zero;
+            float previousSpeed = retargeting ? agent.velocity.magnitude : 0f;
             if (!retargeting) SetMode(MovementMode.ClickToMove, start.position);
             if (!agent.isOnNavMesh || !agent.SetPath(path))
             {
@@ -82,12 +86,22 @@ namespace Player
             }
             agent.stoppingDistance = _stoppingDistance;
             agent.speed = _speed;
-            agent.acceleration = _acceleration;
+            agent.acceleration = _clickAcceleration;
             agent.autoBraking = true;
             agent.updateRotation = false;
             agent.isStopped = false;
-            if (retargeting && previousVelocity.sqrMagnitude > 0.01f)
-                agent.velocity = previousVelocity;
+            if (retargeting && previousSpeed > 0.1f && !agent.isOnOffMeshLink)
+            {
+                var corners = path.corners;
+                for (int i = 1; i < corners.Length; i++)
+                {
+                    Vector3 direction = corners[i] - agent.nextPosition;
+                    direction.y = 0f;
+                    if (direction.sqrMagnitude < 0.0025f) continue;
+                    agent.velocity = direction.normalized * Mathf.Min(previousSpeed, _speed);
+                    break;
+                }
+            }
             return true;
         }
 
@@ -112,7 +126,8 @@ namespace Player
             direction.y = 0f;
             animationController?.SetIsMoving(agent.velocity.sqrMagnitude > 0.01f);
             if (direction.sqrMagnitude > 0.001f)
-                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), _rotationSpeed * Time.deltaTime);
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction),
+                    1f - Mathf.Exp(-_clickRotationSharpness * Time.deltaTime));
         }
 
         // ── Unity lifecycle ───────────────────────────────────────────────
@@ -211,6 +226,7 @@ namespace Player
 
             navMeshAgent.enabled = useNavMeshAgent;
             if (!useNavMeshAgent) return;
+            navMeshAgent.acceleration = mode == MovementMode.ClickToMove ? _clickAcceleration : _acceleration;
 
             var sampleOrigin = startPosition ?? transform.position;
             if (NavMesh.SamplePosition(sampleOrigin, out var navMeshHit, 2f, NavMesh.AllAreas))
