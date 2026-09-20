@@ -13,8 +13,6 @@ public sealed class CharacterSelectionNpc : Interactable
     private VillageArea _village;
     private PlayableCharactersManager _charactersManager;
 
-    // Todo personagem disponível para interação exibe texto e outline no range,
-    // incluindo o companion. O Main e personagens fora da vila ficam ocultos.
     public override bool CanShowInteractionFeedback => CanInteract;
 
     public override bool CanInteract =>

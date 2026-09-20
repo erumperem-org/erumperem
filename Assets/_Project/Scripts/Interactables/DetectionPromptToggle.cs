@@ -125,7 +125,6 @@ public class DetectionPromptToggle : MonoBehaviour
 
     private void HandleColliderEntered(Collider otherCollider, string shapeLabel, int shapeIndex)
     {
-        // Nos jogáveis, o range de interação é registrado pelo detector do Main.
         if (_interactable is CharacterSelectionNpc) return;
         if (this.tag != "Player")
         {

@@ -80,12 +80,22 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
             .OrderBy(t => (transform.position - t.transform.position).sqrMagnitude)
             .FirstOrDefault();
 
-        if (closest == null) return;
+        TryInteract(closest);
+    }
+
+    public bool IsInInteractionRange(Interactable target) => target != null && _available.Contains(target);
+
+    public bool TryInteract(Interactable closest)
+    {
+        if (closest == null || !closest.isActiveAndEnabled || !IsInInteractionRange(closest)) return false;
+        if (_character == null) _character = GetComponent<PlayableCharacter>();
+        if (_character == null || _character.CurrentState != PlayableCharacterState.Main) return false;
+        if (_character.PlayerInput != null && !_character.PlayerInput.CanAcceptWorldInput) return false;
 
         if (!closest.CanInteract)
         {
             _available.Remove(closest);
-            return;
+            return false;
         }
 
         TriggerInteractionAnimation(closest);
@@ -105,9 +115,9 @@ public sealed class PlayerDetectionSystem : MonoBehaviour
 
         closest.ExecuteInteraction(ctx);
 
-        // Personagens podem voltar a ficar disponíveis sem sair do range.
         if (!closest.CanInteract && closest is not CharacterSelectionNpc)
             _available.Remove(closest);
+        return true;
     }
 
     // ── Detecção ──────────────────────────────────────────────────────────

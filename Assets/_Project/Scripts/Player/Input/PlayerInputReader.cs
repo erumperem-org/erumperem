@@ -17,6 +17,7 @@ namespace Player
 
         public Vector2 MoveInput { get; private set; }
         public bool IsBlocked { get; set; }
+        public bool CanAcceptWorldInput => isActiveAndEnabled && !IsBlocked && _actionMap != null && _actionMap.enabled;
 
         public event System.Action OnInteract;
         public event System.Action OnTorch;

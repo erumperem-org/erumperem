@@ -3,28 +3,13 @@ using System.Collections.Generic;
 using DetectionSystem.Core;
 using UnityEngine;
 
-/// <summary>
-/// Apresenta um outline enquanto um interactable está dentro do range do player.
-///
-/// O componente conversa apenas com os contratos genéricos de <see cref="Interactable"/>
-/// e <see cref="DetectionReceiver"/>. Ele não executa a interação e não conhece a
-/// lógica de combate, por isso pode ser reutilizado em outros interactables no futuro.
-///
-/// O outline é desenhado por renderers auxiliares que compartilham a malha original.
-/// Assim, os materiais visuais do objeto não são substituídos nem modificados.
-/// </summary>
 [DisallowMultipleComponent]
 public sealed class InteractionOutline : MonoBehaviour
 {
     public enum VisibilityMode
     {
-        /// <summary>Baús somem quando deixam de ser interagíveis; outros interactables permanecem no range.</summary>
         Automatic,
-
-        /// <summary>Mantém o outline durante todo o tempo em que estiver no range.</summary>
         AlwaysWhileInRange,
-
-        /// <summary>Usa <see cref="Interactable.CanInteract"/> como estado de visibilidade.</summary>
         HideAfterFirstInteraction
     }
 
@@ -71,8 +56,9 @@ public sealed class InteractionOutline : MonoBehaviour
     private float _targetIntensity;
     private float _fadeVelocity;
     private bool _started;
+    private bool _pointerHovered;
 
-    // ── Unity lifecycle ───────────────────────────────────────────────────
+    public void SetPointerHovered(bool hovered) => _pointerHovered = hovered;
 
     private void Awake()
     {
@@ -99,6 +85,7 @@ public sealed class InteractionOutline : MonoBehaviour
     {
         UnbindDetectionReceiver();
         _detectionContacts.Clear();
+        _pointerHovered = false;
         _targetIntensity = 0f;
         _currentIntensity = 0f;
         _fadeVelocity = 0f;
@@ -167,8 +154,6 @@ public sealed class InteractionOutline : MonoBehaviour
             Destroy(_outlineMaterialInstance);
     }
 
-    // ── Detection ─────────────────────────────────────────────────────────
-
     private void BindDetectionReceiver()
     {
         DetectionReceiver receiver = ResolveDetectionReceiver();
@@ -192,12 +177,6 @@ public sealed class InteractionOutline : MonoBehaviour
         _boundReceiver = null;
     }
 
-    /// <summary>
-    /// Permite que o detector do player registre proximidade mesmo quando o
-    /// interactable não possui um <see cref="DetectionReceiver"/> próprio.
-    /// O contato é contabilizado, então este método pode ser usado junto com
-    /// os callbacks do receiver e com múltiplos colliders sem perder o estado.
-    /// </summary>
     public void RegisterPlayerProximity(Detector detector, string shapeLabel, int shapeIndex)
     {
         if (!AcceptsDetection(detector, shapeLabel)) return;
@@ -207,7 +186,6 @@ public sealed class InteractionOutline : MonoBehaviour
         _detectionContacts[contact] = count + 1;
     }
 
-    /// <summary>Remove um contato previamente registrado pelo detector do player.</summary>
     public void UnregisterPlayerProximity(Detector detector, string shapeLabel, int shapeIndex)
     {
         if (!AcceptsDetection(detector, shapeLabel)) return;
@@ -251,18 +229,13 @@ public sealed class InteractionOutline : MonoBehaviour
         return false;
     }
 
-    // ── Outline setup ─────────────────────────────────────────────────────
-
     private void ResolveReferences()
     {
-        // O dono local tem prioridade: um override de prefab apontando para outro
-        // personagem não pode controlar a visibilidade deste renderer.
         Interactable localInteractable = GetComponent<Interactable>()
             ?? GetComponentInParent<Interactable>();
         if (localInteractable != null)
         {
             _interactable = localInteractable;
-            // Receiver pode ainda não ter sido preenchido pelo Awake do dono.
             _detectionReceiver = localInteractable.GetComponent<DetectionReceiver>();
             return;
         }
@@ -409,11 +382,9 @@ public sealed class InteractionOutline : MonoBehaviour
             _outlineMaterialInstance.SetFloat(OutlineWidthId, _outlineWidth);
     }
 
-    // ── Visibility / fade ─────────────────────────────────────────────────
-
     private void RefreshTargetIntensity()
     {
-        bool isInRange = _detectionContacts.Count > 0;
+        bool isInRange = _pointerHovered || _detectionContacts.Count > 0;
         bool shouldShow = isInRange && ShouldShowOutline();
         _targetIntensity = shouldShow ? 1f : 0f;
     }
@@ -425,7 +396,6 @@ public sealed class InteractionOutline : MonoBehaviour
 
         if (!_interactable.CanShowInteractionFeedback) return false;
 
-        // Trava 1: Se este objeto se tornou o Player ativo, a outline deve sumir imediatamente.
         if (gameObject.CompareTag("Player") || _interactable.gameObject.CompareTag("Player"))
             return false;
 
@@ -437,8 +407,6 @@ public sealed class InteractionOutline : MonoBehaviour
             case VisibilityMode.HideAfterFirstInteraction:
             case VisibilityMode.Automatic:
             default:
-                // Trava 2: Totalmente modular. Qualquer interactable (NPC ou Baú) que esteja
-                // com a interação bloqueada (CanInteract = false) esconderá o outline automaticamente.
                 return _interactable.CanInteract;
         }
     }
@@ -478,8 +446,6 @@ public sealed class InteractionOutline : MonoBehaviour
             ApplyMaterialProperties();
     }
 #endif
-
-    // ── Internal value types ──────────────────────────────────────────────
 
     private readonly struct RendererBinding
     {

@@ -32,6 +32,7 @@ public sealed class PlayableCharactersManager : MonoBehaviour
 
     public IPlayableCharacter Main { get; private set; }
     public IPlayableCharacter Companion { get; private set; }
+    internal PlayerInputReader InputReader => _inputReader;
 
     public event Action<IPlayableCharacter> OnMainChanged;
     public event Action<IPlayableCharacter> OnCompanionChanged;
@@ -53,6 +54,8 @@ public sealed class PlayableCharactersManager : MonoBehaviour
     private void Awake()
     {
         EnsureSceneReferencesResolved();
+        if (GetComponent<Player.ExplorationPointerController>() == null)
+            gameObject.AddComponent<Player.ExplorationPointerController>();
     }
 
     private void EnsureSceneReferencesResolved()

@@ -153,7 +153,6 @@ public sealed class VillageArea : MonoBehaviour
         return _sphereCollider.radius * Mathf.Max(lossyScale.x, lossyScale.y, lossyScale.z);
     }
 
-    /// <summary>Consulta a área real sem disparar eventos de entrada ou cura.</summary>
     public bool ContainsPosition(Vector3 position)
     {
         if (_sphereCollider == null)
