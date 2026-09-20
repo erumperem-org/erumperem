@@ -19,6 +19,7 @@ public enum CombatInputPhase
 [DisallowMultipleComponent]
 public sealed class CombatInputController : MonoBehaviour
 {
+    [SerializeField] private InfinitySkillScroll skillScroll;
     [Header("Input")]
     [SerializeField] private CombatInputReader inputReader;
 
@@ -258,6 +259,8 @@ public sealed class CombatInputController : MonoBehaviour
 
         var step = direction == CombatInputDirection.Left || direction == CombatInputDirection.Up ? -1 : 1;
         var nextIndex = (currentIndex + step + panels.Count) % panels.Count;
+    
+        // Foca o novo painel
         FocusSkillPanel(panels[nextIndex]);
     }
 
@@ -352,6 +355,12 @@ public sealed class CombatInputController : MonoBehaviour
         if (button != null && EventSystem.current != null)
         {
             EventSystem.current.SetSelectedGameObject(button.gameObject);
+        }
+
+        // Atualiza o scroll usando o índice do slot ou o índice na hierarquia do Transform
+        if (skillScroll != null)
+        {
+            skillScroll.ScrollToItem(panel.transform.GetSiblingIndex());
         }
 
         SkillFocusChanged?.Invoke(_focusedSkillSlotIndex);
