@@ -1,6 +1,7 @@
 using System;
 using Services.DebugUtilities;
 using UnityEngine;
+using UnityEngine.UI;
 using Core.Exploration.Items;
 using Core.Economy.Currency;
 using Core.Inventory;
@@ -17,6 +18,7 @@ namespace Core.Shop
         [Header("References")]
         [SerializeField] private WalletSystem _wallet;
         [SerializeField] private InventorySystem _permanentInventory;
+        [SerializeField] private Button _button;
 
         [Header("Offer")]
         [Tooltip("Must implement IIITem.")]
@@ -25,12 +27,32 @@ namespace Core.Shop
         [SerializeField] private ScriptableObject _currencyAsset;
         [SerializeField] private int _unitPrice = 10;
 
+        [Header("Purchase")]
+        [Tooltip("Quantity bought per click.")]
+        [SerializeField, Min(1)] private int _quantity = 1;
+
         public event Action<IIITem, int> OnPurchaseSucceeded;
         public event Action OnPurchaseFailed;
 
         public IIITem Item => _itemAsset as IIITem;
         public ICoin Currency => _currencyAsset as ICoin;
         public int UnitPrice => _unitPrice;
+
+        // ── Unity lifecycle ───────────────────────────────────────────────
+
+        private void Awake() => _button.onClick.AddListener(OnClick);
+
+        private void OnDestroy() => _button.onClick.RemoveListener(OnClick);
+
+        private void OnClick() => TryPurchase(_quantity);
+
+        /// <summary>
+        /// Read-only affordability check, exposto para a camada de UI poder
+        /// atualizar o estado interativo do botão sem precisar de uma
+        /// referência própria à WalletSystem.
+        /// </summary>
+        public bool CanAfford(int quantity) =>
+            quantity > 0 && _wallet != null && Currency != null && _wallet.GetBalance(Currency) >= _unitPrice * quantity;
 
         /// <summary>
         /// Attempts to buy <paramref name="quantity"/> units. All-or-nothing:

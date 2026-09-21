@@ -76,8 +76,10 @@ public class AudioManager : MonoBehaviour
 
     public void PlaySFX(string soundName, float volumeMultiplier = 1f)
     {
-        Sound s = Array.Find(sfxClips, x => x.name == soundName);
-        if (s != null && s.clips.Length > 0)
+        if (sfxClips == null || sfxSource == null || string.IsNullOrEmpty(soundName)) return;
+
+        Sound s = Array.Find(sfxClips, x => x != null && x.name == soundName);
+        if (s != null && s.clips != null && s.clips.Length > 0)
         {
             sfxSource.pitch = s.pitch;
 
@@ -92,7 +94,10 @@ public class AudioManager : MonoBehaviour
             }
 
             s.lastPlayedIndex = randomIndex;
-            sfxSource.PlayOneShot(s.clips[randomIndex], s.volume * volumeMultiplier);
+            if (s.clips[randomIndex] != null)
+            {
+                sfxSource.PlayOneShot(s.clips[randomIndex], s.volume * volumeMultiplier);
+            }
         }
     }
 

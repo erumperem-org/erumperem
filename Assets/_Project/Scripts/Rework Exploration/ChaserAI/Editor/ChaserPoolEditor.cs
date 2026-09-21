@@ -2,9 +2,10 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// Readout de ativos/total e botões de teste em Play Mode: força uma
-/// avaliação imediata de retorno/spawn, ou recolhe todos os Chasers ativos
-/// de volta para a pool.
+/// Readout do tamanho do pool e botão de teste em Play Mode: força uma
+/// avaliação imediata de reposicionamento (sem esperar o
+/// evaluationInterval). Não há mais distinção de "ativos" - todo Chaser
+/// da lista está sempre ativo.
 /// </summary>
 [CustomEditor(typeof(ChaserPool))]
 public class ChaserPoolEditor : Editor
@@ -23,16 +24,11 @@ public class ChaserPoolEditor : Editor
             return;
         }
 
-        EditorGUILayout.LabelField("Ativos", $"{pool.ActiveCount} / {pool.PoolSize}");
+        EditorGUILayout.LabelField("Chasers no pool", pool.PoolSize.ToString());
 
         if (GUILayout.Button("Forçar reavaliação agora"))
         {
             pool.Editor_ForceEvaluate();
-        }
-
-        if (GUILayout.Button("Recolher todos para a pool"))
-        {
-            pool.Editor_RecallAll();
         }
     }
 }

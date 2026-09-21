@@ -9,9 +9,16 @@ using UnityEngine;
 ///
 /// Roda em loop próprio (coroutine, intervalo configurável em
 /// <see cref="ChaserSettings.perceptionCheckInterval"/>) em vez de todo
-/// frame, e pode ser completamente desativado via <see cref="Deactivate"/>
-/// - usado pelo <see cref="ChaserAI"/> ao entrar em Resting, para não gastar
-/// raycasts à toa enquanto a IA está desligada.
+/// frame. Ativado uma única vez pelo <see cref="ChaserAI"/> ao nascer e
+/// nunca mais desativado - todo Chaser fica com a percepção ligada 100% do
+/// tempo. <see cref="Deactivate"/> continua existindo por completude (ex:
+/// <c>OnDisable</c>) mas não faz parte do fluxo normal de nenhum estado.
+///
+/// O raio de percepção é multiplicado, a cada checagem, pelos fatores de
+/// movimento e tocha do <see cref="CharacterStateExposed"/> do alvo atual
+/// (ver <see cref="GetMovementFactor"/>/<see cref="GetTorchFactor"/>) -
+/// alvo mais "barulhento" (correndo, tocha acesa) é percebido de mais
+/// longe.
 /// </summary>
 public class PerceptionSensor : MonoBehaviour
 {
@@ -28,14 +35,25 @@ public class PerceptionSensor : MonoBehaviour
     private Coroutine loopRoutine;
 
     /// <summary>
+    /// Estado exposto do alvo atual (movimento/tocha), usado para calcular
+    /// o multiplicador de percepção. Fica null se o alvo não tiver esse
+    /// componente - nesse caso os fatores simplesmente não têm efeito
+    /// (ver <see cref="GetMovementFactor"/>/<see cref="GetTorchFactor"/>).
+    /// </summary>
+    private CharacterStateExposed targetState;
+
+    /// <summary>
     /// Liga o loop de percepção para o alvo e configurações fornecidos.
     /// Chamadas repetidas apenas atualizam o alvo/settings caso o loop já
-    /// esteja rodando.
+    /// esteja rodando - também usado pelo <see cref="ChaserAI"/> para
+    /// manter o alvo em dia quando ele muda em runtime (retarget), mesmo
+    /// com o loop já ativo.
     /// </summary>
     public void Activate(Transform targetToTrack, ChaserSettings chaserSettings)
     {
         target = targetToTrack;
         settings = chaserSettings;
+        targetState = target != null ? target.GetComponentInParent<CharacterStateExposed>() : null;
 
         if (loopRoutine == null)
         {
@@ -53,6 +71,7 @@ public class PerceptionSensor : MonoBehaviour
         }
 
         CanSeeTarget = false;
+        targetState = null;
     }
 
     private IEnumerator PerceptionLoop()
@@ -77,8 +96,13 @@ public class PerceptionSensor : MonoBehaviour
         Vector3 toTarget = target.position - origin;
         float sqrDistance = toTarget.sqrMagnitude;
 
+        // Raio efetivo de percepção: base * fator de movimento * fator de
+        // tocha, lido do estado atual do alvo a cada checagem (sem assinar
+        // eventos - reage naturalmente a troca de alvo via SetTarget).
+        float effectiveRadius = settings.perceptionRadius * GetMovementFactor() * GetTorchFactor();
+
         // Fora do raio de percepção: nem tenta o raycast.
-        if (sqrDistance > settings.perceptionRadius * settings.perceptionRadius)
+        if (sqrDistance > effectiveRadius * effectiveRadius)
         {
             DrawPerceptionRay(origin, target.position, Color.gray);
             return false;
@@ -95,6 +119,40 @@ public class PerceptionSensor : MonoBehaviour
 
         DrawPerceptionRay(origin, target.position, Color.green);
         return true;
+    }
+
+    /// <summary>Multiplicador de percepção conforme o estado de movimento atual do alvo.</summary>
+    private float GetMovementFactor()
+    {
+        if (targetState == null)
+        {
+            return 1f;
+        }
+
+        switch (targetState.MovementState)
+        {
+            case CharacterStateExposed.CharacterMovementState.Idle:
+                return settings.movementFactorIdle;
+            case CharacterStateExposed.CharacterMovementState.Walk:
+                return settings.movementFactorWalk;
+            case CharacterStateExposed.CharacterMovementState.Run:
+                return settings.movementFactorRun;
+            default:
+                return 1f;
+        }
+    }
+
+    /// <summary>Multiplicador de percepção conforme o estado atual da tocha do alvo.</summary>
+    private float GetTorchFactor()
+    {
+        if (targetState == null)
+        {
+            return 1f;
+        }
+
+        return targetState.TorchState == CharacterStateExposed.CharacterTorchState.On
+            ? settings.torchFactorOn
+            : settings.torchFactorOff;
     }
 
     private void DrawPerceptionRay(Vector3 from, Vector3 to, Color color)
