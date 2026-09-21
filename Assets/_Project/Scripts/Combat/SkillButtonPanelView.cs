@@ -209,7 +209,9 @@ namespace Erumperem.Combat
             _isSelected = selected;
             _skillIconColor = skillIconColor;
             TryCacheHotkeyDigitLabel();
-            if (_hotkeyDigitLabel != null && hotkeyLabelOneToSeven >= 1 && hotkeyLabelOneToSeven <= 6)
+            if (_hotkeyDigitLabel != null &&
+                hotkeyLabelOneToSeven >= 1 &&
+                hotkeyLabelOneToSeven <= CharacterSkillButtonsRowView.MaxVisibleSlots)
             {
                 _hotkeyDigitLabel.text = hotkeyLabelOneToSeven.ToString();
             }

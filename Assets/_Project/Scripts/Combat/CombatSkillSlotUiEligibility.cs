@@ -20,7 +20,7 @@ namespace Erumperem.Combat
         {
             var skillIds = actor.SkillLoadout.Skills
                 .Where(id => state.SkillsById.ContainsKey(id))
-                .Take(7)
+                .Take(CharacterSkillButtonsRowView.MaxVisibleSlots)
                 .ToList();
             if (hotkeyIndexZeroBased < 0 || hotkeyIndexZeroBased >= skillIds.Count)
             {
