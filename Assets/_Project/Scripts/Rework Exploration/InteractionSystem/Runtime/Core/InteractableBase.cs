@@ -15,6 +15,12 @@ namespace InteractionSystem
         [SerializeField] private UnityEvent onInteractionStarted;
         [SerializeField] private UnityEvent onBecameAvailable;
         [SerializeField] private UnityEvent onBecameUnavailable;
+        [SerializeField] private UnityEvent onInstigatorInRange;
+        [SerializeField] private UnityEvent onInstigatorOutOfRange;
+
+        [Header("Alcance (opcional)")]
+        [Tooltip("Se atribuída, OnInstigatorInRange/OnInstigatorOutOfRange são chamados automaticamente ao entrar/sair do raio. Não faz nada sozinha - uma subclasse decide o que fazer sobrescrevendo os métodos.")]
+        [SerializeField] private InstigatorProximityZone proximityZone;
 
         /// <summary>Lock interno, controlado apenas por SetAvailable.</summary>
         private bool _canInteract;
@@ -35,6 +41,35 @@ namespace InteractionSystem
             _canInteract = startAvailable;
         }
 
+        /// <summary>
+        /// Assinatura dos eventos de InstigatorProximityZone. Subclasses que
+        /// sobrescrevem OnEnable/OnDisable DEVEM chamar base.OnEnable()/
+        /// base.OnDisable(), senão este wiring nunca roda.
+        /// </summary>
+        protected virtual void OnEnable()
+        {
+            if (proximityZone != null)
+            {
+                proximityZone.InstigatorEnteredRange += HandleInstigatorEnteredRange;
+                proximityZone.InstigatorExitedRange += HandleInstigatorExitedRange;
+
+                if (proximityZone.IsInstigatorInRange) OnInstigatorInRange();
+                else OnInstigatorOutOfRange();
+            }
+        }
+
+        protected virtual void OnDisable()
+        {
+            if (proximityZone != null)
+            {
+                proximityZone.InstigatorEnteredRange -= HandleInstigatorEnteredRange;
+                proximityZone.InstigatorExitedRange -= HandleInstigatorExitedRange;
+            }
+        }
+
+        private void HandleInstigatorEnteredRange() => OnInstigatorInRange();
+        private void HandleInstigatorExitedRange() => OnInstigatorOutOfRange();
+
         public bool TryInteract(GameObject instigator, out IInteractionContext context)
         {
             context = null;
@@ -46,7 +81,6 @@ namespace InteractionSystem
                 return false;
 
             context = CreateContext(instigator);
-            SetAvailable(false);
             OnInteractionStarted(context);
 
             return true;
@@ -64,8 +98,16 @@ namespace InteractionSystem
 
             AvailabilityChanged?.Invoke(effective);
 
-            if (effective) onBecameAvailable?.Invoke();
-            else onBecameUnavailable?.Invoke();
+            if (effective)
+            {
+                onBecameAvailable?.Invoke();
+                OnAvailable();
+            }
+            else
+            {
+                onBecameUnavailable?.Invoke();
+                OnUnavailable();
+            }
         }
 
         protected virtual bool CanInteractWith(GameObject instigator) => true;
@@ -78,6 +120,24 @@ namespace InteractionSystem
         protected virtual void OnInteractionStarted(IInteractionContext context)
         {
             onInteractionStarted?.Invoke();
+        }
+
+        /// <summary>Chamado quando CanInteract passa a true. Também dispara o UnityEvent onBecameAvailable.</summary>
+        protected virtual void OnAvailable() { }
+
+        /// <summary>Chamado quando CanInteract passa a false. Também dispara o UnityEvent onBecameUnavailable.</summary>
+        protected virtual void OnUnavailable() { }
+
+        /// <summary>Chamado quando o instigador entra no raio de proximityZone (se atribuída). Também dispara o UnityEvent onInstigatorInRange.</summary>
+        protected virtual void OnInstigatorInRange()
+        {
+            onInstigatorInRange?.Invoke();
+        }
+
+        /// <summary>Chamado quando o instigador sai do raio de proximityZone (se atribuída). Também dispara o UnityEvent onInstigatorOutOfRange.</summary>
+        protected virtual void OnInstigatorOutOfRange()
+        {
+            onInstigatorOutOfRange?.Invoke();
         }
     }
 }

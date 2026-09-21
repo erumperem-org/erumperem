@@ -7,28 +7,28 @@ using UnityEngine;
 namespace Core.Shop
 {
     /// <summary>
-    /// Persists/restores a SkillPointShopButton's tier progression.
+    /// Persists/restores a SkillLevelUpShopButton's tier progression.
     /// Different from ItemShopButton (which is stateless), this button's
     /// progress must survive across sessions to remain coherent.
     /// </summary>
-    public sealed class SkillPointShopSaveSystem : MonoBehaviour
+    public sealed class SkillLevelUpShopSaveSystem : MonoBehaviour
     {
-        [SerializeField] private SkillPointShopButton _button;
-        [SerializeField] private string _fileName = "skillpoint_shop.json";
+        [SerializeField] private SkillLevelUpShopButton _button;
+        [SerializeField] private string _fileName = "skilllevelup_shop.json";
 
         private string FullPath => Path.Combine(Application.persistentDataPath, _fileName);
 
         public async void SaveAsync()
         {
-            if (_button == null) { Log(LogLevel.Error, "SkillPointShopButton not assigned."); return; }
+            if (_button == null) { Log(LogLevel.Error, "SkillLevelUpShopButton not assigned."); return; }
 
-            var data = new SkillPointShopSaveData { GlobalTierIndex = _button.GlobalTierIndex };
+            var data = new SkillLevelUpShopSaveData { GlobalTierIndex = _button.GlobalTierIndex };
             string json = JsonUtility.ToJson(data, prettyPrint: true);
 
             try
             {
                 await File.WriteAllTextAsync(FullPath, json);
-                Log(LogLevel.Debug, $"Skill point shop state saved to '{FullPath}'.");
+                Log(LogLevel.Debug, $"Skill level-up shop state saved to '{FullPath}'.");
             }
             catch (Exception ex)
             {
@@ -38,13 +38,13 @@ namespace Core.Shop
 
         public async Task LoadAsync()
         {
-            if (_button == null) { Log(LogLevel.Error, "SkillPointShopButton not assigned."); return; }
+            if (_button == null) { Log(LogLevel.Error, "SkillLevelUpShopButton not assigned."); return; }
             if (!File.Exists(FullPath)) { Log(LogLevel.Debug, "No save found — starting at tier 0."); return; }
 
             try
             {
                 string json = await File.ReadAllTextAsync(FullPath);
-                var data = JsonUtility.FromJson<SkillPointShopSaveData>(json);
+                var data = JsonUtility.FromJson<SkillLevelUpShopSaveData>(json);
                 _button.RestoreState(data.GlobalTierIndex);
                 Log(LogLevel.Debug, $"State restored: tier {data.GlobalTierIndex}.");
             }
@@ -60,7 +60,7 @@ namespace Core.Shop
             try
             {
                 File.Delete(FullPath);
-                Log(LogLevel.Debug, "Skill point shop save deleted.");
+                Log(LogLevel.Debug, "Skill level-up shop save deleted.");
             }
             catch (Exception ex)
             {
@@ -69,6 +69,12 @@ namespace Core.Shop
         }
 
         private void Log(LogLevel level, string msg) =>
-            LoggerService.PrintLogMessage(level, $"[SkillPointShopSaveSystem:{gameObject.name}] {msg}", LogCategory.Inventory);
+            LoggerService.PrintLogMessage(level, $"[SkillLevelUpShopSaveSystem:{gameObject.name}] {msg}", LogCategory.Inventory);
+    }
+
+    [Serializable]
+    public struct SkillLevelUpShopSaveData
+    {
+        public int GlobalTierIndex;
     }
 }

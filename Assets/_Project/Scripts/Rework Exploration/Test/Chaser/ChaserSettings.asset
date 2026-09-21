@@ -18,10 +18,20 @@ MonoBehaviour:
   obstacleMask:
     serializedVersion: 2
     m_Bits: 16
-  catchDistance: 1.2
+  catchDistance: 2
   sprintWhileChasing: 1
   investigateWaitTime: 3
   arrivalThreshold: 0.5
-  restDepartureDistance: 5
+  movementFactorIdle: 0.7
+  movementFactorWalk: 1
+  movementFactorRun: 1.4
+  torchFactorOff: 1
+  torchFactorOn: 1.6
+  initialViewForwardOffset: 8
+  initialViewRadius: 12
+  initialPlacementSearchRadius: 6
+  initialPlacementMaxSampleAttempts: 20
   maxAvoidanceAngle: 90
   avoidanceAngleStep: 15
+  safeAreaAvoidanceMargin: 20
+  safeAreaAvoidanceMaxSearchAngle: 150

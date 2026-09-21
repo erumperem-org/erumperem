@@ -50,6 +50,9 @@ namespace Core.Inventory.UI
                 _quantityText.text = hasContent ? quantity.ToString() : string.Empty;
         }
 
-        private void HandleClicked() => OnClicked?.Invoke(SlotIndex);
+        private void HandleClicked()
+        {
+            OnClicked?.Invoke(SlotIndex);
+        }
     }
 }

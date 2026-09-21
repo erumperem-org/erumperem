@@ -2,101 +2,54 @@ using UnityEngine;
 using UnityEngine.Events;
 
 /// <summary>
-/// Camada acima da IA de cada inimigo: escuta uma ou mais áreas seguras
-/// (<c>Hub</c>, pacote AreaZones) e decide, de forma agregada, se o alvo
-/// está disponível para ser perseguido.
+/// Camada acima da IA de cada Chaser: agrega a captura do alvo por
+/// qualquer um dos ChaserAI monitorados num único UnityEvent, para outros
+/// sistemas (troca de cena, UI de derrota, etc.) encadearem suas próprias
+/// ações sem precisar conhecer ChaserAI diretamente nem se inscrever em
+/// cada instância individualmente.
 ///
-/// Não conhece <c>ChaserAI</c> nem qualquer outro tipo concreto de inimigo -
-/// comunica a decisão via <see cref="UnityEvent"/>, para que qualquer
-/// inimigo (atual ou futuro) se conecte pelo Inspector, sem exigir nenhuma
-/// referência de código entre este pacote e o de IA.
-///
-/// Suporta múltiplas áreas seguras simultâneas: o alvo só volta a ficar
-/// "disponível para caça" quando sai de TODAS elas - evita disparar
-/// "disponível" prematuramente ao sair de apenas uma área, em casos de
-/// sobreposição.
+/// Não conhece nenhum tipo de "consumidor" concreto - comunica a captura
+/// via <see cref="UnityEvent"/>, para que qualquer sistema (atual ou
+/// futuro) se conecte pelo Inspector, sem exigir nenhuma referência de
+/// código entre este pacote e o de destino (ex: carregamento de cena).
 /// </summary>
 public class EnemyHuntOrchestrator : MonoBehaviour
 {
-    [Tooltip("Todas as áreas seguras que tornam o alvo indisponível para caça " +
-             "enquanto ele estiver dentro de qualquer uma delas.")]
-    [SerializeField] private Hub[] safeAreas;
+    [Tooltip("Todos os ChaserAI cuja captura do alvo deve disparar OnPreyCaught.")]
+    [SerializeField] private ChaserAI[] chasers;
 
-    [Header("Eventos (conecte os inimigos aqui pelo Inspector)")]
-    [Tooltip("Disparado quando o alvo deixa de estar em qualquer área segura monitorada.")]
-    public UnityEvent OnTargetAvailableForHunt;
-
-    [Tooltip("Disparado quando o alvo entra em uma área segura monitorada (a primeira, em caso de sobreposição).")]
-    public UnityEvent OnTargetUnavailableForHunt;
-
-    private int areasContainingTarget;
-
-    /// <summary>True quando o alvo não está em nenhuma área segura monitorada.</summary>
-    public bool IsTargetAvailableForHunt => areasContainingTarget == 0;
+    [Header("Eventos (conecte pelo Inspector)")]
+    [Tooltip("Disparado quando qualquer um dos Chasers monitorados captura o alvo.")]
+    public UnityEvent OnPreyCaught;
 
     private void OnEnable()
     {
-        areasContainingTarget = 0;
-
-        foreach (var area in safeAreas)
+        foreach (var chaser in chasers)
         {
-            if (area == null)
+            if (chaser == null)
             {
                 continue;
             }
 
-            area.OnPlayerEnteredSafeArea += HandleAreaEntered;
-            area.OnPlayerExitedSafeArea += HandleAreaExited;
-
-            // Sincroniza o contador com o estado atual de cada área, caso o
-            // alvo já esteja dentro dela no momento em que este componente
-            // é ativado (ex: cena carregada com o jogador já no HUB).
-            if (area.IsTargetInside)
-            {
-                areasContainingTarget++;
-            }
-        }
-
-        // Propaga o estado inicial, para que inimigos que já nasçam
-        // "caçando" por padrão sejam corrigidos imediatamente se o alvo já
-        // estiver seguro ao entrar em cena.
-        if (areasContainingTarget > 0)
-        {
-            OnTargetUnavailableForHunt?.Invoke();
+            chaser.OnTargetCaught += HandlePreyCaught;
         }
     }
 
     private void OnDisable()
     {
-        foreach (var area in safeAreas)
+        foreach (var chaser in chasers)
         {
-            if (area == null)
+            if (chaser == null)
             {
                 continue;
             }
 
-            area.OnPlayerEnteredSafeArea -= HandleAreaEntered;
-            area.OnPlayerExitedSafeArea -= HandleAreaExited;
+            chaser.OnTargetCaught -= HandlePreyCaught;
         }
     }
 
-    private void HandleAreaEntered()
+    private void HandlePreyCaught()
     {
-        areasContainingTarget++;
-
-        if (areasContainingTarget == 1)
-        {
-            OnTargetUnavailableForHunt?.Invoke();
-        }
-    }
-
-    private void HandleAreaExited()
-    {
-        areasContainingTarget = Mathf.Max(0, areasContainingTarget - 1);
-
-        if (areasContainingTarget == 0)
-        {
-            OnTargetAvailableForHunt?.Invoke();
-        }
+        OnPreyCaught?.Invoke();
     }
 }

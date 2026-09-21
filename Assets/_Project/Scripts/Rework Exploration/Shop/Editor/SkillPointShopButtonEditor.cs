@@ -5,14 +5,14 @@ using Core.Economy.Currency;
 
 namespace Core.Shop.Editor
 {
-    [CustomEditor(typeof(SkillPointShopButton))]
-    public sealed class SkillPointShopButtonEditor : UnityEditor.Editor
+    [CustomEditor(typeof(SkillLevelUpShopButton))]
+    public sealed class SkillLevelUpShopButtonEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
             DrawDefaultInspector();
 
-            var button = (SkillPointShopButton)target;
+            var button = (SkillLevelUpShopButton)target;
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Purchase Testing (Play Mode)", EditorStyles.boldLabel);
@@ -23,6 +23,7 @@ namespace Core.Shop.Editor
                 return;
             }
 
+            EditorGUILayout.LabelField("Current level", $"{button.CurrentLevel}/{button.MaxLevel}");
             EditorGUILayout.LabelField("Global tier index", button.GlobalTierIndex.ToString());
             EditorGUILayout.LabelField("Exhausted", button.IsExhausted.ToString());
 
@@ -33,8 +34,8 @@ namespace Core.Shop.Editor
             {
                 bool success = button.TryPurchase();
                 Debug.Log(success
-                    ? "[SkillPointShopButton] Purchase succeeded."
-                    : "[SkillPointShopButton] Purchase failed — check currency balance or exhausted state.");
+                    ? "[SkillLevelUpShopButton] Purchase succeeded."
+                    : "[SkillLevelUpShopButton] Purchase failed — check currency balance or exhausted state.");
             }
         }
     }
