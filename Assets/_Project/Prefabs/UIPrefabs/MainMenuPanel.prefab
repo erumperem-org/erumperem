@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 6248501623034801118}
   - component: {fileID: 4014150542126269721}
   - component: {fileID: 2134908088342970857}
+  - component: {fileID: 642448456773935282}
   m_Layer: 5
   m_Name: MainMenuPanel
   m_TagString: Untagged
@@ -91,6 +92,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a564c1efc7fe0444bb856528b84d37f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Panel
+--- !u!114 &642448456773935282
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 642538465528033302}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 851df550535d6eb4f97a7fcdaa36ea59, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KeyboardNavigablePanel
+  defaultSelected: {fileID: 0}
+  cancelTarget: {fileID: 0}
+  wrapNavigation: 1
+  navigationPriority: 0
 --- !u!1 &995677375124410404
 GameObject:
   m_ObjectHideFlags: 0
@@ -158,7 +175,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Version Alpha 0.12
+  m_text: Version Alpha 0.15
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: c2ac164896ef5434b8ebd7e88fab17d9, type: 2}
   m_sharedMaterial: {fileID: 4354765918116594972, guid: c2ac164896ef5434b8ebd7e88fab17d9, type: 2}
@@ -301,6 +318,8 @@ MonoBehaviour:
     _disabledEnterEffects: []
     _disabledExitEffects: []
   isDisabled: 0
+  panelTransition: {fileID: 0}
+  useCloseTransition: 1
 --- !u!1 &1180299974131658193
 GameObject:
   m_ObjectHideFlags: 0
@@ -681,6 +700,8 @@ MonoBehaviour:
     _disabledEnterEffects: []
     _disabledExitEffects: []
   isDisabled: 0
+  panelTransition: {fileID: 0}
+  useCloseTransition: 1
 --- !u!114 &5064604898330587687
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1132,6 +1153,8 @@ MonoBehaviour:
     _disabledEnterEffects: []
     _disabledExitEffects: []
   isDisabled: 0
+  panelTransition: {fileID: 0}
+  useCloseTransition: 1
 --- !u!114 &6623612850492560345
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1309,6 +1332,8 @@ MonoBehaviour:
     _disabledEnterEffects: []
     _disabledExitEffects: []
   isDisabled: 0
+  panelTransition: {fileID: 0}
+  useCloseTransition: 1
 --- !u!114 &6936795269271087840
 MonoBehaviour:
   m_ObjectHideFlags: 0

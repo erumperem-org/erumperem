@@ -2160,6 +2160,7 @@ GameObject:
   - component: {fileID: 7989049220269263075}
   - component: {fileID: 2786108857395829889}
   - component: {fileID: 5979174119870080555}
+  - component: {fileID: 1391110440129304796}
   m_Layer: 5
   m_Name: CreditsPanel
   m_TagString: Untagged
@@ -2260,6 +2261,22 @@ MonoBehaviour:
   viewDuration: 0.35
   buttonMoveDistance: 210
   openOnEnable: 1
+--- !u!114 &1391110440129304796
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2525024734406328705}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 851df550535d6eb4f97a7fcdaa36ea59, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KeyboardNavigablePanel
+  defaultSelected: {fileID: 0}
+  cancelTarget: {fileID: 0}
+  wrapNavigation: 1
+  navigationPriority: 0
 --- !u!1 &2630377670424257071
 GameObject:
   m_ObjectHideFlags: 0
@@ -3242,8 +3259,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 4635351248634360505}
   m_HandleRect: {fileID: 661078494942232115}
   m_Direction: 2
-  m_Value: 1
-  m_Size: 0.15421778
+  m_Value: 1.0000001
+  m_Size: 0.15421781
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -4131,7 +4148,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.90981734}
   m_AnchorMax: {x: 0.5, y: 0.90981734}
-  m_AnchoredPosition: {x: 0, y: 23.488993}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 481.996, y: 86.591}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3492432082106995260
@@ -4401,7 +4418,7 @@ RectTransform:
   m_GameObject: {fileID: 6183899239070862508}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.95, y: 0.95, z: 0.95}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 738145494075571831}

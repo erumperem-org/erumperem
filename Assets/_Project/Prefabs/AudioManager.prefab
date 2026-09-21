@@ -61,7 +61,7 @@ MonoBehaviour:
   - name: CombatTracks
     clips:
     - {fileID: 8300000, guid: 0a69c1d19a4ae4143a00bf5e40dda4e3, type: 3}
-    volume: 0.15
+    volume: 0.05
     pitch: 1
   sfxClips:
   - name: Hover
@@ -79,6 +79,7 @@ MonoBehaviour:
   - name: Damage
     clips:
     - {fileID: 8300000, guid: 39bc95284c7273a40b17afd3fb11f7b4, type: 3}
+    - {fileID: 8300000, guid: 10e1116b7d6f6cf48989b373c4e6325e, type: 3}
     volume: 0.1
     pitch: 1
     lastPlayedIndex: -1
@@ -170,8 +171,15 @@ MonoBehaviour:
   - name: EnemySpot
     clips:
     - {fileID: 8300000, guid: 5bcd19b98e3ec8647b334ee6ba8d94bc, type: 3}
+    - {fileID: 8300000, guid: b9cfe4ede6170b541b14a909946d85e9, type: 3}
     volume: 0.05
     pitch: 1
+    lastPlayedIndex: -1
+  - name: CombatRoundBanner
+    clips:
+    - {fileID: 8300000, guid: 9a6525561949f314892832e8177c3e74, type: 3}
+    volume: 1
+    pitch: 1.5
     lastPlayedIndex: -1
   ambientLoops:
   - name: ExplorationAmbience
