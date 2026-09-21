@@ -34,6 +34,7 @@ namespace Erumperem.UI
             working = ExpandSimpleEffectSpan(working, "rainbow", LinkIdRainbow);
             working = ExpandSimpleEffectSpan(working, "shake", LinkIdShake);
             working = ExpandSimpleEffectSpan(working, "wobble", LinkIdWobble);
+            working = StripMissingOrDisabledSpriteTags(working, settings);
             return working;
         }
 
@@ -102,37 +103,62 @@ namespace Erumperem.UI
             return $"{icon}<color=#{color}>{label}</color>";
         }
 
-        private static string TrySpritePrefixDot(DotType dot, PlayerGameRichTextSettings settings)
+        private static string TrySpritePrefixDot(DotType dot, PlayerGameRichTextSettings settings) =>
+            TrySpritePrefix(settings?.BuildSpriteNameForDot(dot), settings);
+
+        private static string TrySpritePrefixElement(ElementType element, PlayerGameRichTextSettings settings) =>
+            TrySpritePrefix(settings?.BuildSpriteNameForElement(element), settings);
+
+        private static string TrySpritePrefixToken(TokenType token, PlayerGameRichTextSettings settings) =>
+            TrySpritePrefix(settings?.BuildSpriteNameForToken(token), settings);
+
+        private static string TrySpritePrefix(string requestedSpriteName, PlayerGameRichTextSettings settings)
         {
-            if (settings == null || !settings.EmitSpriteTags)
+            if (settings == null ||
+                !settings.TryResolveExistingSpriteName(requestedSpriteName, out var resolvedSpriteName))
             {
                 return string.Empty;
             }
 
-            var name = settings.BuildSpriteNameForDot(dot);
-            return string.IsNullOrEmpty(name) ? string.Empty : $"<sprite name=\"{name}\"> ";
+            return $"<sprite name=\"{resolvedSpriteName}\"> ";
         }
 
-        private static string TrySpritePrefixElement(ElementType element, PlayerGameRichTextSettings settings)
+        /// <summary>
+        /// Removes TMP sprite tags that would render as the yellow ? placeholder
+        /// (missing atlas glyph, or sprite tags disabled in settings).
+        /// </summary>
+        private static string StripMissingOrDisabledSpriteTags(string text, PlayerGameRichTextSettings settings)
         {
-            if (settings == null || !settings.EmitSpriteTags)
+            if (string.IsNullOrEmpty(text) || text.IndexOf("<sprite", StringComparison.OrdinalIgnoreCase) < 0)
             {
-                return string.Empty;
+                return text;
             }
 
-            var name = settings.BuildSpriteNameForElement(element);
-            return string.IsNullOrEmpty(name) ? string.Empty : $"<sprite name=\"{name}\"> ";
-        }
+            return Regex.Replace(
+                text,
+                @"<sprite\b[^>]*>",
+                match =>
+                {
+                    var nameMatch = Regex.Match(
+                        match.Value,
+                        @"name\s*=\s*""([^""]+)""",
+                        RegexOptions.IgnoreCase);
+                    if (!nameMatch.Success)
+                    {
+                        return string.Empty;
+                    }
 
-        private static string TrySpritePrefixToken(TokenType token, PlayerGameRichTextSettings settings)
-        {
-            if (settings == null || !settings.EmitSpriteTags)
-            {
-                return string.Empty;
-            }
+                    var spriteName = nameMatch.Groups[1].Value;
+                    if (settings != null &&
+                        settings.EmitSpriteTags &&
+                        settings.TryFindSpriteNameInAtlas(spriteName, out _))
+                    {
+                        return match.Value;
+                    }
 
-            var name = settings.BuildSpriteNameForToken(token);
-            return string.IsNullOrEmpty(name) ? string.Empty : $"<sprite name=\"{name}\"> ";
+                    return string.Empty;
+                },
+                RegexOptions.IgnoreCase);
         }
 
         private static string ExpandColorSpans(string text)

@@ -137,19 +137,41 @@ namespace Erumperem.UI
                 return text;
             }
 
-            foreach (DotType dotType in Enum.GetValues(typeof(DotType)))
-            {
-                var displayName = FormatDotTypeDisplayName(dotType);
-                text = WrapWordOutsideExistingMarkup(text, displayName, $"[dot {dotType.ToString().ToLowerInvariant()}]");
-            }
-
+            // Longer display names first so "Controlled Instability" is not partially wrapped.
+            var tokenWraps = new List<(string DisplayName, string Markup)>();
             foreach (TokenType tokenType in Enum.GetValues(typeof(TokenType)))
             {
                 var displayName = FormatTokenTypeDisplayName(tokenType);
-                text = WrapWordOutsideExistingMarkup(
-                    text,
-                    displayName,
-                    $"[token {tokenType.ToString().ToLowerInvariant()}]");
+                if (string.IsNullOrWhiteSpace(displayName))
+                {
+                    continue;
+                }
+
+                tokenWraps.Add((displayName, $"[token {tokenType.ToString().ToLowerInvariant()}]"));
+            }
+
+            tokenWraps.Sort((left, right) => right.DisplayName.Length.CompareTo(left.DisplayName.Length));
+            foreach (var tokenWrap in tokenWraps)
+            {
+                text = WrapWordOutsideExistingMarkup(text, tokenWrap.DisplayName, tokenWrap.Markup);
+            }
+
+            var dotWraps = new List<(string DisplayName, string Markup)>();
+            foreach (DotType dotType in Enum.GetValues(typeof(DotType)))
+            {
+                var displayName = FormatDotTypeDisplayName(dotType);
+                if (string.IsNullOrWhiteSpace(displayName))
+                {
+                    continue;
+                }
+
+                dotWraps.Add((displayName, $"[dot {dotType.ToString().ToLowerInvariant()}]"));
+            }
+
+            dotWraps.Sort((left, right) => right.DisplayName.Length.CompareTo(left.DisplayName.Length));
+            foreach (var dotWrap in dotWraps)
+            {
+                text = WrapWordOutsideExistingMarkup(text, dotWrap.DisplayName, dotWrap.Markup);
             }
 
             return text;
