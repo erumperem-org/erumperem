@@ -3,26 +3,28 @@ using System.Collections.Generic;
 using Services.DebugUtilities;
 using UnityEngine;
 using Core.Economy.Currency;
+using Erumperem.Progression;
 
 namespace Core.Shop
 {
     /// <summary>
-    /// Sells skill tree points following a global price progression: fully
-    /// consumes one currency's price range before moving on to the next, in
-    /// the order configured in <see cref="_priceTiers"/>. Becomes permanently
-    /// unavailable once every tier of every currency has been sold. Has
-    /// persistent state (the current tier index).
+    /// Vende níveis de skill compartilhado seguindo uma progressão de preço
+    /// global: consome completamente a faixa de preços de uma moeda antes de
+    /// passar para a próxima, na ordem configurada em <see cref="_priceTiers"/>.
+    /// Fica permanentemente indisponível quando todos os tiers de todas as
+    /// moedas forem vendidos. Possui estado persistente (o índice de tier
+    /// atual), exposto para ser salvo/restaurado por um sistema externo.
     /// </summary>
-    public sealed class SkillPointShopButton : MonoBehaviour
+    public sealed class SkillLevelUpShopButton : MonoBehaviour
     {
         [Serializable]
         public sealed class CurrencyPriceRange
         {
-            [Tooltip("Must implement ICoin.")]
+            [Tooltip("Deve implementar ICoin.")]
             [SerializeField] private ScriptableObject _currencyAsset;
 
-            [Tooltip("E.g.: 100, 200, 300")]
-            [SerializeField] private int[] _prices = { 100, 200, 300 };
+            [Tooltip("Ex.: 500, 1000, 1500, 2000")]
+            [SerializeField] private int[] _prices = { 500, 1000, 1500, 2000 };
 
             public ICoin Currency => _currencyAsset as ICoin;
             public IReadOnlyList<int> Prices => _prices;
@@ -31,11 +33,15 @@ namespace Core.Shop
         [Header("References")]
         [SerializeField] private WalletSystem _wallet;
 
-        [Tooltip("Class that receives the purchase notification. Must implement ISkillPointGrantable.")]
-        [SerializeField] private MonoBehaviour _grantableTarget;
+        [SerializeField] private PlayerProgressionService _playerProgression;
 
-        [Header("Price Progression (order = consumption order)")]
+        [Header("Price Progression (ordem = ordem de consumo)")]
+        [Tooltip("Cada entrada corresponde a um tier de moeda (ex.: Rare, Epic, Legendary).")]
         [SerializeField] private List<CurrencyPriceRange> _priceTiers = new();
+
+        [Header("Progressão")]
+        [Tooltip("Multiplicador de pontos concedidos por nível comprado (equivale ao antigo 'pointsTogive').")]
+        [SerializeField] private int _pointsPerLevel = 1;
 
         // ── Persistent state ─────────────────────────────────────────
         [SerializeField, HideInInspector] private int _globalTierIndex;
@@ -45,7 +51,9 @@ namespace Core.Shop
         public event Action OnExhausted;
 
         public bool IsExhausted => _globalTierIndex >= TotalTierCount;
-        public int GlobalTierIndex => _globalTierIndex; // exposed for the save system
+        public int GlobalTierIndex => _globalTierIndex; // exposto para o sistema de save
+        public int CurrentLevel => _globalTierIndex;    // mantém a semântica antiga (nível == índice global)
+        public int MaxLevel => TotalTierCount;
 
         private int TotalTierCount
         {
@@ -57,8 +65,9 @@ namespace Core.Shop
             }
         }
 
-        /// <summary>Used by the save system to restore the index without going through the purchase flow.</summary>
-        public void RestoreState(int globalTierIndex) => _globalTierIndex = Mathf.Max(0, globalTierIndex);
+        /// <summary>Usado pelo sistema de save para restaurar o índice sem passar pelo fluxo de compra.</summary>
+        public void RestoreState(int globalTierIndex) =>
+            _globalTierIndex = Mathf.Clamp(globalTierIndex, 0, TotalTierCount);
 
         public bool TryGetCurrentTier(out ICoin currency, out int price) => TryResolveCurrentTier(out currency, out price);
 
@@ -84,10 +93,7 @@ namespace Core.Shop
 
             _globalTierIndex++;
 
-            if (_grantableTarget is ISkillPointGrantable grantable)
-                grantable.GrantSkillPoint();
-            else
-                Log(LogLevel.Error, "_grantableTarget does not implement ISkillPointGrantable.");
+            GrantLevelUp(_globalTierIndex);
 
             OnPurchaseSucceeded?.Invoke();
 
@@ -95,6 +101,11 @@ namespace Core.Shop
                 OnExhausted?.Invoke();
 
             return true;
+        }
+
+        private void GrantLevelUp(int level)
+        {
+            _playerProgression.TrySetSharedSkillLevel(level * _pointsPerLevel);
         }
 
         private bool TryResolveCurrentTier(out ICoin currency, out int price)
@@ -118,6 +129,6 @@ namespace Core.Shop
         }
 
         private void Log(LogLevel level, string msg) =>
-            LoggerService.PrintLogMessage(level, $"[SkillPointShopButton:{gameObject.name}] {msg}", LogCategory.Inventory);
+            LoggerService.PrintLogMessage(level, $"[SkillLevelUpShopButton:{gameObject.name}] {msg}", LogCategory.Inventory);
     }
 }

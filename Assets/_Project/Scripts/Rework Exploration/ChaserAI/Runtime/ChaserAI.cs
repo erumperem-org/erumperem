@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(PhysicsMovementService))]
 public class ChaserAI : MonoBehaviour
@@ -11,11 +10,13 @@ public class ChaserAI : MonoBehaviour
     [SerializeField] private ChaserSettings settings;
     [SerializeField] private WanderArea wanderArea;
     [SerializeField] private PerceptionSensor perceptionSensor;
-    [Tooltip("A SafeArea/Hub que este Chaser nunca deve atravessar fisicamente. Normalmente a mesma referência usada como excludedArea no WanderArea.")]
+    [Tooltip("A SafeArea/Hub que este Chaser nunca deve atravessar fisicamente. Normalmente a mesma referência usada como excludedArea no WanderArea. Também usada, na checagem de nascimento, para não teleportar o Chaser para dentro dela.")]
     [SerializeField] private CircularZone excludedSafeArea;
+    [Tooltip("Limites do mapa, usados apenas na checagem de nascimento (não deixar o Chaser fora do mapa ao se afastar da visão do player). Opcional - se não for atribuído, essa checagem é ignorada.")]
+    [SerializeField] private MapLimits mapLimits;
 
     [Header("Debug")]
-    [Tooltip("Loga no Console cada transição de estado (Wandering/Chasing/Investigating/Resting). Sem custo em build, é só um Debug.Log.")]
+    [Tooltip("Loga no Console cada transição de estado (Wandering/Chasing/Investigating). Sem custo em build, é só um Debug.Log.")]
     [SerializeField] private bool enableStateDebugLogs = true;
 
     private PhysicsMovementService movement;
@@ -51,6 +52,11 @@ public class ChaserAI : MonoBehaviour
 
     private void Start()
     {
+        // Todo Chaser fica ativo 100% do tempo (sem Resting) - por isso,
+        // antes de começar a vagar/perseguir, garantimos que ele não nasça
+        // já dentro da visão do player (ex: posicionado manualmente na cena
+        // bem perto dele).
+        RelocateIfInsidePlayerViewAtStart();
         EnterWandering();
     }
 
@@ -66,9 +72,6 @@ public class ChaserAI : MonoBehaviour
                 break;
             case ChaserState.Investigating:
                 TickInvestigating();
-                break;
-            case ChaserState.Resting:
-                TickResting();
                 break;
         }
     }
@@ -99,28 +102,6 @@ public class ChaserAI : MonoBehaviour
         LogStateChange("Investigating"); // DEBUG: rastreio de estado
         investigateTimer = 0f;
         movement.SetSprinting(false);
-    }
-
-    public void EnterResting()
-    {
-        CurrentState = ChaserState.Resting;
-        LogStateChange("Resting"); // DEBUG: rastreio de estado
-        movement.SetSprinting(false);
-        perceptionSensor.Deactivate();
-
-        // Note: movement direction is decided per-frame in TickResting —
-        // moves away from target while the distance to it is below
-        // settings.restDepartureDistance, then stops once reached.
-    }
-
-    public void ExitResting()
-    {
-        if (CurrentState != ChaserState.Resting)
-        {
-            return;
-        }
-
-        EnterWandering();
     }
 
     // ------------------------------------------------------------------
@@ -183,28 +164,6 @@ public class ChaserAI : MonoBehaviour
         }
     }
 
-    private void TickResting()
-    {
-        if (target == null)
-        {
-            // No target assigned — nothing to depart from, go idle immediately.
-            movement.SetMoveDirection(Vector3.zero);
-            return;
-        }
-
-        // Only moves away from target while the current distance to it is
-        // still below settings.restDepartureDistance. Once that distance
-        // is reached or exceeded, it stops for good (no routine).
-        if (IsCloserToTargetThanRestDepartureDistance())
-        {
-            movement.SetMoveDirection(DirectionAwayFromTarget());
-        }
-        else
-        {
-            movement.SetMoveDirection(Vector3.zero);
-        }
-    }
-
     private void PickNewWanderTarget()
     {
         currentWanderTarget = wanderArea.GetRandomPoint();
@@ -214,8 +173,6 @@ public class ChaserAI : MonoBehaviour
     {
         movement.SetMoveDirection(Vector3.zero);
         OnTargetCaught?.Invoke();
-        //Provisório
-        SceneManager.LoadScene("CombatScene");
     }
 
     // ------------------------------------------------------------------
@@ -236,42 +193,103 @@ public class ChaserAI : MonoBehaviour
         return flatDelta.sqrMagnitude <= settings.arrivalThreshold * settings.arrivalThreshold;
     }
 
-    private bool IsCloserToTargetThanRestDepartureDistance()
-    {
-        Vector3 flatDelta = transform.position - target.position;
-        flatDelta.y = 0f;
-        return flatDelta.sqrMagnitude < settings.restDepartureDistance * settings.restDepartureDistance;
-    }
-
-    /// <summary>
-    /// Direction pointing from the target to the Chaser's current position
-    /// (i.e. straight away from the target). Falls back to the Chaser's own
-    /// forward direction in the degenerate case where it's exactly on top
-    /// of the target (zero-length delta), to avoid a Vector3.zero move direction.
-    /// </summary>
-    private Vector3 DirectionAwayFromTarget()
-    {
-        Vector3 flatDelta = transform.position - target.position;
-        flatDelta.y = 0f;
-
-        if (flatDelta.sqrMagnitude <= 0.0001f)
-        {
-            Vector3 fallback = transform.forward;
-            fallback.y = 0f;
-            return fallback.sqrMagnitude > 0.0001f ? fallback.normalized : Vector3.forward;
-        }
-
-        return flatDelta.normalized;
-    }
-
     /// <summary>
     /// Permite a um sistema externo (ex: ChaserPool) atualizar dinamicamente
     /// quem este Chaser persegue - necessário porque o personagem "Em Jogo"
-    /// pode trocar em runtime (ver PlayableCharacterController).
+    /// pode trocar em runtime (ver PlayableCharacterController). Também
+    /// repassa a troca imediatamente para o PerceptionSensor, já que o
+    /// Chaser nunca fica com a percepção desligada para "pegar" o novo alvo
+    /// só na próxima transição de estado.
     /// </summary>
     public void SetTarget(Transform newTarget)
     {
         target = newTarget;
+        perceptionSensor.Activate(target, settings);
+    }
+
+    /// <summary>
+    /// Teleporta o Chaser para uma nova posição e o coloca de volta em
+    /// Wandering (nunca direto em Chasing, mesmo que a nova posição esteja
+    /// tecnicamente perto do alvo) - usado pelo ChaserPool para trazer de
+    /// volta, para perto do player, um Chaser que se afastou demais.
+    /// Diferente do antigo fluxo de Resting, o Chaser nunca fica com
+    /// movimento/percepção desligados durante a troca - é um teleporte
+    /// direto seguido de uma reentrada normal em Wandering.
+    /// </summary>
+    public void Relocate(Vector3 newPosition)
+    {
+        transform.position = newPosition;
+        EnterWandering();
+    }
+
+    /// <summary>
+    /// Checagem de nascimento: se a posição atual do Chaser está dentro da
+    /// aproximação simplificada de campo de visão do player
+    /// (<see cref="PlayerFieldOfViewApproximation"/>), sorteia um ponto fora
+    /// dela (respeitando MapLimits e a área segura excluída, se atribuídos)
+    /// num raio ao redor de si mesmo. Se nenhuma tentativa aleatória der
+    /// certo, cai no fallback de empurrar em linha reta para fora da esfera
+    /// de visão (sem garantia de respeitar MapLimits/área excluída nesse
+    /// caso extremo).
+    /// </summary>
+    private void RelocateIfInsidePlayerViewAtStart()
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        if (!PlayerFieldOfViewApproximation.IsInside(transform.position, target, settings.initialViewForwardOffset, settings.initialViewRadius))
+        {
+            return;
+        }
+
+        for (int i = 0; i < settings.initialPlacementMaxSampleAttempts; i++)
+        {
+            Vector3 candidate = RandomPointAroundSelf(settings.initialPlacementSearchRadius);
+
+            if (IsValidInitialPlacement(candidate))
+            {
+                transform.position = candidate;
+                return;
+            }
+        }
+
+        transform.position = PlayerFieldOfViewApproximation.PushOutside(
+            transform.position, target, settings.initialViewForwardOffset, settings.initialViewRadius, margin: 1f);
+    }
+
+    private Vector3 RandomPointAroundSelf(float radius)
+    {
+        float angle = UnityEngine.Random.value * Mathf.PI * 2f;
+        float distance = UnityEngine.Random.Range(0f, radius);
+
+        Vector3 offset = new Vector3(Mathf.Cos(angle) * distance, 0f, Mathf.Sin(angle) * distance);
+        Vector3 point = transform.position + offset;
+        point.y = transform.position.y;
+        return point;
+    }
+
+    private bool IsValidInitialPlacement(Vector3 point)
+    {
+        if (mapLimits != null && !mapLimits.Contains(point))
+        {
+            return false;
+        }
+
+        if (excludedSafeArea != null && IsInsideExcludedSafeArea(point))
+        {
+            return false;
+        }
+
+        return !PlayerFieldOfViewApproximation.IsInside(point, target, settings.initialViewForwardOffset, settings.initialViewRadius);
+    }
+
+    private bool IsInsideExcludedSafeArea(Vector3 point)
+    {
+        Vector3 delta = point - excludedSafeArea.Center;
+        delta.y = 0f;
+        return delta.sqrMagnitude <= excludedSafeArea.Radius * excludedSafeArea.Radius;
     }
 
     // DEBUG: método único de log, para poder desligar tudo de uma vez pelo Inspector

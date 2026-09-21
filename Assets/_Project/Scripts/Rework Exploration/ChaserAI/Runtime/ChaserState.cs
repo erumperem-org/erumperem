@@ -1,5 +1,12 @@
 /// <summary>
 /// Estados possíveis da IA perseguidora (<see cref="ChaserAI"/>).
+///
+/// Não existe mais um estado "Resting": todo ChaserAI da cena fica sempre
+/// ativo, alternando apenas entre os três estados abaixo. O
+/// <c>ChaserPool</c> ainda pode teleportar um Chaser para perto do player
+/// quando ele se afasta demais (ver <see cref="ChaserAI.Relocate"/>), mas
+/// isso nunca desliga movimento/percepção - o Chaser simplesmente reaparece
+/// em Wandering.
 /// </summary>
 public enum ChaserState
 {
@@ -11,9 +18,5 @@ public enum ChaserState
 
     /// <summary>Perdeu o alvo (saiu do raio de percepção ou teve a linha de visão bloqueada);
     /// vai até a última posição conhecida e aguarda antes de desistir.</summary>
-    Investigating,
-
-    /// <summary>Nenhuma rotina de movimento/percepção ativa. Só é ligado/desligado
-    /// por evento externo (ex: Hub do pacote AreaZones).</summary>
-    Resting
+    Investigating
 }
