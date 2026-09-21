@@ -10,15 +10,14 @@ using Core.Rewards;
 namespace BarSystem.Bars.Corruption
 {
     /// <summary>
-    /// Corruption bar: grows automatically (GrowthOverTimeBehavior) and/or through
-    /// external events (AddCorruption), and notifies when it crosses thresholds
-    /// (e.g., to trigger negative effects, mutations, NPC dialogue, etc.).
-    ///
-    /// O crescimento automático só atua enquanto o alvo estiver FORA do Hub
-    /// (SafeArea) configurado - dentro da área segura, o Tick de crescimento
-    /// é simplesmente pulado. A view (slider + texto) mostra apenas até
-    /// metade do valor real (Max real = 100 → view "cheia" com Current = 50),
-    /// enquanto o BarModel interno continua crescendo normalmente até o Max real.
+    /// Corruption bar: grows automatically while outside the Hub and decreases
+    /// automatically while inside the Hub.
+    /// 
+    /// External changes through AddCorruption/ReduceCorruption continue to work
+    /// regardless of the player's location.
+    /// 
+    /// The view displays only a fraction of the real value.
+    /// By default, the view is full when the real value reaches half of Max.
     /// </summary>
     public class CorruptionBarInstaller : MonoBehaviour
     {
@@ -26,19 +25,23 @@ namespace BarSystem.Bars.Corruption
         [SerializeField] private UISliderBarView _sliderView;
         [SerializeField] private UITextBarView _textView;
 
-        [Header("Área segura (crescimento pausa enquanto o alvo está dentro)")]
+        [Header("Safe Area")]
         [SerializeField] private Hub _hub;
 
-        [Header("Automatic Growth (Optional)")]
+        [Header("Automatic Growth")]
         [SerializeField] private bool _growOverTime = true;
         [SerializeField] private float _growthPerSecond = 0.5f;
 
-        [Header("Smoothing (Optional)")]
+        [Header("Automatic Reduction Inside Safe Area")]
+        [SerializeField] private bool _reduceInsideSafeArea = true;
+        [SerializeField] private float _reductionPerSecond = 0.5f;
+
+        [Header("Smoothing")]
         [SerializeField] private bool _useSmoothing = true;
         [SerializeField] private float _smoothingSpeed = 4f;
 
-        [Header("View scale (view enche com uma fração do valor real)")]
-        [Tooltip("2 = a view fica cheia quando o valor real atinge metade do Max.")]
+        [Header("View Scale")]
+        [Tooltip("2 = the view becomes full when the real value reaches half of Max.")]
         [SerializeField] private float _viewScale = 2f;
 
         private BarController _controller;
@@ -49,10 +52,14 @@ namespace BarSystem.Bars.Corruption
 
         public BarModel Model { get; private set; }
 
-        /// <summary>Disparado sempre que o valor de corrupção cruza para um novo tier (via CorruptionTierCalculator).</summary>
+        /// <summary>
+        /// Invoked whenever the corruption value crosses into a new tier.
+        /// </summary>
         public event Action<int> OnTierChanged;
 
-        /// <summary>Tier atual, calculado a partir do valor corrente do modelo.</summary>
+        /// <summary>
+        /// Current corruption tier.
+        /// </summary>
         public int CurrentTier => _currentTier;
 
         private void Awake()
@@ -60,14 +67,25 @@ namespace BarSystem.Bars.Corruption
             _repository = new JsonFileBarStateRepository();
 
             BarSaveData saved = _repository.Load(_config.Id);
+
             float max = saved?.Max ?? _config.MaxDefault;
             float current = saved?.Current ?? _config.CurrentDefault;
 
-            Model = new BarModel(_config.Id, _config.MinDefault, max, current);
+            Model = new BarModel(
+                _config.Id,
+                _config.MinDefault,
+                max,
+                current
+            );
+
             _controller = new BarController(Model);
 
             if (_growOverTime)
-                _controller.AddBehavior(new GrowthOverTimeBehavior(_growthPerSecond));
+            {
+                _controller.AddBehavior(
+                    new GrowthOverTimeBehavior(_growthPerSecond)
+                );
+            }
 
             IBarView view = _textView != null
                 ? new CompositeBarView(_sliderView, _textView)
@@ -75,18 +93,24 @@ namespace BarSystem.Bars.Corruption
 
             if (_useSmoothing)
             {
-                _smoothedView = new SmoothedBarView(view, _smoothingSpeed);
+                _smoothedView = new SmoothedBarView(
+                    view,
+                    _smoothingSpeed
+                );
+
                 view = _smoothedView;
             }
 
-            // Fica por fora de tudo: reescala o normalizedValue (real) antes
-            // de chegar no smoothing/slider/texto, fazendo a view encher
-            // com apenas uma fração (por padrão, metade) do valor real.
-            view = new HalfScaleBarView(view, _viewScale);
+            view = new HalfScaleBarView(
+                view,
+                _viewScale
+            );
 
             _controller.AddView(view);
 
-            _currentTier = CorruptionTierCalculator.GetTier(Model.Current);
+            _currentTier = CorruptionTierCalculator.GetTier(
+                Model.Current
+            );
         }
 
         private void OnEnable()
@@ -101,8 +125,7 @@ namespace BarSystem.Bars.Corruption
             _hub.OnPlayerEnteredSafeArea += HandlePlayerEnteredSafeArea;
             _hub.OnPlayerExitedSafeArea += HandlePlayerExitedSafeArea;
 
-            // Sincroniza com o estado atual do Hub, caso o alvo já esteja
-            // dentro/fora antes deste componente assinar os eventos.
+            // Synchronize with the current Hub state.
             _isPlayerInsideSafeArea = _hub.IsTargetInside;
         }
 
@@ -116,34 +139,65 @@ namespace BarSystem.Bars.Corruption
                 _hub.OnPlayerExitedSafeArea -= HandlePlayerExitedSafeArea;
             }
 
-            _repository.Save(new BarSaveData(Model.Id, Model.Current, Model.Max));
+            _repository.Save(
+                new BarSaveData(
+                    Model.Id,
+                    Model.Current,
+                    Model.Max
+                )
+            );
+
             _controller.Dispose();
         }
 
         private void Update()
         {
-            // Dentro da área segura, o crescimento (GrowthOverTimeBehavior)
-            // não deve atuar - o Tick é simplesmente pulado. AddCorruption/
-            // ReduceCorruption continuam funcionando, pois não dependem deste Tick.
-            if (!_isPlayerInsideSafeArea)
+            if (_isPlayerInsideSafeArea)
             {
+                // Inside the Hub, corruption decreases automatically.
+                if (_reduceInsideSafeArea)
+                {
+                    Model.ApplyDelta(
+                        -_reductionPerSecond * Time.deltaTime
+                    );
+                }
+            }
+            else
+            {
+                // Outside the Hub, the normal corruption growth continues.
                 _controller.Tick(Time.deltaTime);
             }
 
-            // A view (incluindo o smoothing) continua sendo atualizada
-            // sempre, mesmo com o crescimento pausado.
+            // The view continues updating regardless of the player's location.
             _smoothedView?.Tick(Time.deltaTime);
         }
 
-        public void AddCorruption(float amount) => Model.ApplyDelta(amount);
-        public void ReduceCorruption(float amount) => Model.ApplyDelta(-amount);
+        public void AddCorruption(float amount)
+        {
+            Model.ApplyDelta(amount);
+        }
 
-        private void HandlePlayerEnteredSafeArea() => _isPlayerInsideSafeArea = true;
-        private void HandlePlayerExitedSafeArea() => _isPlayerInsideSafeArea = false;
+        public void ReduceCorruption(float amount)
+        {
+            Model.ApplyDelta(-amount);
+        }
+
+        private void HandlePlayerEnteredSafeArea()
+        {
+            _isPlayerInsideSafeArea = true;
+        }
+
+        private void HandlePlayerExitedSafeArea()
+        {
+            _isPlayerInsideSafeArea = false;
+        }
 
         private void HandleValueChangedForTier(float _)
         {
-            int newTier = CorruptionTierCalculator.GetTier(Model.Current);
+            int newTier = CorruptionTierCalculator.GetTier(
+                Model.Current
+            );
+
             if (newTier == _currentTier)
             {
                 return;
