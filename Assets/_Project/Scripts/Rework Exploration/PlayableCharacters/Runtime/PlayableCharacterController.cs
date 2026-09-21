@@ -250,6 +250,16 @@ public class PlayableCharacterController : MonoBehaviour
         await CharacterVitalsPersistenceService.SaveAsync(vitalsData);
     }
 
+    /// <summary>
+    /// Entry point for UnityEvent callbacks.
+    /// Starts the asynchronous save without requiring the UnityEvent
+    /// to handle a Task-returning method.
+    /// </summary>
+    public void Save()
+    {
+        SaveAsync();
+    }
+
 #if UNITY_EDITOR
     /// <summary>Uso exclusivo do editor de testes - força um novo carregamento do save. Compilado apenas em Editor.</summary>
     public void Editor_ForceReload()
