@@ -40,11 +40,32 @@ public class ChaserSettings : ScriptableObject
              "é considerado 'alcançado'.")]
     public float arrivalThreshold = 0.5f;
 
-    [Header("Resting")]
-    [Tooltip("Distância mínima do target que o perseguidor deve atingir antes de ficar " +
-             "parado (sem rotina) em Resting. Enquanto a distância atual for menor que " +
-             "este valor, ele se afasta do target; ao atingir ou ultrapassar, para de vez.")]
-    public float restDepartureDistance = 5f;
+    [Header("Fatores de percepção (multiplicam perceptionRadius)")]
+    [Tooltip("Raio efetivo de percepção = perceptionRadius * fator de movimento * fator de tocha, " +
+             "recalculado a cada checagem a partir do CharacterStateExposed do alvo atual. " +
+             "Se o alvo não tiver esse componente, ambos os fatores caem para 1 (sem efeito).")]
+    public float movementFactorIdle = 0.7f;
+    public float movementFactorWalk = 1f;
+    public float movementFactorRun = 1.4f;
+
+    public float torchFactorOff = 1f;
+    public float torchFactorOn = 1.6f;
+
+    [Header("Posicionamento inicial (evitar nascer visível ao player)")]
+    [Tooltip("Distância à frente do player que define o centro da zona de visão, usada só " +
+             "na checagem de nascimento (ver PlayerFieldOfViewApproximation).")]
+    public float initialViewForwardOffset = 8f;
+
+    [Tooltip("Raio da zona de visão do player usada nessa checagem inicial.")]
+    public float initialViewRadius = 12f;
+
+    [Tooltip("Raio de busca ao redor da própria posição inicial do Chaser, ao tentar sortear " +
+             "um ponto fora da visão do player.")]
+    public float initialPlacementSearchRadius = 6f;
+
+    [Tooltip("Número de tentativas de sortear um ponto válido antes de usar o fallback " +
+             "(empurrar em linha reta para fora da esfera de visão).")]
+    public int initialPlacementMaxSampleAttempts = 20;
 
     [Header("Desvio de obstáculo (ObstacleAvoidanceValidator)")]
     [Tooltip("Ângulo máximo, para cada lado, testado na busca por um caminho alternativo " +

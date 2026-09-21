@@ -4,14 +4,14 @@ using UnityEngine;
 
 namespace Core.Shop.Editor
 {
-    [CustomEditor(typeof(SkillPointShopSaveSystem))]
-    public sealed class SkillPointShopSaveSystemEditor : UnityEditor.Editor
+    [CustomEditor(typeof(SkillLevelUpShopSaveSystem))]
+    public sealed class SkillLevelUpShopSaveSystemEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
             DrawDefaultInspector();
 
-            var saveSystem = (SkillPointShopSaveSystem)target;
+            var saveSystem = (SkillLevelUpShopSaveSystem)target;
 
             if (!Application.isPlaying)
             {

@@ -3,15 +3,18 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Pool de tamanho fixo de ChaserAI pré-existentes na cena. Mantém um
-/// número configurável ativos ao redor do personagem Em Jogo atual (spawn
-/// fora do HUB, fora dos limites do mapa, e fora de uma zona simplificada
-/// de "campo de visão" à frente do player) e recolhe automaticamente
-/// qualquer Chaser ativo que fique longe demais - teleportando-o para um
-/// ponto de espera fixo e colocando-o em Resting até ser reaproveitado.
+/// Conjunto fixo de ChaserAI pré-existentes na cena, todos sempre ativos
+/// (Wandering/Chasing/Investigating - nunca Resting). Periodicamente
+/// verifica a distância de cada um até o personagem Em Jogo atual e
+/// teleporta de volta, para um ponto num anel ao redor do player (fora de
+/// MapLimits/SafeArea/campo de visão), qualquer Chaser que tenha se
+/// afastado demais - permitindo que poucos ChaserAI deem a impressão de
+/// povoar um mapa grande, sem nunca desligar movimento/percepção de
+/// nenhum deles.
 ///
 /// Nenhum ChaserAI é instanciado/destruído em runtime - todos já existem
-/// na cena (arrastados no Inspector) e só alternam entre Resting e ativo.
+/// na cena (arrastados no Inspector) e só são teleportados quando ficam
+/// longe demais do alvo.
 /// </summary>
 public class ChaserPool : MonoBehaviour
 {
@@ -20,14 +23,11 @@ public class ChaserPool : MonoBehaviour
     [SerializeField] private PlayableCharacterController playableCharacterController;
     [SerializeField] private MapLimits mapLimits;
     [SerializeField] private SafeArea excludedArea;
-    [SerializeField] private Transform holdingPoint;
     [SerializeField] private ChaserPoolSettings settings;
 
-    private readonly HashSet<ChaserAI> activeChasers = new HashSet<ChaserAI>();
     private Transform currentTarget;
     private Coroutine evaluationRoutine;
 
-    public int ActiveCount => activeChasers.Count;
     public int PoolSize => chasers.Count;
 
     private void OnEnable()
@@ -54,16 +54,17 @@ public class ChaserPool : MonoBehaviour
 
     private void Start()
     {
-        // Todos começam recolhidos, parados no ponto de espera - a pool
-        // decide quem ativar a partir da primeira avaliação.
-        foreach (var chaser in chasers)
-        {
-            SendToPool(chaser);
-        }
-
         currentTarget = playableCharacterController != null
             ? playableCharacterController.InGameCharacter?.transform
             : null;
+
+        if (currentTarget != null)
+        {
+            foreach (var chaser in chasers)
+            {
+                chaser.SetTarget(currentTarget);
+            }
+        }
 
         evaluationRoutine = StartCoroutine(EvaluationLoop());
     }
@@ -72,9 +73,10 @@ public class ChaserPool : MonoBehaviour
     {
         currentTarget = newInGameCharacter.transform;
 
-        // Atualiza TODOS os Chasers, ativos ou não - evita que um Chaser em
-        // Resting seja reativado depois ainda apontando para um personagem
-        // antigo, caso o player tenha trocado enquanto ele estava na pool.
+        // Atualiza TODOS os Chasers - como não há mais distinção de
+        // ativo/inativo, todos precisam apontar para o novo alvo
+        // imediatamente (ChaserAI.SetTarget já repassa para o
+        // PerceptionSensor na hora, sem esperar a próxima troca de estado).
         foreach (var chaser in chasers)
         {
             chaser.SetTarget(currentTarget);
@@ -87,86 +89,38 @@ public class ChaserPool : MonoBehaviour
 
         while (true)
         {
-            EvaluateReturns();
-            EvaluateSpawns();
+            EvaluateRelocations();
             yield return wait;
         }
     }
 
-    private void EvaluateReturns()
+    private void EvaluateRelocations()
     {
         if (currentTarget == null)
         {
             return;
         }
 
-        var toReturn = new List<ChaserAI>();
+        var toRelocate = new List<ChaserAI>();
 
-        foreach (var chaser in activeChasers)
-        {
-            if (Vector3.Distance(chaser.transform.position, currentTarget.position) > settings.returnDistance)
-            {
-                toReturn.Add(chaser);
-            }
-        }
-
-        foreach (var chaser in toReturn)
-        {
-            SendToPool(chaser);
-        }
-    }
-
-    private void EvaluateSpawns()
-    {
-        if (currentTarget == null)
-        {
-            return;
-        }
-
-        while (activeChasers.Count < settings.desiredActiveCount)
-        {
-            ChaserAI candidate = GetNextRestingChaser();
-
-            if (candidate == null)
-            {
-                break; // pool esgotada - nada mais para ativar
-            }
-
-            if (!TryFindSpawnPoint(out Vector3 spawnPoint))
-            {
-                break; // nenhum ponto válido nesta rodada - tenta de novo no próximo intervalo
-            }
-
-            ActivateChaser(candidate, spawnPoint);
-        }
-    }
-
-    private ChaserAI GetNextRestingChaser()
-    {
         foreach (var chaser in chasers)
         {
-            if (!activeChasers.Contains(chaser))
+            if (chaser != null && Vector3.Distance(chaser.transform.position, currentTarget.position) > settings.returnDistance)
             {
-                return chaser;
+                toRelocate.Add(chaser);
             }
         }
 
-        return null;
-    }
-
-    private void ActivateChaser(ChaserAI chaser, Vector3 spawnPoint)
-    {
-        chaser.transform.position = spawnPoint;
-        chaser.SetTarget(currentTarget);
-        chaser.ExitResting(); // sempre reativa em Wandering, nunca direto em Chasing
-        activeChasers.Add(chaser);
-    }
-
-    private void SendToPool(ChaserAI chaser)
-    {
-        chaser.EnterResting(); // zera movimento e desliga percepção antes de teleportar
-        chaser.transform.position = holdingPoint.position;
-        activeChasers.Remove(chaser);
+        foreach (var chaser in toRelocate)
+        {
+            if (TryFindSpawnPoint(out Vector3 spawnPoint))
+            {
+                chaser.Relocate(spawnPoint);
+            }
+            // Se nenhum ponto válido for encontrado nesta rodada, o Chaser
+            // simplesmente continua onde está e tenta de novo na próxima
+            // avaliação - não força um reposicionamento ruim.
+        }
     }
 
     private bool TryFindSpawnPoint(out Vector3 point)
@@ -209,32 +163,14 @@ public class ChaserPool : MonoBehaviour
             return false;
         }
 
-        return !IsInsidePlayerFieldOfView(point);
-    }
-
-    private bool IsInsidePlayerFieldOfView(Vector3 point)
-    {
-        Vector3 viewPoint = currentTarget.position + currentTarget.forward * settings.fieldOfViewForwardOffset;
-        return Vector3.Distance(point, viewPoint) <= settings.fieldOfViewRadius;
+        return !PlayerFieldOfViewApproximation.IsInside(point, currentTarget, settings.fieldOfViewForwardOffset, settings.fieldOfViewRadius);
     }
 
 #if UNITY_EDITOR
-    /// <summary>Uso exclusivo do editor de testes - força uma avaliação de retorno/spawn imediatamente.</summary>
+    /// <summary>Uso exclusivo do editor de testes - força uma avaliação de reposicionamento imediatamente.</summary>
     public void Editor_ForceEvaluate()
     {
-        EvaluateReturns();
-        EvaluateSpawns();
-    }
-
-    /// <summary>Uso exclusivo do editor de testes - recolhe todos os Chasers ativos para a pool.</summary>
-    public void Editor_RecallAll()
-    {
-        var toRecall = new List<ChaserAI>(activeChasers);
-
-        foreach (var chaser in toRecall)
-        {
-            SendToPool(chaser);
-        }
+        EvaluateRelocations();
     }
 
     private void OnDrawGizmosSelected()
@@ -244,19 +180,19 @@ public class ChaserPool : MonoBehaviour
             return;
         }
 
-        // Anel de spawn: verde = mínimo, amarelo = máximo
+        // Anel de reposicionamento: verde = mínimo, amarelo = máximo
         Gizmos.color = Color.green;
         DrawWireCircle(currentTarget.position, settings.spawnMinDistance);
 
         Gizmos.color = Color.yellow;
         DrawWireCircle(currentTarget.position, settings.spawnMaxDistance);
 
-        // Distância de retorno: vermelho
+        // Distância que dispara o reposicionamento: vermelho
         Gizmos.color = Color.red;
         DrawWireCircle(currentTarget.position, settings.returnDistance);
 
         // Círculo de campo de visão: ciano, centrado à frente do player
-        Vector3 viewPoint = currentTarget.position + currentTarget.forward * settings.fieldOfViewForwardOffset;
+        Vector3 viewPoint = PlayerFieldOfViewApproximation.GetViewPoint(currentTarget, settings.fieldOfViewForwardOffset);
         Gizmos.color = Color.cyan;
         DrawWireCircle(viewPoint, settings.fieldOfViewRadius);
     }

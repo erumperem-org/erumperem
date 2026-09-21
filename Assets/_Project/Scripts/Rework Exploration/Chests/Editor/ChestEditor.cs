@@ -44,8 +44,17 @@ namespace Core.Chests.Editor
             }
 
             EditorGUILayout.Space();
-            if (GUILayout.Button("Interact"))
-                chest.Interact();
+
+            using (new EditorGUI.DisabledScope(!chest.CanInteract))
+            {
+                if (GUILayout.Button("Interact"))
+                {
+                    bool success = chest.TryInteract(chest.gameObject, out var context);
+                    Debug.Log(success
+                        ? "[ChestEditor] Interação executada com sucesso."
+                        : "[ChestEditor] Falhou (CanInteract == false).");
+                }
+            }
         }
     }
 }

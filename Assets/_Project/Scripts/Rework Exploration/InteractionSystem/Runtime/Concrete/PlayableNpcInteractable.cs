@@ -9,9 +9,8 @@ namespace InteractionSystem.Concrete
     /// InteractionSensor da cena.
     ///
     /// Requer que InteractionSensor.IsAvailable() não filtre por
-    /// CanInteract (veja a nota no PR anterior) - senão, assim que este
-    /// NPC ficar indisponível uma vez, nunca mais volta a ser elegível
-    /// como CurrentTarget.
+    /// CanInteract - senão, assim que este NPC ficar indisponível uma vez,
+    /// nunca mais volta a ser elegível como CurrentTarget.
     /// </summary>
     public class PlayableNpcInteractable : InteractableBase
     {
@@ -30,7 +29,6 @@ namespace InteractionSystem.Concrete
         private IInstigatorProvider _instigatorProvider;
         private bool _isCurrentInstigator;
         private bool _isInsideSafeArea;
-        private bool _isCurrentTarget;
 
         protected override void Awake()
         {
@@ -50,8 +48,10 @@ namespace InteractionSystem.Concrete
                 Debug.LogError($"{nameof(PlayableNpcInteractable)}: nenhum InteractionSensor encontrado.", this);
         }
 
-        private void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
+
             if (_instigatorProvider != null)
                 _instigatorProvider.InstigatorChanged += HandleInstigatorChanged;
 
@@ -61,20 +61,15 @@ namespace InteractionSystem.Concrete
                 hub.OnPlayerExitedSafeArea += HandleExitedSafeArea;
                 _isInsideSafeArea = hub.IsTargetInside;
             }
-
-            if (sensor != null)
-            {
-                sensor.TargetChanged += HandleSensorTargetChanged;
-                _isCurrentTarget = ReferenceEquals(sensor.CurrentTarget, this);
-            }
-
             _isCurrentInstigator = _instigatorProvider?.Current == gameObject;
 
             Reevaluate();
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
+
             if (_instigatorProvider != null)
                 _instigatorProvider.InstigatorChanged -= HandleInstigatorChanged;
 
@@ -83,9 +78,6 @@ namespace InteractionSystem.Concrete
                 hub.OnPlayerEnteredSafeArea -= HandleEnteredSafeArea;
                 hub.OnPlayerExitedSafeArea -= HandleExitedSafeArea;
             }
-
-            if (sensor != null)
-                sensor.TargetChanged -= HandleSensorTargetChanged;
         }
 
         private void HandleInstigatorChanged(GameObject currentInstigator)
@@ -106,14 +98,6 @@ namespace InteractionSystem.Concrete
             Reevaluate();
         }
 
-        private void HandleSensorTargetChanged(IInteractable currentTarget)
-        {
-            // Sempre atualiza, independente do tipo do alvo (ou null) -
-            // senão o valor trava na última vez que este NPC foi o alvo.
-            _isCurrentTarget = ReferenceEquals(currentTarget, this);
-            Reevaluate();
-        }
-
         /// <summary>
         /// Único ponto que decide a disponibilidade final, combinando as
         /// três condições - evita que um handler sobrescreva o resultado
@@ -121,7 +105,7 @@ namespace InteractionSystem.Concrete
         /// </summary>
         private void Reevaluate()
         {
-            SetAvailable(!_isCurrentInstigator && _isInsideSafeArea && _isCurrentTarget);
+            SetAvailable(!_isCurrentInstigator && _isInsideSafeArea);
         }
     }
 }
