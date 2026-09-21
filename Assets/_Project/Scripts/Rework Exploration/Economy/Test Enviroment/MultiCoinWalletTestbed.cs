@@ -35,6 +35,18 @@ namespace Core.Economy.Currency.Testing
         [Header("Coins")]
         [SerializeField] private List<CoinAmount> _coins = new();
 
+        [Header("Test Hotkey")]
+        [Tooltip("While in Play Mode, pressing this key runs DepositAll() - lets you add funds without touching the Inspector (e.g. mid-playtest, in a build with dev keys enabled).")]
+        [SerializeField] private KeyCode _depositAllKey = KeyCode.F1;
+
+        private void Update()
+        {
+            if (Input.GetKeyDown(_depositAllKey))
+            {
+                DepositAll();
+            }
+        }
+
         public void DepositAll()
         {
             if (_wallet == null) { Log(LogLevel.Error, "WalletSystem not assigned."); return; }

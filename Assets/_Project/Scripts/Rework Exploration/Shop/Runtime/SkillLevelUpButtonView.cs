@@ -53,13 +53,19 @@ namespace Core.Shop.UI
             if (_shopButton.IsExhausted)
             {
                 _button.interactable = false;
-                if (_priceText) _priceText.text = "MAX";
-                if (_levelText) _levelText.text = $"Level {_shopButton.MaxLevel}/{_shopButton.MaxLevel}";
+
+                if (_priceText)
+                    _priceText.text = "MAX";
+
+                if (_levelText)
+                    _levelText.text = $"Level {_shopButton.MaxLevel}/{_shopButton.MaxLevel}";
+
                 if (_icon)
                 {
                     _icon.sprite = null;
                     _icon.enabled = false;
                 }
+
                 return;
             }
 
@@ -67,15 +73,16 @@ namespace Core.Shop.UI
 
             if (_icon)
             {
-                _icon.enabled = true;
-                // TODO: ajustar conforme o contrato real de ICoin.
-                // No legado, o ícone vinha de AnomalousArtifact.Sprite;
-                // aqui assume-se uma propriedade de ícone exposta pela moeda.
-                _icon.sprite = (currency as ICoinIcon)?.Icon;
+                _icon.sprite = currency.Sprite;
+                _icon.enabled = _icon.sprite != null;
             }
 
-            if (_priceText) _priceText.text = price.ToString();
-            if (_levelText) _levelText.text = $"Level {_shopButton.CurrentLevel}/{_shopButton.MaxLevel}";
+            if (_priceText)
+                _priceText.text = price.ToString();
+
+            if (_levelText)
+                _levelText.text = $"Level {_shopButton.CurrentLevel}/{_shopButton.MaxLevel}";
+
             _button.interactable = true;
         }
     }
