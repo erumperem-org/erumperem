@@ -15,8 +15,8 @@ public static class SkillTargetResolver
 
     /// <summary>
     /// Resolves primary hit/damage targets for <paramref name="skill"/>.
-    /// <see cref="SkillTargetKind.UpToThreeEnemies"/> = the selected enemy plus up to two other living
-    /// valid enemies in presentation order (FrontRank ascending / left-to-right ranks), without a second click.
+    /// <see cref="SkillTargetKind.UpToThreeEnemies"/> = selected enemy plus the two diamond-adjacent
+    /// enemies (exclude the opposite: top↔bottom, left↔right), without a second click.
     /// </summary>
     public static IReadOnlyList<Combatant> ResolvePrimaryTargets(
         BattleState battleState,
@@ -262,16 +262,43 @@ public static class SkillTargetResolver
             return Array.Empty<Combatant>();
         }
 
+        var oppositeRoster = OppositeSideRoster(battleState, actor);
+        var oppositeDiamondSlot = ResolveDiamondOppositeSlot(ResolveDiamondSlot(oppositeRoster, selectedCombatant));
         var additionalEnemies = OrderByPresentation(
                 validEnemies.Where(enemy =>
-                    !string.Equals(enemy.Identity.Id, selectedCombatant.Identity.Id, StringComparison.Ordinal)),
-                OppositeSideRoster(battleState, actor))
+                    !string.Equals(enemy.Identity.Id, selectedCombatant.Identity.Id, StringComparison.Ordinal) &&
+                    ResolveDiamondSlot(oppositeRoster, enemy) != oppositeDiamondSlot),
+                oppositeRoster)
             .Take(UpToThreeEnemiesMaximumCount - 1);
 
         var primaryTargets = new List<Combatant> { selectedCombatant };
         primaryTargets.AddRange(additionalEnemies);
         return primaryTargets;
     }
+
+    /// <summary>
+    /// Diamond slots match combat input: 1 top, 2 right, 3 bottom, 4 left (roster index, stable after deaths).
+    /// </summary>
+    private static int ResolveDiamondSlot(IList<Combatant> roster, Combatant combatant)
+    {
+        var rosterIndex = IndexOnRoster(roster, combatant);
+        if (rosterIndex == int.MaxValue)
+        {
+            return -1;
+        }
+
+        return rosterIndex + 1;
+    }
+
+    private static int ResolveDiamondOppositeSlot(int diamondSlot) =>
+        diamondSlot switch
+        {
+            1 => 3,
+            2 => 4,
+            3 => 1,
+            4 => 2,
+            _ => -1,
+        };
 
     private static List<Combatant> VisibleLivingSameSide(BattleState battleState, Combatant actor) =>
         LivingCombatantsOnRoster(SameSideRoster(battleState, actor));

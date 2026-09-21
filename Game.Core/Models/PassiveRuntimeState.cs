@@ -28,6 +28,13 @@ public sealed class PassiveRuntimeState
     /// </summary>
     public bool ShouldRetainTurnForBonusAction { get; set; }
 
+    /// <summary>
+    /// Consecutive extra-turn skills resolved this battle. Resets when a non extra-turn skill is used.
+    /// First extra-turn skill uses the authored chance; each further consecutive use subtracts
+    /// <see cref="Game.Core.Config.CombatBalanceConfig.ExtraTurnChanceDecayPerConsecutiveUse"/>.
+    /// </summary>
+    public int ConsecutiveExtraTurnSkillCount { get; set; }
+
     /// <summary>Last skill this combatant fully resolved; used by Hypnosis lock.</summary>
     public string? LastResolvedSkillId { get; set; }
 

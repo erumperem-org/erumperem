@@ -40,6 +40,21 @@ public static class CombatPartyResolver
 
     public static IReadOnlyList<string> GetCombatAllyCharacterNames(PlayableCharactersManager playableCharactersManager = null)
     {
+        var overworldPartyOrder = GetOverworldPartyCharacterNames(playableCharactersManager);
+        return CombatPartyRoleRules.SortIdentityStableCombatRoster(overworldPartyOrder);
+    }
+
+    public static string GetCombatPartyLeaderCharacterName(PlayableCharactersManager playableCharactersManager = null)
+    {
+        var overworldPartyOrder = GetOverworldPartyCharacterNames(playableCharactersManager);
+        return overworldPartyOrder.Count > 0
+            ? overworldPartyOrder[0]
+            : CombatPartyRoleRules.DefaultLeaderCharacterName;
+    }
+
+    public static IReadOnlyList<string> GetOverworldPartyCharacterNames(
+        PlayableCharactersManager playableCharactersManager = null)
+    {
         var pendingCombatParty = CombatExplorationBridge.Instance?.TryGetPendingCombatAllyCharacterNames();
         if (pendingCombatParty != null && pendingCombatParty.Count > 0)
         {

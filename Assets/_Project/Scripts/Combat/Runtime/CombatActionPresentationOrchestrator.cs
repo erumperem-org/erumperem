@@ -14,6 +14,7 @@ namespace Erumperem.Combat.Runtime
     public sealed class CombatActionPresentationOrchestrator
     {
         private const string ActionRockTweenId = "CombatActionRock";
+        private const float MultiHitDamageStaggerSeconds = 0.12f;
         private const string CorruptionPulseTweenId = "CombatCorruptionPulse";
 
         private readonly MonoBehaviour _coroutineHost;
@@ -52,7 +53,7 @@ namespace Erumperem.Combat.Runtime
             RestoreActorActionRockLocal();
         }
 
-        public void PlayDamageVisualFeedback(string targetCombatantId)
+        public void PlayDamageVisualFeedback(string targetCombatantId, float delaySeconds = 0f)
         {
             if (AudioManager.instance != null)
             {
@@ -73,9 +74,13 @@ namespace Erumperem.Combat.Runtime
             float speedMultiplier = Mathf.Max(0.2f, CombatSpeedSettings.SpeedMultiplier);
 
             _session.DamageFeedbackBusy.Add(targetCombatantId);
-            unitRoot.DOKill(false);
             var sequence = DOTween.Sequence();
             sequence.SetTarget(unitRoot);
+            if (delaySeconds > 0f)
+            {
+                sequence.AppendInterval(delaySeconds / speedMultiplier);
+            }
+
             sequence.Append(
                 unitRoot.DOPunchScale(
                     _settings.DamagePunchScale,
@@ -146,6 +151,7 @@ namespace Erumperem.Combat.Runtime
                         _sessionHub?.RaiseNarrativeLines(narrativeLines);
                     }
 
+                    var damageFeedbackEventCount = 0;
                     foreach (var combatEvent in eventSlice)
                     {
                         if (combatEvent.EventType == BattleEventType.CorruptionAdjusted)
@@ -164,7 +170,10 @@ namespace Erumperem.Combat.Runtime
 
                         if (combatEvent.EventType == BattleEventType.DamageApplied && combatEvent.DamageAmount > 0)
                         {
-                            PlayDamageVisualFeedback(combatEvent.TargetId);
+                            damageFeedbackEventCount++;
+                            PlayDamageVisualFeedback(
+                                combatEvent.TargetId,
+                                (damageFeedbackEventCount - 1) * MultiHitDamageStaggerSeconds);
 
                             if (_unitVisualSynchronizer.TryGetAnimationController(combatEvent.TargetId, out var hitEnemyAnimationController))
                             {
@@ -176,6 +185,14 @@ namespace Erumperem.Combat.Runtime
                     }
 
                     LogLastCombatEvent();
+
+                    if (damageFeedbackEventCount > 1)
+                    {
+                        playSeconds = Mathf.Max(
+                            playSeconds,
+                            ((damageFeedbackEventCount - 1) * MultiHitDamageStaggerSeconds + _settings.DamagePunchDuration) /
+                            speedMultiplier);
+                    }
                 }
 
                 var actorAfter = _session.FindCombatantById(action.Actor.Identity.Id);

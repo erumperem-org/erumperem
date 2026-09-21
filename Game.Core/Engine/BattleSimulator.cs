@@ -341,6 +341,8 @@ public sealed class BattleSimulator
                     continue;
                 }
 
+                ApplyConnectedHitStatusReactions(state, actor, primaryTarget, skill);
+
                 _effectApplicator.ApplyEffects(
                     state,
                     actor,
@@ -362,26 +364,6 @@ public sealed class BattleSimulator
         FlushPendingCastSkills(state, actor, selectedTarget);
 
         actor.PassiveRuntime.LastResolvedSkillId = skill.Id;
-
-        if (skill.GrantsBonusActionsToAllies)
-        {
-            foreach (var ally in state.GetAllCombatants()
-                         .Where(combatant =>
-                             !combatant.Health.IsDead &&
-                             combatant.Position.Side == actor.Position.Side))
-            {
-                ally.Tokens.Add(TokenType.BonusAction, 1);
-                ally.PassiveRuntime.ShouldRetainTurnForBonusAction = true;
-                _eventEmitter.Emit(
-                    state,
-                    BattleEventType.TokenApplied,
-                    actorId: actor.Identity.Id,
-                    targetId: ally.Identity.Id,
-                    skillId: skill.Id,
-                    tokenType: TokenType.BonusAction.ToString(),
-                    tokenDelta: 1);
-            }
-        }
 
         if (!isFollowUpInvocation &&
             skill.FollowUpSkillIds is { Count: > 0 })
@@ -415,8 +397,40 @@ public sealed class BattleSimulator
 
         if (!isFollowUpInvocation)
         {
+            var extraTurnChanceDecay = actor.PassiveRuntime.ConsecutiveExtraTurnSkillCount *
+                                       Math.Max(0, state.BalanceConfig.ExtraTurnChanceDecayPerConsecutiveUse);
+            RecordExtraTurnSkillStreak(actor, skill);
             var shouldRetainTurn = false;
-            var chanceToNotEndTurn = skill.ChanceToNotEndTurn + actorModifiers.SkillChanceToNotEndTurnAdditive;
+
+            if (skill.GrantsBonusActionsToAllies)
+            {
+                var allyBonusActionChance = Math.Clamp(1.0 - extraTurnChanceDecay, 0.0, 1.0);
+                if (allyBonusActionChance > 0 && _random.NextDouble() < allyBonusActionChance)
+                {
+                    foreach (var ally in state.GetAllCombatants()
+                                 .Where(combatant =>
+                                     !combatant.Health.IsDead &&
+                                     combatant.Position.Side == actor.Position.Side))
+                    {
+                        ally.Tokens.Add(TokenType.BonusAction, 1);
+                        ally.PassiveRuntime.ShouldRetainTurnForBonusAction = true;
+                        _eventEmitter.Emit(
+                            state,
+                            BattleEventType.TokenApplied,
+                            actorId: actor.Identity.Id,
+                            targetId: ally.Identity.Id,
+                            skillId: skill.Id,
+                            tokenType: TokenType.BonusAction.ToString(),
+                            tokenDelta: 1);
+                    }
+
+                    shouldRetainTurn = true;
+                }
+            }
+
+            var chanceToNotEndTurn = skill.ChanceToNotEndTurn +
+                                     actorModifiers.SkillChanceToNotEndTurnAdditive -
+                                     extraTurnChanceDecay;
             if (chanceToNotEndTurn > 0 && _random.NextDouble() < chanceToNotEndTurn)
             {
                 actor.Tokens.Add(TokenType.BonusAction, 1);
@@ -436,6 +450,17 @@ public sealed class BattleSimulator
                 state.PassiveBus.RaiseTurnEnded(state, actor);
             }
         }
+    }
+
+    private static void RecordExtraTurnSkillStreak(Combatant actor, SkillDefinition skill)
+    {
+        if (skill.ChanceToNotEndTurn > 0 || skill.GrantsBonusActionsToAllies)
+        {
+            actor.PassiveRuntime.ConsecutiveExtraTurnSkillCount++;
+            return;
+        }
+
+        actor.PassiveRuntime.ConsecutiveExtraTurnSkillCount = 0;
     }
 
     private void RollConfusionSkillSwaps(Combatant actor)
@@ -655,14 +680,6 @@ public sealed class BattleSimulator
                 isCrit,
                 hpPercentBeforeDamage,
                 hpPercentAfterDamage);
-
-            BattleCombatStatusTicker.ConsumeTauntOnBeingHit(state, target, actor);
-            BattleCombatStatusTicker.ApplyControlledInstabilityReflect(
-                state,
-                actor,
-                target,
-                _eventEmitter,
-                skill.Id);
         }
 
         if (target.Health.CurrentHp <= 0 && !target.Health.IsDead && !IsAllyInfiniteHealthProtected(state, target))
@@ -691,6 +708,21 @@ public sealed class BattleSimulator
 
     private static bool IsAllyInfiniteHealthProtected(BattleState state, Combatant combatant) =>
         state.AlliesHaveInfiniteHealth && combatant.Identity.Faction == Faction.Player;
+
+    private void ApplyConnectedHitStatusReactions(
+        BattleState state,
+        Combatant attacker,
+        Combatant defender,
+        SkillDefinition skill)
+    {
+        BattleCombatStatusTicker.ConsumeTauntOnBeingHit(state, defender, attacker);
+        BattleCombatStatusTicker.ApplyControlledInstabilityReflect(
+            state,
+            attacker,
+            defender,
+            _eventEmitter,
+            skill.Id);
+    }
 
     private void ApplyBattleCorruptionDelta(BattleState state, double delta, string actorId, string skillId)
     {

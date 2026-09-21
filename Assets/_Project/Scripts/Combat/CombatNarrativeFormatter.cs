@@ -21,15 +21,19 @@ namespace Erumperem.Combat
 
             CombatEvent hitEvent = null;
             CombatEvent damageEvent = null;
+            var hitResolvedEvents = new List<CombatEvent>();
+            var damageAppliedEvents = new List<CombatEvent>();
             foreach (var combatEvent in slice)
             {
                 switch (combatEvent.EventType)
                 {
                     case BattleEventType.HitResolved:
                         hitEvent = combatEvent;
+                        hitResolvedEvents.Add(combatEvent);
                         break;
                     case BattleEventType.DamageApplied:
                         damageEvent = combatEvent;
+                        damageAppliedEvents.Add(combatEvent);
                         break;
                 }
             }
@@ -38,7 +42,14 @@ namespace Erumperem.Combat
             var targetName = DisplayName(state, action.Target.Identity.Id);
             var skillName = PlayerFacingText.TranslateToEnglish(action.Skill.Name);
 
-            if (hitEvent == null)
+            if (hitResolvedEvents.Count > 1 || damageAppliedEvents.Count > 1)
+            {
+                foreach (var line in FormatMultiHitLines(state, actorName, skillName, hitResolvedEvents, damageAppliedEvents))
+                {
+                    yield return line;
+                }
+            }
+            else if (hitEvent == null)
             {
                 yield return PlayerFacingText.PresentForUi($"{actorName} used {skillName} on {targetName}.");
             }
@@ -96,6 +107,53 @@ namespace Erumperem.Combat
 
                 var who = DisplayName(state, combatEvent.TargetId);
                 yield return PlayerFacingText.PresentForUi($"{who} was defeated.");
+            }
+        }
+
+        private static IEnumerable<string> FormatMultiHitLines(
+            BattleState state,
+            string actorName,
+            string skillName,
+            IReadOnlyList<CombatEvent> hitResolvedEvents,
+            IReadOnlyList<CombatEvent> damageAppliedEvents)
+        {
+            var connectedHitCount = 0;
+            var missedHitCount = 0;
+            foreach (var hitResolvedEvent in hitResolvedEvents)
+            {
+                if (hitResolvedEvent.IsHit)
+                {
+                    connectedHitCount++;
+                }
+                else
+                {
+                    missedHitCount++;
+                }
+            }
+
+            var damageAmounts = new List<int>();
+            foreach (var damageAppliedEvent in damageAppliedEvents)
+            {
+                if (damageAppliedEvent.DamageAmount > 0)
+                {
+                    damageAmounts.Add(damageAppliedEvent.DamageAmount);
+                }
+            }
+
+            if (damageAmounts.Count > 0)
+            {
+                var joinedDamage = string.Join(", ", damageAmounts);
+                yield return PlayerFacingText.PresentForUi(
+                    $"{actorName} used {skillName}: {connectedHitCount} hit(s) dealing {joinedDamage} damage.");
+            }
+            else
+            {
+                yield return PlayerFacingText.PresentForUi($"{actorName} used {skillName}.");
+            }
+
+            if (missedHitCount > 0)
+            {
+                yield return PlayerFacingText.PresentForUi($"{missedHitCount} hit(s) missed.");
             }
         }
 

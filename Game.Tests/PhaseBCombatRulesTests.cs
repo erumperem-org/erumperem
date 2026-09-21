@@ -212,6 +212,22 @@ public sealed class PhaseBCombatRulesTests
     }
 
     [Fact]
+    public void SortIdentityStableCombatRoster_KeepsCharacterKitsOffOverworldSlots()
+    {
+        var swappedOverworldOrder = CombatPartyRoleRules.NormalizeOverworldCombatParty(["Buck", "Wulfric"]);
+        var combatRoster = CombatPartyRoleRules.SortIdentityStableCombatRoster(swappedOverworldOrder);
+
+        Assert.Equal(["Buck", "Wulfric"], swappedOverworldOrder);
+        Assert.Equal(["Wulfric", "Buck"], combatRoster);
+        Assert.Equal(
+            CombatantPartyRole.Leader,
+            CombatPartyRoleRules.FromOverworldPartyNames("Buck", swappedOverworldOrder[0]));
+        Assert.Equal(
+            CombatantPartyRole.Companion,
+            CombatPartyRoleRules.FromOverworldPartyNames("Wulfric", swappedOverworldOrder[0]));
+    }
+
+    [Fact]
     public void PassiveEffectKindJsonConverter_ReadsLegacyOutgoingDamageStrings()
     {
         var tempDirectory = Path.Combine(Path.GetTempPath(), $"erumperem-phase-b-passives-{Guid.NewGuid():N}");

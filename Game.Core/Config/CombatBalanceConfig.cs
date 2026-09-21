@@ -23,6 +23,14 @@ public sealed class CombatBalanceConfig
     public double ElementAdvantageMultiplier { get; init; } = 1.5;
     public double ElementDisadvantageMultiplier { get; init; } = 0.5;
 
+    public const double DefaultExtraTurnChanceDecayPerConsecutiveUse = 0.20;
+
+    /// <summary>
+    /// Subtracted from extra-turn chance for each consecutive extra-turn skill the actor already used
+    /// (Pistol Draw, Aim for the Head, Juggling, …). First use is unmodified.
+    /// </summary>
+    public double ExtraTurnChanceDecayPerConsecutiveUse { get; init; } = DefaultExtraTurnChanceDecayPerConsecutiveUse;
+
     public CorruptionTierModifiers GetTierModifiers(int corruptionTier)
     {
         return CorruptionTiers.First(tierModifiers => tierModifiers.Tier == corruptionTier);
