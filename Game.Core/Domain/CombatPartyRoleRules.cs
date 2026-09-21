@@ -1,8 +1,10 @@
+using System.Linq;
+
 namespace Game.Core.Domain;
 
 /// <summary>
-/// Single mapping from overworld party order to combat <see cref="CombatantPartyRole"/>.
-/// Index 0 is always Leader (overworld Main); index 1 is Companion. No name-based overrides.
+/// Overworld Main/Companion maps to <see cref="CombatantPartyRole"/>. Combat roster order is identity-stable
+/// so Wulfric/Buck kits stay on those characters when the village swap changes who is Main.
 /// </summary>
 public static class CombatPartyRoleRules
 {
@@ -33,6 +35,20 @@ public static class CombatPartyRoleRules
     /// First non-ignored name is Leader; the next distinct name is Companion.
     /// Matsuda never enters combat. Empty slots fall back to Wulfric / Buck without swapping an existing Main.
     /// </summary>
+    public static CombatantPartyRole FromOverworldPartyNames(
+        string characterName,
+        string? leaderCharacterName)
+    {
+        if (string.IsNullOrWhiteSpace(characterName) || string.IsNullOrWhiteSpace(leaderCharacterName))
+        {
+            return CombatantPartyRole.Companion;
+        }
+
+        return string.Equals(characterName, leaderCharacterName, StringComparison.OrdinalIgnoreCase)
+            ? CombatantPartyRole.Leader
+            : CombatantPartyRole.Companion;
+    }
+
     public static IReadOnlyList<string> NormalizeOverworldCombatParty(IReadOnlyList<string>? rawPartyCharacterNames)
     {
         string? leaderCharacterName = null;
@@ -78,5 +94,48 @@ public static class CombatPartyRoleRules
         }
 
         return [leaderCharacterName, companionCharacterName];
+    }
+
+    /// <summary>
+    /// Combat roster order is identity-stable (Wulfric, Buck, Maria) so kits and visuals
+    /// follow the character, not the Main/Companion slot. PartyRole still comes from overworld Main.
+    /// </summary>
+    public static IReadOnlyList<string> SortIdentityStableCombatRoster(IReadOnlyList<string> partyCharacterNames)
+    {
+        if (partyCharacterNames == null || partyCharacterNames.Count == 0)
+        {
+            return NormalizeOverworldCombatParty(null);
+        }
+
+        var canonicalOrder = new[]
+        {
+            DefaultLeaderCharacterName,
+            DefaultCompanionCharacterName,
+            "Maria",
+        };
+
+        var remainingNames = partyCharacterNames
+            .Where(characterName => !string.IsNullOrWhiteSpace(characterName))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var orderedNames = new List<string>(remainingNames.Count);
+
+        foreach (var canonicalName in canonicalOrder)
+        {
+            var matchedName = remainingNames.FirstOrDefault(characterName =>
+                string.Equals(characterName, canonicalName, StringComparison.OrdinalIgnoreCase));
+            if (matchedName == null)
+            {
+                continue;
+            }
+
+            orderedNames.Add(matchedName);
+            remainingNames.RemoveAll(characterName =>
+                string.Equals(characterName, canonicalName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        remainingNames.Sort(StringComparer.OrdinalIgnoreCase);
+        orderedNames.AddRange(remainingNames);
+        return orderedNames.Count > 0 ? orderedNames : NormalizeOverworldCombatParty(null);
     }
 }

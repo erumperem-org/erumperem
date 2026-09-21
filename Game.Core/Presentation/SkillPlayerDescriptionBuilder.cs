@@ -79,6 +79,7 @@ public static class SkillPlayerDescriptionBuilder
         public Combatant? Actor { get; init; }
         public BattleState? BattleState { get; init; }
         public Combatant? PreviewTarget { get; init; }
+        public IReadOnlyDictionary<string, SkillDefinition>? SkillsById { get; init; }
     }
 
     public static string BuildSummaryLine(SkillDefinition skill, SkillDescriptionContext? context = null)
@@ -93,6 +94,36 @@ public static class SkillPlayerDescriptionBuilder
             DescribeTarget(skill),
             DescribeDirectDamage(skill),
         };
+
+        var followUpPart = DescribeFollowUpSkills(skill, context);
+        if (!string.IsNullOrEmpty(followUpPart))
+        {
+            detailParts.Add(followUpPart);
+        }
+
+        var extraTurnPart = DescribeExtraTurn(skill, context);
+        if (!string.IsNullOrEmpty(extraTurnPart))
+        {
+            detailParts.Add(extraTurnPart);
+        }
+
+        var accuracyPenaltyPart = DescribeAccuracyPenaltyPerLivingEnemy(skill);
+        if (!string.IsNullOrEmpty(accuracyPenaltyPart))
+        {
+            detailParts.Add(accuracyPenaltyPart);
+        }
+
+        var ownTokenDamagePart = DescribeBonusDamagePerOwnToken(skill);
+        if (!string.IsNullOrEmpty(ownTokenDamagePart))
+        {
+            detailParts.Add(ownTokenDamagePart);
+        }
+
+        var stranglePart = DescribeDebuffScaling(skill);
+        if (!string.IsNullOrEmpty(stranglePart))
+        {
+            detailParts.Add(stranglePart);
+        }
 
         var hitChancePart = DescribeHitChance(skill, context);
         if (!string.IsNullOrEmpty(hitChancePart))
@@ -139,19 +170,136 @@ public static class SkillPlayerDescriptionBuilder
 
     private static string DescribeDirectDamage(SkillDefinition skill)
     {
-        if (!HasDirectDamage(skill))
+        if (!HasDirectDamage(skill) && !skill.ComputeFromDebuffTypesOnTarget)
         {
             return "no direct damage";
         }
 
-        var minimumDamage = skill.BaseDamage.Min;
-        var maximumDamage = skill.BaseDamage.Max;
-        if (minimumDamage == maximumDamage)
+        if (skill.ComputeFromDebuffTypesOnTarget && !HasDirectDamage(skill))
         {
-            return $"{minimumDamage} damage";
+            return string.Empty;
         }
 
-        return $"{minimumDamage}–{maximumDamage} damage";
+        var minimumDamage = skill.BaseDamage.Min;
+        var maximumDamage = skill.BaseDamage.Max;
+        var hitCount = Math.Max(1, skill.HitCount);
+        var damagePhrase = minimumDamage == maximumDamage
+            ? $"{minimumDamage} damage"
+            : $"{minimumDamage}–{maximumDamage} damage";
+
+        if (hitCount > 1)
+        {
+            return $"{hitCount} hits of {damagePhrase}";
+        }
+
+        return damagePhrase;
+    }
+
+    private static string DescribeFollowUpSkills(SkillDefinition skill, SkillDescriptionContext? context)
+    {
+        if (skill.FollowUpSkillIds == null || skill.FollowUpSkillIds.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var followUpNames = new List<string>();
+        foreach (var followUpSkillId in skill.FollowUpSkillIds)
+        {
+            SkillDefinition? followUpSkill = null;
+            if (context?.BattleState != null &&
+                context.BattleState.SkillsById.TryGetValue(followUpSkillId, out followUpSkill))
+            {
+            }
+            else if (context?.SkillsById != null)
+            {
+                context.SkillsById.TryGetValue(followUpSkillId, out followUpSkill);
+            }
+
+            followUpNames.Add(followUpSkill != null
+                ? TranslateToEnglish(followUpSkill.Name)
+                : followUpSkillId);
+        }
+
+        if (followUpNames.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        return "then fires " + string.Join(", then ", followUpNames);
+    }
+
+    private static string DescribeExtraTurn(SkillDefinition skill, SkillDescriptionContext? context)
+    {
+        var decayPerUse = context?.BattleState?.BalanceConfig.ExtraTurnChanceDecayPerConsecutiveUse
+                          ?? CombatBalanceConfig.DefaultExtraTurnChanceDecayPerConsecutiveUse;
+        var decayNote = decayPerUse > 0
+            ? $" (consecutive extra-turn skills reduce this chance by {FormatPercentFromFraction(decayPerUse)} each)"
+            : string.Empty;
+
+        if (skill.GrantsBonusActionsToAllies)
+        {
+            return "extra turn for self and ally" + decayNote;
+        }
+
+        if (skill.ChanceToNotEndTurn > 0)
+        {
+            return $"{FormatPercentFromFraction(skill.ChanceToNotEndTurn)} chance of extra turn" + decayNote;
+        }
+
+        return string.Empty;
+    }
+
+    private static string DescribeAccuracyPenaltyPerLivingEnemy(SkillDefinition skill)
+    {
+        if (skill.AccuracyPenaltyPerLivingEnemy <= 0)
+        {
+            return string.Empty;
+        }
+
+        return $"-{FormatPercentFromFraction(skill.AccuracyPenaltyPerLivingEnemy)} hit chance per living enemy";
+    }
+
+    private static string DescribeBonusDamagePerOwnToken(SkillDefinition skill)
+    {
+        if (!skill.BonusDamagePerOwnToken.HasValue)
+        {
+            return string.Empty;
+        }
+
+        var tokenName = TokenDisplayName(skill.BonusDamagePerOwnToken.Value);
+        var damagePerStack = Math.Max(1, skill.BonusDamagePerOwnTokenStacks);
+        return $"+{damagePerStack} damage per {tokenName} stack you have";
+    }
+
+    private static string DescribeDebuffScaling(SkillDefinition skill)
+    {
+        if (!skill.ComputeFromDebuffTypesOnTarget)
+        {
+            return string.Empty;
+        }
+
+        var scalingParts = new List<string>();
+        if (skill.DamagePerDistinctDebuffType > 0)
+        {
+            scalingParts.Add($"+{skill.DamagePerDistinctDebuffType} damage");
+        }
+
+        if (skill.CritChancePerDistinctDebuffType > 0)
+        {
+            scalingParts.Add($"+{FormatPercentFromFraction(skill.CritChancePerDistinctDebuffType)} crit");
+        }
+
+        if (skill.AccuracyPerDistinctDebuffType > 0)
+        {
+            scalingParts.Add($"+{FormatPercentFromFraction(skill.AccuracyPerDistinctDebuffType)} hit chance");
+        }
+
+        if (scalingParts.Count == 0)
+        {
+            return "stronger for each distinct status on the enemy";
+        }
+
+        return string.Join(", ", scalingParts) + " per distinct status on the enemy";
     }
 
     private static string DescribeHitChance(SkillDefinition skill, SkillDescriptionContext? context)
@@ -163,7 +311,8 @@ public static class SkillPlayerDescriptionBuilder
             return string.Empty;
         }
 
-        return $"{FormatPercentFromFraction(combinedHitChance)} hit chance";
+        return $"{FormatPercentFromFraction(combinedHitChance)} hit chance" +
+               (Math.Max(1, skill.HitCount) > 1 ? " per hit" : string.Empty);
     }
 
     private static bool ShouldShowCriticalChance(SkillDefinition skill, SkillDescriptionContext? context)

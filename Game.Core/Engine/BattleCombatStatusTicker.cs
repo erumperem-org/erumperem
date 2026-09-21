@@ -140,7 +140,7 @@ internal static class BattleCombatStatusTicker
         BattleCombatEventEmitter? eventEmitter,
         string skillId)
     {
-        if (attacker.Identity.Faction != Faction.Enemy)
+        if (!IsOpposingSideHit(attacker, defender))
         {
             return;
         }
@@ -170,7 +170,7 @@ internal static class BattleCombatStatusTicker
 
     public static void ConsumeTauntOnBeingHit(BattleState state, Combatant defender, Combatant attacker)
     {
-        if (attacker.Identity.Faction != Faction.Enemy)
+        if (!IsOpposingSideHit(attacker, defender))
         {
             return;
         }
@@ -191,6 +191,11 @@ internal static class BattleCombatStatusTicker
                 delta: -1);
         }
     }
+
+    private static bool IsOpposingSideHit(Combatant attacker, Combatant defender) =>
+        attacker != null &&
+        defender != null &&
+        attacker.Position.Side != defender.Position.Side;
 
     public static void TriggerDestabilizationExplosion(
         BattleState state,

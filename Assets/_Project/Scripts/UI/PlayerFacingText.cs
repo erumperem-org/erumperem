@@ -209,7 +209,12 @@ namespace Erumperem.UI
 
             if (CombatCatalogRuntimeLookup.TryGetSkill(nodeAsset.NodeId, out var catalogSkill))
             {
-                return PresentForUi(SkillPlayerDescriptionBuilder.BuildSummaryLine(catalogSkill));
+                return PresentForUi(SkillPlayerDescriptionBuilder.BuildSummaryLine(
+                    catalogSkill,
+                    new SkillPlayerDescriptionBuilder.SkillDescriptionContext
+                    {
+                        SkillsById = CombatCatalogRuntimeLookup.SkillsById,
+                    }));
             }
 
             if (nodeAsset.IsPassiveNode)

@@ -89,6 +89,23 @@ public sealed class SkillTargetResolverTests
         Assert.Contains(enemyThree, withoutFilters);
         Assert.DoesNotContain(enemyFour, withoutFilters);
 
+        var aimTop = SkillTargetResolver.ResolvePrimaryTargets(battle, actor, areaSkill, enemyOne);
+        Assert.Equal(
+            [enemyOne.Identity.Id, enemyTwo.Identity.Id, enemyFour.Identity.Id],
+            aimTop.Select(combatant => combatant.Identity.Id));
+
+        var aimBottom = SkillTargetResolver.ResolvePrimaryTargets(battle, actor, areaSkill, enemyThree);
+        Assert.DoesNotContain(enemyOne, aimBottom);
+        Assert.Contains(enemyThree, aimBottom);
+        Assert.Contains(enemyTwo, aimBottom);
+        Assert.Contains(enemyFour, aimBottom);
+
+        var aimLeft = SkillTargetResolver.ResolvePrimaryTargets(battle, actor, areaSkill, enemyFour);
+        Assert.DoesNotContain(enemyTwo, aimLeft);
+        Assert.Contains(enemyFour, aimLeft);
+        Assert.Contains(enemyOne, aimLeft);
+        Assert.Contains(enemyThree, aimLeft);
+
         enemyFour.Health.IsDead = true;
         enemyThree.Tokens.Add(TokenType.Stealth, 1);
         var afterStealthAndDeath = SkillTargetResolver.ResolvePrimaryTargets(battle, actor, areaSkill, enemyTwo);

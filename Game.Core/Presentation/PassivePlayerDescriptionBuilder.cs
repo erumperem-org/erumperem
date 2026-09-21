@@ -61,7 +61,69 @@ public static class PassivePlayerDescriptionBuilder
             }
         }
 
-        return string.Join(" and ", phrases);
+        if (phrases.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var collapsedWhenUsing = TryCollapseWhenUsingPhrases(phrases);
+        if (!string.IsNullOrEmpty(collapsedWhenUsing))
+        {
+            return collapsedWhenUsing;
+        }
+
+        return phrases.TrueForAll(phrase =>
+            phrase.StartsWith("When using ", StringComparison.Ordinal) ||
+            phrase.StartsWith("While the target has ", StringComparison.Ordinal))
+            ? string.Join(" or ", phrases)
+            : string.Join(" and ", phrases);
+    }
+
+    private static string TryCollapseWhenUsingPhrases(IReadOnlyList<string> phrases)
+    {
+        const string whenUsingPrefix = "When using ";
+        const string againstEnemyPrefix = " against an enemy with ";
+        if (phrases.Count == 0 ||
+            phrases.Any(phrase => !phrase.StartsWith(whenUsingPrefix, StringComparison.Ordinal)))
+        {
+            return string.Empty;
+        }
+
+        string? sharedStatusSuffix = null;
+        var skillNames = new List<string>();
+        foreach (var phrase in phrases)
+        {
+            var remainder = phrase[whenUsingPrefix.Length..];
+            var againstIndex = remainder.IndexOf(againstEnemyPrefix, StringComparison.Ordinal);
+            if (againstIndex < 0)
+            {
+                if (sharedStatusSuffix != null)
+                {
+                    return string.Empty;
+                }
+
+                skillNames.Add(remainder);
+                continue;
+            }
+
+            var skillName = remainder[..againstIndex];
+            var statusSuffix = remainder[againstIndex..];
+            if (sharedStatusSuffix != null &&
+                !string.Equals(sharedStatusSuffix, statusSuffix, StringComparison.Ordinal))
+            {
+                return string.Empty;
+            }
+
+            sharedStatusSuffix = statusSuffix;
+            skillNames.Add(skillName);
+        }
+
+        if (skillNames.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        return whenUsingPrefix + string.Join(" or ", skillNames) + (sharedStatusSuffix ?? string.Empty);
     }
 
     private static string DescribeCondition(
@@ -75,11 +137,12 @@ public static class PassivePlayerDescriptionBuilder
 
         return condition.Activation switch
         {
-            PassiveActivationKind.Permanent => string.Empty,
             PassiveActivationKind.WhileHavingStatus =>
                 string.IsNullOrEmpty(statusName) ? "While you have a status" : $"While you have {statusName}",
             PassiveActivationKind.UponDamageTaken when condition.HitPointsLostPerTrigger > 0 =>
                 $"For every {condition.HitPointsLostPerTrigger} HP lost",
+            PassiveActivationKind.UponDamageTaken when !string.IsNullOrEmpty(statusName) =>
+                $"When an enemy that has {statusName} hits you",
             PassiveActivationKind.UponDamageTaken => "When you take damage",
             PassiveActivationKind.UponKill => "When you defeat an enemy",
             PassiveActivationKind.UponCriticalStrike => "When you land a critical hit",
@@ -96,13 +159,20 @@ public static class PassivePlayerDescriptionBuilder
                 string.IsNullOrEmpty(statusName)
                     ? "When hitting a target that has a status"
                     : $"When hitting a target with {statusName}",
+            PassiveActivationKind.UponDealingDamage when !string.IsNullOrEmpty(statusName) =>
+                $"When you deal damage to an enemy that has {statusName}",
             PassiveActivationKind.UponDealingDamage => "When you deal damage",
             PassiveActivationKind.UponHealing => "When you heal",
             PassiveActivationKind.OnTurnStart => "At the start of your turn",
+            PassiveActivationKind.WhileOppositeHasStatus when !string.IsNullOrEmpty(statusName) && !string.IsNullOrEmpty(skillName) =>
+                $"When using {skillName} against an enemy with {statusName}",
             PassiveActivationKind.WhileOppositeHasStatus =>
                 string.IsNullOrEmpty(statusName)
                     ? "While the target has a status"
                     : $"While the target has {statusName}",
+            PassiveActivationKind.Permanent when !string.IsNullOrEmpty(skillName) =>
+                $"When using {skillName}",
+            PassiveActivationKind.Permanent => string.Empty,
             PassiveActivationKind.UponUsingSkill when !string.IsNullOrEmpty(skillName) =>
                 $"When using {skillName}",
             PassiveActivationKind.UponUsingSkill => "When you use a skill",
@@ -169,7 +239,7 @@ public static class PassivePlayerDescriptionBuilder
             PassiveEffectOperationKind.CharacterStatChange => DescribeCharacterStatChange(effect),
             PassiveEffectOperationKind.SkillStatChange => DescribeSkillStatChange(effect, skillsById),
             PassiveEffectOperationKind.TokenStatChange => DescribeTokenStatChange(effect),
-            PassiveEffectOperationKind.ExtraStatsFromResource => DescribeExtraStatsFromResource(effect),
+            PassiveEffectOperationKind.ExtraStatsFromResource => DescribeExtraStatsFromResource(effect, skillsById),
             PassiveEffectOperationKind.TokenManipulation => DescribeTokenManipulation(effect),
             PassiveEffectOperationKind.TurnManipulation => "gain an extra action",
             PassiveEffectOperationKind.Heal =>
@@ -226,7 +296,7 @@ public static class PassivePlayerDescriptionBuilder
         var skillPrefix = string.IsNullOrEmpty(skillName) ? "skills gain" : $"{skillName} gains";
         return effect.SkillStat switch
         {
-            PassiveSkillStatKind.Damage => $"{skillPrefix} {FormatSignedPercent(effect.Magnitude)} damage",
+            PassiveSkillStatKind.Damage => $"{skillPrefix} {FormatSignedNumber(effect.Magnitude)} damage",
             PassiveSkillStatKind.Accuracy => $"{skillPrefix} {FormatSignedPercent(effect.Magnitude)} accuracy",
             PassiveSkillStatKind.CorruptionCost => $"{skillPrefix} {FormatSignedNumber(effect.Magnitude)} corruption cost",
             PassiveSkillStatKind.CriticalChance => $"{skillPrefix} {FormatSignedPercent(effect.Magnitude)} crit chance",
@@ -249,11 +319,25 @@ public static class PassivePlayerDescriptionBuilder
         }
 
         var tokenName = SkillPlayerDescriptionBuilder.FormatStatusDisplayName(effect.Token.Value);
+        if (effect.SkipEndOfTurnDecayChance > 0)
+        {
+            return $"{tokenName} has {FormatPercentFromFraction(effect.SkipEndOfTurnDecayChance)} chance to not lose a stack at the end of your turn";
+        }
+
         return $"{tokenName} tokens are {FormatSignedPercent(effect.Magnitude)} more effective";
     }
 
-    private static string DescribeExtraStatsFromResource(PassiveEffectDefinition effect)
+    private static string DescribeExtraStatsFromResource(
+        PassiveEffectDefinition effect,
+        IReadOnlyDictionary<string, SkillDefinition>? skillsById)
     {
+        var skillName = FormatSkillName(effect.SkillId, skillsById);
+        if (effect.SkillStat == PassiveSkillStatKind.Damage)
+        {
+            var skillPrefix = string.IsNullOrEmpty(skillName) ? "the skill" : skillName;
+            return $"{skillPrefix} deals {FormatSignedNumber(effect.Magnitude)} damage {DescribeResource(effect)}";
+        }
+
         var statName = FormatCharacterStatName(effect.CharacterStat);
         if (string.IsNullOrEmpty(statName))
         {
@@ -263,7 +347,8 @@ public static class PassivePlayerDescriptionBuilder
         var bonus = IsPercentCharacterStat(effect.CharacterStat)
             ? FormatSignedPercent(effect.Magnitude)
             : FormatSignedNumber(effect.Magnitude);
-        return $"{bonus} {statName} {DescribeResource(effect)}";
+        var skillGate = string.IsNullOrEmpty(skillName) ? string.Empty : $" on {skillName}";
+        return $"{bonus} {statName} {DescribeResource(effect)}{skillGate}";
     }
 
     private static string DescribeResource(PassiveEffectDefinition effect) =>
@@ -272,9 +357,9 @@ public static class PassivePlayerDescriptionBuilder
             PassiveResourceKind.MissingHitPointsFraction => "per missing HP fraction",
             PassiveResourceKind.CurrentHitPointsFraction => "per current HP fraction",
             PassiveResourceKind.TokenStacks when effect.ResourceToken.HasValue =>
-                $"per {SkillPlayerDescriptionBuilder.FormatStatusDisplayName(effect.ResourceToken.Value)} stack",
+                $"per {SkillPlayerDescriptionBuilder.FormatStatusDisplayName(effect.ResourceToken.Value)} stack you have",
             PassiveResourceKind.TokenStacks when effect.Token.HasValue =>
-                $"per {SkillPlayerDescriptionBuilder.FormatStatusDisplayName(effect.Token.Value)} stack",
+                $"per {SkillPlayerDescriptionBuilder.FormatStatusDisplayName(effect.Token.Value)} stack you have",
             PassiveResourceKind.MissingHitPointsChunks when effect.Stacks > 0 =>
                 $"per {effect.Stacks} missing HP",
             PassiveResourceKind.OppositeTokenStacks when effect.Token.HasValue =>

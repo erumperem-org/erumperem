@@ -55,7 +55,7 @@ namespace Erumperem.Characters
         [Tooltip("Prefab instanciado no slot ally_1/ally_2. Use o root do prefab com CapsuleCollider para seleção.")]
         [SerializeField] private GameObject battlePrefab;
 
-        [Tooltip("1 = frente (Main), 2 = atrás (Companion).")]
+        [Tooltip("Legacy formation label only. Combat kits follow the character identity, not Main/Companion slot.")]
         [Min(1)]
         [SerializeField] private int battleFormationRank = 1;
 

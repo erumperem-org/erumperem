@@ -324,8 +324,10 @@ namespace Erumperem.Combat
 
             var skillTreesList = CombatDataLoader.LoadSkillTrees(skillTreesPath);
             var partyCharacterNames = CombatPartyResolver.GetCombatAllyCharacterNames();
+            var partyLeaderCharacterName = CombatPartyResolver.GetCombatPartyLeaderCharacterName();
             Debug.Log(
-                $"CombatPrototypeController: party de combate = [{string.Join(", ", partyCharacterNames)}].",
+                $"CombatPrototypeController: party de combate = [{string.Join(", ", partyCharacterNames)}] " +
+                $"(leader={partyLeaderCharacterName}).",
                 this);
 
             var progression = _progressionService != null
@@ -743,7 +745,8 @@ namespace Erumperem.Combat
             {
                 var characterName = partyCharacterNames[allyIndex];
                 var ally = _runtime.State.Allies[allyIndex];
-                ally.PartyRole = CombatPartyRoleRules.FromAllyPartyIndex(allyIndex);
+                var partyLeaderCharacterName = CombatPartyResolver.GetCombatPartyLeaderCharacterName();
+                ally.PartyRole = CombatPartyRoleRules.FromOverworldPartyNames(characterName, partyLeaderCharacterName);
 
                 if (!allyCharacterStatCatalog.TryGetDefinition(characterName, out var allyCharacterStatDefinition))
                 {
@@ -755,9 +758,18 @@ namespace Erumperem.Combat
                     preserveCurrentHitPoints: false,
                     applyHealth: applyHealth);
 
+                var existingIdentity = ally.Identity;
+                ally.Identity = new IdentityComponent
+                {
+                    Id = existingIdentity.Id,
+                    DisplayName = characterName,
+                    Faction = existingIdentity.Faction,
+                    Tags = existingIdentity.Tags,
+                };
+
                 if (ally.Position != null)
                 {
-                    ally.Position.FrontRank = Mathf.Max(1, allyCharacterStatDefinition.BattleFormationRank);
+                    ally.Position.FrontRank = allyIndex + 1;
                 }
             }
         }

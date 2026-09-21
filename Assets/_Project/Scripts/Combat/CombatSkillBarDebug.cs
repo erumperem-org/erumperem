@@ -103,7 +103,7 @@ namespace Erumperem.Combat
         private static string TargetAfterA(SkillTargetKind targetKind) => targetKind switch
         {
             SkillTargetKind.OneEnemy => "um inimigo único",
-            SkillTargetKind.UpToThreeEnemies => "até 3 inimigos (selecionado + adjacentes na ordem de ranks)",
+            SkillTargetKind.UpToThreeEnemies => "até 3 inimigos (diamante: todos excepto o oposto do visado)",
             SkillTargetKind.AllEnemies => "todos os inimigos válidos",
             SkillTargetKind.OneAlly => "um aliado",
             SkillTargetKind.SelfOrAlly => "ti ou um aliado",

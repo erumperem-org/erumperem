@@ -102,6 +102,53 @@ public sealed class HeroKitSkillTests
     }
 
     [Fact]
+    public void ShapeShiftingSwordsmanship_RollsIndependentHits()
+    {
+        var skills = SampleCombatData.CreateSkills();
+        var shapeShifting = skills.First(skill => skill.Id == "wulfric_tree3_tier3_active");
+        Assert.Equal(5, shapeShifting.HitCount);
+        Assert.Equal(0.6, shapeShifting.Accuracy);
+
+        var battle = BattleFactory.CreateSampleBattle(
+            skills,
+            allyCount: 1,
+            enemyCount: 1,
+            allySkillIds: [shapeShifting.Id]);
+        var actor = battle.Allies[0];
+        actor.Stats = new StatsComponent
+        {
+            Speed = actor.Stats.Speed,
+            Accuracy = 1.0,
+            CritChance = 0,
+        };
+        var target = battle.Enemies[0];
+        target.Health = new HealthComponent
+        {
+            CurrentHp = 200,
+            MaxHp = 200,
+            IsDead = false,
+            IsDeathblowPending = false,
+        };
+        var eventCollector = new CombatEventCollector();
+        var simulator = new BattleSimulator(new AlwaysZeroRandomSource(), eventCollector);
+        simulator.ResolveChosenAction(
+            battle,
+            new ChosenAction
+            {
+                Actor = actor,
+                Target = target,
+                Skill = shapeShifting,
+                ActionType = ActionType.Skill,
+            });
+
+        Assert.Equal(
+            5,
+            eventCollector.Events.Count(combatEvent =>
+                combatEvent.EventType == BattleEventType.HitResolved &&
+                combatEvent.SkillId == shapeShifting.Id));
+    }
+
+    [Fact]
     public void MariaHealVoice_HealsWhenCombatHealingUnlocked()
     {
         Assert.True(CombatHealUnlock.IsCombatHealingUnlocked);
@@ -331,5 +378,12 @@ public sealed class HeroKitSkillTests
         Assert.NotNull(maria);
         Assert.True(SkillTreeLookup.TryFindNode(maria!, "maria_innate_active2", out _, out _) == false);
         Assert.True(SkillTreeLookup.TryFindNode(maria!, "maria_tree1_tier1_active", out _, out _));
+    }
+
+    private sealed class AlwaysZeroRandomSource : IRandomSource
+    {
+        public int Next(int minValue, int maxValue) => minValue;
+
+        public double NextDouble() => 0.0;
     }
 }

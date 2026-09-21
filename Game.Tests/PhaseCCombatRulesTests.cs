@@ -73,6 +73,45 @@ public sealed class PhaseCCombatRulesTests
     }
 
     [Fact]
+    public void Taunt_ConsumesOnZeroDamageOpposingHit()
+    {
+        var statusPoke = CreateTokenSkill("phase_c_taunt_status_poke", SkillTargetKind.OneEnemy, TokenType.Weaken);
+        var battle = CreateNeutralBattle(statusPoke, allyCount: 1, enemyCount: 1);
+        NeutralizeCombatantElements(battle);
+        var tauntedAlly = battle.Allies[0];
+        var enemyAttacker = battle.Enemies[0];
+        tauntedAlly.Tokens.Add(TokenType.Taunt, 1);
+        enemyAttacker.SkillLoadout.Skills.Clear();
+        enemyAttacker.SkillLoadout.Skills.Add(statusPoke.Id);
+        battle.SkillsById[statusPoke.Id] = statusPoke;
+
+        ResolveSkill(battle, statusPoke, enemyAttacker, tauntedAlly);
+
+        Assert.Equal(0, tauntedAlly.Tokens.GetStacks(TokenType.Taunt));
+    }
+
+    [Fact]
+    public void ControlledInstability_ReflectsOnZeroDamageOpposingHit()
+    {
+        var statusPoke = CreateTokenSkill("phase_c_ci_status_poke", SkillTargetKind.OneEnemy, TokenType.Weaken);
+        var battle = CreateNeutralBattle(statusPoke, allyCount: 1, enemyCount: 1);
+        NeutralizeCombatantElements(battle);
+        var shieldedAlly = battle.Allies[0];
+        var enemyAttacker = battle.Enemies[0];
+        shieldedAlly.Tokens.Add(TokenType.ControlledInstability, 2);
+        enemyAttacker.SkillLoadout.Skills.Clear();
+        enemyAttacker.SkillLoadout.Skills.Add(statusPoke.Id);
+        battle.SkillsById[statusPoke.Id] = statusPoke;
+        var enemyHpBefore = enemyAttacker.Health.CurrentHp;
+
+        ResolveSkill(battle, statusPoke, enemyAttacker, shieldedAlly);
+
+        Assert.Equal(
+            enemyHpBefore - (CombatStatusRules.ControlledInstabilityReflectDamagePerStack * 2),
+            enemyAttacker.Health.CurrentHp);
+    }
+
+    [Fact]
     public void Confusion_SwapsEnemySkillToAllyTargets()
     {
         var enemySkill = CreateFixedDamageSkill("phase_c_confusion_enemy", FixedSkillDamage);

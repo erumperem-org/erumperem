@@ -167,6 +167,33 @@ public sealed class PhaseGCombatRulesTests
     }
 
     [Fact]
+    public void ConsecutiveExtraTurnSkills_ReduceChanceByConfiguredDecay()
+    {
+        var extraActionSkill = CreateFixedDamageSkill(
+            "phase_g_bonus_action_decay",
+            NeutralSkillDamage,
+            chanceToNotEndTurn: 1.0);
+        var battle = CreateNeutralBattle(extraActionSkill);
+        var actor = battle.Allies[0];
+        var enemy = battle.Enemies[0];
+        actor.PassiveRuntime.ConsecutiveExtraTurnSkillCount = 5;
+
+        var simulator = new BattleSimulator(new AlwaysZeroRandomSource(), new CombatEventCollector());
+        simulator.ResolveChosenAction(
+            battle,
+            new ChosenAction
+            {
+                Actor = actor,
+                Target = enemy,
+                Skill = extraActionSkill,
+                ActionType = ActionType.Skill,
+            });
+
+        Assert.Equal(0, actor.Tokens.GetStacks(TokenType.BonusAction));
+        Assert.False(BattleSimulator.ShouldActorRetainTurn(actor));
+    }
+
+    [Fact]
     public void FireHasAdvantageOverMetal_AndDisadvantageIntoAnomaly()
     {
         var fireSkill = CreateFixedDamageSkill(

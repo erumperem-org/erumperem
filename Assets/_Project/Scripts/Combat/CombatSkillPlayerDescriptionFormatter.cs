@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Game.Core.Domain;
 using Game.Core.Models;
 using Game.Core.Presentation;
@@ -28,6 +29,7 @@ namespace Erumperem.Combat
                     BattleState = battleState,
                     Actor = actor,
                     PreviewTarget = previewTarget,
+                    SkillsById = battleState?.SkillsById as IReadOnlyDictionary<string, SkillDefinition>,
                 };
             }
 
