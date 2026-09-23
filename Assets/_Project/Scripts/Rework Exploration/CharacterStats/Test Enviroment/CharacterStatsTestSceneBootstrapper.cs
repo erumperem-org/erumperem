@@ -24,7 +24,10 @@ namespace Core.CharacterStats.Testing
         {
             if (_itemRegistry == null)
             {
-                Debug.LogError("[CharacterStatsTestSceneBootstrapper] ItemRegistry not assigned.");
+                Debug.LogError(
+                    "[CharacterStatsTestSceneBootstrapper] ItemRegistry not assigned."
+                );
+
                 return;
             }
 
@@ -34,6 +37,7 @@ namespace Core.CharacterStats.Testing
             foreach (var item in _itemsToRegister)
             {
                 bool alreadyPresent = false;
+
                 for (int i = 0; i < itemsProp.arraySize; i++)
                 {
                     if (itemsProp.GetArrayElementAtIndex(i).objectReferenceValue == item)
@@ -43,18 +47,26 @@ namespace Core.CharacterStats.Testing
                     }
                 }
 
-                if (alreadyPresent) continue;
+                if (alreadyPresent)
+                    continue;
 
                 int index = itemsProp.arraySize;
+
                 itemsProp.arraySize++;
-                itemsProp.GetArrayElementAtIndex(index).objectReferenceValue = item;
+                itemsProp
+                    .GetArrayElementAtIndex(index)
+                    .objectReferenceValue = item;
             }
 
             so.ApplyModifiedProperties();
             EditorUtility.SetDirty(_itemRegistry);
 
-            Debug.Log($"[CharacterStatsTestSceneBootstrapper] Registered {_itemsToRegister.Count} item(s) into '{_itemRegistry.name}'.");
+            Debug.Log(
+                $"[CharacterStatsTestSceneBootstrapper] Registered " +
+                $"{_itemsToRegister.Count} item(s) into '{_itemRegistry.name}'."
+            );
         }
+#endif
 
         public void SpawnTestHarnesses()
         {
@@ -66,12 +78,15 @@ namespace Core.CharacterStats.Testing
             statsTestbedGO.transform.SetParent(transform);
             statsTestbedGO.AddComponent<CharacterStatsTestbed>();
 
-            Debug.Log("[CharacterStatsTestSceneBootstrapper] Test harness GameObjects created as children.");
+            Debug.Log(
+                "[CharacterStatsTestSceneBootstrapper] " +
+                "Test harness GameObjects created as children."
+            );
         }
-#endif
     }
 
 #if UNITY_EDITOR
+
     [CustomEditor(typeof(CharacterStatsTestSceneBootstrapper))]
     public sealed class CharacterStatsTestSceneBootstrapperEditor : Editor
     {
@@ -79,17 +94,25 @@ namespace Core.CharacterStats.Testing
         {
             DrawDefaultInspector();
 
-            var bootstrapper = (CharacterStatsTestSceneBootstrapper)target;
+            var bootstrapper =
+                (CharacterStatsTestSceneBootstrapper)target;
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Scene Setup", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(
+                "Scene Setup",
+                EditorStyles.boldLabel
+            );
 
             if (GUILayout.Button("Register Items In Registry"))
                 bootstrapper.RegisterItemsInRegistry();
 
-            if (GUILayout.Button("Spawn Test Harnesses (ItemEffectTestbed + CharacterStatsTestbed)"))
+            if (GUILayout.Button(
+                    "Spawn Test Harnesses (ItemEffectTestbed + CharacterStatsTestbed)"))
+            {
                 bootstrapper.SpawnTestHarnesses();
+            }
         }
     }
-}
+
 #endif
+}
