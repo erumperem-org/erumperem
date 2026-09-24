@@ -181,6 +181,12 @@ MonoBehaviour:
     volume: 1
     pitch: 1.5
     lastPlayedIndex: -1
+  - name: CombatVictory
+    clips:
+    - {fileID: 8300000, guid: 4c4342020a8059e47b496fe84c405db7, type: 3}
+    volume: 1
+    pitch: 1
+    lastPlayedIndex: -1
   ambientLoops:
   - name: ExplorationAmbience
     clips:
@@ -191,6 +197,8 @@ MonoBehaviour:
   bgmSource: {fileID: 8722633042384705278}
   sfxSource: {fileID: 6236776249860269184}
   ambientSource: {fileID: 413156704740130490}
+  _musicFadeInSeconds: 0.45
+  _battleEndFadeSeconds: 0.8
   mainMixer: {fileID: 24100000, guid: 3f947617aa2247d49b73c5dc9f8a4b7b, type: 2}
 --- !u!82 &8722633042384705278
 AudioSource:

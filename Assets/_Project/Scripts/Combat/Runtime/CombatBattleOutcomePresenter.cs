@@ -38,6 +38,7 @@ namespace Erumperem.Combat.Runtime
 
             _session.BattleEnded = true;
             _session.NeedsPlayerInput = false;
+            AudioManager.instance?.PlayCombatOutcome(_session.State.Winner == Side.Allies);
             clearSkillBarSelection?.Invoke();
             clearAllCombatCheats?.Invoke();
             _session.Simulator.EmitBattleEnded(_session.State);

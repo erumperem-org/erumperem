@@ -15,7 +15,6 @@ using DetectionSystem.Core;
 using Systems.NPC.Enemy.Contracts;
 using Systems.NPC.Enemy.StateMachine;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace Systems.NPC.Enemy
 {
@@ -110,6 +109,7 @@ namespace Systems.NPC.Enemy
 
         private void OnDetectorEnter(Collider detected, string shapeLabel, int shapeIndex)
         {
+            if (SceneTransitionHandler.IsTransitioning) return;
             if (_stateMachine.Is(NpcEnemyState.ReturningToPool)) return;
 
             if (shapeLabel == "Perception" && _stateMachine.Is(NpcEnemyState.Wander) && detected.tag == "Player")
@@ -127,7 +127,6 @@ namespace Systems.NPC.Enemy
                 GameObject.FindAnyObjectByType<ExplorationLoadContext>()?.SaveState();
                 GameObject.FindAnyObjectByType<ExplorationCorruptionSystem>()?.SaveState();
                 GameObject.FindAnyObjectByType<PlayerInventorySaveSystem>()?.SaveAsync();
-                SceneManager.LoadScene("CombatScene");
                 _npcEnemy.NotifyPlayerContact();
             }
 

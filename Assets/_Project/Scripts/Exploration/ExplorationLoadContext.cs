@@ -127,6 +127,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     private bool _hasSave;
     private bool _preferInMemorySnapshotsOnNextRestore;
     private bool _restoreStateInProgress;
+    private bool _restoreScheduled;
+    public bool IsRestoringState => _restoreScheduled || _restoreStateInProgress;
     private bool _saveStateInProgress;
     private string _saveDirectory;
     private float _savedCorruptionValue;
@@ -199,6 +201,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         _manager = null;
         _corruptionSystem = null;
 
+        _restoreScheduled = true;
         StartCoroutine(RestoreNextFrame());
     }
 
@@ -967,8 +970,15 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     private IEnumerator RestoreNextFrame()
     {
         yield return null;
-        CacheVillageSpawnPointsFromActiveScene();
-        TryRestoreOnSceneReady();
+        try
+        {
+            CacheVillageSpawnPointsFromActiveScene();
+            TryRestoreOnSceneReady();
+        }
+        finally
+        {
+            _restoreScheduled = false;
+        }
     }
 
     private void TryRestoreOnSceneReady()

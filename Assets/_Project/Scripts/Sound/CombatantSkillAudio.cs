@@ -32,6 +32,7 @@ namespace Systems.Audio
         [Header("3D Settings")]
         public float minDistance = 2f;
         public float maxDistance = 20f;
+        [SerializeField, Range(0.1f, 3f)] private float _pitch = 1f;
 
         private AudioSource _audioSource;
         private Transform _emitterTransform;
@@ -49,6 +50,8 @@ namespace Systems.Audio
             
             // Força a matemática do 3D Space
             _audioSource.spatialBlend = 1f;
+            _audioSource.dopplerLevel = 0f;
+            _audioSource.pitch = _pitch;
             _audioSource.rolloffMode = AudioRolloffMode.Linear;
             _audioSource.minDistance = minDistance;
             _audioSource.maxDistance = maxDistance;
@@ -81,8 +84,6 @@ namespace Systems.Audio
                 // Sorteia matematicamente uma variação da lista de sons desta skill
                 AudioClip clipToPlay = mapping.skillClips[UnityEngine.Random.Range(0, mapping.skillClips.Length)];
 
-                // Varia levemente o pitch para ataques repetidos não soarem robóticos
-                _audioSource.pitch = UnityEngine.Random.Range(0.9f, 1.1f);
                 _audioSource.PlayOneShot(clipToPlay, mapping.volume);
             }
         }

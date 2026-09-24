@@ -133,6 +133,7 @@ namespace Erumperem.Combat
         private Coroutine _enemyRoundPauseCoroutine;
 
         private bool _isBattleReady;
+        public bool IsSceneReady { get; private set; }
 
         public BattleState BattleState => _runtime.State;
         public BattleSimulator BattleSimulator => _runtime.Simulator;
@@ -372,6 +373,7 @@ namespace Erumperem.Combat
         {
             CancelEnemyRoundPause();
             _isBattleReady = false;
+            IsSceneReady = false;
             _battleOutcomeMonitor.End();
             _debugCheats?.ClearAllCombatCheats();
             if (_runtime.State?.EnemyAlmanac != null)
@@ -531,6 +533,10 @@ namespace Erumperem.Combat
                 yield break;
             }
 
+            IsSceneReady = true;
+            while (SceneTransitionHandler.IsTransitioning)
+                yield return null;
+
             _runtime.Simulator.EmitBattleStarted(_runtime.State);
             _battleOutcomeMonitor.Begin(_runtime.State, _runtime.EventCollector, EndBattle);
             EnsurePhaseGHudPresenters();
@@ -551,7 +557,7 @@ namespace Erumperem.Combat
 
         private void Update()
         {
-            if (!_isBattleReady || _runtime.BattleEnded || _runtime.State == null)
+            if (!_isBattleReady || SceneTransitionHandler.IsTransitioning || _runtime.BattleEnded || _runtime.State == null)
             {
                 ConsumeFrameInputFlags();
                 return;

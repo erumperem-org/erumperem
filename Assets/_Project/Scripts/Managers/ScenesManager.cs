@@ -22,20 +22,18 @@ public class ScenesManager : MonoBehaviour
 
     public void RestartScene()
     {
-        Time.timeScale = 1f;
         Scene currentScene = SceneManager.GetActiveScene();
-        SceneManager.LoadScene(currentScene.name);
+        LoadSceneByName(currentScene.name);
     }
 
     public void LoadNextScene()
     {
-        Time.timeScale = 1f;
         int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
         int nextSceneIndex = currentSceneIndex + 1;
 
         if (nextSceneIndex < SceneManager.sceneCountInBuildSettings)
         {
-            SceneManager.LoadScene(nextSceneIndex);
+            LoadSceneByBuildIndex(nextSceneIndex);
         }
         else
         {
@@ -45,17 +43,17 @@ public class ScenesManager : MonoBehaviour
 
     public void LoadPreviousScene()
     {
-        Time.timeScale = 1f;
         int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
         int previousSceneIndex = currentSceneIndex - 1;
         if (previousSceneIndex >= 0)
         {
-            SceneManager.LoadScene(previousSceneIndex);
+            LoadSceneByBuildIndex(previousSceneIndex);
         }
     }
 
     public void LoadSceneByName(string sceneName)
     {
+        if (SceneTransitionHandler.IsTransitioning) return;
         if (string.IsNullOrWhiteSpace(sceneName))
         {
             Debug.LogError("[ScenesManager] Nome de cena vazio — load cancelado.");
@@ -73,13 +71,14 @@ public class ScenesManager : MonoBehaviour
 
     public void LoadMainMenu()
     {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene("_MainMenu");
+        LoadSceneByName("_MainMenu");
     }
 
     public void LoadSceneByBuildIndex(int buildIndex)
     {
-        SceneManager.LoadScene(buildIndex);
+        if (SceneTransitionHandler.IsTransitioning) return;
+        Time.timeScale = 1f;
+        SceneTransitionHandler.LoadScene(buildIndex);
     }
 
     public String GetCurrentLevelName()

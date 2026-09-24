@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
+using DG.Tweening;
 
 public class AudioManager : MonoBehaviour
 {
@@ -17,6 +19,12 @@ public class AudioManager : MonoBehaviour
     private Playlist currentPlaylist;
     private int lastBGMIndex = -1;
     private bool isBGMPlayingState = false;
+    private Tween _bgmFade;
+    private readonly List<AudioSource> _sfxVoices = new();
+
+    [Header("Music Transitions")]
+    [SerializeField, Min(0f)] private float _musicFadeInSeconds = 0.45f;
+    [SerializeField, Min(0f)] private float _battleEndFadeSeconds = 0.8f;
 
     private void Awake()
     {
@@ -41,9 +49,11 @@ public class AudioManager : MonoBehaviour
 
     public void PlayBGM(string playlistName)
     {
-        Playlist p = Array.Find(bgmPlaylists, x => x.name == playlistName);
-        if (p != null && p.clips.Length > 0)
+        if (bgmSource == null || bgmPlaylists == null) return;
+        Playlist p = Array.Find(bgmPlaylists, x => x != null && x.name == playlistName);
+        if (p != null && p.clips != null && p.clips.Length > 0)
         {
+            _bgmFade?.Kill();
             currentPlaylist = p;
             bgmSource.volume = p.volume;
             bgmSource.pitch = p.pitch;
@@ -53,6 +63,36 @@ public class AudioManager : MonoBehaviour
 
             PlayNextRandomBGM();
         }
+    }
+
+    public void FadeInBGM(string playlistName)
+    {
+        PlayBGM(playlistName);
+        if (bgmSource == null || currentPlaylist == null || currentPlaylist.name != playlistName) return;
+        bgmSource.volume = 0f;
+        _bgmFade = bgmSource.DOFade(currentPlaylist.volume, _musicFadeInSeconds).SetUpdate(true);
+    }
+
+    public void FadeOutBGM(float duration)
+    {
+        _bgmFade?.Kill();
+        isBGMPlayingState = false;
+        if (bgmSource == null) return;
+        _bgmFade = bgmSource.DOFade(0f, Mathf.Max(0f, duration))
+            .SetUpdate(true).OnComplete(() => bgmSource.Stop());
+    }
+
+    public void PlayCombatOutcome(bool victory)
+    {
+        FadeOutBGM(_battleEndFadeSeconds);
+        if (victory) PlaySFX("CombatVictory");
+    }
+
+    private void OnDestroy()
+    {
+        if (instance != this) return;
+        _bgmFade?.Kill();
+        instance = null;
     }
 
     private void PlayNextRandomBGM()
@@ -81,8 +121,6 @@ public class AudioManager : MonoBehaviour
         Sound s = Array.Find(sfxClips, x => x != null && x.name == soundName);
         if (s != null && s.clips != null && s.clips.Length > 0)
         {
-            sfxSource.pitch = s.pitch;
-
             int randomIndex = 0;
 
             if (s.clips.Length > 1)
@@ -96,9 +134,62 @@ public class AudioManager : MonoBehaviour
             s.lastPlayedIndex = randomIndex;
             if (s.clips[randomIndex] != null)
             {
-                sfxSource.PlayOneShot(s.clips[randomIndex], s.volume * volumeMultiplier);
+                var voice = GetAvailableSfxVoice();
+                voice.pitch = s.pitch;
+                voice.PlayOneShot(s.clips[randomIndex], s.volume * volumeMultiplier);
             }
         }
+    }
+
+    private AudioSource GetAvailableSfxVoice()
+    {
+        AudioSource voice = null;
+        if (!sfxSource.isPlaying)
+            voice = sfxSource;
+        else
+        {
+            foreach (var candidate in _sfxVoices)
+            {
+                if (candidate != null && !candidate.isPlaying)
+                {
+                    voice = candidate;
+                    break;
+                }
+            }
+        }
+
+        if (voice == null)
+        {
+            var emitter = new GameObject("SfxVoice");
+            emitter.transform.SetParent(sfxSource.transform, false);
+            voice = emitter.AddComponent<AudioSource>();
+            _sfxVoices.Add(voice);
+        }
+
+        voice.playOnAwake = false;
+        voice.loop = false;
+        voice.dopplerLevel = 0f;
+        if (voice != sfxSource)
+        {
+            voice.outputAudioMixerGroup = sfxSource.outputAudioMixerGroup;
+            voice.volume = sfxSource.volume;
+            voice.mute = sfxSource.mute;
+            voice.priority = sfxSource.priority;
+            voice.panStereo = sfxSource.panStereo;
+            voice.spatialBlend = sfxSource.spatialBlend;
+            voice.spatialize = sfxSource.spatialize;
+            voice.spread = sfxSource.spread;
+            voice.minDistance = sfxSource.minDistance;
+            voice.maxDistance = sfxSource.maxDistance;
+            voice.rolloffMode = sfxSource.rolloffMode;
+            voice.reverbZoneMix = sfxSource.reverbZoneMix;
+            voice.ignoreListenerPause = sfxSource.ignoreListenerPause;
+            voice.ignoreListenerVolume = sfxSource.ignoreListenerVolume;
+            if (sfxSource.rolloffMode == AudioRolloffMode.Custom)
+                voice.SetCustomCurve(AudioSourceCurveType.CustomRolloff,
+                    sfxSource.GetCustomCurve(AudioSourceCurveType.CustomRolloff));
+        }
+        return voice;
     }
 
 
@@ -117,8 +208,9 @@ public class AudioManager : MonoBehaviour
 
     public void StopBGM()
     {
+        _bgmFade?.Kill();
         isBGMPlayingState = false;
-        bgmSource.Stop();
+        if (bgmSource != null) bgmSource.Stop();
     }
 
     public void StopAmbientLoop()

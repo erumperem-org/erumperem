@@ -34,6 +34,8 @@ public class PlayableCharacterController : MonoBehaviour
     public event Action<PlayableCharacters> OnCharacterEnteredInGame;
     public event Action<PlayableCharacters> OnCharacterEnteredCompanion;
     public event Action<PlayableCharacters> OnCharacterEnteredResting;
+    public event Action OnStateRestored;
+    public bool IsLoadingState { get; private set; } = true;
 
     private void Start()
     {
@@ -109,20 +111,30 @@ public class PlayableCharacterController : MonoBehaviour
 
     private async void LoadAndApplyCharactersAsync()
     {
-        CharacterSaveData data = await CharacterPersistenceService.LoadAsync();
-        CharacterVitalsSaveData vitalsData = await CharacterVitalsPersistenceService.LoadAsync();
-
-        if (data == null)
+        IsLoadingState = true;
+        try
         {
-            ApplyInitialRolesWithoutSave();
-            ApplyInitialPositionsWithoutSave();
-        }
-        else
-        {
-            ApplyLoadedData(data);
-        }
+            CharacterSaveData data = await CharacterPersistenceService.LoadAsync();
+            CharacterVitalsSaveData vitalsData = await CharacterVitalsPersistenceService.LoadAsync();
+            if (this == null) return;
 
-        ApplyHealthForAllCharacters(vitalsData);
+            if (data == null)
+            {
+                ApplyInitialRolesWithoutSave();
+                ApplyInitialPositionsWithoutSave();
+            }
+            else
+            {
+                ApplyLoadedData(data);
+            }
+
+            ApplyHealthForAllCharacters(vitalsData);
+            OnStateRestored?.Invoke();
+        }
+        finally
+        {
+            IsLoadingState = false;
+        }
     }
 
     /// <summary>
