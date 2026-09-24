@@ -1,5 +1,22 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &9100000000000001001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3699314557824090624}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4d5d6085cc849e8913183d605cb7de1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.EnemyCombatOutline
+  _outlineMaterial: {fileID: 2100000, guid: 45ca974c78bef03409711fccc00d44d7, type: 2}
+  _outlineColor: {r: 1, g: 0.08, b: 0.06, a: 1}
+  _outlineWidth: 0.025
+  _fadeDuration: 0.15
+  _targetRenderers: []
 --- !u!1001 &4582398518182051665
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -88,6 +105,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c9b97b076edcc7a499995493d2bce5df, type: 3}
       insertIndex: -1
       addedObject: {fileID: -1866436251966989513}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c9b97b076edcc7a499995493d2bce5df, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9100000000000001001}
   m_SourcePrefab: {fileID: 100100000, guid: c9b97b076edcc7a499995493d2bce5df, type: 3}
 --- !u!1 &3699314557824090624 stripped
 GameObject:

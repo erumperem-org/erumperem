@@ -11,8 +11,8 @@ Shader "Custom/Interaction Outline"
         Tags
         {
             "RenderPipeline" = "UniversalPipeline"
-            "RenderType" = "Opaque"
-            "Queue" = "Geometry+1"
+            "RenderType" = "Transparent"
+            "Queue" = "Transparent"
         }
 
         Pass

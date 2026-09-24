@@ -1,5 +1,22 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &9100000000000001001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5458582549957236898}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4d5d6085cc849e8913183d605cb7de1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.EnemyCombatOutline
+  _outlineMaterial: {fileID: 2100000, guid: 45ca974c78bef03409711fccc00d44d7, type: 2}
+  _outlineColor: {r: 1, g: 0.08, b: 0.06, a: 1}
+  _outlineWidth: 0.025
+  _fadeDuration: 0.15
+  _targetRenderers: []
 --- !u!1 &5458582549957236898
 GameObject:
   m_ObjectHideFlags: 0
@@ -21,6 +38,7 @@ GameObject:
   - component: {fileID: 7290284521460130129}
   - component: {fileID: 5829471058123456791}
   - component: {fileID: 5829471058123456792}
+  - component: {fileID: 9100000000000001001}
   m_Layer: 0
   m_Name: Exploration Enemy
   m_TagString: Untagged
