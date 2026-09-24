@@ -19,6 +19,8 @@ public class SceneTransitionHandler : MonoBehaviour
     private static SceneTransitionHandler instance;
     private static bool isSceneLoadInProgress;
 
+    public static bool IsSceneLoadInProgress => isSceneLoadInProgress;
+
     void Awake()
     {
         if (instance == null)
@@ -37,7 +39,15 @@ public class SceneTransitionHandler : MonoBehaviour
         }
         else
         {
-            Destroy(gameObject);
+            Destroy(this);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (instance == this)
+        {
+            instance = null;
         }
     }
 
@@ -170,6 +180,11 @@ public class SceneTransitionHandler : MonoBehaviour
         if (isSceneLoadInProgress)
         {
             Debug.LogWarning($"[SceneTransitionHandler] Load de '{sceneName}' ignorado — outro load já está em curso.");
+            if (ScenesManager.IsCombatSceneName(sceneName))
+            {
+                CombatSceneLoadCoordinator.CancelCombatSceneLoadAttempt();
+            }
+
             return;
         }
 
@@ -185,6 +200,12 @@ public class SceneTransitionHandler : MonoBehaviour
         isSceneLoadInProgress = true;
         SceneManager.LoadScene(sceneName);
         isSceneLoadInProgress = false;
+
+        if (ScenesManager.IsCombatSceneName(sceneName))
+        {
+            CombatSceneLoadCoordinator.NotifyCombatSceneLoadFinished(SceneManager.GetActiveScene());
+            CombatOverworldFlowDiagnostics.LogActiveScene("SceneTransitionHandler load síncrono completo");
+        }
     }
 
     public static void LoadScene(int sceneBuildIndex)
@@ -232,19 +253,40 @@ public class SceneTransitionHandler : MonoBehaviour
                     .WaitForCompletion();
             }
 
+            if (ScenesManager.IsCombatSceneName(sceneName))
+            {
+                CombatOverworldFlowDiagnostics.LogPhase(
+                    "SceneTransitionHandler",
+                    $"LoadSceneAsync('{sceneName}') a iniciar (fade concluído)");
+            }
+
             AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
             if (asyncLoad == null)
             {
-                Debug.LogError($"[SceneTransitionHandler] Falha ao carregar cena '{sceneName}'.");
+                CombatOverworldFlowDiagnostics.LogError(
+                    "SceneTransitionHandler",
+                    $"LoadSceneAsync falhou para '{sceneName}'");
                 yield break;
             }
 
             while (!asyncLoad.isDone)
+            {
                 yield return null;
+            }
+
+            if (ScenesManager.IsCombatSceneName(sceneName))
+            {
+                CombatOverworldFlowDiagnostics.LogActiveScene("SceneTransitionHandler load completo");
+            }
         }
         finally
         {
             isSceneLoadInProgress = false;
+
+            if (ScenesManager.IsCombatSceneName(sceneName))
+            {
+                CombatSceneLoadCoordinator.NotifyCombatSceneLoadFinished(SceneManager.GetActiveScene());
+            }
         }
     }
 

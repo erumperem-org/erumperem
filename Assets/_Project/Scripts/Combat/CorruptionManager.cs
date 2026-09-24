@@ -27,7 +27,7 @@ namespace Erumperem.Combat
         {
             if (Instance != null && Instance != this)
             {
-                Destroy(gameObject);
+                Destroy(this);
                 return;
             }
 

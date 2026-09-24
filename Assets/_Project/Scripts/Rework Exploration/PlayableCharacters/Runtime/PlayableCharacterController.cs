@@ -30,6 +30,7 @@ public class PlayableCharacterController : MonoBehaviour
     public PlayableCharacters InGameCharacter => GetCharacter(InGameCharacterId);
     public PlayableCharacters CompanionCharacter => GetCharacter(CompanionCharacterId);
     public PlayableCharacters RestingCharacter => GetCharacter(RestingCharacterId);
+    public IReadOnlyList<PlayableCharacters> Roster => characters;
 
     public event Action<PlayableCharacters> OnCharacterEnteredInGame;
     public event Action<PlayableCharacters> OnCharacterEnteredCompanion;
@@ -228,6 +229,11 @@ public class PlayableCharacterController : MonoBehaviour
 
         foreach (var character in characters)
         {
+            if (character == null || string.IsNullOrWhiteSpace(character.CharacterId))
+            {
+                continue;
+            }
+
             data.Records.Add(new CharacterSaveRecord
             {
                 Id = character.CharacterId,
@@ -236,7 +242,7 @@ public class PlayableCharacterController : MonoBehaviour
                 Rotation = character.transform.rotation
             });
 
-            if (character.HealthBar != null)
+            if (character.HealthBar?.Model != null)
             {
                 vitalsData.Records.Add(new CharacterVitalsRecord
                 {
@@ -258,6 +264,76 @@ public class PlayableCharacterController : MonoBehaviour
     public void Save()
     {
         SaveAsync();
+    }
+
+    /// <summary>
+    /// Restaura papéis, posição e HP a partir dos snapshots de exploração
+    /// (retorno de combate via <see cref="ExplorationLoadContext"/>).
+    /// </summary>
+    public void ApplyExplorationSnapshots(
+        IReadOnlyList<PlayableCharacterSnapshot> snapshots,
+        Func<string, float> resolveMaxHealth)
+    {
+        if (snapshots == null || snapshots.Count == 0 || resolveMaxHealth == null)
+        {
+            return;
+        }
+
+        foreach (var playableCharacter in characters)
+        {
+            if (playableCharacter == null)
+            {
+                continue;
+            }
+
+            var snapshot = FindSnapshotForCharacter(playableCharacter.CharacterId, snapshots);
+            if (snapshot == null)
+            {
+                continue;
+            }
+
+            playableCharacter.Teleport(snapshot.Position, snapshot.Rotation);
+
+            if (playableCharacter.HealthBar != null)
+            {
+                var maxHealth = resolveMaxHealth(playableCharacter.CharacterId);
+                playableCharacter.HealthBar.LoadState(
+                    maxHealth,
+                    Mathf.Clamp(snapshot.CurrentHealth, 0f, maxHealth));
+            }
+
+            if (snapshot.State == PlayableCharacterState.Main)
+            {
+                AssignInGame(playableCharacter);
+            }
+            else if (snapshot.State == PlayableCharacterState.Companion)
+            {
+                AssignCompanion(playableCharacter);
+            }
+            else
+            {
+                AssignResting(playableCharacter);
+            }
+        }
+
+        RefreshCompanionFollowTarget();
+    }
+
+    private static PlayableCharacterSnapshot FindSnapshotForCharacter(
+        string characterId,
+        IReadOnlyList<PlayableCharacterSnapshot> snapshots)
+    {
+        for (var snapshotIndex = 0; snapshotIndex < snapshots.Count; snapshotIndex++)
+        {
+            var snapshot = snapshots[snapshotIndex];
+            if (snapshot != null
+                && string.Equals(snapshot.CharacterName, characterId, StringComparison.OrdinalIgnoreCase))
+            {
+                return snapshot;
+            }
+        }
+
+        return null;
     }
 
 #if UNITY_EDITOR

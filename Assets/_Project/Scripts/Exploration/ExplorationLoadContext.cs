@@ -248,9 +248,27 @@ public sealed class ExplorationLoadContext : MonoBehaviour
             return false;
         }
 
-        return string.Equals(scene.name, _explorationSceneName, StringComparison.Ordinal)
-            || (string.Equals(_explorationSceneName, "Overworld", StringComparison.Ordinal)
-                && string.Equals(scene.name, "OverorldMerge", StringComparison.Ordinal));
+        return ExplorationSceneNames.MatchesConfiguredExplorationScene(scene.name, _explorationSceneName);
+    }
+
+    public string ConfiguredExplorationSceneName => _explorationSceneName;
+
+    /// <summary>
+    /// Associa esta instância DontDestroyOnLoad à cena de exploração activa (ex.: REWORKING_Overworld).
+    /// </summary>
+    public void ConfigureForExplorationScene(
+        string explorationSceneName,
+        AllyCharacterStatCatalog allyCharacterStatCatalog = null)
+    {
+        if (!string.IsNullOrWhiteSpace(explorationSceneName))
+        {
+            _explorationSceneName = explorationSceneName;
+        }
+
+        if (allyCharacterStatCatalog != null)
+        {
+            _allyCharacterStatCatalog = allyCharacterStatCatalog;
+        }
     }
 
     // ── API pública ───────────────────────────────────────────────────────
@@ -261,8 +279,6 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     /// </summary>
     public async void SaveState()
     {
-        if (!TryGetManager()) return;
-
         if (_saveStateInProgress)
         {
             LoggerService.PrintLogMessage(LogLevel.Debug,
@@ -274,37 +290,12 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         _saveStateInProgress = true;
         try
         {
-            _snapshots.Clear();
-            foreach (var character in _manager.Playables)
+            if (!TryCaptureSnapshotsFromActiveExplorationSystem())
             {
-                if (character == null)
-                {
-                    continue;
-                }
-
-                var healthBar = character.HealthBar;
-                if (healthBar == null)
-                {
-                    LoggerService.PrintLogMessage(LogLevel.Warning,
-                        $"[SAVE] '{character.CharacterName}' não possui HealthBar — HP ignorado.",
-                        LogCategory.Player);
-                }
-
-                var maxHealth = ResolveAllyMaxHealth(character.CharacterName);
-                var currentHealth = healthBar != null
-                    ? Mathf.Clamp(healthBar.CurrentHealth, 0f, maxHealth)
-                    : maxHealth;
-
-                var stateToSave = character.CurrentState == PlayableCharacterState.None
-                    ? ResolveDefaultExplorationState(character.CharacterName)
-                    : character.CurrentState;
-
-                _snapshots.Add(new PlayableCharacterSnapshot(
-                    character.CharacterName,
-                    character.Transform.position,
-                    character.Transform.rotation,
-                    stateToSave,
-                    currentHealth));
+                LoggerService.PrintLogMessage(LogLevel.Warning,
+                    "[SAVE] Nenhum sistema de personagens de exploração encontrado — save ignorado.",
+                    LogCategory.Player);
+                return;
             }
 
             _savedCorruptionValue = ResolveCurrentCorruptionValue();
@@ -324,6 +315,67 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 LoggerService.PrintLogMessage(LogLevel.Debug,
                     $"[SAVE] Corrupção ({_savedCorruptionValue:F1}) persistida no save de exploração.",
                     LogCategory.Player);
+        }
+        finally
+        {
+            _saveStateInProgress = false;
+        }
+    }
+
+    /// <summary>
+    /// Captura party/HP/corrupção de forma síncrona antes de carregar a CombatScene.
+    /// Usado pelo <see cref="CombatExplorationBridge"/> — não depende de <see cref="SaveState"/>
+    /// completar (evita race com saves async do overworld rework).
+    /// </summary>
+    public bool CaptureExplorationStateBeforeCombatEntry()
+    {
+        if (!TryCaptureSnapshotsFromActiveExplorationSystem())
+        {
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[SAVE] CaptureExplorationStateBeforeCombatEntry: nenhum sistema de exploração encontrado.",
+                LogCategory.Player);
+            return false;
+        }
+
+        _savedCorruptionValue = ResolveCurrentCorruptionValue();
+        _hasSave = _snapshots.Count > 0;
+        RememberExplorationStateAtCombatEntry();
+
+        if (!_hasSave)
+        {
+            return false;
+        }
+
+        if (!_saveStateInProgress)
+        {
+            _ = PersistExplorationStateAfterCombatEntryCaptureAsync();
+        }
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[SAVE] Estado capturado para combate ({_snapshots.Count} personagens, corrupção {_savedCorruptionValue:F1}).",
+            LogCategory.Player);
+
+        CombatEntrySnapshotCache.StoreFromExplorationLoadContext(this);
+        return true;
+    }
+
+    async Task PersistExplorationStateAfterCombatEntryCaptureAsync()
+    {
+        if (_saveStateInProgress)
+        {
+            return;
+        }
+
+        _saveStateInProgress = true;
+        try
+        {
+            await SaveToFileAsync();
+
+            if (_corruptionSystem != null)
+            {
+                _corruptionSystem.Corruption = _savedCorruptionValue;
+                _corruptionSystem.SaveState();
+            }
         }
         finally
         {
@@ -384,7 +436,10 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
     public async Task RestoreStateAsync()
     {
-        if (!TryGetManager()) return;
+        if (!TryGetActiveExplorationSystem(out var usesLegacyManager, out var reworkController))
+        {
+            return;
+        }
 
         if (_restoreStateInProgress)
         {
@@ -424,7 +479,15 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
             if (shouldApplySavedSnapshots)
             {
-                ApplySnapshots();
+                if (usesLegacyManager)
+                {
+                    ApplySnapshots();
+                }
+                else
+                {
+                    ApplySnapshotsToReworkController(reworkController);
+                }
+
                 PersistCorruptionToDedicatedSaveFile();
             }
             else
@@ -437,7 +500,15 @@ public sealed class ExplorationLoadContext : MonoBehaviour
                 }
 
                 CacheVillageSpawnPointsFromActiveScene();
-                ApplyDefaultSetups();
+
+                if (usesLegacyManager)
+                {
+                    ApplyDefaultSetups();
+                }
+                else
+                {
+                    ApplySavedCorruptionValue(_savedCorruptionValue);
+                }
             }
         }
         finally
@@ -482,11 +553,16 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     /// Usado pela CombatScene ao dar play directo, sem passar pelo Overworld.
     /// </summary>
     public static ExplorationLoadContext EnsureRuntimeInstance(
-        AllyCharacterStatCatalog allyCharacterStatCatalog = null)
+        AllyCharacterStatCatalog allyCharacterStatCatalog = null,
+        string explorationSceneName = null)
     {
         if (Instance != null)
         {
-            if (allyCharacterStatCatalog != null)
+            if (!string.IsNullOrWhiteSpace(explorationSceneName))
+            {
+                Instance.ConfigureForExplorationScene(explorationSceneName, allyCharacterStatCatalog);
+            }
+            else if (allyCharacterStatCatalog != null)
             {
                 Instance.AssignAllyCharacterStatCatalog(allyCharacterStatCatalog);
             }
@@ -497,12 +573,19 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         var runtimeHost = new GameObject("[Runtime] ExplorationLoadContext");
         var runtimeContext = runtimeHost.AddComponent<ExplorationLoadContext>();
 
-        if (allyCharacterStatCatalog != null)
-        {
-            runtimeContext.AssignAllyCharacterStatCatalog(allyCharacterStatCatalog);
-        }
+        var activeScene = SceneManager.GetActiveScene();
+        var resolvedSceneName = !string.IsNullOrWhiteSpace(explorationSceneName)
+            ? explorationSceneName
+            : ExplorationSceneNames.IsOverworldExplorationScene(activeScene.name)
+                ? activeScene.name
+                : null;
 
-        Debug.Log("[Save] ExplorationLoadContext criado em runtime (play directo na CombatScene).");
+        runtimeContext.ConfigureForExplorationScene(resolvedSceneName, allyCharacterStatCatalog);
+
+        Debug.Log(
+            resolvedSceneName != null
+                ? $"[Save] ExplorationLoadContext criado em runtime (exploração: {resolvedSceneName})."
+                : "[Save] ExplorationLoadContext criado em runtime (play directo na CombatScene).");
         return Instance ?? runtimeContext;
     }
 
@@ -518,6 +601,15 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     public async Task EnsureSaveLoadedFromDiskAsync()
     {
         EnsureSaveDirectoryInitialized();
+
+        if (_hasSave && _snapshots.Count > 0)
+        {
+            Debug.Log(
+                $"[Save] Snapshots já em memória ({_snapshots.Count}) — leitura do disco ignorada " +
+                $"(corrupção {_savedCorruptionValue:F1}).");
+            return;
+        }
+
         await LoadFromFileAsync();
 
         Debug.Log(
@@ -572,6 +664,81 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     public IReadOnlyList<string> GetCombatAllyCharacterNamesFromSnapshots()
     {
         return CombatPartyResolver.BuildPartyNamesFromSnapshots(_snapshots);
+    }
+
+    public int SnapshotCountForCombatEntry => _snapshots?.Count ?? 0;
+
+    public float SavedCorruptionValueForCombatEntry => _savedCorruptionValue;
+
+    public AllyCharacterStatCatalog AllyCharacterStatCatalogForCombat => _allyCharacterStatCatalog;
+
+    public List<PlayableCharacterSnapshot> CopySnapshotsForCombatEntryCache()
+    {
+        return new List<PlayableCharacterSnapshot>(_snapshots);
+    }
+
+    public void RestoreSnapshotsFromCombatEntryCache(
+        IReadOnlyList<PlayableCharacterSnapshot> snapshots,
+        float corruptionValue)
+    {
+        _snapshots = snapshots != null
+            ? new List<PlayableCharacterSnapshot>(snapshots)
+            : new List<PlayableCharacterSnapshot>();
+        _savedCorruptionValue = corruptionValue;
+        _hasSave = _snapshots.Count > 0;
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[SAVE] Snapshots restaurados do cache de entrada em combate ({_snapshots.Count}, corrupção {_savedCorruptionValue:F1}).",
+            LogCategory.Player);
+    }
+
+    public async Task WaitUntilSaveOperationsCompleteAsync()
+    {
+        const int maximumWaitMilliseconds = 8000;
+        var waitedMilliseconds = 0;
+
+        while (_saveStateInProgress && waitedMilliseconds < maximumWaitMilliseconds)
+        {
+            await Task.Yield();
+            waitedMilliseconds += 16;
+        }
+    }
+
+    public async Task FlushExplorationSaveToDiskForCombatEntryAsync()
+    {
+        EnsureSaveDirectoryInitialized();
+
+        if (_snapshots.Count == 0)
+        {
+            return;
+        }
+
+        await WaitUntilSaveOperationsCompleteAsync();
+        await SaveToFileAsync();
+    }
+
+    /// <summary>
+    /// Na CombatScene: lê sempre o disco primeiro; se vazio, usa cache da captura pre-load.
+    /// </summary>
+    public async Task LoadExplorationSaveForCombatStartAsync()
+    {
+        EnsureSaveDirectoryInitialized();
+
+        await LoadFromFileAsync();
+
+        if (_snapshots.Count == 0)
+        {
+            CombatEntrySnapshotCache.ApplyToExplorationLoadContextIfNeeded(this);
+        }
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[SAVE] Combate: save pronto ({_snapshots.Count} snapshots, corrupção {_savedCorruptionValue:F1}).",
+            LogCategory.Player);
+
+        CombatOverworldFlowDiagnostics.LogPhase(
+            "ExplorationLoadContext.LoadExplorationSaveForCombatStartAsync",
+            $"{_snapshots.Count} snapshots, corrupção {_savedCorruptionValue:F1}, " +
+            $"party-cache={(CombatEntrySnapshotCache.HasSnapshots ? "sim" : "não")}");
     }
 
     /// <summary>
@@ -872,6 +1039,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         {
             _corruptionSystem.Corruption = Mathf.Clamp(_savedCorruptionValue, 0f, _corruptionSystem.MaxCorruption);
         }
+
+        ReworkExplorationStateAdapter.TryApplySavedCorruptionToReworkBar(_savedCorruptionValue);
     }
 
     public void PersistCorruptionToDedicatedSaveFile()
@@ -968,14 +1137,47 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     {
         yield return null;
         CacheVillageSpawnPointsFromActiveScene();
-        TryRestoreOnSceneReady();
+
+        if (TryGetManagerQuiet())
+        {
+            TryRestoreOnSceneReady();
+            yield break;
+        }
+
+        if (ReworkExplorationStateAdapter.TryFindReworkController(out _))
+        {
+            yield return WaitForReworkControllerInitialization();
+            TryRestoreOnSceneReady();
+        }
+    }
+
+    private IEnumerator WaitForReworkControllerInitialization()
+    {
+        const int maximumWaitFrames = 120;
+
+        for (var frameIndex = 0; frameIndex < maximumWaitFrames; frameIndex++)
+        {
+            if (ReworkExplorationStateAdapter.TryFindReworkController(out var reworkController)
+                && reworkController.InGameCharacter != null)
+            {
+                yield break;
+            }
+
+            yield return null;
+        }
     }
 
     private void TryRestoreOnSceneReady()
     {
         TryResolveCorruptionSystemFromScene();
         CacheVillageSpawnPointsFromActiveScene();
-        if (!TryGetManager()) return;
+
+        if (!TryGetManagerQuiet()
+            && !ReworkExplorationStateAdapter.TryFindReworkController(out _))
+        {
+            return;
+        }
+
         RestoreState();
     }
 
@@ -1267,6 +1469,11 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         if (_corruptionSystem != null)
         {
             return _corruptionSystem.Corruption;
+        }
+
+        if (ReworkExplorationStateAdapter.TryResolveReworkCorruptionValue(out var reworkCorruptionValue))
+        {
+            return reworkCorruptionValue;
         }
 
         return _savedCorruptionValue;
@@ -1577,7 +1784,9 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         return null;
     }
 
-    private bool TryGetManager()
+    private bool TryGetManager() => TryGetManagerQuiet(logErrorIfMissing: true);
+
+    private bool TryGetManagerQuiet(bool logErrorIfMissing = false)
     {
         if (_manager != null && !_manager.gameObject.scene.isLoaded)
         {
@@ -1591,12 +1800,122 @@ public sealed class ExplorationLoadContext : MonoBehaviour
 
         if (_manager == null)
         {
-            LoggerService.PrintLogMessage(LogLevel.Error,
-                "[LOAD] PlayableCharactersManager não encontrado na cena.", LogCategory.Player);
+            if (logErrorIfMissing)
+            {
+                LoggerService.PrintLogMessage(LogLevel.Error,
+                    "[LOAD] PlayableCharactersManager não encontrado na cena.", LogCategory.Player);
+            }
+
             return false;
         }
 
         return true;
+    }
+
+    private bool TryGetActiveExplorationSystem(
+        out bool usesLegacyManager,
+        out PlayableCharacterController reworkController)
+    {
+        usesLegacyManager = TryGetManagerQuiet();
+        reworkController = null;
+
+        if (usesLegacyManager)
+        {
+            return true;
+        }
+
+        return ReworkExplorationStateAdapter.TryFindReworkController(out reworkController);
+    }
+
+    private bool TryCaptureSnapshotsFromActiveExplorationSystem()
+    {
+        var capturedSnapshots = new List<PlayableCharacterSnapshot>();
+
+        if (TryGetManagerQuiet())
+        {
+            foreach (var character in _manager.Playables)
+            {
+                if (character == null)
+                {
+                    continue;
+                }
+
+                var healthBar = character.HealthBar;
+                if (healthBar == null)
+                {
+                    LoggerService.PrintLogMessage(LogLevel.Warning,
+                        $"[SAVE] '{character.CharacterName}' não possui HealthBar — HP ignorado.",
+                        LogCategory.Player);
+                }
+
+                var maxHealth = ResolveAllyMaxHealth(character.CharacterName);
+                var currentHealth = healthBar != null
+                    ? Mathf.Clamp(healthBar.CurrentHealth, 0f, maxHealth)
+                    : maxHealth;
+
+                var stateToSave = character.CurrentState == PlayableCharacterState.None
+                    ? ResolveDefaultExplorationState(character.CharacterName)
+                    : character.CurrentState;
+
+                capturedSnapshots.Add(new PlayableCharacterSnapshot(
+                    character.CharacterName,
+                    character.Transform.position,
+                    character.Transform.rotation,
+                    stateToSave,
+                    currentHealth));
+            }
+        }
+        else if (ReworkExplorationStateAdapter.TryFindReworkController(out var reworkController))
+        {
+            if (!ReworkExplorationStateAdapter.TryCaptureSnapshotsFromReworkController(
+                    reworkController,
+                    ResolveAllyMaxHealth,
+                    capturedSnapshots))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return false;
+        }
+
+        if (capturedSnapshots.Count == 0)
+        {
+            return false;
+        }
+
+        _snapshots.Clear();
+        _snapshots.AddRange(capturedSnapshots);
+        return true;
+    }
+
+    private void ApplySnapshotsToReworkController(PlayableCharacterController reworkController)
+    {
+        if (reworkController == null)
+        {
+            if (!ReworkExplorationStateAdapter.TryFindReworkController(out reworkController))
+            {
+                return;
+            }
+        }
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            $"[HEAL-DEBUG] [LOAD] ApplySnapshotsToReworkController: {_snapshots.Count} snapshots, " +
+            $"corrupção {_savedCorruptionValue:F1}.",
+            LogCategory.Player);
+
+        IsApplyingSavedExplorationState = true;
+        try
+        {
+            reworkController.ApplyExplorationSnapshots(_snapshots, ResolveAllyMaxHealth);
+            ApplySavedCorruptionValue(_savedCorruptionValue);
+            NotifyExplorationStateApplied();
+        }
+        finally
+        {
+            IsApplyingSavedExplorationState = false;
+        }
     }
 
     /// <summary>

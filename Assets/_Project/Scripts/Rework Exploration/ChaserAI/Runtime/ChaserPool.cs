@@ -30,6 +30,8 @@ public class ChaserPool : MonoBehaviour
 
     public int PoolSize => chasers.Count;
 
+    public IReadOnlyList<ChaserAI> GetManagedChasers() => chasers;
+
     private void OnEnable()
     {
         if (playableCharacterController != null)

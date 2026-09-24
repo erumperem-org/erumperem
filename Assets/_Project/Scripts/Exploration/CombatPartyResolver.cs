@@ -81,6 +81,19 @@ public static class CombatPartyResolver
             }
         }
 
+        if (ReworkExplorationStateAdapter.TryFindReworkController(out var reworkController)
+            && ReworkExplorationStateAdapter.TryGetReworkPartyCharacterNames(
+                reworkController,
+                out mainCharacterName,
+                out companionCharacterName))
+        {
+            var partyFromReworkController = BuildOrderedPartyList(mainCharacterName, companionCharacterName);
+            if (partyFromReworkController.Count > 0)
+            {
+                return NormalizeCombatParty(partyFromReworkController);
+            }
+        }
+
         var fallbackPartyFromSnapshots = TryGetPartyFromExplorationSnapshots();
         if (fallbackPartyFromSnapshots.Count > 0)
         {

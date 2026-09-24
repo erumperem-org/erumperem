@@ -88,7 +88,8 @@ namespace Erumperem.Progression
         {
             if (Instance != null && Instance != this)
             {
-                Destroy(gameObject);
+                // Só remove este componente — CombatLogic partilha o GO com CombatPrototypeController.
+                Destroy(this);
                 return;
             }
 

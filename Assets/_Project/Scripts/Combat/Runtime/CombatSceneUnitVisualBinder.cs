@@ -82,8 +82,9 @@ namespace Erumperem.Combat.Runtime
                         if (instantiatedAllyRoot != null)
                         {
                             allyViewRoot = instantiatedAllyRoot;
-                            Debug.Log(
-                                $"CombatPrototypeController: modelo '{characterName}' instanciado em {slotRoot.name}.",
+                            CombatOverworldFlowDiagnostics.LogPhase(
+                                "CombatSceneUnitVisualBinder",
+                                $"aliado '{characterName}' instanciado em {slotRoot.name}",
                                 allyCharacterStatDefinition.BattlePrefab);
                         }
                         else
@@ -163,6 +164,17 @@ namespace Erumperem.Combat.Runtime
                     TrySpawnRandomCatalogEnemyAtSlot(slotRoot, enemy, out var catalogEnemyViewRoot))
                 {
                     enemyViewRoot = catalogEnemyViewRoot;
+                    CombatOverworldFlowDiagnostics.LogPhase(
+                        "CombatSceneUnitVisualBinder",
+                        $"inimigo slot {enemyIndex + 1} ← catálogo '{enemyViewRoot.name}'",
+                        _settings.LogContext);
+                }
+                else if (_settings.SpawnEnemyModelsFromCatalog)
+                {
+                    CombatOverworldFlowDiagnostics.LogWarning(
+                        "CombatSceneUnitVisualBinder",
+                        $"inimigo slot {enemyIndex + 1} sem spawn de catálogo (catalogNull={_settings.EnemyVisualSpawnCatalog == null})",
+                        _settings.LogContext);
                 }
 
                 if (hasHorseBossEncounter && enemyIndex == horseBossEnemySlotIndex)

@@ -29,6 +29,8 @@ public class ChaserAI : MonoBehaviour
 
     public event Action OnTargetCaught;
 
+    private bool _hasCaughtTarget;
+
     private void Awake()
     {
         movement = GetComponent<PhysicsMovementService>();
@@ -171,8 +173,53 @@ public class ChaserAI : MonoBehaviour
 
     private void HandleTargetCaught()
     {
+        if (_hasCaughtTarget)
+        {
+            return;
+        }
+
+        _hasCaughtTarget = true;
         movement.SetMoveDirection(Vector3.zero);
+        CombatOverworldFlowDiagnostics.LogPhase("ChaserAI", $"captura — {name}", this);
         OnTargetCaught?.Invoke();
+    }
+
+    /// <summary>
+    /// Permite nova captura se a entrada em combate falhou (ex.: load bloqueado).
+    /// </summary>
+    public void ResetCatchStateForCombatRetry()
+    {
+        _hasCaughtTarget = false;
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (CurrentState != ChaserState.Chasing)
+        {
+            return;
+        }
+
+        if (!IsPlayerCollision(collision.collider))
+        {
+            return;
+        }
+
+        HandleTargetCaught();
+    }
+
+    private static bool IsPlayerCollision(Collider collider)
+    {
+        if (collider == null)
+        {
+            return false;
+        }
+
+        if (collider.CompareTag("Player"))
+        {
+            return true;
+        }
+
+        return collider.GetComponentInParent<PlayableCharacter>() != null;
     }
 
     // ------------------------------------------------------------------

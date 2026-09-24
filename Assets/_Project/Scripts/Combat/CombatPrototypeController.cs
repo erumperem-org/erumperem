@@ -18,6 +18,7 @@ using Game.Core.Engine;
 using Game.Core.Items;
 using Game.Core.Models;
 using Game.Core.Progression;
+using Services.DebugUtilities;
 using Unity.Cinemachine;
 using UnityEngine;
 
@@ -133,12 +134,15 @@ namespace Erumperem.Combat
         private Coroutine _enemyRoundPauseCoroutine;
 
         private bool _isBattleReady;
+        private bool _combatSessionInitializationStarted;
 
         public BattleState BattleState => _runtime.State;
         public BattleSimulator BattleSimulator => _runtime.Simulator;
         public Combatant CurrentSelectedEnemy => _runtime.SelectedEnemyTarget;
 
         public bool IsBattleOngoing => _isBattleReady && _runtime.IsBattleOngoing;
+
+        public bool IsBattleSessionReady => _isBattleReady;
 
         public bool IsActionPresentationOngoing => _runtime.IsActionPresentationOngoing;
 
@@ -287,19 +291,66 @@ namespace Erumperem.Combat
 
         private void Awake()
         {
+            CombatOverworldFlowDiagnostics.LogPhase(
+                "CombatPrototypeController.Awake",
+                $"GO='{gameObject.name}', scene='{gameObject.scene.name}', enabled={enabled}",
+                this);
+
             HealDebugTrace.OnLog = static message => Debug.Log(message);
             EnsureCollaboratorsCreated();
             _pointerRaycast.Configure(Camera.main);
             if (_pointerRaycast.MainCamera == null)
             {
-                Debug.LogError("CombatPrototypeController: defina a Main Camera na cena.");
+                CombatOverworldFlowDiagnostics.LogError(
+                    "CombatPrototypeController.Awake",
+                    "Main Camera não encontrada",
+                    this);
             }
         }
 
-        private void OnEnable() => SubscribeToInputEvents();
+        private void OnEnable()
+        {
+            CombatOverworldFlowDiagnostics.LogPhase("CombatPrototypeController.OnEnable", null, this);
+            SubscribeToInputEvents();
+        }
 
         private void Start()
         {
+            TryBeginCombatSessionInitialization("UnityStart");
+        }
+
+        /// <summary>
+        /// Inicializa BattleState e coroutine de bind (Unity Start ou bootstrap pós-load).
+        /// </summary>
+        public void TryBeginCombatSessionInitialization(string triggerSource)
+        {
+            if (_combatSessionInitializationStarted)
+            {
+                CombatOverworldFlowDiagnostics.LogPhase(
+                    "CombatPrototypeController",
+                    $"init já em curso/concluída — skip ({triggerSource})",
+                    this);
+                return;
+            }
+
+            if (!isActiveAndEnabled)
+            {
+                CombatOverworldFlowDiagnostics.LogWarning(
+                    "CombatPrototypeController",
+                    $"init cancelada — componente inactivo ({triggerSource})",
+                    this);
+                return;
+            }
+
+            _combatSessionInitializationStarted = true;
+            CombatOverworldFlowDiagnostics.LogPhase(
+                "CombatPrototypeController.TryBeginCombatSessionInitialization",
+                triggerSource,
+                this);
+
+            EnsureCombatCatalogReferences();
+            RefreshSceneUnitVisualBinder();
+
             var dataDir = Path.Combine(Application.streamingAssetsPath, "Data");
             var skillsPath = Path.Combine(dataDir, "skills.json");
             var skillTreesPath = Path.Combine(dataDir, "skill_trees.json");
@@ -308,12 +359,20 @@ namespace Erumperem.Combat
 
             if (!File.Exists(skillsPath) || !File.Exists(skillTreesPath) || !File.Exists(passivesPath))
             {
-                Debug.LogError(
-                    $"Faltam JSON em StreamingAssets. Esperado: {skillsPath}, {skillTreesPath}, {passivesPath}. " +
-                    "Exporte o catálogo com Erumperem/Combat/Export Catalog.");
+                CombatOverworldFlowDiagnostics.LogError(
+                    "CombatPrototypeController.Start",
+                    $"JSON em StreamingAssets em falta (skills={File.Exists(skillsPath)}, " +
+                    $"trees={File.Exists(skillTreesPath)}, passives={File.Exists(passivesPath)})",
+                    this);
+                _combatSessionInitializationStarted = false;
                 enabled = false;
                 return;
             }
+
+            CombatOverworldFlowDiagnostics.LogPhase(
+                "CombatPrototypeController.Start",
+                "JSON StreamingAssets OK — a criar BattleState",
+                this);
 
             var skills = CombatDataLoader.LoadSkills(skillsPath).ToList();
             var passives = CombatDataLoader.LoadPassives(passivesPath)
@@ -330,9 +389,9 @@ namespace Erumperem.Combat
             var skillTreesList = CombatDataLoader.LoadSkillTrees(skillTreesPath);
             var partyCharacterNames = CombatPartyResolver.GetCombatAllyCharacterNames();
             var partyLeaderCharacterName = CombatPartyResolver.GetCombatPartyLeaderCharacterName();
-            Debug.Log(
-                $"CombatPrototypeController: party de combate = [{string.Join(", ", partyCharacterNames)}] " +
-                $"(leader={partyLeaderCharacterName}).",
+            CombatOverworldFlowDiagnostics.LogPhase(
+                "CombatPrototypeController.Start",
+                $"party=[{string.Join(", ", partyCharacterNames)}], leader={partyLeaderCharacterName}",
                 this);
 
             var progression = _progressionService != null
@@ -361,6 +420,21 @@ namespace Erumperem.Combat
 
             ApplyCharacterStatsFromCatalog(partyCharacterNames, applyHealth: true);
 
+            if (allyCharacterStatCatalog == null)
+            {
+                Debug.LogError(
+                    "[Combat] AllyCharacterStatCatalog ausente — aliados ficam sem stats/modelos. " +
+                    "Verifica CombatSceneCore.prefab ou CombatCatalogLocator.",
+                    this);
+            }
+
+            if (spawnEnemyModelsFromCatalog && enemyVisualSpawnCatalog == null)
+            {
+                Debug.LogError(
+                    "[Combat] EnemyVisualSpawnCatalog ausente — inimigos ficam como cápsulas.",
+                    this);
+            }
+
             StartCoroutine(ApplySaveToBattleStateAndStartCombatRoutine(
                 partyCharacterNames,
                 skillTreesList,
@@ -371,7 +445,13 @@ namespace Erumperem.Combat
         private void OnDisable()
         {
             CancelEnemyRoundPause();
+            bool wasBattleReady = _isBattleReady;
             _isBattleReady = false;
+
+            if (!wasBattleReady)
+            {
+                _combatSessionInitializationStarted = false;
+            }
             _battleOutcomeMonitor.End();
             _debugCheats?.ClearAllCombatCheats();
             if (_runtime.State?.EnemyAlmanac != null)
@@ -488,12 +568,46 @@ namespace Erumperem.Combat
                 AllyVisualRoots = allyVisualRoots,
                 EnemyVisualRoots = enemyVisualRoots,
                 SpawnEnemyModelsFromCatalog = spawnEnemyModelsFromCatalog,
-                EnemyVisualSpawnCatalog = enemyVisualSpawnCatalog,
-                HorseBossVisualDefinition = horseBossVisualDefinition,
-                AllyCharacterStatCatalog = allyCharacterStatCatalog,
-                EnemyCharacterStatCatalog = enemyCharacterStatCatalog,
+                EnemyVisualSpawnCatalog = CombatCatalogLocator.ResolveEnemyVisualSpawnCatalog(enemyVisualSpawnCatalog),
+                HorseBossVisualDefinition = CombatCatalogLocator.ResolveHorseBossVisualDefinition(horseBossVisualDefinition),
+                AllyCharacterStatCatalog = CombatCatalogLocator.ResolveAllyCharacterStatCatalog(allyCharacterStatCatalog),
+                EnemyCharacterStatCatalog = CombatCatalogLocator.ResolveEnemyCharacterStatCatalog(enemyCharacterStatCatalog),
                 LogContext = this,
             };
+
+        /// <summary>
+        /// Repõe catálogos ausentes e recria o binder visual com referências actuais.
+        /// </summary>
+        public void EnsureCombatCatalogReferences()
+        {
+            allyCharacterStatCatalog = CombatCatalogLocator.ResolveAllyCharacterStatCatalog(allyCharacterStatCatalog);
+            enemyCharacterStatCatalog = CombatCatalogLocator.ResolveEnemyCharacterStatCatalog(enemyCharacterStatCatalog);
+            enemyVisualSpawnCatalog = CombatCatalogLocator.ResolveEnemyVisualSpawnCatalog(enemyVisualSpawnCatalog);
+            horseBossVisualDefinition = CombatCatalogLocator.ResolveHorseBossVisualDefinition(horseBossVisualDefinition);
+
+            if (enemyVisualSpawnCatalog != null)
+            {
+                spawnEnemyModelsFromCatalog = true;
+            }
+        }
+
+        private void RefreshSceneUnitVisualBinder()
+        {
+            EnsureCollaboratorsCreated();
+            _sceneUnitVisualBinder = new CombatSceneUnitVisualBinder(
+                _runtime,
+                _unitVisualSynchronizer,
+                BuildSceneUnitVisualBinderSettings());
+        }
+
+        /// <summary>
+        /// Chamado pelo bootstrap ao entrar na CombatScene vinda do Overworld rework.
+        /// </summary>
+        public void RefreshSceneUnitVisualBinderForRuntimeBootstrap()
+        {
+            EnsureCombatCatalogReferences();
+            RefreshSceneUnitVisualBinder();
+        }
 
         private IEnumerator ApplySaveToBattleStateAndStartCombatRoutine(
             IReadOnlyList<string> partyCharacterNames,
@@ -501,8 +615,13 @@ namespace Erumperem.Combat
             PlayerProgressionService progression,
             IReadOnlyDictionary<string, PassiveDefinition> passives)
         {
+            CombatOverworldFlowDiagnostics.LogPhase(
+                "CombatPrototypeController coroutine",
+                "LoadExplorationSaveForCombatStartAsync",
+                this);
+
             var loadContext = ExplorationLoadContext.EnsureRuntimeInstance(allyCharacterStatCatalog);
-            var loadSaveTask = loadContext.EnsureSaveLoadedFromDiskAsync();
+            var loadSaveTask = loadContext.LoadExplorationSaveForCombatStartAsync();
 
             while (!loadSaveTask.IsCompleted)
             {
@@ -511,13 +630,22 @@ namespace Erumperem.Combat
 
             if (loadSaveTask.IsFaulted)
             {
-                Debug.LogError(
-                    $"[Save] Falha ao carregar exploration_save.json: " +
-                    $"{loadSaveTask.Exception?.GetBaseException().Message}");
+                CombatOverworldFlowDiagnostics.LogError(
+                    "CombatPrototypeController coroutine",
+                    $"LoadExplorationSaveForCombatStartAsync: {loadSaveTask.Exception?.GetBaseException().Message}",
+                    this);
             }
+
+            CombatOverworldFlowDiagnostics.LogPhase(
+                "CombatPrototypeController coroutine",
+                "SeedBattleFromExploration",
+                this);
 
             CombatExplorationBridge.Instance?.SeedBattleFromExploration(_runtime.State);
             ApplyCombatItemBonusesFromLedger(partyCharacterNames);
+
+            partyCharacterNames = CombatPartyResolver.GetCombatAllyCharacterNames();
+            ApplyCharacterStatsFromCatalog(partyCharacterNames, applyHealth: false);
 
             ApplyPerAllyLoadoutsAndProgression(
                 partyCharacterNames,
@@ -525,11 +653,29 @@ namespace Erumperem.Combat
                 progression,
                 passives);
 
+            EnsureCombatCatalogReferences();
+            RefreshSceneUnitVisualBinder();
+
+            CombatOverworldFlowDiagnostics.LogPhase(
+                "CombatPrototypeController coroutine",
+                $"TryBindSceneViewsToBattle (allyCatalog={(allyCharacterStatCatalog != null ? allyCharacterStatCatalog.name : "null")}, " +
+                $"enemyCatalog={(enemyVisualSpawnCatalog != null ? enemyVisualSpawnCatalog.name : "null")})",
+                this);
+
             if (!_sceneUnitVisualBinder.TryBindSceneViewsToBattle())
             {
+                CombatOverworldFlowDiagnostics.LogError(
+                    "CombatPrototypeController coroutine",
+                    "TryBindSceneViewsToBattle falhou — placeholders",
+                    this);
                 enabled = false;
                 yield break;
             }
+
+            CombatOverworldFlowDiagnostics.LogPhase(
+                "CombatPrototypeController coroutine",
+                "bind OK — EmitBattleStarted",
+                this);
 
             _runtime.Simulator.EmitBattleStarted(_runtime.State);
             _battleOutcomeMonitor.Begin(_runtime.State, _runtime.EventCollector, EndBattle);
@@ -544,9 +690,10 @@ namespace Erumperem.Combat
             _isBattleReady = true;
             _sessionHub?.RaiseCombatSessionReadyForUi(this);
 
-            Debug.Log(
-                "Combate: clique num herói para listar skills [1]–[7] no console; clique num inimigo para alvo; " +
-                "teclas 1–7 = escolher skill; clique no alvo para lançar. Inimigos jogam até ser a tua vez.");
+            CombatOverworldFlowDiagnostics.LogPhase(
+                "CombatPrototypeController coroutine",
+                "IsBattleSessionReady=true — combate pronto",
+                this);
         }
 
         private void Update()
