@@ -27,6 +27,8 @@ public class TorchAudio : MonoBehaviour
         _character = GetComponentInParent<PlayableCharacter>();
         
         _audioSource.spatialBlend = 1f; 
+        _audioSource.spread = 0f;
+        _audioSource.panStereo = 0f;
         _audioSource.dopplerLevel = 0f;
         _audioSource.playOnAwake = false;
         _audioSource.loop = true;
@@ -48,14 +50,6 @@ public class TorchAudio : MonoBehaviour
         }
 
         _audioSource.Play();
-    }
-
-    private void Update()
-    {
-        if (_character != null && _audioSource != null)
-        {
-            _audioSource.mute = _character.CurrentState != PlayableCharacterState.Main;
-        }
     }
 
     private void OnDisable()

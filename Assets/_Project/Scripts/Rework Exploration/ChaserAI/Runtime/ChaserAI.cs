@@ -24,6 +24,9 @@ public class ChaserAI : MonoBehaviour
     private Vector3 currentWanderTarget;
     private Vector3 lastKnownTargetPosition;
     private float investigateTimer;
+    private bool _hasPlayedSpotSound;
+
+    private void OnEnable() => _hasPlayedSpotSound = false;
 
     public ChaserState CurrentState { get; private set; }
 
@@ -91,6 +94,11 @@ public class ChaserAI : MonoBehaviour
 
     private void EnterChasing()
     {
+        if (!_hasPlayedSpotSound)
+        {
+            _hasPlayedSpotSound = true;
+            AudioManager.instance?.PlaySFXAtPosition("EnemySpot", transform.position);
+        }
         CurrentState = ChaserState.Chasing;
         LogStateChange("Chasing"); // DEBUG: rastreio de estado
         movement.SetSprinting(settings.sprintWhileChasing);

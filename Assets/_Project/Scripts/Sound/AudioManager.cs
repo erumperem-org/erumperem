@@ -115,6 +115,12 @@ public class AudioManager : MonoBehaviour
     }
 
     public void PlaySFX(string soundName, float volumeMultiplier = 1f)
+        => PlaySFXInternal(soundName, volumeMultiplier, null);
+
+    public void PlaySFXAtPosition(string soundName, Vector3 position, float volumeMultiplier = 1f)
+        => PlaySFXInternal(soundName, volumeMultiplier, position);
+
+    private void PlaySFXInternal(string soundName, float volumeMultiplier, Vector3? position)
     {
         if (sfxClips == null || sfxSource == null || string.IsNullOrEmpty(soundName)) return;
 
@@ -134,17 +140,28 @@ public class AudioManager : MonoBehaviour
             s.lastPlayedIndex = randomIndex;
             if (s.clips[randomIndex] != null)
             {
-                var voice = GetAvailableSfxVoice();
+                var voice = GetAvailableSfxVoice(position.HasValue);
+                if (position.HasValue)
+                {
+                    voice.transform.position = position.Value;
+                    voice.spatialBlend = 1f;
+                    voice.spread = 0f;
+                    voice.rolloffMode = AudioRolloffMode.Linear;
+                    voice.minDistance = 2f;
+                    voice.maxDistance = 40f;
+                }
+                else if (voice != sfxSource)
+                    voice.transform.localPosition = Vector3.zero;
                 voice.pitch = s.pitch;
                 voice.PlayOneShot(s.clips[randomIndex], s.volume * volumeMultiplier);
             }
         }
     }
 
-    private AudioSource GetAvailableSfxVoice()
+    private AudioSource GetAvailableSfxVoice(bool positional)
     {
         AudioSource voice = null;
-        if (!sfxSource.isPlaying)
+        if (!positional && !sfxSource.isPlaying)
             voice = sfxSource;
         else
         {
@@ -190,6 +207,20 @@ public class AudioManager : MonoBehaviour
                     sfxSource.GetCustomCurve(AudioSourceCurveType.CustomRolloff));
         }
         return voice;
+    }
+
+    public bool TryConfigureAmbientSource(string soundName, AudioSource source)
+    {
+        if (source == null || ambientLoops == null) return false;
+        var sound = Array.Find(ambientLoops, item => item != null && item.name == soundName);
+        if (sound == null || sound.clips == null) return false;
+        var clip = Array.Find(sound.clips, item => item != null);
+        if (clip == null) return false;
+        source.clip = clip;
+        source.volume = sound.volume;
+        source.pitch = sound.pitch;
+        if (ambientSource != null) source.outputAudioMixerGroup = ambientSource.outputAudioMixerGroup;
+        return true;
     }
 
 
