@@ -181,6 +181,30 @@ MonoBehaviour:
     volume: 1
     pitch: 1.5
     lastPlayedIndex: -1
+  - name: CombatVictory
+    clips:
+    - {fileID: 8300000, guid: 4c4342020a8059e47b496fe84c405db7, type: 3}
+    volume: 1
+    pitch: 1
+    lastPlayedIndex: -1
+  - name: ChestOpen
+    clips:
+    - {fileID: 8300000, guid: 5972773dd92d50b43a3726f3204bcc98, type: 3}
+    volume: 0.2
+    pitch: 0.7
+    lastPlayedIndex: -1
+  - name: InteractableClick
+    clips:
+    - {fileID: 8300000, guid: 1b3b3047936f4cf40bb17ffa4fa4a0c5, type: 3}
+    volume: 0.2
+    pitch: 1.5
+    lastPlayedIndex: -1
+  - name: CorruptionBarrier
+    clips:
+    - {fileID: 8300000, guid: 0ecffbc95b741e345a637d58ffeaccc5, type: 3}
+    volume: 1
+    pitch: 1
+    lastPlayedIndex: -1
   ambientLoops:
   - name: ExplorationAmbience
     clips:
@@ -188,9 +212,17 @@ MonoBehaviour:
     volume: 0.55
     pitch: 1
     lastPlayedIndex: 0
+  - name: CorruptionBarrier
+    clips:
+    - {fileID: 0}
+    volume: 0.6
+    pitch: 1
+    lastPlayedIndex: -1
   bgmSource: {fileID: 8722633042384705278}
   sfxSource: {fileID: 6236776249860269184}
   ambientSource: {fileID: 413156704740130490}
+  _musicFadeInSeconds: 0.45
+  _battleEndFadeSeconds: 0.8
   mainMixer: {fileID: 24100000, guid: 3f947617aa2247d49b73c5dc9f8a4b7b, type: 2}
 --- !u!82 &8722633042384705278
 AudioSource:

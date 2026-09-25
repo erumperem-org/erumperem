@@ -135,6 +135,7 @@ namespace Erumperem.Combat
 
         private bool _isBattleReady;
         private bool _combatSessionInitializationStarted;
+        public bool IsSceneReady { get; private set; }
 
         public BattleState BattleState => _runtime.State;
         public BattleSimulator BattleSimulator => _runtime.Simulator;
@@ -447,6 +448,7 @@ namespace Erumperem.Combat
             CancelEnemyRoundPause();
             bool wasBattleReady = _isBattleReady;
             _isBattleReady = false;
+            IsSceneReady = false;
 
             if (!wasBattleReady)
             {
@@ -677,6 +679,10 @@ namespace Erumperem.Combat
                 "bind OK — EmitBattleStarted",
                 this);
 
+            IsSceneReady = true;
+            while (SceneTransitionHandler.IsTransitioning)
+                yield return null;
+
             _runtime.Simulator.EmitBattleStarted(_runtime.State);
             _battleOutcomeMonitor.Begin(_runtime.State, _runtime.EventCollector, EndBattle);
             EnsurePhaseGHudPresenters();
@@ -698,7 +704,7 @@ namespace Erumperem.Combat
 
         private void Update()
         {
-            if (!_isBattleReady || _runtime.BattleEnded || _runtime.State == null)
+            if (!_isBattleReady || SceneTransitionHandler.IsTransitioning || _runtime.BattleEnded || _runtime.State == null)
             {
                 ConsumeFrameInputFlags();
                 return;

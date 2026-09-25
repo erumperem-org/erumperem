@@ -182,8 +182,8 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             $"[COMBAT-BRIDGE] Encounter Horse Boss: slot inimigo aleatório = enemy_{horseBossEnemySlotIndex + 1}.",
             LogCategory.Player);
 
-        NotifyStaticCombatContactTriggered();
         NotifyEnteringCombat();
+        NotifyStaticCombatContactTriggered();
     }
 
     /// <summary>

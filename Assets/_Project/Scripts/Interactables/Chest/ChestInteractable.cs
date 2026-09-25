@@ -56,6 +56,7 @@ public sealed class ChestInteractable : Interactable
         if (!CanInteract) return;
 
         IsOpened = true;
+        AudioManager.instance?.PlaySFXAtPosition("ChestOpen", transform.position);
         _lastLoot = _lootService.GenerateLoot(
             _lootTable,
             new LootRequestContext(gameObject.name, transform.position));

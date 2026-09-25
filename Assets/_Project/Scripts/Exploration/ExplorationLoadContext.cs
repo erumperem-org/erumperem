@@ -127,6 +127,8 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     private bool _hasSave;
     private bool _preferInMemorySnapshotsOnNextRestore;
     private bool _restoreStateInProgress;
+    private bool _restoreScheduled;
+    public bool IsRestoringState => _restoreScheduled || _restoreStateInProgress;
     private bool _saveStateInProgress;
     private string _saveDirectory;
     private float _savedCorruptionValue;
@@ -199,6 +201,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         _manager = null;
         _corruptionSystem = null;
 
+        _restoreScheduled = true;
         StartCoroutine(RestoreNextFrame());
     }
 
@@ -1136,18 +1139,25 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     private IEnumerator RestoreNextFrame()
     {
         yield return null;
-        CacheVillageSpawnPointsFromActiveScene();
-
-        if (TryGetManagerQuiet())
+        try
         {
-            TryRestoreOnSceneReady();
-            yield break;
+            CacheVillageSpawnPointsFromActiveScene();
+
+            if (TryGetManagerQuiet())
+            {
+                TryRestoreOnSceneReady();
+                yield break;
+            }
+
+            if (ReworkExplorationStateAdapter.TryFindReworkController(out _))
+            {
+                yield return WaitForReworkControllerInitialization();
+                TryRestoreOnSceneReady();
+            }
         }
-
-        if (ReworkExplorationStateAdapter.TryFindReworkController(out _))
+        finally
         {
-            yield return WaitForReworkControllerInitialization();
-            TryRestoreOnSceneReady();
+            _restoreScheduled = false;
         }
     }
 

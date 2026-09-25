@@ -9,6 +9,8 @@ public class TorchAudio : MonoBehaviour
     public AudioClip ignitionClip;
 
     [Header("Pitch Variation Settings")]
+    [Range(0.1f, 3f)] public float pitch = 1f;
+    public bool randomizePitch = false;
     public float minPitch = 0.85f;
     public float maxPitch = 1.15f;
 
@@ -25,6 +27,9 @@ public class TorchAudio : MonoBehaviour
         _character = GetComponentInParent<PlayableCharacter>();
         
         _audioSource.spatialBlend = 1f; 
+        _audioSource.spread = 0f;
+        _audioSource.panStereo = 0f;
+        _audioSource.dopplerLevel = 0f;
         _audioSource.playOnAwake = false;
         _audioSource.loop = true;
 
@@ -37,7 +42,7 @@ public class TorchAudio : MonoBehaviour
     {
         if (_audioSource == null) return;
         
-        _audioSource.pitch = Random.Range(minPitch, maxPitch);
+        _audioSource.pitch = randomizePitch ? Random.Range(minPitch, maxPitch) : pitch;
         
         if (ignitionClip != null && _character != null && _character.CurrentState == PlayableCharacterState.Main)
         {
@@ -45,14 +50,6 @@ public class TorchAudio : MonoBehaviour
         }
 
         _audioSource.Play();
-    }
-
-    private void Update()
-    {
-        if (_character != null && _audioSource != null)
-        {
-            _audioSource.mute = _character.CurrentState != PlayableCharacterState.Main;
-        }
     }
 
     private void OnDisable()

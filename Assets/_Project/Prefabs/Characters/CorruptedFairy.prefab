@@ -1230,6 +1230,7 @@ GameObject:
   - component: {fileID: 172653348220739077}
   - component: {fileID: 5780329338300702522}
   - component: {fileID: -8549003765574712363}
+  - component: {fileID: 9100000000000001001}
   m_Layer: 0
   m_Name: CorruptedFairy
   m_TagString: Untagged
@@ -1247,7 +1248,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
   m_LocalPosition: {x: 0, y: -0.804, z: 0}
-  m_LocalScale: {x: 1.3, y: 1.3, z: 1.3}
+  m_LocalScale: {x: 100, y: 100, z: 100}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 8942216875604223272}
@@ -1345,6 +1346,25 @@ MonoBehaviour:
   skillSounds: []
   minDistance: 2
   maxDistance: 20
+  _pitch: 1
+--- !u!114 &9100000000000001001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5574332463597868988}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4d5d6085cc849e8913183d605cb7de1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.EnemyCombatOutline
+  _visibilityMode: 1
+  _outlineMaterial: {fileID: 2100000, guid: 45ca974c78bef03409711fccc00d44d7, type: 2}
+  _outlineColor: {r: 1, g: 0.08, b: 0.06, a: 1}
+  _outlineWidth: 0.005
+  _fadeDuration: 0.15
+  _targetRenderers: []
 --- !u!1 &5632015054963931408
 GameObject:
   m_ObjectHideFlags: 0
