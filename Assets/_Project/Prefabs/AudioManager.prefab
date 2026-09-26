@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 8722633042384705278}
   - component: {fileID: 6236776249860269184}
   - component: {fileID: 413156704740130490}
+  - component: {fileID: 413156704740130491}
   m_Layer: 0
   m_Name: AudioManager
   m_TagString: Untagged
@@ -54,13 +55,22 @@ MonoBehaviour:
     volume: 0.3
     pitch: 1
   - name: ExplorationMusic
-    clips:
-    - {fileID: 8300000, guid: e755db3574295d7468a7da6152f185e9, type: 3}
+    clips: []
     volume: 0.15
     pitch: 1
   - name: CombatTracks
     clips:
     - {fileID: 8300000, guid: 0a69c1d19a4ae4143a00bf5e40dda4e3, type: 3}
+    volume: 0.1
+    pitch: 1
+  - name: TorchThreat
+    clips:
+    - {fileID: 8300000, guid: 6268bfd8215329d47876c2f6b3606963, type: 3}
+    volume: 1
+    pitch: 0.8
+  - name: VillageMusic
+    clips:
+    - {fileID: 8300000, guid: a27f00f592260c04fb5ccaf87e9db4c1, type: 3}
     volume: 0.05
     pitch: 1
   sfxClips:
@@ -170,9 +180,8 @@ MonoBehaviour:
     lastPlayedIndex: -1
   - name: EnemySpot
     clips:
-    - {fileID: 8300000, guid: 5bcd19b98e3ec8647b334ee6ba8d94bc, type: 3}
-    - {fileID: 8300000, guid: b9cfe4ede6170b541b14a909946d85e9, type: 3}
-    volume: 0.05
+    - {fileID: 8300000, guid: 5c184c1a1d475f24c931cb79bdbd665a, type: 3}
+    volume: 1
     pitch: 1
     lastPlayedIndex: -1
   - name: CombatRoundBanner
@@ -205,6 +214,12 @@ MonoBehaviour:
     volume: 1
     pitch: 1
     lastPlayedIndex: -1
+  - name: DistantScreams
+    clips:
+    - {fileID: 8300000, guid: cf3c9511533478c49bdd557fcbcb7a1c, type: 3}
+    volume: 0.1
+    pitch: 0.67
+    lastPlayedIndex: -1
   ambientLoops:
   - name: ExplorationAmbience
     clips:
@@ -215,6 +230,18 @@ MonoBehaviour:
   - name: CorruptionBarrier
     clips:
     - {fileID: 8300000, guid: 2050a0a5306b01b47aa61c9cb45134ee, type: 3}
+    volume: 0.1
+    pitch: 1
+    lastPlayedIndex: -1
+  - name: ExplorationOneShots
+    clips:
+    - {fileID: 8300000, guid: 425de786919ac2740ae5327496dfa594, type: 3}
+    - {fileID: 8300000, guid: 8f24e987096216145972e26ada0c7d18, type: 3}
+    - {fileID: 8300000, guid: b48b81f034cc32e428b3b0b5e7c9d30e, type: 3}
+    - {fileID: 8300000, guid: 3617f1f919afadb46930dad0de1d646e, type: 3}
+    - {fileID: 8300000, guid: 12508a0a2cffb6c4f858273ed6e8a728, type: 3}
+    - {fileID: 8300000, guid: 74f5369ad7f51704aaf0ce0f6c3bb5f2, type: 3}
+    - {fileID: 8300000, guid: ba964482ee4a02d4f91b1db926576619, type: 3}
     volume: 0.1
     pitch: 1
     lastPlayedIndex: -1
@@ -515,3 +542,20 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &413156704740130491
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4880684184882666260}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06b6a16e6d1b483ea7bfb1a36acf751a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _ambienceName: ExplorationOneShots
+  _intervalSeconds: {x: 8, y: 20}
+  _spawnDistance: {x: 10, y: 18}
+  _heightOffset: 1.5
+  _audibleDistance: 45

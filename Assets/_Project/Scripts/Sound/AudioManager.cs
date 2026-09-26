@@ -10,7 +10,7 @@ public class AudioManager : MonoBehaviour
 
     public Playlist[] bgmPlaylists; 
     public Sound[] sfxClips;        
-    public Sound[] ambientLoops;    
+    [InspectorName("Ambience")] public Sound[] ambientLoops;
 
     public AudioSource bgmSource;
     public AudioSource sfxSource;
@@ -20,6 +20,15 @@ public class AudioManager : MonoBehaviour
     private int lastBGMIndex = -1;
     private bool isBGMPlayingState = false;
     private Tween _bgmFade;
+    public int BgmRevision { get; private set; }
+    public string CurrentPlaylistName => currentPlaylist?.name;
+
+    public bool HasBGM(string playlistName)
+    {
+        if (string.IsNullOrWhiteSpace(playlistName)) return false;
+        var playlist = bgmPlaylists == null ? null : Array.Find(bgmPlaylists, item => item != null && item.name == playlistName);
+        return playlist?.clips != null && Array.Exists(playlist.clips, clip => clip != null);
+    }
     private readonly List<AudioSource> _sfxVoices = new();
 
     [Header("Music Transitions")]
@@ -31,17 +40,153 @@ public class AudioManager : MonoBehaviour
         if (instance == null)
         {
             instance = this;
+            EnsureMixerRouting();
+            EnsureExplorationAmbientEmitter();
             DontDestroyOnLoad(gameObject);
         }
         else
         {
+            instance.MergeConfigurationFrom(this);
             Destroy(gameObject);
         }
     }
 
+    private void MergeConfigurationFrom(AudioManager source)
+    {
+        if (source == null || source == this) return;
+
+        if (mainMixer == null) mainMixer = source.mainMixer;
+        bgmPlaylists = MergePlaylists(bgmPlaylists, source.bgmPlaylists);
+        sfxClips = MergeSounds(sfxClips, source.sfxClips);
+        ambientLoops = MergeSounds(ambientLoops, source.ambientLoops);
+
+        EnsureMixerRouting();
+        EnsureExplorationAmbientEmitter();
+    }
+
+    private void EnsureExplorationAmbientEmitter()
+    {
+        if (!HasAmbientProfile("ExplorationOneShots")) return;
+        if (GetComponent<ExplorationAmbientEmitter>() == null)
+            gameObject.AddComponent<ExplorationAmbientEmitter>();
+    }
+
+    private bool HasAmbientProfile(string soundName)
+    {
+        return ambientLoops != null && Array.Exists(ambientLoops,
+            item => item != null && item.name == soundName);
+    }
+
+    private static Playlist[] MergePlaylists(Playlist[] current, Playlist[] source)
+    {
+        if (source == null || source.Length == 0) return current;
+        var merged = current == null ? new List<Playlist>() : new List<Playlist>(current);
+        foreach (var item in source)
+        {
+            if (item == null || string.IsNullOrEmpty(item.name)) continue;
+            if (!merged.Exists(existing => existing != null && existing.name == item.name))
+                merged.Add(item);
+        }
+        return merged.ToArray();
+    }
+
+    private static Sound[] MergeSounds(Sound[] current, Sound[] source)
+    {
+        if (source == null || source.Length == 0) return current;
+        var merged = current == null ? new List<Sound>() : new List<Sound>(current);
+        foreach (var item in source)
+        {
+            if (item == null || string.IsNullOrEmpty(item.name)) continue;
+            if (!merged.Exists(existing => existing != null && existing.name == item.name))
+                merged.Add(item);
+        }
+        return merged.ToArray();
+    }
+
+    private void EnsureMixerRouting()
+    {
+        if (!TryResolveMainMixer()) return;
+
+        AssignMixerGroup(bgmSource, "BGM");
+        AssignMixerGroup(sfxSource, "SFX");
+        AssignMixerGroup(ambientSource, "Ambient");
+    }
+
+    private bool TryResolveMainMixer()
+    {
+        if (mainMixer != null) return true;
+
+        var sources = new[] { bgmSource, sfxSource, ambientSource };
+        foreach (var source in sources)
+        {
+            if (source == null || source.outputAudioMixerGroup == null) continue;
+            mainMixer = source.outputAudioMixerGroup.audioMixer;
+            if (mainMixer != null) return true;
+        }
+
+        var loadedSources = Resources.FindObjectsOfTypeAll<AudioSource>();
+        foreach (var source in loadedSources)
+        {
+            var group = source != null ? source.outputAudioMixerGroup : null;
+            var mixer = group != null ? group.audioMixer : null;
+            if (mixer == null || mixer.name != "MainMixer") continue;
+            mainMixer = mixer;
+            return true;
+        }
+
+        var mixers = Resources.FindObjectsOfTypeAll<AudioMixer>();
+        mainMixer = Array.Find(mixers, mixer => mixer != null && mixer.name == "MainMixer");
+        return mainMixer != null;
+    }
+
+    private void AssignMixerGroup(AudioSource source, string groupName)
+    {
+        if (source == null || mainMixer == null) return;
+
+        var groups = mainMixer.FindMatchingGroups($"Master/{groupName}");
+        var group = Array.Find(groups, item => item != null && item.name == groupName);
+        if (group == null)
+        {
+            groups = mainMixer.FindMatchingGroups(groupName);
+            group = Array.Find(groups, item => item != null && item.name == groupName);
+        }
+        if (group != null) source.outputAudioMixerGroup = group;
+    }
+
+    private AudioMixerGroup GetAmbientMixerGroup()
+    {
+        if (ambientSource != null && ambientSource.outputAudioMixerGroup != null)
+        {
+            var groupMixer = ambientSource.outputAudioMixerGroup.audioMixer;
+            if (mainMixer == null || groupMixer == mainMixer)
+                return ambientSource.outputAudioMixerGroup;
+        }
+
+        if (mainMixer == null) return null;
+
+        var groups = mainMixer.FindMatchingGroups("Master/Ambient");
+        var group = Array.Find(groups, item => item != null && item.name == "Ambient");
+        if (group != null) return group;
+
+        groups = mainMixer.FindMatchingGroups("Ambient");
+        return Array.Find(groups, item => item != null && item.name == "Ambient");
+    }
+
+    public bool TryRouteAmbientSource(AudioSource source)
+    {
+        if (source == null) return false;
+
+        EnsureMixerRouting();
+        var group = GetAmbientMixerGroup();
+        if (group == null) return false;
+
+        source.outputAudioMixerGroup = group;
+        return true;
+    }
+
     private void Update()
     {
-        if (isBGMPlayingState && !bgmSource.isPlaying && currentPlaylist != null)
+        if (isBGMPlayingState && bgmSource != null && !bgmSource.isPlaying && currentPlaylist != null)
         {
             PlayNextRandomBGM();
         }
@@ -49,10 +194,15 @@ public class AudioManager : MonoBehaviour
 
     public void PlayBGM(string playlistName)
     {
-        if (bgmSource == null || bgmPlaylists == null) return;
+        if (bgmSource == null || !HasBGM(playlistName))
+        {
+            StopBGM();
+            return;
+        }
         Playlist p = Array.Find(bgmPlaylists, x => x != null && x.name == playlistName);
         if (p != null && p.clips != null && p.clips.Length > 0)
         {
+            BgmRevision++;
             _bgmFade?.Kill();
             currentPlaylist = p;
             bgmSource.volume = p.volume;
@@ -75,8 +225,11 @@ public class AudioManager : MonoBehaviour
 
     public void FadeOutBGM(float duration)
     {
+        BgmRevision++;
         _bgmFade?.Kill();
         isBGMPlayingState = false;
+        currentPlaylist = null;
+        lastBGMIndex = -1;
         if (bgmSource == null) return;
         _bgmFade = bgmSource.DOFade(0f, Mathf.Max(0f, duration))
             .SetUpdate(true).OnComplete(() => bgmSource.Stop());
@@ -97,21 +250,24 @@ public class AudioManager : MonoBehaviour
 
     private void PlayNextRandomBGM()
     {
-        if (currentPlaylist.clips.Length == 0) return;
-
-        int randomIndex = 0;
-
-        if (currentPlaylist.clips.Length > 1)
+        var clips = currentPlaylist?.clips;
+        int validCount = clips == null ? 0 : Array.FindAll(clips, clip => clip != null).Length;
+        if (validCount == 0)
         {
-            do
-            {
-                randomIndex = UnityEngine.Random.Range(0, currentPlaylist.clips.Length);
-            } while (randomIndex == lastBGMIndex);
+            StopBGM();
+            return;
         }
-
-        lastBGMIndex = randomIndex;
-        bgmSource.clip = currentPlaylist.clips[randomIndex];
-        bgmSource.Play();
+        bool skipLast = validCount > 1 && lastBGMIndex >= 0 && lastBGMIndex < clips.Length && clips[lastBGMIndex] != null;
+        int selection = UnityEngine.Random.Range(0, validCount - (skipLast ? 1 : 0));
+        for (int index = 0; index < clips.Length; index++)
+        {
+            if (clips[index] == null || (skipLast && index == lastBGMIndex)) continue;
+            if (selection-- != 0) continue;
+            lastBGMIndex = index;
+            bgmSource.clip = clips[index];
+            bgmSource.Play();
+            return;
+        }
     }
 
     public void PlaySFX(string soundName, float volumeMultiplier = 1f)
@@ -150,8 +306,11 @@ public class AudioManager : MonoBehaviour
                     voice.minDistance = 2f;
                     voice.maxDistance = 40f;
                 }
-                else if (voice != sfxSource)
-                    voice.transform.localPosition = Vector3.zero;
+                else
+                {
+                    voice.spatialBlend = 0f;
+                    if (voice != sfxSource) voice.transform.localPosition = Vector3.zero;
+                }
                 voice.pitch = s.pitch;
                 voice.PlayOneShot(s.clips[randomIndex], s.volume * volumeMultiplier);
             }
@@ -209,17 +368,22 @@ public class AudioManager : MonoBehaviour
         return voice;
     }
 
-    public bool TryConfigureAmbientSource(string soundName, AudioSource source)
+    public bool TryConfigureAmbientSource(string soundName, AudioSource source, bool randomClip = false)
     {
         if (source == null || ambientLoops == null) return false;
         var sound = Array.Find(ambientLoops, item => item != null && item.name == soundName);
         if (sound == null || sound.clips == null) return false;
         var clip = Array.Find(sound.clips, item => item != null);
         if (clip == null) return false;
+        if (randomClip)
+        {
+            var candidates = Array.FindAll(sound.clips, item => item != null && item != source.clip);
+            if (candidates.Length > 0) clip = candidates[UnityEngine.Random.Range(0, candidates.Length)];
+        }
         source.clip = clip;
         source.volume = sound.volume;
         source.pitch = sound.pitch;
-        if (ambientSource != null) source.outputAudioMixerGroup = ambientSource.outputAudioMixerGroup;
+        TryRouteAmbientSource(source);
         return true;
     }
 
@@ -229,6 +393,7 @@ public class AudioManager : MonoBehaviour
         Sound s = Array.Find(ambientLoops, x => x.name == soundName);
         if (s != null && s.clips.Length > 0)
         {
+            TryRouteAmbientSource(ambientSource);
             ambientSource.clip = s.clips[0]; 
             ambientSource.volume = s.volume;
             ambientSource.pitch = s.pitch;
@@ -239,9 +404,16 @@ public class AudioManager : MonoBehaviour
 
     public void StopBGM()
     {
+        BgmRevision++;
         _bgmFade?.Kill();
         isBGMPlayingState = false;
-        if (bgmSource != null) bgmSource.Stop();
+        currentPlaylist = null;
+        lastBGMIndex = -1;
+        if (bgmSource != null)
+        {
+            bgmSource.Stop();
+            bgmSource.clip = null;
+        }
     }
 
     public void StopAmbientLoop()
@@ -277,6 +449,7 @@ public class AudioManager : MonoBehaviour
 
     private void ApplyMixerVolume(string exposedParameter, float sliderValue)
     {
+        EnsureMixerRouting();
         if (mainMixer == null)
         {
             Debug.LogWarning($"[{nameof(AudioManager)}] {nameof(mainMixer)} is not assigned; cannot set '{exposedParameter}'.", this);

@@ -36,11 +36,14 @@ public class TorchAudio : MonoBehaviour
         _audioSource.rolloffMode = AudioRolloffMode.Linear;
         _audioSource.minDistance = minDistance;
         _audioSource.maxDistance = maxDistance;
+        AudioManager.instance?.TryRouteAmbientSource(_audioSource);
     }
 
     private void OnEnable()
     {
         if (_audioSource == null) return;
+
+        AudioManager.instance?.TryRouteAmbientSource(_audioSource);
         
         _audioSource.pitch = randomizePitch ? Random.Range(minPitch, maxPitch) : pitch;
         
@@ -50,6 +53,11 @@ public class TorchAudio : MonoBehaviour
         }
 
         _audioSource.Play();
+    }
+
+    private void Start()
+    {
+        AudioManager.instance?.TryRouteAmbientSource(_audioSource);
     }
 
     private void OnDisable()
