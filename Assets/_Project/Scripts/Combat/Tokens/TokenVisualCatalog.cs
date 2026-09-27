@@ -185,6 +185,14 @@ namespace Erumperem.Combat.Tokens
 
         public Color backgroundTint = Color.white;
 
+        [Tooltip("Optional looping body VFX. Leave empty for icon-only tokens.")]
+        public GameObject statusVfxPrefab;
+
+        [Tooltip("Battle-prefab empty child that hosts this VFX (e.g. Head_1_VFX_Container).")]
+        public TokenStatusVfxSocketSlot statusVfxSocket = TokenStatusVfxSocketSlot.Head1;
+
         public TokenType TokenType => tokenType;
+
+        public bool HasStatusVfx => statusVfxPrefab != null;
     }
 }

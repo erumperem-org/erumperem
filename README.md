@@ -151,6 +151,76 @@ Por defeito a simulação carrega `skills.json` via `CombatDataLoader.ResolveDef
 
 ---
 
+## Authoring Unity: skills, passivas e VFX de tokens
+
+### Criar / editar skills e passivas
+
+Não edites JSON à mão. O fluxo é **ScriptableObject → Export Catalog → StreamingAssets**.
+
+1. Em `Assets/_Project/ScriptableObjects/Combat/`, **duplica** um `CombatAbilityAsset` existente (ex.: `wulfric_innate_active1`).  
+   Create menu: **Erumperem → Combat → Ability**.
+2. Preenche no Inspector:
+   - `abilityId` em **snake_case** (ex.: `buck_innate_active2`)
+   - `displayName`, `ownerCharacterId` (`wulfric` / `buck` / `maria`, ou id de inimigo)
+   - `abilityKind`: **Active** ou **Passive**
+   - `placement`: InnateActive, TreeNode, LeaderPassive, CompanionPassive, CorruptionPassive, EnemyPassive
+3. **Active:** dano, `hitCount`, `targetKind`, `effectsOnHit`, follow-ups, etc.  
+   **Passive:** Conditions + Effects (e campos de role / chance / caps conforme o asset).
+4. TreeNode: `treeIndex` 1–3, `tierIndex` 1–3, `passiveIndex` 1–3. CorruptionPassive: `corruptionMinTier`.
+5. Menu Unity: **Erumperem → Combat → Export Catalog**. Isto escreve `skills.json`, `passives.json` e `skill_trees.json` em `Assets/StreamingAssets/Data/` (contrato partilhado com Play Mode, testes e CLI).
+6. Opcional: liga o asset ao `CharacterCombatKitAsset` do herói (organização). O export varre **todos** os `CombatAbilityAsset` da pasta de Combat / Resources.
+
+Convenções de id (kits Wulfric / Buck / Maria):
+
+| Tipo | Padrão de id |
+| ---- | ------------ |
+| Inata | `{hero}_innate_active1` … `active4` |
+| Nó de árvore | `{hero}_tree{N}_tier{M}_passive{K}` / `{hero}_tree{N}_tier{M}_active` |
+| Role | `{hero}_leader_passive1`, `{hero}_companion_passive1` |
+| Corrupção | `{hero}_corruption_tier{N}_passive1` |
+
+Não cries `*_innate_passive*`. Não inventes kit Matsuda (`characterId` de progressão da Star é `maria`).
+
+Guia completo (campos de `targetKind`, `effectScope`, `effectsOnHit`, notas de runtime): [`docs/skill-authoring.md`](docs/skill-authoring.md).  
+Árvores Wulfric: [`docs/wulfric-skill-trees.md`](docs/wulfric-skill-trees.md).  
+Spec de passivas: [`docs/passives-system-spec.md`](docs/passives-system-spec.md).
+
+`tools/PublishGameCoreForUnity.ps1` só publica a DLL de `Game.Core` — **não** copia JSON.
+
+### Assignar VFX de status (tokens no corpo)
+
+Quando um combatente **ganha** um token com VFX configurado, o efeito instancia no socket do battle prefab; ao **perder o último stack**, o VFX só faz `SetActive(false)` (não destroy). A escala do VFX fica `localScale = (1,1,1)` e **herda** a escala da hierarquia do personagem.
+
+#### 1) Socket no battle prefab
+
+No prefab de combate (ex.: `BurntFairy`), cria um **GameObject vazio** no sítio certo (cabeça, peito, pés) com um destes nomes:
+
+| Nome do GameObject | Slot no catalog |
+| ------------------ | --------------- |
+| `Head_1_VFX_Container` | Head1 |
+| `Chest_1_VFX_Container` | Chest1 |
+| `Feet_1_VFX_Container` | Feet1 |
+| `Root_VFX_Container` | Root |
+
+Sem o socket no prefab, o VFX desse slot é ignorado (warning uma vez no Console). Vale para **aliados e inimigos**.
+
+#### 2) Prefab do efeito
+
+Usa (ou cria) um prefab em `Assets/_Project/Prefabs/VFXPrefabs/` (ex.: `BurnVFX`, `BleedingVFX`). Deve funcionar parentado a um Transform (particles / mesh locais).
+
+#### 3) Catalog
+
+Abre o asset **`TokenVisualCatalog`** (`Assets/_Project/Scripts/Combat/Tokens/TokenVisualCatalog.asset`):
+
+1. Na entry do `TokenType` (ex.: Burn, Bleeding, Mark).
+2. Arrasta o prefab para **Status Vfx Prefab**.
+3. Escolhe **Status Vfx Socket** (dropdown → Head1 / Chest1 / Feet1 / Root).
+4. Deixa o prefab **vazio** se o token for só ícone na strip diegética (sem body VFX).
+
+Runtime: `CombatTokenStatusVfxBinder` no `CombatSceneCore` lê o mesmo catalog, faz poll em `LateUpdate` e liga aos `UnitVisualRoot` de cada combatente. Ícones UI continuam no mesmo catalog (`icon` / cores); o VFX de corpo é independente da strip.
+
+---
+
 ## 🎲 Simulação headless (CLI)
 
 O projeto `Game.Simulations` corre batalhas em lote e gera CSVs de eventos e agregados (win rate por skill, etc.).
