@@ -10933,6 +10933,7 @@ MonoBehaviour:
   - activationKey: 3
     panelObject: {fileID: 957999874}
     animator: {fileID: 1781221065}
+    additionalAnimators: []
     animationMode: 0
     openTrigger: Open
     closeTrigger: Close
@@ -10977,6 +10978,7 @@ MonoBehaviour:
   - activationKey: 60
     panelObject: {fileID: 2090554711}
     animator: {fileID: 0}
+    additionalAnimators: []
     animationMode: 0
     openTrigger: 
     closeTrigger: 
@@ -11021,6 +11023,7 @@ MonoBehaviour:
   - activationKey: 19
     panelObject: {fileID: 350919470}
     animator: {fileID: 0}
+    additionalAnimators: []
     animationMode: 0
     openTrigger: 
     closeTrigger: 
@@ -11065,6 +11068,7 @@ MonoBehaviour:
   - activationKey: 34
     panelObject: {fileID: 78701600}
     animator: {fileID: 0}
+    additionalAnimators: []
     animationMode: 0
     openTrigger: 
     closeTrigger: 
@@ -11633,17 +11637,6 @@ MonoBehaviour:
     _prices: 01000000020000000300000004000000
   _pointsPerLevel: 1
   _globalTierIndex: 0
---- !u!114 &948830267 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 8919640776773499278, guid: 01e4bf74b6f854641adb5533e88950b3, type: 3}
-  m_PrefabInstance: {fileID: 639698791}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: afa78c07d1ccf6f47bf9681223a8c4aa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ScenesManager
 --- !u!1 &955854433
 GameObject:
   m_ObjectHideFlags: 0
@@ -17571,6 +17564,7 @@ MonoBehaviour:
   playerInventorySaveSystem: {fileID: 0}
   loadContext: {fileID: 0}
   manager: {fileID: 0}
+  _transitionDurationSeconds: 2
 --- !u!114 &1831037781 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4645598167636022236, guid: 40d16a26ea203754181b6c5b03817652, type: 3}
@@ -18450,6 +18444,10 @@ PrefabInstance:
     - target: {fileID: 2150705031660997712, guid: ae08eb99b18dc624a8dace5cd3813983, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2346042765443113698, guid: ae08eb99b18dc624a8dace5cd3813983, type: 3}
+      propertyPath: velocidade
+      value: 0.15
       objectReference: {fileID: 0}
     - target: {fileID: 2623994705796919522, guid: ae08eb99b18dc624a8dace5cd3813983, type: 3}
       propertyPath: m_AnchorMax.x
@@ -19846,6 +19844,10 @@ PrefabInstance:
       propertyPath: 'chasers.Array.data[9]'
       value: 
       objectReference: {fileID: 1302266854}
+    - target: {fileID: 5390540777357682012, guid: 9375d7d6d0facec4f88559484ee62d47, type: 3}
+      propertyPath: _delayBeforeCombatLoadSeconds
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5390540777357682012, guid: 9375d7d6d0facec4f88559484ee62d47, type: 3}
       propertyPath: OnPreyCaught.m_PersistentCalls.m_Calls.Array.size
       value: 6
