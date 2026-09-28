@@ -3,8 +3,8 @@ using UnityEngine;
 /// <summary>
 /// Base para qualquer área circular no mundo (raio configurável, centro =
 /// posição do transform). Existe para não duplicar "contém ponto" e desenho
-/// de gizmo entre <see cref="MapLimits"/>, <see cref="SafeArea"/> e
-/// qualquer outra zona circular que venha a existir.
+/// de gizmo entre <see cref="MapLimits"/>, <see cref="SafeArea"/>,
+/// <see cref="WorldMapArea"/> e qualquer outra zona circular que venha a existir.
 ///
 /// A contenção ignora a altura (Y) - segue a mesma convenção do resto do
 /// sistema de movimentação, que trabalha em X/Z porque o terreno não tem
@@ -17,8 +17,12 @@ public abstract class CircularZone : MonoBehaviour
     /// <summary>Raio atual da zona.</summary>
     public float Radius => radius;
 
-    /// <summary>Centro da zona em coordenadas de mundo (posição do transform).</summary>
-    public Vector3 Center => transform.position;
+    /// <summary>
+    /// Centro da zona em coordenadas de mundo. Virtual para permitir que
+    /// subclasses (ex: WorldMapArea) desloquem o centro efetivo por um
+    /// offset ajustável, sem depender só da posição bruta do transform.
+    /// </summary>
+    public virtual Vector3 Center => transform.position;
 
     /// <summary>Testa se um ponto do mundo está dentro do círculo (projeção em X/Z).</summary>
     public bool Contains(Vector3 worldPosition)
