@@ -41,19 +41,16 @@ namespace Core.Shop
             _confirmButton.onClick.AddListener(OnConfirm);
             _cancelButton.onClick.AddListener(Close);
             _quantitySlider.onValueChanged.AddListener(OnSliderChanged);
-
+            ItemShopButton.OnPurchaseRequested += Open;
             _root.SetActive(false);
         }
-
-        private void OnEnable() => ItemShopButton.OnPurchaseRequested += Open;
-
-        private void OnDisable() => ItemShopButton.OnPurchaseRequested -= Open;
 
         private void OnDestroy()
         {
             _confirmButton.onClick.RemoveListener(OnConfirm);
             _cancelButton.onClick.RemoveListener(Close);
             _quantitySlider.onValueChanged.RemoveListener(OnSliderChanged);
+            ItemShopButton.OnPurchaseRequested -= Open;
         }
 
         // ── Public API ─────────────────────────────────────────────────────
