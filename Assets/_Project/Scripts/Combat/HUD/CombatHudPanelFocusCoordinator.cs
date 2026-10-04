@@ -121,7 +121,10 @@ namespace Erumperem.Combat.HealthBars
             OnFocusChanged?.Invoke();
         }
 
-        private void HandleSkillExecutionStarted(string actorCombatantId, string targetCombatantId)
+        private void HandleSkillExecutionStarted(
+            string actorCombatantId,
+            string targetCombatantId,
+            string skillId)
         {
             _isActionPresentationActive = true;
             _activePresentationActorId = actorCombatantId ?? string.Empty;

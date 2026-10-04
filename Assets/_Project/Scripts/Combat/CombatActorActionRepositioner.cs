@@ -115,7 +115,7 @@ namespace Erumperem.Combat
             RestoreStagedImmediate();
         }
 
-        private void HandleSkillStarted(string actorId, string targetId)
+        private void HandleSkillStarted(string actorId, string targetId, string skillId)
         {
             if (combatController == null) ResolveReferences();
             if (combatController == null || string.IsNullOrEmpty(actorId)) return;
