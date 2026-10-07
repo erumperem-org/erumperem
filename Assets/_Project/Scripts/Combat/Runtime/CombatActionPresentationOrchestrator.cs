@@ -132,7 +132,8 @@ namespace Erumperem.Combat.Runtime
                 _session.OngoingPresentationTargetCombatantId = action.Target.Identity.Id;
                 _sessionHub?.RaiseCombatSkillExecutionPresentationStarted(
                     _session.OngoingPresentationActorCombatantId,
-                    _session.OngoingPresentationTargetCombatantId);
+                    _session.OngoingPresentationTargetCombatantId,
+                    action.Skill?.Id ?? string.Empty);
 
                 enemyActorVisual?.NotifyAttackPresentationBegin(playSeconds, speedMultiplier);
                 var rockDuration = Mathf.Max(0f, playSeconds + postPauseSeconds);
