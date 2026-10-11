@@ -13,13 +13,16 @@ MonoBehaviour:
   m_Name: Item (Big)
   m_EditorClassIdentifier: Assembly-CSharp::Core.CharacterStats.StatusModifierItem
   _storageableId: 
-  _displayName: 
-  _description: 
+  _displayName: "Vitality Charm (Big)"
+  _description: "Aumenta permanentemente a vida em porcentagem (intensidade forte)."
   _sprite: {fileID: 0}
-  _rarity: 0
+  _rarity: 2
   _storageStrategy:
     rid: 3172197882979680326
-  _modifiers: []
+  _modifiers:
+  - _statType: 0
+    _modifierType: 1
+    _magnitude: 0.8
   references:
     version: 2
     RefIds:

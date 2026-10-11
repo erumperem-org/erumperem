@@ -13,13 +13,19 @@ MonoBehaviour:
   m_Name: Item (Big)
   m_EditorClassIdentifier: Assembly-CSharp::Core.CharacterStats.StatusModifierItem
   _storageableId: 
-  _displayName: 
-  _description: 
+  _displayName: "Sangue Frio (Extreme)"
+  _description: "Assassino: abre m\u00E3o de blindagem por precis\u00E3o letal. Efeitos: Defesa ---, Cr\u00EDtico ++++."
   _sprite: {fileID: 0}
-  _rarity: 0
+  _rarity: 3
   _storageStrategy:
     rid: 3172197882979680326
-  _modifiers: []
+  _modifiers:
+  - _statType: 1
+    _modifierType: 0
+    _magnitude: -0.8
+  - _statType: 2
+    _modifierType: 0
+    _magnitude: 1
   references:
     version: 2
     RefIds:

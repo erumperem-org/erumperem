@@ -13,13 +13,22 @@ MonoBehaviour:
   m_Name: Item (Medium)
   m_EditorClassIdentifier: Assembly-CSharp::Core.CharacterStats.StatusModifierItem
   _storageableId: 
-  _displayName: 
-  _description: 
+  _displayName: "Berserker (Big)"
+  _description: "F\u00FAria cega: machuca, mas acerta forte e aguenta um pouco mais. Efeitos: Vida ---, Defesa +++, Cr\u00EDtico ++++."
   _sprite: {fileID: 0}
-  _rarity: 0
+  _rarity: 2
   _storageStrategy:
     rid: 3172197882979680326
-  _modifiers: []
+  _modifiers:
+  - _statType: 0
+    _modifierType: 0
+    _magnitude: -0.8
+  - _statType: 1
+    _modifierType: 0
+    _magnitude: 0.8
+  - _statType: 2
+    _modifierType: 0
+    _magnitude: 1
   references:
     version: 2
     RefIds:

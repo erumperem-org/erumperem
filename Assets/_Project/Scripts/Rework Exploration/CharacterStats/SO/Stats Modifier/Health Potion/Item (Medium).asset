@@ -13,13 +13,16 @@ MonoBehaviour:
   m_Name: Item (Medium)
   m_EditorClassIdentifier: Assembly-CSharp::Core.CharacterStats.StatusModifierItem
   _storageableId: 
-  _displayName: 
-  _description: 
+  _displayName: "Health Potion (Medium)"
+  _description: "Aumenta permanentemente a vida em valor fixo (intensidade m\u00E9dia)."
   _sprite: {fileID: 0}
-  _rarity: 0
+  _rarity: 1
   _storageStrategy:
     rid: 3172197882979680326
-  _modifiers: []
+  _modifiers:
+  - _statType: 0
+    _modifierType: 0
+    _magnitude: 0.6
   references:
     version: 2
     RefIds:

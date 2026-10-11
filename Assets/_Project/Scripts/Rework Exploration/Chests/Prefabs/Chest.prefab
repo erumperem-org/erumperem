@@ -12,6 +12,9 @@ GameObject:
   - component: {fileID: 3184544067630398273}
   - component: {fileID: 7508325307757139356}
   - component: {fileID: 598102830334899425}
+  - component: {fileID: 7893129453268278463}
+  - component: {fileID: 7555211964542738214}
+  - component: {fileID: 2798000220367115368}
   m_Layer: 0
   m_Name: Chest
   m_TagString: Untagged
@@ -82,10 +85,10 @@ MonoBehaviour:
   onInstigatorInRange:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1133514318074954681}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
+      - m_Target: {fileID: 7893129453268278463}
+        m_TargetAssemblyTypeName: InteractableBaseOutline, Assembly-CSharp
+        m_MethodName: Show
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -96,7 +99,19 @@ MonoBehaviour:
         m_CallState: 2
   onInstigatorOutOfRange:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 7893129453268278463}
+        m_TargetAssemblyTypeName: InteractableBaseOutline, Assembly-CSharp
+        m_MethodName: Hide
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   proximityZone: {fileID: 7064037297622419200}
 --- !u!114 &598102830334899425
 MonoBehaviour:
@@ -113,6 +128,65 @@ MonoBehaviour:
   _chest: {fileID: 7508325307757139356}
   _renderer: {fileID: 7779676770687862803}
   _rarityColorPalette: {fileID: 11400000, guid: 9531ec13ac1cd44498377e9b78640a55, type: 2}
+--- !u!114 &7893129453268278463
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1133514318074954681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8291cc53f0ec8cf4e9dbf1d3a65e680c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InteractableBaseOutline
+  _interactable: {fileID: 7508325307757139356}
+  _activationMode: 1
+  _requireCanInteract: 1
+  _outlineMaterial: {fileID: 2100000, guid: 45ca974c78bef03409711fccc00d44d7, type: 2}
+  _outlineColor: {r: 1, g: 0.82, b: 0.15, a: 1}
+  _outlineWidth: 0.0005
+  _fadeInDuration: 0.18
+  _fadeOutDuration: 0.22
+  _targetRenderers: []
+--- !u!95 &7555211964542738214
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1133514318074954681}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 45de7519fef8525409382326bb118e91, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &2798000220367115368
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1133514318074954681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5147408618d0364c9e2e3bb2985541c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Core.Chests.ChestAnimatorController
+  _chest: {fileID: 7508325307757139356}
+  _animator: {fileID: 7555211964542738214}
+  _initialState: 0
+  _snapInitialState: 1
 --- !u!1 &5776821413092746036
 GameObject:
   m_ObjectHideFlags: 0

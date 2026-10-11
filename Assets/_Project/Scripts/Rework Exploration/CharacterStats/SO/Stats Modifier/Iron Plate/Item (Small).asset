@@ -13,13 +13,16 @@ MonoBehaviour:
   m_Name: Item (Small)
   m_EditorClassIdentifier: Assembly-CSharp::Core.CharacterStats.StatusModifierItem
   _storageableId: 
-  _displayName: 
-  _description: 
+  _displayName: "Iron Plate (Small)"
+  _description: "Aumenta permanentemente a defesa em valor fixo (intensidade leve)."
   _sprite: {fileID: 0}
   _rarity: 0
   _storageStrategy:
     rid: 3172197882979680326
-  _modifiers: []
+  _modifiers:
+  - _statType: 1
+    _modifierType: 0
+    _magnitude: 0.2
   references:
     version: 2
     RefIds:

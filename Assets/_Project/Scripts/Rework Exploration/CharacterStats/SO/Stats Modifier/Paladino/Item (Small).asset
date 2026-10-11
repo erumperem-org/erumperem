@@ -13,13 +13,22 @@ MonoBehaviour:
   m_Name: Item (Small)
   m_EditorClassIdentifier: Assembly-CSharp::Core.CharacterStats.StatusModifierItem
   _storageableId: 
-  _displayName: 
-  _description: 
+  _displayName: "Paladino (Small)"
+  _description: "B\u00EAn\u00E7\u00E3o sem contrapartida: todos os atributos sobem. Efeitos: Vida +, Defesa +, Cr\u00EDtico +."
   _sprite: {fileID: 0}
   _rarity: 0
   _storageStrategy:
     rid: 3172197882979680326
-  _modifiers: []
+  _modifiers:
+  - _statType: 0
+    _modifierType: 0
+    _magnitude: 0.2
+  - _statType: 1
+    _modifierType: 0
+    _magnitude: 0.2
+  - _statType: 2
+    _modifierType: 0
+    _magnitude: 0.2
   references:
     version: 2
     RefIds:

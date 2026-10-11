@@ -13,13 +13,16 @@ MonoBehaviour:
   m_Name: Item (Big)
   m_EditorClassIdentifier: Assembly-CSharp::Core.CharacterStats.StatusModifierItem
   _storageableId: 
-  _displayName: 
-  _description: 
+  _displayName: "Focus Lens (Big)"
+  _description: "Aumenta permanentemente a chance de cr\u00EDtico em porcentagem (intensidade forte)."
   _sprite: {fileID: 0}
-  _rarity: 0
+  _rarity: 2
   _storageStrategy:
     rid: 3172197882979680326
-  _modifiers: []
+  _modifiers:
+  - _statType: 2
+    _modifierType: 1
+    _magnitude: 0.8
   references:
     version: 2
     RefIds:
