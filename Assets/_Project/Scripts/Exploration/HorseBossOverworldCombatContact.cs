@@ -1,5 +1,4 @@
 using DetectionSystem.Core;
-using System.Collections;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -12,13 +11,9 @@ public sealed class HorseBossOverworldCombatContact : MonoBehaviour
     private const string ContactShapeLabel = "Contact";
     private const int CombatEnemyRosterSize = 4;
 
-    // Tempo de espera antes de confirmar o combate
-    [SerializeField] private float _detectionDelay = 3f;
-
-
     private Detector _detector;
     private bool _combatTriggered;
-    private Coroutine _pendingCombatCoroutine;   // <-- coroutine pendente
+    private bool _hadPlayerContact;
 
     private void Awake()
     {
@@ -31,22 +26,10 @@ public sealed class HorseBossOverworldCombatContact : MonoBehaviour
         if (_detector != null)
         {
             _detector.ReinitializeScanner();
-            _detector.OnDetectorEnter += HandleDetectorEnter;
-            _detector.OnDetectorExit  += HandleDetectorExit;
         }
 
         _combatTriggered = false;
-    }
-
-    private void OnDisable()
-    {
-        CancelPendingCombat();   // garante limpeza ao desativar
-
-        if (_detector != null)
-        {
-            _detector.OnDetectorEnter -= HandleDetectorEnter;
-            _detector.OnDetectorExit  -= HandleDetectorExit;
-        }
+        _hadPlayerContact = false;
     }
 
     private void Start()
@@ -60,67 +43,45 @@ public sealed class HorseBossOverworldCombatContact : MonoBehaviour
     {
         if (_detector == null) return;
         _detector.Scan();
+        bool hasPlayerContact = HasPlayerContact();
+        if (!hasPlayerContact)
+        {
+            if (_hadPlayerContact)
+                CombatExplorationBridge.Instance?.NotifyPlayerLeftCombatEntryZone();
+            _hadPlayerContact = false;
+            _combatTriggered = false;
+            return;
+        }
+        _hadPlayerContact = true;
+        TryBeginCombat();
     }
 
-    // --- detecção de entrada: agenda combate com delay ---
-
-    private void HandleDetectorEnter(Collider detectedCollider, string shapeLabel, int shapeIndex)
+    private bool HasPlayerContact()
     {
-        if (!string.Equals(shapeLabel, ContactShapeLabel, System.StringComparison.Ordinal))
+        var shapes = _detector.DetectionComponent.Shapes;
+        var contacts = _detector.DetectedPerShape;
+        if (contacts == null) return false;
+        for (int i = 0; i < shapes.Count && i < contacts.Count; i++)
         {
-            return;
+            if (!string.Equals(shapes[i].label, ContactShapeLabel, System.StringComparison.Ordinal)) continue;
+            foreach (var collider in contacts[i])
+                if (IsPlayerCollider(collider)) return true;
         }
-
-        if (!IsPlayerCollider(detectedCollider))
-        {
-            return;
-        }
-
-        if (_combatTriggered || IsCombatTriggerBlocked())
-        {
-            return;
-        }
-
-        if (_pendingCombatCoroutine != null) return;  // já aguardando
-
-        _pendingCombatCoroutine = StartCoroutine(CombatDelayRoutine());
+        return false;
     }
 
-    private IEnumerator CombatDelayRoutine()
+    private void TryBeginCombat()
     {
-        yield return new WaitForSeconds(_detectionDelay);
-
-        // confirma que o combate ainda não foi bloqueado durante a espera
-        if (IsCombatTriggerBlocked())
+        if (_combatTriggered || SceneTransitionHandler.IsTransitioning || IsCombatTriggerBlocked())
         {
-            _pendingCombatCoroutine = null;
-            yield break;
+            return;
         }
 
         ExplorationLoadContext.EnsureRuntimeInstance();
         _combatTriggered = true;
-        _pendingCombatCoroutine = null;
         CombatExplorationBridge.RegisterHorseBossOverworldEncounter(CombatEnemyRosterSize);
         SceneTransitionHandler.LoadScene(CombatSceneName);
     }
-
-    // --- detecção de saída: cancela se o jogador saiu antes do delay ---
-
-    private void HandleDetectorExit(Collider detectedCollider, string shapeLabel, int shapeIndex)
-    {
-        if (detectedCollider.tag != "Player") return;
-        CancelPendingCombat(); 
-        _combatTriggered = false;
-    }
-
-    private void CancelPendingCombat()
-    {
-        if (_pendingCombatCoroutine == null) return;
-        StopCoroutine(_pendingCombatCoroutine);
-        _pendingCombatCoroutine = null;
-    }
-
-    // --- resto inalterado ---
 
     private static bool IsCombatTriggerBlocked()
     {

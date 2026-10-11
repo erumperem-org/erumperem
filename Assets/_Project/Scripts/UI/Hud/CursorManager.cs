@@ -97,11 +97,6 @@ public class CursorManager : MonoBehaviour
 
     private void Update()
     {
-        if (!specialCursorEnabled)
-        {
-            return;
-        }
-
         if (Mouse.current == null)
         {
             return;
@@ -196,7 +191,14 @@ public class CursorManager : MonoBehaviour
 
     private void UpdateCursorState()
     {
-        bool hoveringInteractable = IsHoveringInteractableUI();
+        bool hoveringUI = IsHoveringInteractableUI();
+        bool hoveringWorld = IsHoveringWorldInteractable();
+        bool hoveringInteractable = hoveringUI || hoveringWorld;
+
+        if (hoveringWorld && Mouse.current.leftButton.wasPressedThisFrame)
+            AudioManager.instance?.PlaySFX("InteractableClick");
+
+        if (!specialCursorEnabled) return;
 
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
@@ -232,7 +234,7 @@ public class CursorManager : MonoBehaviour
 
     private IEnumerator ClickFeedbackRoutine()
     {
-        yield return new WaitForSeconds(clickDuration);
+        yield return new WaitForSecondsRealtime(clickDuration);
 
         clickFeedbackRoutine = null;
 
@@ -241,7 +243,7 @@ public class CursorManager : MonoBehaviour
             yield break;
         }
 
-        bool hoveringInteractable = IsHoveringInteractableUI();
+        bool hoveringInteractable = IsHoveringInteractableUI() || IsHoveringWorldInteractable();
 
         if (hoveringInteractable)
         {
@@ -255,6 +257,7 @@ public class CursorManager : MonoBehaviour
 
     private bool IsHoveringInteractableUI()
     {
+        raycastResults.Clear();
         if (EventSystem.current == null)
         {
             return false;
@@ -281,6 +284,34 @@ public class CursorManager : MonoBehaviour
             }
         }
 
+        return false;
+    }
+
+    private bool IsHoveringWorldInteractable()
+    {
+        if (Mouse.current == null || Time.timeScale <= 0f || SceneTransitionHandler.IsTransitioning)
+            return false;
+
+        foreach (var result in raycastResults)
+            if (result.module is UnityEngine.UI.GraphicRaycaster) return false;
+
+        var camera = Camera.main;
+        if (camera == null) return false;
+        var hits = Physics.RaycastAll(camera.ScreenPointToRay(Mouse.current.position.ReadValue()),
+            1000f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        foreach (var hit in hits)
+        {
+            var legacy = hit.collider.GetComponentInParent<Interactable>();
+            if (legacy != null)
+                return legacy.isActiveAndEnabled && legacy.CanInteract && legacy.CanShowInteractionFeedback;
+
+            var interactable = hit.collider.GetComponentInParent<InteractionSystem.InteractableBase>();
+            if (interactable != null)
+                return interactable.isActiveAndEnabled && interactable.CanInteract;
+
+            if (!hit.collider.isTrigger) return false;
+        }
         return false;
     }
 

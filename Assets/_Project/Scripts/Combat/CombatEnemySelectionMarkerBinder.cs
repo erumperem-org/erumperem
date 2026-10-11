@@ -35,6 +35,10 @@ namespace Erumperem.Combat
         private readonly CombatPointerRaycastService _pointerRaycast = new();
         private readonly CombatSessionHubSubscription _sessionHubSubscription = new();
 
+        public bool IsHighlighting(string combatantId) => isActiveAndEnabled
+            && _markerTransformsByCombatantId.TryGetValue(combatantId, out var marker)
+            && marker != null && marker.gameObject.activeInHierarchy;
+
         private void Awake()
         {
             _pointerRaycast.Configure(Camera.main, worldRaycastDistance);

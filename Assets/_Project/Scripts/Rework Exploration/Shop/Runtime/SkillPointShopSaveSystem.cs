@@ -20,7 +20,11 @@ namespace Core.Shop
 
         public async void SaveAsync()
         {
-            if (_button == null) { Log(LogLevel.Error, "SkillLevelUpShopButton not assigned."); return; }
+            if (_button == null)
+            {
+                Log(LogLevel.Debug, "SkillLevelUpShopButton not assigned — save ignorado.");
+                return;
+            }
 
             var data = new SkillLevelUpShopSaveData { GlobalTierIndex = _button.GlobalTierIndex };
             string json = JsonUtility.ToJson(data, prettyPrint: true);
@@ -38,7 +42,11 @@ namespace Core.Shop
 
         public async Task LoadAsync()
         {
-            if (_button == null) { Log(LogLevel.Error, "SkillLevelUpShopButton not assigned."); return; }
+            if (_button == null)
+            {
+                Log(LogLevel.Debug, "SkillLevelUpShopButton not assigned — save ignorado.");
+                return;
+            }
             if (!File.Exists(FullPath)) { Log(LogLevel.Debug, "No save found — starting at tier 0."); return; }
 
             try

@@ -61,6 +61,8 @@ namespace Core.Chests
 
         private void HandleChestStateChanged(ChestState state)
         {
+            if (state == ChestState.Open)
+                AudioManager.instance?.PlaySFXAtPosition("ChestOpen", transform.position);
             // Animation wiring intentionally left commented out — to be
             // implemented once the Animator Controller and its trigger
             // parameter names are finalized.

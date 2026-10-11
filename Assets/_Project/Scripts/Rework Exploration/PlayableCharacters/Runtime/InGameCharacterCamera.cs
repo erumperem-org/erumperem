@@ -32,6 +32,7 @@ public sealed class InGameCharacterCamera : MonoBehaviour
         }
 
         _controller.OnCharacterEnteredInGame += OnCharacterEnteredInGame;
+        _controller.OnStateRestored += SnapToCurrentCharacter;
         SyncCameraToCurrentInGameCharacter();
     }
 
@@ -40,10 +41,19 @@ public sealed class InGameCharacterCamera : MonoBehaviour
         if (_controller != null)
         {
             _controller.OnCharacterEnteredInGame -= OnCharacterEnteredInGame;
+            _controller.OnStateRestored -= SnapToCurrentCharacter;
         }
     }
 
-    private void Start() => SyncCameraToCurrentInGameCharacter();
+    private void Start() => SnapToCurrentCharacter();
+
+    public void SnapToCurrentCharacter()
+    {
+        SyncCameraToCurrentInGameCharacter();
+        if (_camera == null || _camera.Follow == null) return;
+        _camera.PreviousStateIsValid = false;
+        _camera.InternalUpdateCameraState(Vector3.up, -1f);
+    }
 
     private void LateUpdate() => SyncCameraToCurrentInGameCharacterIfDrifted();
 

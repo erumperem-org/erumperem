@@ -42,6 +42,10 @@ namespace Erumperem.Combat
 
 		public Vector3 MarkerOffset => markerOffset;
 
+		public bool IsHighlighting(string combatantId) => isActiveAndEnabled
+			&& _instance != null && _instance.activeInHierarchy
+			&& string.Equals(_lastCombatantId, combatantId, System.StringComparison.Ordinal);
+
 		private GameObject _instance;
 		private Vector3 _baseLocalScale = Vector3.one;
 		private Quaternion _baseLocalRotation = Quaternion.identity;

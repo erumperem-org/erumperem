@@ -540,6 +540,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: e9950e45d36ee8c4ab0d80afb39cb082, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4847117549570778733}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: e9950e45d36ee8c4ab0d80afb39cb082, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9100000000000001001}
   m_SourcePrefab: {fileID: 100100000, guid: e9950e45d36ee8c4ab0d80afb39cb082, type: 3}
 --- !u!1 &954375284019023373 stripped
 GameObject:
@@ -581,7 +584,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.EnemyAnimationController
   unitAnimator: {fileID: 140942004187059195}
-  _idleStateName: Idle
+  idleStateName: Idle
   attackStateName: Attack
   hitTakenStateName: HitTaken
   deathStateName: Death
@@ -635,3 +638,22 @@ MonoBehaviour:
   skillSounds: []
   minDistance: 2
   maxDistance: 20
+  _pitch: 1
+--- !u!114 &9100000000000001001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 954375284019023373}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4d5d6085cc849e8913183d605cb7de1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.EnemyCombatOutline
+  _visibilityMode: 1
+  _outlineMaterial: {fileID: 2100000, guid: 45ca974c78bef03409711fccc00d44d7, type: 2}
+  _outlineColor: {r: 1, g: 0.08, b: 0.06, a: 1}
+  _outlineWidth: 0.01
+  _fadeDuration: 0.15
+  _targetRenderers: []

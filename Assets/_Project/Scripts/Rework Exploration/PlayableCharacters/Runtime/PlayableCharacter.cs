@@ -39,7 +39,7 @@ public class PlayableCharacters : MonoBehaviour
     [SerializeField] private CompanionFollowController companionFollowController;
     [SerializeField] private RestingMovementController restingMovementController;
 
-    public string CharacterId => info.CharacterId;
+    public string CharacterId => info != null ? info.CharacterId : string.Empty;
     public CharacterState CurrentState { get; private set; }
 
     /// <summary>

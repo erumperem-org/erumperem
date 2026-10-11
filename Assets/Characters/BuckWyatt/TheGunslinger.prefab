@@ -109,6 +109,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatCapsuleAnimatorBridge
   combatSessionHub: {fileID: 0}
+  defaultAttackAnimatorTrigger: Attack
+  skillAttackAnimationBindings:
+  - skillId: buck_innate_active1
+    attackAnimatorTrigger: QuickDraw
+  - skillId: buck_innate_active2
+    attackAnimatorTrigger: QuickDraw
+  - skillId: buck_innate_active3
+    attackAnimatorTrigger: ShotgunShot
+  - skillId: buck_innate_active4
+    attackAnimatorTrigger: RifleShot
 --- !u!82 &9018357103814587525
 AudioSource:
   m_ObjectHideFlags: 0

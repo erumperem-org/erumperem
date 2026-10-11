@@ -17,7 +17,7 @@ public class SceneAudioTrigger : MonoBehaviour
 
         if (!string.IsNullOrEmpty(bgmPlaylistName))
         {
-            AudioManager.instance.PlayBGM(bgmPlaylistName);
+            AudioManager.instance.FadeInBGM(bgmPlaylistName);
         }
         else
         {

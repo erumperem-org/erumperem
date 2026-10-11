@@ -30,18 +30,29 @@ public sealed class CinemachineCameraTargetUpdate : MonoBehaviour
         }
 
         _manager.OnMainChanged += OnMainChanged;
+        ExplorationLoadContext.OnExplorationStateApplied += SnapToCurrentMain;
         SyncCameraToCurrentMain();
+        SnapToCurrentMain();
     }
 
     private void OnDisable()
     {
+        ExplorationLoadContext.OnExplorationStateApplied -= SnapToCurrentMain;
         if (_manager != null)
         {
             _manager.OnMainChanged -= OnMainChanged;
         }
     }
 
-    private void Start() => SyncCameraToCurrentMain();
+    private void Start() => SnapToCurrentMain();
+
+    public void SnapToCurrentMain()
+    {
+        SyncCameraToCurrentMain();
+        if (_camera == null || _camera.Follow == null) return;
+        _camera.PreviousStateIsValid = false;
+        _camera.InternalUpdateCameraState(Vector3.up, -1f);
+    }
 
     private void LateUpdate() => SyncCameraToCurrentMainIfDrifted();
 

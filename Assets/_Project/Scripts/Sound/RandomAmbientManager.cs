@@ -12,6 +12,8 @@ public class AmbientSoundProfile
     public Vector2 playInterval = new Vector2(10f, 30f);
     [Range(0f, 1f)] public float volume = 1f;
     public Vector2 pitchRange = new Vector2(0.9f, 1.1f);
+    [Range(0.1f, 3f)] public float pitch = 1f;
+    public bool randomizePitch = false;
     
     [Header("3D Space")]
     public float minDistance = 5f;
@@ -53,6 +55,7 @@ public class RandomAmbientManager : MonoBehaviour
         AudioSource source = emitterGO.AddComponent<AudioSource>();
         source.outputAudioMixerGroup = ambientMixerGroup;
         source.spatialBlend = 1f;
+        source.dopplerLevel = 0f;
         source.rolloffMode = AudioRolloffMode.Linear;
         source.minDistance = profile.minDistance;
         source.maxDistance = profile.maxDistance;
@@ -74,7 +77,8 @@ public class RandomAmbientManager : MonoBehaviour
             AudioClip clip = profile.clips[Random.Range(0, profile.clips.Length)];
             source.clip = clip;
             source.volume = profile.volume;
-            source.pitch = Random.Range(profile.pitchRange.x, profile.pitchRange.y);
+            source.pitch = profile.randomizePitch
+                ? Random.Range(profile.pitchRange.x, profile.pitchRange.y) : profile.pitch;
             source.Play();
 
             yield return new WaitForSeconds(clip.length);
