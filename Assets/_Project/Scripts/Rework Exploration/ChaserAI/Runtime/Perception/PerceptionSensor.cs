@@ -61,6 +61,12 @@ public class PerceptionSensor : MonoBehaviour
         }
     }
 
+    /// <summary>Zera o último resultado (ex.: depois de um teleporte, para não reagir a uma leitura velha).</summary>
+    public void ClearResult()
+    {
+        CanSeeTarget = false;
+    }
+
     /// <summary>Para completamente o loop de percepção e zera o resultado.</summary>
     public void Deactivate()
     {
@@ -109,7 +115,7 @@ public class PerceptionSensor : MonoBehaviour
         }
 
         // Dentro do raio: checa linha de visão contra a obstacleMask.
-        if (Physics.Raycast(origin, toTarget.normalized, out RaycastHit hit, toTarget.magnitude, settings.obstacleMask))
+        if (Physics.Raycast(origin, toTarget.normalized, out RaycastHit hit, toTarget.magnitude, settings.obstacleMask, QueryTriggerInteraction.Ignore))
         {
             // Desenha até o ponto de impacto (mostra onde a visão foi bloqueada),
             // não até o alvo - facilita ver qual obstáculo está no caminho.

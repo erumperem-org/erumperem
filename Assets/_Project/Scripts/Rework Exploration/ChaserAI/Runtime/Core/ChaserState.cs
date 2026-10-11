@@ -3,7 +3,7 @@
 ///
 /// Não existe mais um estado "Resting": todo ChaserAI da cena fica sempre
 /// ativo, alternando apenas entre os três estados abaixo. O
-/// <c>ChaserPool</c> ainda pode teleportar um Chaser para perto do player
+/// <c>ChaserRelocator</c> ainda pode teleportar um Chaser que vaga para perto do player
 /// quando ele se afasta demais (ver <see cref="ChaserAI.Relocate"/>), mas
 /// isso nunca desliga movimento/percepção - o Chaser simplesmente reaparece
 /// em Wandering.

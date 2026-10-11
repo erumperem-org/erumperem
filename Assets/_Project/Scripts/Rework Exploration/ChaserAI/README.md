@@ -1,240 +1,134 @@
-# EnemyOrchestration
+# ChaserAI (rework)
 
-Camada acima da IA de cada Chaser individual. Escuta a captura do alvo por
-qualquer um dos `ChaserAI` monitorados e expõe um único evento agregado
-(`OnPreyCaught`), para que outros sistemas (troca de cena, UI de derrota,
-etc.) encadeiem suas próprias ações sem precisar conhecer `ChaserAI`
-diretamente nem se inscrever em cada instância individualmente.
+Sistema de perseguidores com responsabilidades separadas. Cada chaser tem seus sensores,
+atuadores e view originais; o que mudou é como ele é gerado, mantido perto do player e
+configurado por tipo.
 
----
+## Arquitetura
 
-## 1. Dependências
+```
+Runtime/
+  Core/          ChaserAI (máquina de estados), ChaserState, ChaserSettings,
+                 ChaserContactSensor (contato físico), ChaserMovementValidators (factory)
+  Movement/      IRoamStrategy + WanderAreaRoam (onde vagar), validadores, WanderArea
+  Perception/    PerceptionSensor, PlayerFieldOfViewApproximation
+  Spawning/      ChaserWorld (player atual + zonas), ChaserSpawner, ChaserRelocator,
+                 ChaserPlacementRules (regras únicas de posição), ChaserSpawnSettings,
+                 ChaserPool (só o registro; ver nota)
+  Behaviours/    PeriodicHuntBehaviour (caçada periódica)
+  Presentation/  ChaserAIView (modelo por tier), ChaserAnimationDriver, ChaserProximityAudio
+  EnemyHuntOrchestrator.cs   (NÃO modificado)
+```
 
-| Dependência | De onde vem | Para quê |
-|---|---|---|
-| `ChaserAI.OnTargetCaught` | Pacote `ChaserAI` | Evento (C#) de cada Chaser individual que o orquestrador agrega |
-
-A comunicação para **fora** do orquestrador acontece via `UnityEvent`
-(`OnPreyCaught`), conectado pelo Inspector — não por referência de código.
-Isso significa que qualquer sistema, atual ou futuro, pode se conectar sem
-este pacote precisar saber que ele existe.
-
----
-
-## 2. Arquivos
-
-| Arquivo | O que é |
+| Responsabilidade | Quem |
 |---|---|
-| `Runtime/EnemyHuntOrchestrator.cs` | Assina `OnTargetCaught` de uma lista de `ChaserAI` e repassa como um único `OnPreyCaught`. |
-| `Editor/EnemyHuntOrchestratorEditor.cs` | Inspector padrão (sem estado próprio para exibir). |
+| Estados Wandering / Chasing / Investigating, captura (decide se o contato é com o alvo) | `ChaserAI` |
+| Avisar contato físico com qualquer collider | `ChaserContactSensor` |
+| Qual é o player atual, zonas da cena, margem da área segura | `ChaserWorld` (evento `TargetChanged`) |
+| Onde um chaser pode aparecer | `ChaserPlacementRules` (mapa, fora da área segura, fora da visão) |
+| Criar a população e colocá-la perto do player | `ChaserSpawner` |
+| Trazer de volta quem se afastou demais | `ChaserRelocator` |
+| Tipo "caçador" | `PeriodicHuntBehaviour` |
+| Para onde vagar (futuro: rodear baú) | `IRoamStrategy` via `ChaserAI.SetRoamStrategy` |
 
----
+## Regras de spawn (as originais, em um só lugar)
 
-## 3. Como usar
+Todo ponto de nascimento/realocação precisa estar: dentro de `MapLimits`, fora da área
+segura **+ margem** (`ChaserWorld.safeAreaMargin`, a mesma que o chaser respeita ao andar) e fora da aproximação de campo de visão do player (esfera à frente dele). Sorteio
+no anel `spawnMinDistance..spawnMaxDistance` ao redor do player. Quem passa de
+`returnDistance` é teleportado de volta e retorna sempre em Wandering. **Só é realocado quem está em
+Wandering** (`ChaserAI.CanBeRelocated`): quem persegue ou investiga (inclusive a caçada periódica) não é interrompido.
+O teleporte posiciona o Rigidbody e zera a velocidade herdada.
 
-1. Adicione o componente `EnemyHuntOrchestrator` a um GameObject (ex:
-   `GameSystems/EnemyHuntOrchestrator`, um objeto de configuração único na
-   cena).
-2. No campo `Chasers`, arraste todos os `ChaserAI` cuja captura do alvo deve
-   contar (normalmente, o mesmo roster usado no `ChaserPool`).
-3. No Inspector, conecte `On Prey Caught` (como qualquer `UnityEvent`) a
-   quem deve reagir — por exemplo, um script que carrega a cena de combate.
-   O `ChaserAI` não carrega mais nenhuma cena sozinho; isso agora é
-   responsabilidade de quem escuta este evento.
+## Captura
 
----
+O `ChaserContactSensor` apenas avisa o contato (enter e stay) com qualquer collider. O `ChaserAI` captura **em qualquer
+estado**, desde que o collider seja do alvo atual do `ChaserWorld` (o personagem Em Jogo). Companheiro e Resting
+também são `PlayableCharacters`, mas nunca são o alvo, então não disparam captura. Em Chasing a captura também ocorre por
+`catchDistance`.
 
-## 4. Notas
+## Travamento
 
-- `OnPreyCaught` dispara na primeira captura por qualquer Chaser da lista —
-  não distingue qual deles pegou o alvo.
-- Se um `ChaserAI` da lista for destruído/removido em runtime sem passar
-  por `OnDisable` neste componente antes, a assinatura daquele Chaser
-  continua até este componente também ser desativado — não há cancelamento
-  automático por destruição de um Chaser individual isolado. Isso não
-  deveria ser um problema em cenas onde o roster é fixo (ver `ChaserPool`).
+Em Wandering e Investigating o chaser mede o progresso a cada `stuckCheckInterval`. Sem se mover `stuckMinProgress` por
+`stuckGiveUpTime` segundos: Wandering sorteia outro destino; Investigating considera que chegou e começa a espera
+(`investigateWaitTime`). Destinos de investigação dentro da área segura (+ margem) são levados para a borda externa dela,
+porque o validador impede de entrar. Chasing não tem essa desistência: perseguir o player parado dentro do Hub
+mantém o chaser na borda enquanto o enxergar.
 
-  # ChaserPool
+## Obstáculos
 
-Conjunto fixo de `ChaserAI` pré-existentes na cena, **todos sempre ativos**
-(Wandering/Chasing/Investigating — não existe mais um estado Resting).
-Periodicamente verifica a distância de cada um até o personagem Em Jogo
-atual e teleporta de volta, para perto do player, qualquer Chaser que se
-afaste demais — permitindo que poucos `ChaserAI` deem a impressão de povoar
-um mapa grande, sem nunca desligar movimento/percepção de nenhum deles.
+Os casts de desvio e a linha de visão da percepção ignoram triggers (`QueryTriggerInteraction.Ignore`): um trigger
+na layer de cenário não bloqueia nem esconde o player.
 
----
+## Tipos
 
-## 1. Dependências
+- **Vagante** (padrão): vaga e persegue ao avistar o player.
+- **Caçador**: igual ao vagante, mais `PeriodicHuntBehaviour`: a cada intervalo sorteado
+  (min..max), se o player estiver fora da área segura, vai até a posição dele naquele instante
+  (Investigating; se o avistar no caminho, vira Chasing). Se o player estiver na área segura, a
+  caçada é pulada e um novo intervalo começa.
+- **Baú**: pendente (será uma `IRoamStrategy`).
 
-| Dependência | De onde vem | Para quê |
-|---|---|---|
-| `ChaserAI`, `Relocate`/`SetTarget` | Pacote `ChaserAI` | Cada elemento do pool |
-| `MapLimits`, `SafeArea` | Pacote `AreaZones` | Delimitar a área de reposicionamento (mapa inteiro, exceto o HUB) |
-| `PlayableCharacterController.OnCharacterEnteredInGame`, `InGameCharacter` | Pacote `PlayableCharacters` | Retargeting automático ao trocar de personagem Em Jogo |
+Os tipos são "arquétipos" na lista do `ChaserSpawner` (prefab + quantidade + flag `periodicHunt`).
 
-`ChaserAI` expõe dois métodos usados pelo pool: `SetTarget(Transform)`,
-para a troca dinâmica de alvo (o personagem "Em Jogo" pode mudar em
-runtime), e `Relocate(Vector3)`, para o teleporte de volta para perto do
-player.
+## Como montar
 
----
+1. Reaproveite o asset `ChaserPoolSettings` existente (mesmo GUID: agora é um `ChaserSpawnSettings`)
+   ou crie um novo (`Create > Movement > AI > Chaser Spawn Settings`).
+2. No GameObject `ChaserPool` (filho de `Chasers`, irmão do `EnemyHuntOrchestrator`) mantenha o
+   `ChaserPool` e adicione `ChaserWorld`, `ChaserSpawner` e `ChaserRelocator`.
+3. `ChaserWorld`: arraste `PlayableCharacterController`, `MapLimits`, a `SafeArea` e a `WanderArea`, e ajuste
+   `Safe Area Margin` (padrão 2). No Awake ele repassa `MapLimits`, `SafeArea` e margem ao `WanderArea`: não é mais
+   preciso (nem útil) preencher esses campos nele.
+4. `ChaserSpawner`: atribua o settings e crie os arquétipos (ex.: Vagante x20, Caçador x10, ambos com o
+   prefab `Chaser`). Deixe `spawnParent` vazio: os chasers nascem em `Chasers`, o pai do orquestrador.
+5. `ChaserRelocator`: atribua o settings.
+6. As instâncias `Chaser (n)` soltas dentro de `Chasers` adotam o `ChaserWorld` da cena no Start e se registram no
+   `ChaserPool`, então continuam funcionando. Se quiser só a população gerada, apague-as.
+7. No prefab `Chaser`, desligue `enableStateDebugLogs` (ligado no prefab, spamma o Console).
 
-## 2. Por que nada é instanciado/destruído
+## Animação (pronta para plugar)
 
-Todos os `ChaserAI` existem na cena o tempo todo, arrastados no Inspector
-do `ChaserPool`. A pool nunca `Instantiate`/`Destroy` nem desliga nenhum
-deles — só teleporta (`Relocate`) o Chaser que ficar longe demais de volta
-para um ponto próximo do player, e ele continua imediatamente em
-Wandering.
+`ChaserAnimationDriver` já está no prefab `Chaser`. Falta só: colocar o Animator Controller nos
+Animators dos modelos e criar nele os parâmetros:
 
----
+- `Speed` (Float): velocidade horizontal real em unid./s (ou 0..1 com `normalizeSpeed`)
+- `Grab` (Trigger): disparado na captura
 
-## 3. Reposicionamento por distância
+Os nomes são campos no Inspector (vazio = ignora). Funciona com os Animators dos 5 tiers (mesmo
+rig/controller): os dos modelos inativos são pulados e passam a ser alimentados ao ativar.
+Dica de performance: no Animator, `Culling Mode = Cull Update Transforms` para chasers fora da tela.
 
-A cada `evaluationInterval` segundos (coroutine própria, não todo frame), a
-pool mede a distância de cada Chaser da lista até o alvo atual. Qualquer um
-a mais de `returnDistance` sorteia um novo ponto num anel entre
-`spawnMinDistance` e `spawnMaxDistance` ao redor do player, rejeitando
-qualquer candidato que seja:
+## Áudio
 
-- fora de `MapLimits`;
-- dentro da `SafeArea` (HUB) excluída;
-- visível pelo player (ver seção 4).
+- "Avistou" (`EnemySpot`): inalterado, em `ChaserAI`.
+- Proximidade: `ChaserProximityAudio` (já no prefab). Atribua um `loopClip`; é som 3D com rolloff
+  linear, e só toca com o player a `maxDistance` (as demais ficam paradas, sem ocupar vozes).
 
-Se nenhum ponto válido for encontrado em `maxSampleAttempts` tentativas
-numa rodada, o Chaser simplesmente continua onde está e a pool tenta de
-novo na próxima avaliação — não força um reposicionamento ruim.
+## EnemyHuntOrchestrator (inalterado) – o que o sistema respeita
 
----
+- Usa `ChaserAI.OnTargetCaught` e `ResetCatchStateForCombatRetry()`: mantidos.
+- Encontra chasers por `ChaserPool.GetManagedChasers()` e por varredura do pai
+  (`GetComponentsInChildren<ChaserAI>(true)`, incluindo inativos), e só se inscreve no `OnEnable`.
+  Por isso o `ChaserSpawner` cria toda a população no Awake (execução antecipada), inicialmente
+  inativa, e a população é fixa: nada é criado/destruído depois. O spawner ainda reinicia a inscrição do
+  orquestrador no spawn inicial caso ele tenha sido habilitado antes.
+- `ChaserPool` continua existindo só porque o orquestrador referencia o tipo. Não faz pooling.
 
-## 4. "Fora do campo de visão": aproximação simplificada por distância
+## Diagnóstico (Console)
 
-Em vez de ângulo/dot-product, frustum de câmera, ou raycast de obstrução,
-o campo de visão do player é aproximado por uma **esfera simples à frente
-dele** (`Runtime/PlayerFieldOfViewApproximation.cs`, compartilhada com o
-próprio `ChaserAI` — ver README do pacote `ChaserAI`, seção de
-posicionamento inicial):
+Cada falha de configuração agora diz a causa: `ChaserWorld` sem `PlayableCharacterController` ou sem
+`WanderArea`, prefab sem `ChaserSettings`, spawner sem arquétipos, spawner esperando alvo ou sem ponto
+válido (aviso após 5 s). Ao concluir, o spawner loga "N chasers ativos". Menu de contexto do `ChaserAI`:
+`Debug > Forçar Unfreeze` (`Time.timeScale = 1`, caso o jogo esteja congelado).
 
-viewPoint = player.position + player.forward \* fieldOfViewForwardOffset
+## Valores que mudaram de lugar
 
-Um candidato a reposicionamento é descartado se `Vector3.Distance(candidato,
-viewPoint) <= fieldOfViewRadius`. Nenhuma referência de câmera é
-necessária, e o cálculo é barato (uma distância, sem raycast).
+`safeAreaAvoidanceMargin` (`ChaserSettings`) e `safeAreaMargin` (`WanderArea`) deixaram de existir como fontes: a
+margem é só `ChaserWorld.safeAreaMargin`. Se você tinha um valor diferente de 2, transfira-o para lá.
+`ChaserContactSensor.PlayerContact` virou `Contact(Collider)`.
 
-**Trade-off explícito**: essa aproximação não conhece obstáculos nem o
-ângulo real de visão da câmera — é geometricamente uma esfera, não um cone
-de visão. Se isso se mostrar impreciso demais em playtests (ex: câmera
-ortogonal, ou visão muito mais larga/estreita que uma esfera cobre bem),
-trocar para um cone (dot-product) ou considerar obstrução por raycast fica
-isolado inteiramente em `PlayerFieldOfViewApproximation` — nenhum outro
-método precisa mudar.
+## Removido
 
----
-
-## 5. Histerese entre reposicionamentos
-
-`returnDistance` deve ser configurado bem maior que `spawnMaxDistance`. Um
-Chaser reposicionado a, digamos, 20 unidades não deve imediatamente
-flertar com a distância de retorno se o player andar um pouco na direção
-oposta — a margem entre os dois evita reposicionamentos oscilando em
-sequência.
-
----
-
-## 6. Reativação após teleporte
-
-Sempre volta em **Wandering** (`ChaserAI.Relocate` chama isso
-internamente), nunca direto em Chasing, mesmo que o novo ponto esteja
-tecnicamente perto do player.
-
----
-
-## 7. Retargeting em troca de personagem
-
-Ao ouvir `PlayableCharacterController.OnCharacterEnteredInGame`, a pool
-chama `SetTarget` em **todos** os Chasers do roster — `ChaserAI.SetTarget`
-já repassa a troca imediatamente para o `PerceptionSensor`, então não há
-mais nenhuma etapa "adormecida" que precise ser reativada para pegar o
-alvo novo.
-
----
-
-## 8. Como usar
-
-1. Crie um `ChaserPoolSettings`
-   (`Assets > Create > Movement > AI > Chaser Pool Settings`) e ajuste os
-   valores — em especial, confirme que `returnDistance` é bem maior que
-   `spawnMaxDistance`.
-2. Crie um GameObject com o componente `ChaserPool`. Arraste:
-   - todos os `ChaserAI` da cena, no campo `Chasers`;
-   - o `PlayableCharacterController` da cena;
-   - o `MapLimits` e a `SafeArea`/`Hub` (pacote `AreaZones`);
-   - o `ChaserPoolSettings` criado no passo 1.
-3. Rode a cena. Em Play Mode, o Inspector do `ChaserPool` mostra o total de
-   Chasers gerenciados e oferece um botão para forçar uma reavaliação
-   imediata, sem precisar esperar o `evaluationInterval`.
-
----
-
-## 9. Notas
-
-- Não existe mais um "holding point": como nenhum Chaser é desligado, não
-  há para onde "recolher" ninguém — o reposicionamento sempre acontece
-  direto para um ponto próximo e válido perto do player.
-- Se `RandomPointAroundTarget` não flatten Y no cálculo do anel (usa
-  `currentTarget.position.y` diretamente) - consistente com o resto do
-  projeto assumindo terreno sem variação de altura relevante.
-
----
-
-# ChaserAI: percepção sensível ao estado do alvo + posicionamento inicial
-
-## 1. Fatores de percepção (`TorchStateFactor` / `MovementStateFactor`)
-
-O `PerceptionSensor` lê, a cada checagem, o `CharacterStateExposed` do alvo
-atual (se ele tiver um) e calcula:
-
-raio efetivo = `perceptionRadius` × fator de movimento × fator de tocha
-
-- Fator de movimento: `movementFactorIdle` / `movementFactorWalk` /
-  `movementFactorRun` (`ChaserSettings`), conforme
-  `CharacterStateExposed.MovementState`.
-- Fator de tocha: `torchFactorOff` / `torchFactorOn`, conforme
-  `CharacterStateExposed.TorchState`.
-
-Se o alvo não tiver `CharacterStateExposed` (ou `target` for null), os dois
-fatores caem para `1` — sem bônus nem penalidade, comportamento idêntico ao
-anterior. A leitura é feita por polling (a cada
-`perceptionCheckInterval`), não por assinatura de evento — reage
-naturalmente a uma troca de alvo em runtime (`SetTarget`) sem precisar
-gerenciar inscrição/cancelamento de eventos do alvo antigo.
-
-**Assumido, ajuste se necessário**: os valores default
-(`Idle=0.7, Walk=1, Run=1.4` / `Off=1, On=1.6`) são só um ponto de partida
-razoável — o ajuste fino é feito diretamente no `ChaserSettings`.
-
-## 2. Posicionamento inicial (não nascer visível ao player)
-
-Antes de entrar em Wandering pela primeira vez, todo `ChaserAI.Start()`
-verifica se sua posição atual está dentro da mesma aproximação de campo de
-visão do player usada pelo `ChaserPool`
-(`PlayerFieldOfViewApproximation`, com os parâmetros
-`initialViewForwardOffset`/`initialViewRadius` do `ChaserSettings`). Se
-estiver, sorteia um ponto fora dela num raio (`initialPlacementSearchRadius`)
-ao redor da própria posição, respeitando `MapLimits` e a `SafeArea`
-excluída (se atribuídos no Inspector do `ChaserAI`). Se nenhuma tentativa
-der certo em `initialPlacementMaxSampleAttempts`, cai num fallback que
-empurra o Chaser em linha reta para fora da esfera de visão (sem garantia
-de respeitar `MapLimits`/área excluída nesse caso extremo).
-
-Isso é independente do `ChaserPool` — funciona também para um `ChaserAI`
-posicionado manualmente numa cena de teste sem pool nenhum.
-
-## 3. Sem Resting
-
-Não existe mais o estado `Resting`. Todo `ChaserAI` fica sempre em
-Wandering, Chasing ou Investigating, com a percepção sempre ligada. O
-`ChaserPool` continua existindo para reposicionar (`Relocate`) quem se
-afastar demais do player, mas isso nunca desliga movimento/percepção — é
-um teleporte seguido de reentrada normal em Wandering.
+Pooling por roster fixo, `ChaserPoolEditor`, verificação de spawn inicial dentro do `ChaserAI`
+(agora `ChaserPlacementRules`), `PlayerFieldOfViewApproximation.PushOutside`, e os campos `initial*` de `ChaserSettings`.

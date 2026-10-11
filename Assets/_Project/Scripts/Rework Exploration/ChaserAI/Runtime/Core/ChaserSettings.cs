@@ -51,22 +51,6 @@ public class ChaserSettings : ScriptableObject
     public float torchFactorOff = 1f;
     public float torchFactorOn = 1.6f;
 
-    [Header("Posicionamento inicial (evitar nascer visível ao player)")]
-    [Tooltip("Distância à frente do player que define o centro da zona de visão, usada só " +
-             "na checagem de nascimento (ver PlayerFieldOfViewApproximation).")]
-    public float initialViewForwardOffset = 8f;
-
-    [Tooltip("Raio da zona de visão do player usada nessa checagem inicial.")]
-    public float initialViewRadius = 12f;
-
-    [Tooltip("Raio de busca ao redor da própria posição inicial do Chaser, ao tentar sortear " +
-             "um ponto fora da visão do player.")]
-    public float initialPlacementSearchRadius = 6f;
-
-    [Tooltip("Número de tentativas de sortear um ponto válido antes de usar o fallback " +
-             "(empurrar em linha reta para fora da esfera de visão).")]
-    public int initialPlacementMaxSampleAttempts = 20;
-
     [Header("Desvio de obstáculo (ObstacleAvoidanceValidator)")]
     [Tooltip("Ângulo máximo, para cada lado, testado na busca por um caminho alternativo " +
              "quando a direção desejada está bloqueada.")]
@@ -76,9 +60,17 @@ public class ChaserSettings : ScriptableObject
     public float avoidanceAngleStep = 15f;
 
     [Header("Desvio de área segura (SafeAreaAvoidanceValidator)")]
-    [Tooltip("Distância extra somada ao raio da SafeArea/Hub excluída, para o Chaser nunca chegar bem na borda dela.")]
-    public float safeAreaAvoidanceMargin = 2f;
-
     [Tooltip("Ângulo máximo, para cada lado, testado na busca por um caminho alternativo ao redor da área segura.")]
     public float safeAreaAvoidanceMaxSearchAngle = 150f;
+
+    [Header("Travamento (Wandering / Investigating)")]
+    [Tooltip("De quanto em quanto tempo, em segundos, o progresso de movimento é medido.")]
+    public float stuckCheckInterval = 1f;
+
+    [Tooltip("Deslocamento mínimo (unidades) por intervalo para NÃO ser considerado parado.")]
+    public float stuckMinProgress = 0.5f;
+
+    [Tooltip("Segundos sem progresso até desistir do destino atual: Wandering sorteia outro destino; " +
+             "Investigating considera que chegou e começa a espera.")]
+    public float stuckGiveUpTime = 3f;
 }

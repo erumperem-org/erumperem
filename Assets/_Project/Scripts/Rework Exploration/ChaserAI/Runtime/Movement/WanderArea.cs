@@ -2,18 +2,36 @@ using UnityEngine;
 
 public class WanderArea : MonoBehaviour
 {
+    [Tooltip("Normalmente preenchido pelo ChaserWorld no Awake; só atribua aqui se usar o WanderArea sem ele.")]
     [SerializeField] private MapLimits mapLimits;
-    [SerializeField] private SafeArea excludedArea;
+    [SerializeField] private CircularZone excludedArea;
     [SerializeField] private float fixedY = 0f;
 
     [Tooltip("Número máximo de tentativas de sortear um ponto válido antes de usar o fallback.")]
     [SerializeField] private int maxSampleAttempts = 30;
 
-    [Tooltip("Distância extra somada ao raio da área excluída, para o perseguidor nunca vagar bem na borda da área segura.")]
+    [Tooltip("Distância extra somada ao raio da área excluída. Sobrescrita pelo ChaserWorld (única fonte da margem).")]
     [SerializeField] private float safeAreaMargin = 2f;
 
     private Vector3 lastValidPoint;
     private bool hasValidPoint;
+
+    /// <summary>
+    /// Recebe as zonas do <see cref="ChaserWorld"/>. Valores nulos mantêm o que já estava atribuído.
+    /// </summary>
+    public void Configure(MapLimits map, CircularZone excluded, float margin)
+    {
+        if (map != null)
+        {
+            mapLimits = map;
+        }
+
+        if (excluded != null)
+        {
+            excludedArea = excluded;
+            safeAreaMargin = Mathf.Max(0f, margin);
+        }
+    }
 
     public Vector3 GetRandomPoint()
     {

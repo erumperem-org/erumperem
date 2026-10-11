@@ -97,7 +97,7 @@ public class ObstacleAvoidanceValidator : IMovementValidator
         }
 
         // 3) Fallback final: nenhuma direção testada ficou livre.
-        if (Physics.SphereCast(origin, castRadius, normalizedDirection, out RaycastHit hit, checkDistance, obstacleMask))
+        if (Physics.SphereCast(origin, castRadius, normalizedDirection, out RaycastHit hit, checkDistance, obstacleMask, QueryTriggerInteraction.Ignore))
         {
             return Vector3.ProjectOnPlane(desiredDirection, hit.normal);
         }
@@ -108,7 +108,7 @@ public class ObstacleAvoidanceValidator : IMovementValidator
     private static bool IsBlocked(Vector3 origin, Vector3 direction, float castRadius,
                                    float checkDistance, LayerMask obstacleMask)
     {
-        return Physics.SphereCast(origin, castRadius, direction, out _, checkDistance, obstacleMask);
+        return Physics.SphereCast(origin, castRadius, direction, out _, checkDistance, obstacleMask, QueryTriggerInteraction.Ignore);
     }
 
     /// <summary>
@@ -123,7 +123,7 @@ public class ObstacleAvoidanceValidator : IMovementValidator
     /// </summary>
     private static Vector3 ComputePushOut(Vector3 origin, float castRadius, LayerMask obstacleMask)
     {
-        Collider[] overlaps = Physics.OverlapSphere(origin, castRadius, obstacleMask);
+        Collider[] overlaps = Physics.OverlapSphere(origin, castRadius, obstacleMask, QueryTriggerInteraction.Ignore);
         if (overlaps.Length == 0)
         {
             return Vector3.zero;
