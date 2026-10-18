@@ -15,6 +15,7 @@ public sealed class TorchThreatFeedback : MonoBehaviour
     [SerializeField] private string _threatPlaylist = "TorchThreat";
     [SerializeField, Min(0f)] private float _villageProtectionMargin = 5f;
     [SerializeField] private string _villagePlaylist = "VillageMusic";
+    [SerializeField, Min(0f)] private float _villageMusicFadeOutSeconds = 0.15f;
     [SerializeField] private TMP_FontAsset _font;
     [SerializeField] private Color _accent = new Color(0.65f, 0.035f, 0.025f);
     [SerializeField, Range(0f, 2f)] private float _shakeStrength = 0.35f;
@@ -27,6 +28,19 @@ public sealed class TorchThreatFeedback : MonoBehaviour
     [SerializeField, Min(0.01f)] private float _pursuitShakeResponseSeconds = 0.6f;
 
     private static TorchThreatFeedback _instance;
+    private static TMP_FontAsset _messageFont;
+    private const string VillageTorchMessage = "Within these wards, your torch may rest.";
+
+    public static void ConfigureFont(TMP_FontAsset font)
+    {
+        if (font == null) return;
+        _messageFont = font;
+        if (_instance == null) return;
+        _instance._font = font;
+        if (_instance._canvas == null) return;
+        foreach (var label in _instance._canvas.GetComponentsInChildren<TextMeshProUGUI>(true))
+            label.font = font;
+    }
     private Canvas _canvas;
     private CanvasGroup _warning;
     private CanvasGroup _cooldown;
@@ -78,6 +92,7 @@ public sealed class TorchThreatFeedback : MonoBehaviour
             return;
         }
         _instance = this;
+        if (_messageFont != null) _font = _messageFont;
         ResolveReferences();
         BuildInterface();
     }
@@ -127,7 +142,7 @@ public sealed class TorchThreatFeedback : MonoBehaviour
         {
             _blockedNoticeUntil = Time.time + 2f;
             _cooldownTween?.Kill();
-            _cooldownText.text = "I'm protected here, there's no need for the flame.";
+            _cooldownText.text = VillageTorchMessage;
             _cooldown.alpha = 1f;
             return false;
         }
@@ -154,7 +169,7 @@ public sealed class TorchThreatFeedback : MonoBehaviour
     {
         float remaining = _nextToggleAt - Time.time;
         if (Time.time < _blockedNoticeUntil)
-            _cooldownText.text = "Within these wards, your torch must rest.";
+            _cooldownText.text = VillageTorchMessage;
         else if (remaining > 0f)
             _cooldownText.text = $"Let the flame settle... {Mathf.CeilToInt(remaining)}s";
         else if (_cooldown.alpha > 0f && (_cooldownTween == null || !_cooldownTween.IsActive()))
@@ -257,9 +272,13 @@ public sealed class TorchThreatFeedback : MonoBehaviour
 
     private IEnumerator SwitchVillageMusic(string playlist)
     {
-        _villageAudio.FadeOutBGM(_musicFadeSeconds);
+        bool isPlaying = _villageAudio.bgmSource != null && _villageAudio.bgmSource.isPlaying
+            && _villageAudio.bgmSource.volume > 0.001f;
+        float fadeDuration = isPlaying ? _villageMusicFadeOutSeconds : 0f;
+        _villageAudio.FadeOutBGM(fadeDuration);
         _villageMusicRevision = _villageAudio.BgmRevision;
-        yield return new WaitForSecondsRealtime(_musicFadeSeconds);
+        if (fadeDuration > 0f) yield return new WaitForSecondsRealtime(fadeDuration);
+        else yield return null;
         if (_villageAudio != null && _villageAudio.BgmRevision == _villageMusicRevision)
         {
             if (_villageAudio.HasBGM(playlist)) _villageAudio.FadeInBGM(playlist);
