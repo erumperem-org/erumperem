@@ -7,8 +7,9 @@ using UnityEngine.UI;
 namespace Erumperem.Combat.HealthBars
 {
     /// <summary>
-    /// HUD diegética por unidade. Fica oculta até <see cref="SetHoverVisible"/>; em <c>LateUpdate</c> sincroniza HP
-    /// e dispara animações DOTween: vermelho = HP actual (slider), laranja = trail de dano (lento), verde = trail de cura (rápido).
+    /// HUD diegética por unidade. Visibilidade vem do <see cref="CombatHealthBarsBinder"/> (aliados, alvo selecionado, hover)
+    /// e permanece ligada enquanto animações de trail/punch correm. Em <c>LateUpdate</c> sincroniza HP.
+    /// O fill principal salta para o HP real. O trail fica para trás (amarelo no dano, verde na cura) e faz catch-up com DOTween.
     /// Não conhece o <see cref="CombatPrototypeController"/> directamente; só lê <see cref="Combatant.Health"/>
     /// via referência fornecida em <see cref="Configure"/>.
     /// </summary>
@@ -23,7 +24,7 @@ namespace Erumperem.Combat.HealthBars
         [SerializeField] private Image _currentHpFillImage;
 
         [Tooltip("Opcional: Image extra (Type=Filled, FillMethod=Horizontal, FillOrigin=Left) por trás do slider, " +
-                 "que mostra o trail de dano (laranja, lento) ou de cura (verde, rápido). " +
+                 "que mostra o trail de dano (amarelo) ou de cura (verde), atrasado em relação ao fill. " +
                  "Sem ela, o componente continua a funcionar mas sem efeito de trail.")]
         [SerializeField] private Image _trailingFillImage;
 
@@ -38,15 +39,15 @@ namespace Erumperem.Combat.HealthBars
 
         [Header("Cores (LERP via troca directa de cor)")]
         [SerializeField] private Color _currentHpColor = new(0.85f, 0.18f, 0.18f, 1f);
-        [SerializeField] private Color _damageTrailColor = new(0.95f, 0.55f, 0.15f, 1f);
+        [SerializeField] private Color _damageTrailColor = new(0.95f, 0.86f, 0.12f, 1f);
         [SerializeField] private Color _healingTrailColor = new(0.35f, 0.85f, 0.4f, 1f);
 
         [Header("Durações (segundos)")]
-        [Tooltip("Duração do tween rápido. Dano = slider corrente desce rápido. Cura = trail verde sobe rápido.")]
-        [SerializeField] private float _fastTweenSeconds = 0.18f;
+        [Tooltip("Tempo em que o trail fica parado no valor antigo antes de começar o catch-up.")]
+        [SerializeField] private float _trailHoldSeconds = 0.18f;
 
-        [Tooltip("Duração do tween lento. Dano = trail laranja desce devagar. Cura = slider corrente sobe devagar.")]
-        [SerializeField] private float _slowTweenSeconds = 0.6f;
+        [Tooltip("Duração do catch-up do trail (amarelo no dano, verde na cura) até o HP real.")]
+        [SerializeField] private float _trailCatchUpSeconds = 0.6f;
 
         [Header("Juice (DOPunchScale ao perder vida)")]
         [Tooltip("Aplicado no transform raiz da barra ao receber dano. (0,0,0) desactiva.")]
@@ -56,7 +57,7 @@ namespace Erumperem.Combat.HealthBars
         [SerializeField] private float _damagePunchElasticity = 0.45f;
 
         [Header("Comportamento")]
-        [Tooltip("Esconde a barra quando o combatente está marcado como morto (Health.IsDead).")]
+        [Tooltip("Após morte, esconde a barra só quando o HP visual chegou a 0 e as animações de trail/punch terminaram.")]
         [SerializeField] private bool _hideWhenCombatantDead = true;
 
         [Tooltip("Controla alpha da barra no hover. Se vazio, é criado/resolvido no Awake.")]
@@ -75,7 +76,12 @@ namespace Erumperem.Combat.HealthBars
         private bool _hasActiveSkillDamagePreview;
         private int _previewMinHpAfterHit;
         private int _previewMaxHpAfterHit;
-        private bool _isHoverVisible;
+        private bool _binderRequestsVisible;
+
+        /// <summary>Trail ou punch DOTween ainda em execução — a barra deve permanecer visível.</summary>
+        public bool IsHealthBarPresentationActive =>
+            DOTween.IsTweening(GetTweenIdScopedToInstance(TrailingHpTweenId))
+            || DOTween.IsTweening(GetTweenIdScopedToInstance(DamagePunchTweenId));
 
         public void Configure(CombatPrototypeController combatSession, string combatantId)
         {
@@ -85,7 +91,7 @@ namespace Erumperem.Combat.HealthBars
             _lastSyncedHpPercent = -1f;
             _lastDisplayedCurrentHp = -1;
             _lastDisplayedMaxHp = -1;
-            _isHoverVisible = false;
+            _binderRequestsVisible = false;
             ClearSkillDamagePreview();
             EnsureVisibilityCanvasGroup();
             if (!gameObject.activeSelf)
@@ -96,20 +102,20 @@ namespace Erumperem.Combat.HealthBars
             ApplyHoverVisibilityState(forceHidden: true);
         }
 
-        public void SetHoverVisible(bool isHoverVisible)
+        public void SetHoverVisible(bool isBinderRequestedVisible)
         {
-            var hoverStateChanged = _isHoverVisible != isHoverVisible;
-            if (!hoverStateChanged && !NeedsVisibilityRefresh(isHoverVisible))
+            var binderVisibilityChanged = _binderRequestsVisible != isBinderRequestedVisible;
+            if (!binderVisibilityChanged && !NeedsVisibilityRefresh())
             {
                 return;
             }
 
-            _isHoverVisible = isHoverVisible;
-            if (!isHoverVisible)
+            _binderRequestsVisible = isBinderRequestedVisible;
+            if (!isBinderRequestedVisible && !IsHealthBarPresentationActive)
             {
                 ClearSkillDamagePreview();
             }
-            else
+            else if (isBinderRequestedVisible)
             {
                 _hasInitializedFromBattleState = false;
             }
@@ -211,12 +217,6 @@ namespace Erumperem.Combat.HealthBars
                 return;
             }
 
-            if (combatant.Health.IsDead && _hideWhenCombatantDead)
-            {
-                ApplyHoverVisibilityState(forceHidden: true);
-                return;
-            }
-
             ApplyHoverVisibilityState();
 
             SyncHealthBarTextLabel(combatant);
@@ -227,13 +227,37 @@ namespace Erumperem.Combat.HealthBars
                 return;
             }
 
-            if (!_isHoverVisible)
+            var isPresentingDeathHealthDrop = IsPresentingDeathHealthDrop(combatant);
+            var shouldPresentHealthBar = _binderRequestsVisible
+                                         || IsHealthBarPresentationActive
+                                         || isPresentingDeathHealthDrop;
+            var targetHpPercent = ComputeHpPercentSafely(combatant);
+
+            if (!shouldPresentHealthBar)
             {
-                SyncHiddenHealthState(combatant);
+                if (_hasInitializedFromBattleState
+                    && !Mathf.Approximately(targetHpPercent, _lastSyncedHpPercent))
+                {
+                    if (targetHpPercent < _lastSyncedHpPercent)
+                    {
+                        AnimateDamageTransition(targetHpPercent);
+                    }
+                    else
+                    {
+                        AnimateHealingTransition(targetHpPercent);
+                    }
+
+                    _lastSyncedHpPercent = targetHpPercent;
+                }
+                else
+                {
+                    SyncHiddenHealthState(combatant);
+                }
+
+                ApplyHoverVisibilityState();
                 return;
             }
 
-            var targetHpPercent = ComputeHpPercentSafely(combatant);
             if (!_hasInitializedFromBattleState)
             {
                 SnapBarsToValue(targetHpPercent);
@@ -261,52 +285,20 @@ namespace Erumperem.Combat.HealthBars
 
         private void AnimateDamageTransition(float targetHpPercent)
         {
-            DOTween.Kill(GetTweenIdScopedToInstance(CurrentHpTweenId), false);
-            DOTween.Kill(GetTweenIdScopedToInstance(TrailingHpTweenId), false);
-
-            if (_trailingFillImage != null)
-            {
-                _trailingFillImage.color = _damageTrailColor;
-                _trailingFillImage.fillAmount = Mathf.Max(_trailingFillImage.fillAmount, _lastSyncedHpPercent);
-                _trailingFillImage
-                    .DOFillAmount(targetHpPercent, _slowTweenSeconds)
-                    .SetEase(Ease.OutCubic)
-                    .SetId(GetTweenIdScopedToInstance(TrailingHpTweenId))
-                    .SetLink(gameObject);
-            }
-
-            if (_currentHpFillImage != null)
-            {
-                _currentHpFillImage.color = _currentHpColor;
-            }
-
-            if (_currentHpSlider != null)
-            {
-                _currentHpSlider
-                    .DOValue(targetHpPercent, _fastTweenSeconds)
-                    .SetEase(Ease.OutQuad)
-                    .SetId(GetTweenIdScopedToInstance(CurrentHpTweenId))
-                    .SetLink(gameObject);
-            }
-
+            SnapCurrentFillToPercent(targetHpPercent);
+            PlayDelayedTrailCatchUp(targetHpPercent, _damageTrailColor, keepHigherTrailValue: true);
             PlayDamagePunch();
         }
 
         private void AnimateHealingTransition(float targetHpPercent)
         {
-            DOTween.Kill(GetTweenIdScopedToInstance(CurrentHpTweenId), false);
-            DOTween.Kill(GetTweenIdScopedToInstance(TrailingHpTweenId), false);
+            SnapCurrentFillToPercent(targetHpPercent);
+            PlayDelayedTrailCatchUp(targetHpPercent, _healingTrailColor, keepHigherTrailValue: false);
+        }
 
-            if (_trailingFillImage != null)
-            {
-                _trailingFillImage.color = _healingTrailColor;
-                _trailingFillImage.fillAmount = Mathf.Min(_trailingFillImage.fillAmount, _lastSyncedHpPercent);
-                _trailingFillImage
-                    .DOFillAmount(targetHpPercent, _fastTweenSeconds)
-                    .SetEase(Ease.OutQuad)
-                    .SetId(GetTweenIdScopedToInstance(TrailingHpTweenId))
-                    .SetLink(gameObject);
-            }
+        private void SnapCurrentFillToPercent(float targetHpPercent)
+        {
+            DOTween.Kill(GetTweenIdScopedToInstance(CurrentHpTweenId), false);
 
             if (_currentHpFillImage != null)
             {
@@ -315,12 +307,32 @@ namespace Erumperem.Combat.HealthBars
 
             if (_currentHpSlider != null)
             {
-                _currentHpSlider
-                    .DOValue(targetHpPercent, _slowTweenSeconds)
-                    .SetEase(Ease.InOutQuad)
-                    .SetId(GetTweenIdScopedToInstance(CurrentHpTweenId))
-                    .SetLink(gameObject);
+                _currentHpSlider.value = targetHpPercent;
             }
+        }
+
+        private void PlayDelayedTrailCatchUp(float targetHpPercent, Color trailColor, bool keepHigherTrailValue)
+        {
+            DOTween.Kill(GetTweenIdScopedToInstance(TrailingHpTweenId), false);
+
+            if (_trailingFillImage == null)
+            {
+                return;
+            }
+
+            _trailingFillImage.color = trailColor;
+            var heldFillAmount = keepHigherTrailValue
+                ? Mathf.Max(_trailingFillImage.fillAmount, _lastSyncedHpPercent)
+                : Mathf.Min(_trailingFillImage.fillAmount, _lastSyncedHpPercent);
+            _trailingFillImage.fillAmount = heldFillAmount;
+
+            var catchUpSeconds = Mathf.Max(0.05f, _trailCatchUpSeconds);
+            var holdSeconds = Mathf.Max(0f, _trailHoldSeconds);
+            DOTween.Sequence()
+                .AppendInterval(holdSeconds)
+                .Append(_trailingFillImage.DOFillAmount(targetHpPercent, catchUpSeconds).SetEase(Ease.OutCubic))
+                .SetId(GetTweenIdScopedToInstance(TrailingHpTweenId))
+                .SetLink(gameObject);
         }
 
         private void PlayDamagePunch()
@@ -531,17 +543,46 @@ namespace Erumperem.Combat.HealthBars
         private void ApplyHoverVisibilityState(bool forceHidden = false)
         {
             EnsureVisibilityCanvasGroup();
-            var shouldShow = !forceHidden && _isHoverVisible;
+            var shouldShow = !forceHidden && ShouldShowHealthBar();
             _visibilityCanvasGroup.alpha = shouldShow ? 1f : 0f;
             _visibilityCanvasGroup.blocksRaycasts = false;
             _visibilityCanvasGroup.interactable = false;
         }
 
-        private bool NeedsVisibilityRefresh(bool isHoverVisible)
+        private bool NeedsVisibilityRefresh()
         {
             EnsureVisibilityCanvasGroup();
-            var targetAlpha = isHoverVisible ? 1f : 0f;
+            var targetAlpha = ShouldShowHealthBar() ? 1f : 0f;
             return !Mathf.Approximately(_visibilityCanvasGroup.alpha, targetAlpha);
+        }
+
+        private bool ShouldShowHealthBar()
+        {
+            if (_combatSession == null || string.IsNullOrEmpty(_combatantId))
+            {
+                return _binderRequestsVisible || IsHealthBarPresentationActive;
+            }
+
+            var combatant = _combatSession.FindCombatantById(_combatantId);
+            return _binderRequestsVisible
+                   || IsHealthBarPresentationActive
+                   || IsPresentingDeathHealthDrop(combatant);
+        }
+
+        private bool IsPresentingDeathHealthDrop(Combatant combatant)
+        {
+            if (!_hideWhenCombatantDead || combatant == null || !combatant.Health.IsDead)
+            {
+                return false;
+            }
+
+            if (!_hasInitializedFromBattleState)
+            {
+                return false;
+            }
+
+            const float zeroHpPercentEpsilon = 0.001f;
+            return _lastSyncedHpPercent > zeroHpPercentEpsilon || IsHealthBarPresentationActive;
         }
 
         private void SyncHiddenHealthState(Combatant combatant)

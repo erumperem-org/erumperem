@@ -1055,7 +1055,8 @@ public class UnitTest1
         var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(bleedSkill);
 
         Assert.Contains("6–10 damage", summary, StringComparison.Ordinal);
-        Assert.Contains("Bleed (3 damage for 3 turns)", summary, StringComparison.Ordinal);
+        Assert.Contains("Bleed", summary, StringComparison.Ordinal);
+        Assert.DoesNotContain("for 3 turns", summary, StringComparison.Ordinal);
         Assert.Contains("+1 corruption", summary, StringComparison.Ordinal);
     }
 
