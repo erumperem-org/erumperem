@@ -1,7 +1,19 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Erumperem.Combat
 {
+    [Serializable]
+    public sealed class CombatSkillAttackAnimationBinding
+    {
+        [Tooltip("Must match SkillDefinition.Id (e.g. buck_innate_active2).")]
+        public string skillId = "";
+
+        [Tooltip("Animator trigger name on this capsule (e.g. QuickDraw, ShotgunShot, RifleShot).")]
+        public string attackAnimatorTrigger = "Attack";
+    }
+
     [RequireComponent(typeof(Animator))]
     [RequireComponent(typeof(CombatCapsuleTag))]
     public class CombatCapsuleAnimatorBridge : MonoBehaviour
@@ -9,63 +21,71 @@ namespace Erumperem.Combat
         [Header("Referências")]
         [SerializeField] private CombatSessionHub combatSessionHub;
 
+        [Header("Skill → attack animation")]
+        [Tooltip("Fallback trigger when the skill has no binding (generic Attack).")]
+        [SerializeField] private string defaultAttackAnimatorTrigger = "Attack";
+
+        [Tooltip("Per-skill attack triggers for this battle prefab (Buck: QuickDraw / ShotgunShot / RifleShot).")]
+        [SerializeField] private List<CombatSkillAttackAnimationBinding> skillAttackAnimationBindings = new();
+
         private Animator _animator;
         private CombatCapsuleTag _capsuleTag;
-
-        // Hashes dos Triggers para melhor performance (evita alocação de string a cada frame)
+        private readonly Dictionary<string, int> _attackTriggerHashBySkillId =
+            new(StringComparer.Ordinal);
+        private int _defaultAttackTriggerHash;
         private static readonly int HitTakenTrigger = Animator.StringToHash("HitTaken");
         private static readonly int DeathTrigger = Animator.StringToHash("Death");
-        private static readonly int AttackTrigger = Animator.StringToHash("Attack");
-        // Nota: O "Idle" geralmente é o estado padrão (Default State) no Animator,
-        // mas se você precisar forçar via Trigger, descomente a linha abaixo:
-        // private static readonly int IdleTrigger = Animator.StringToHash("Idle");
 
         private void Awake()
         {
             _animator = GetComponent<Animator>();
             _capsuleTag = GetComponent<CombatCapsuleTag>();
+            RebuildSkillAttackTriggerLookup();
 
-            // Tenta encontrar o CombatSessionHub automaticamente se não foi arrastado no Inspector
             if (combatSessionHub == null)
             {
-                combatSessionHub = FindFirstObjectByType<CombatSessionHub>(); // No Unity mais antigo, use FindObjectOfType
+                combatSessionHub = FindFirstObjectByType<CombatSessionHub>();
             }
+        }
+
+        private void OnValidate()
+        {
+            RebuildSkillAttackTriggerLookup();
         }
 
         private void OnEnable()
         {
-            if (combatSessionHub == null) return;
+            if (combatSessionHub == null)
+            {
+                return;
+            }
 
-            // Inscreve-se nos eventos relevantes do Hub
             combatSessionHub.OnCombatSkillExecutionPresentationStarted += HandleSkillStarted;
             combatSessionHub.OnCombatantPresentationDeath += HandleDeath;
         }
 
         private void OnDisable()
         {
-            if (combatSessionHub == null) return;
+            if (combatSessionHub == null)
+            {
+                return;
+            }
 
-            // Sempre desinscreva-se para evitar memory leaks
             combatSessionHub.OnCombatSkillExecutionPresentationStarted -= HandleSkillStarted;
             combatSessionHub.OnCombatantPresentationDeath -= HandleDeath;
         }
 
-        private void HandleSkillStarted(string actorId, string targetId)
+        private void HandleSkillStarted(string actorCombatantId, string targetCombatantId, string skillId)
         {
-            string meuId = _capsuleTag.combatantId;
+            var capsuleCombatantId = _capsuleTag.combatantId;
 
-            // 1. EU sou quem está atacando?
-            if (actorId == meuId)
+            if (actorCombatantId == capsuleCombatantId)
             {
-                // Opcional: Se você quiser garantir que apenas ALIADOS ataquem por esse script:
-                // if (meuId.StartsWith("ally_")) 
-                
-                _animator.SetTrigger(AttackTrigger);
+                FireAttackTriggerForSkill(skillId);
                 return;
             }
 
-            // 2. EU sou o alvo que está recebendo o ataque?
-            if (targetId == meuId)
+            if (targetCombatantId == capsuleCombatantId)
             {
                 _animator.SetTrigger(HitTakenTrigger);
             }
@@ -73,10 +93,53 @@ namespace Erumperem.Combat
 
         private void HandleDeath(string deadCombatantId)
         {
-            // 3. EU morri?
             if (deadCombatantId == _capsuleTag.combatantId)
             {
                 _animator.SetTrigger(DeathTrigger);
+            }
+        }
+
+        private void FireAttackTriggerForSkill(string skillId)
+        {
+            if (_animator == null)
+            {
+                return;
+            }
+
+            var attackTriggerHash = _defaultAttackTriggerHash;
+            if (!string.IsNullOrWhiteSpace(skillId)
+                && _attackTriggerHashBySkillId.TryGetValue(skillId, out var skillSpecificTriggerHash))
+            {
+                attackTriggerHash = skillSpecificTriggerHash;
+            }
+
+            _animator.SetTrigger(attackTriggerHash);
+        }
+
+        private void RebuildSkillAttackTriggerLookup()
+        {
+            _attackTriggerHashBySkillId.Clear();
+            var fallbackTriggerName = string.IsNullOrWhiteSpace(defaultAttackAnimatorTrigger)
+                ? "Attack"
+                : defaultAttackAnimatorTrigger.Trim();
+            _defaultAttackTriggerHash = Animator.StringToHash(fallbackTriggerName);
+
+            if (skillAttackAnimationBindings == null)
+            {
+                return;
+            }
+
+            foreach (var binding in skillAttackAnimationBindings)
+            {
+                if (binding == null
+                    || string.IsNullOrWhiteSpace(binding.skillId)
+                    || string.IsNullOrWhiteSpace(binding.attackAnimatorTrigger))
+                {
+                    continue;
+                }
+
+                _attackTriggerHashBySkillId[binding.skillId.Trim()] =
+                    Animator.StringToHash(binding.attackAnimatorTrigger.Trim());
             }
         }
     }

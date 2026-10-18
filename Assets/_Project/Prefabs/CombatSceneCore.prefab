@@ -1779,6 +1779,7 @@ GameObject:
   - component: {fileID: 1123152280519613884}
   - component: {fileID: 5213722406700642896}
   - component: {fileID: 918294471684145873}
+  - component: {fileID: 918294471684145874}
   - component: {fileID: 2625193426130249026}
   - component: {fileID: 74024345826197987}
   - component: {fileID: 9073251369092586262}
@@ -1910,6 +1911,20 @@ MonoBehaviour:
   stripAnchorChildName: 
   stripLocalOffset: {x: 0, y: -0.3, z: 0}
   faceMainCameraEachFrame: 1
+--- !u!114 &918294471684145874
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 919406058762249914}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8f5d02b3a4e5f6c9b7d1e2f3a4b5c6d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.Tokens.CombatTokenStatusVfxBinder
+  sessionHub: {fileID: 8100000000000000001}
+  tokenVisualCatalog: {fileID: 11400000, guid: 201db78aa253cb449bbaa10a91c6bc41, type: 2}
 --- !u!114 &2625193426130249026
 MonoBehaviour:
   m_ObjectHideFlags: 0

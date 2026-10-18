@@ -5,6 +5,7 @@ using Game.Core.Domain;
 using Game.Core.Models;
 using Services.DebugUtilities;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Coordena save/load de exploração com entradas e saídas de combate:
@@ -58,11 +59,14 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     private Vector3 _lastCombatEntryWorldPosition;
     private IReadOnlyList<string> _pendingCombatAllyCharacterNames;
     private int _pendingHorseBossEnemySlotIndex = -1;
+    private string _explorationSceneNameAtCombatEntry;
+    private bool _combatEntryPrepareCompleted;
 
     private static bool _hasStaticPendingHorseBossEncounter;
     private static int _staticPendingHorseBossEnemySlotIndex = -1;
     private static float _staticHorseBossCombatReentryBlockedUntil;
     private static bool _staticEnteredCombatFromHorseBoss;
+    private static IReadOnlyList<string> _cachedPendingCombatAllyCharacterNames;
 
     private void Awake()
     {
@@ -74,6 +78,13 @@ public sealed class CombatExplorationBridge : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+        if ((_pendingCombatAllyCharacterNames == null || _pendingCombatAllyCharacterNames.Count == 0)
+            && _cachedPendingCombatAllyCharacterNames != null
+            && _cachedPendingCombatAllyCharacterNames.Count > 0)
+        {
+            _pendingCombatAllyCharacterNames = _cachedPendingCombatAllyCharacterNames;
+        }
     }
 
     private void OnDestroy()
@@ -85,7 +96,43 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     }
 
     /// <summary>Party [Main, Companion] capturada ao entrar em combate (autoritativa na cena de combate).</summary>
-    public IReadOnlyList<string> TryGetPendingCombatAllyCharacterNames() => _pendingCombatAllyCharacterNames;
+    public IReadOnlyList<string> TryGetPendingCombatAllyCharacterNames() =>
+        _pendingCombatAllyCharacterNames ?? _cachedPendingCombatAllyCharacterNames;
+
+    /// <summary>
+    /// Evita segunda captura/party quando <see cref="NotifyEnteringCombat"/> é chamado
+    /// duas vezes ainda na cena de exploração (ex.: orchestrator + load antigo no Inspector).
+    /// </summary>
+    public static bool TrySkipDuplicateCombatEntryPrepare()
+    {
+        if (Instance == null || !Instance._combatEntryPrepareCompleted)
+        {
+            return false;
+        }
+
+        var loadContext = ExplorationLoadContext.Instance;
+        if (loadContext == null || loadContext.SnapshotCountForCombatEntry <= 0)
+        {
+            return false;
+        }
+
+        if (Instance._pendingCombatAllyCharacterNames == null
+            || Instance._pendingCombatAllyCharacterNames.Count == 0)
+        {
+            return false;
+        }
+
+        var activeSceneName = SceneManager.GetActiveScene().name;
+        if (!ExplorationSceneNames.IsOverworldExplorationScene(activeSceneName))
+        {
+            return false;
+        }
+
+        LoggerService.PrintLogMessage(LogLevel.Debug,
+            "[COMBAT-BRIDGE] Prepare de combate ignorado — entrada já capturada nesta sessão.",
+            LogCategory.Player);
+        return true;
+    }
 
     public void BlockExplorationCombatContactsAfterSceneLoad()
     {
@@ -240,20 +287,119 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             return;
         }
 
-        ExplorationLoadContext.Instance.SaveState();
-        ExplorationLoadContext.Instance.RememberExplorationStateAtCombatEntry();
-        var partyFromSnapshots = ExplorationLoadContext.Instance.GetCombatAllyCharacterNamesFromSnapshots();
-        _pendingCombatAllyCharacterNames = CombatPartyResolver.NormalizeCombatParty(partyFromSnapshots);
+        var loadContext = ExplorationLoadContext.Instance;
+        var activeSceneName = SceneManager.GetActiveScene().name;
+        var canCaptureFromActiveExplorationScene =
+            ExplorationSceneNames.IsOverworldExplorationScene(activeSceneName);
+
+        loadContext.ConfigureForExplorationScene(
+            ResolveExplorationSceneNameForCombatEntry(loadContext));
+
+        var hasPendingPartyFromEarlierPrepare =
+            _pendingCombatAllyCharacterNames != null && _pendingCombatAllyCharacterNames.Count > 0;
+
+        if (canCaptureFromActiveExplorationScene)
+        {
+            if (!loadContext.CaptureExplorationStateBeforeCombatEntry())
+            {
+                LoggerService.PrintLogMessage(LogLevel.Warning,
+                    "[COMBAT-BRIDGE] Falha ao capturar snapshots antes do combate — tentando party do rework.",
+                    LogCategory.Player);
+            }
+        }
+        else if (hasPendingPartyFromEarlierPrepare)
+        {
+            LoggerService.PrintLogMessage(LogLevel.Debug,
+                "[COMBAT-BRIDGE] Captura ignorada — já preparado fora da cena de exploração; " +
+                "snapshots/party existentes mantidos.",
+                LogCategory.Player);
+        }
+        else
+        {
+            LoggerService.PrintLogMessage(LogLevel.Warning,
+                "[COMBAT-BRIDGE] Fora da exploração sem party pendente — snapshots anteriores mantidos.",
+                LogCategory.Player);
+        }
+
+        if (canCaptureFromActiveExplorationScene || !hasPendingPartyFromEarlierPrepare)
+        {
+            var partyFromSnapshots = loadContext.GetCombatAllyCharacterNamesFromSnapshots();
+            if (partyFromSnapshots.Count == 0
+                && ReworkExplorationStateAdapter.TryFindReworkController(out var reworkController)
+                && ReworkExplorationStateAdapter.TryGetReworkPartyCharacterNames(
+                    reworkController,
+                    out var mainCharacterName,
+                    out var companionCharacterName))
+            {
+                partyFromSnapshots = CombatPartyResolver.BuildPartyNamesFromSnapshots(
+                    new List<PlayableCharacterSnapshot>
+                    {
+                        new PlayableCharacterSnapshot(
+                            mainCharacterName,
+                            Vector3.zero,
+                            Quaternion.identity,
+                            PlayableCharacterState.Main,
+                            0f),
+                        new PlayableCharacterSnapshot(
+                            companionCharacterName,
+                            Vector3.zero,
+                            Quaternion.identity,
+                            PlayableCharacterState.Companion,
+                            0f),
+                    });
+            }
+
+            _pendingCombatAllyCharacterNames = CombatPartyResolver.NormalizeCombatParty(partyFromSnapshots);
+        }
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
             $"[COMBAT-BRIDGE] Party de combate: {string.Join(", ", _pendingCombatAllyCharacterNames)}.",
             LogCategory.Player);
 
-        RememberCombatEntryPosition(ExplorationLoadContext.Instance);
+        _explorationSceneNameAtCombatEntry = loadContext.ConfiguredExplorationSceneName;
+        RememberCombatEntryPosition(loadContext);
 
         LoggerService.PrintLogMessage(LogLevel.Debug,
-            "[COMBAT-BRIDGE] Estado de exploração salvo antes do combate.",
+            $"[COMBAT-BRIDGE] Estado de exploração salvo antes do combate (retorno: {_explorationSceneNameAtCombatEntry}).",
             LogCategory.Player);
+
+        CombatOverworldFlowDiagnostics.LogPhase(
+            "CombatExplorationBridge.NotifyEnteringCombat",
+            $"snapshots={loadContext.SnapshotCountForCombatEntry}, " +
+            $"party={string.Join(", ", _pendingCombatAllyCharacterNames ?? Array.Empty<string>())}");
+
+        _cachedPendingCombatAllyCharacterNames = _pendingCombatAllyCharacterNames;
+        CombatEntrySnapshotCache.StoreFromExplorationLoadContext(loadContext);
+
+        _combatEntryPrepareCompleted = loadContext.SnapshotCountForCombatEntry > 0
+            && _pendingCombatAllyCharacterNames != null
+            && _pendingCombatAllyCharacterNames.Count > 0;
+    }
+
+    static string ResolveExplorationSceneNameForCombatEntry(ExplorationLoadContext loadContext)
+    {
+        var activeScene = SceneManager.GetActiveScene();
+        if (activeScene.IsValid() && ExplorationSceneNames.IsOverworldExplorationScene(activeScene.name))
+        {
+            return activeScene.name;
+        }
+
+        return loadContext != null ? loadContext.ConfiguredExplorationSceneName : ExplorationSceneNames.LegacyOverworld;
+    }
+
+    static bool IsReturnToExplorationSceneName(string targetSceneName)
+    {
+        if (string.IsNullOrWhiteSpace(targetSceneName))
+        {
+            return false;
+        }
+
+        if (ExplorationSceneNames.IsOverworldExplorationScene(targetSceneName))
+        {
+            return true;
+        }
+
+        return string.Equals(targetSceneName, "Overworld", StringComparison.Ordinal);
     }
 
     /// <summary>Marca que o combate veio de um inimigo estático — exige sair da zona antes de reentrar.</summary>
@@ -354,6 +500,9 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     /// <summary>Regista o resultado do combate, persiste HP/corrupção e bloqueia spawn temporário.</summary>
     public void NotifyCombatEnded(BattleState battleState, bool alliesWon)
     {
+        _combatEntryPrepareCompleted = false;
+        _cachedPendingCombatAllyCharacterNames = null;
+        CombatEntrySnapshotCache.Clear();
         _hasPendingCombatReturn = true;
         _lastBattleAlliesWon = alliesWon;
         _lastBattleState = battleState;
@@ -403,9 +552,18 @@ public sealed class CombatExplorationBridge : MonoBehaviour
             return false;
         }
 
-        if (!string.Equals(targetSceneName, "Overworld", StringComparison.Ordinal))
+        if (!IsReturnToExplorationSceneName(targetSceneName))
         {
             return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_explorationSceneNameAtCombatEntry)
+            && !string.Equals(targetSceneName, _explorationSceneNameAtCombatEntry, StringComparison.Ordinal)
+            && !ExplorationSceneNames.MatchesConfiguredExplorationScene(
+                targetSceneName,
+                _explorationSceneNameAtCombatEntry))
+        {
+            targetSceneName = _explorationSceneNameAtCombatEntry;
         }
 
         // FIX 3 (continuação): limpa Horse Boss flags aqui, após confirmação de retorno.

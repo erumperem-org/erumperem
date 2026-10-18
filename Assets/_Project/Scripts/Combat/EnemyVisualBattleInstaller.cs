@@ -15,7 +15,10 @@ namespace Erumperem.Combat
             GameObject battlePrefab,
             Transform alliesFacingReference)
         {
-            var instantiatedEnemyRoot = BattleVisualInstaller.InstantiateUnderSlot(slotRoot, battlePrefab);
+            var instantiatedEnemyRoot = BattleVisualInstaller.InstantiateUnderSlot(
+                slotRoot,
+                battlePrefab,
+                resetLocalTransform: false);
             if (instantiatedEnemyRoot != null)
             {
                 BattleVisualInstaller.OrientEnemyVisualTowardAllies(instantiatedEnemyRoot, alliesFacingReference);

@@ -43,6 +43,8 @@ public class SceneTransitionHandler : MonoBehaviour
     private float _originalListenerVolume;
     private bool _ownsListenerVolume;
 
+    public static bool IsSceneLoadInProgress => isSceneLoadInProgress;
+
     void Awake()
     {
         if (instance == null)
@@ -72,7 +74,7 @@ public class SceneTransitionHandler : MonoBehaviour
         }
         else
         {
-            Destroy(gameObject);
+            Destroy(this);
         }
     }
 
@@ -227,6 +229,11 @@ public class SceneTransitionHandler : MonoBehaviour
         if (isSceneLoadInProgress)
         {
             Debug.LogWarning($"[SceneTransitionHandler] Load de '{sceneName}' ignorado — outro load já está em curso.");
+            if (ScenesManager.IsCombatSceneName(sceneName))
+            {
+                CombatSceneLoadCoordinator.CancelCombatSceneLoadAttempt();
+            }
+
             return;
         }
 
@@ -332,15 +339,30 @@ public class SceneTransitionHandler : MonoBehaviour
             }
 
             AudioManager.instance?.StopAmbientLoop();
+            if (ScenesManager.IsCombatSceneName(sceneName))
+            {
+                CombatOverworldFlowDiagnostics.LogPhase(
+                    "SceneTransitionHandler",
+                    $"LoadSceneAsync('{sceneName}') a iniciar (fade concluído)");
+            }
+
             AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
             if (asyncLoad == null)
             {
-                Debug.LogError($"[SceneTransitionHandler] Falha ao carregar cena '{sceneName}'.");
+                CombatOverworldFlowDiagnostics.LogError(
+                    "SceneTransitionHandler",
+                    $"LoadSceneAsync falhou para '{sceneName}'");
                 yield break;
             }
 
             while (!asyncLoad.isDone)
                 yield return null;
+
+            if (ScenesManager.IsCombatSceneName(sceneName))
+            {
+                CombatOverworldFlowDiagnostics.LogActiveScene("SceneTransitionHandler load completo");
+            }
+
             RestoreTransitionState();
             yield return FadeIn();
         }
@@ -355,6 +377,11 @@ public class SceneTransitionHandler : MonoBehaviour
             }
             isSceneLoadInProgress = false;
             _isRevealing = false;
+
+            if (ScenesManager.IsCombatSceneName(sceneName))
+            {
+                CombatSceneLoadCoordinator.NotifyCombatSceneLoadFinished(SceneManager.GetActiveScene());
+            }
         }
     }
 

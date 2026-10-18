@@ -75,10 +75,21 @@ public sealed class PlayerInventorySaveSystem : MonoBehaviour
         }
 
         Instance = this;
+        EnsureRootTransformForPersistence();
         DontDestroyOnLoad(gameObject);
 
         _saveDirectory = System.IO.Path.Combine(Application.persistentDataPath, _saveFolderName);
         _ = LoadAsync();
+    }
+
+    private void EnsureRootTransformForPersistence()
+    {
+        if (transform.parent == null)
+        {
+            return;
+        }
+
+        transform.SetParent(null, worldPositionStays: true);
     }
 
     private void OnDestroy()

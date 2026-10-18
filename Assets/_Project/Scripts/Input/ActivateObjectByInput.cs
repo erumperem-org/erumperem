@@ -88,8 +88,12 @@ namespace Erumperem.Input
             [Header("Panel")]
             public GameObject panelObject;
 
-            [Tooltip("Animator do painel. Mantido para as transições existentes.")]
+            [Tooltip("Animator principal do painel. Mantido para compatibilidade com as configurações existentes.")]
             public Animator animator;
+
+            [Header("Animators adicionais")]
+            [Tooltip("Animators adicionais, como um Animator de máscara. Todos recebem os mesmos triggers do Animator principal.")]
+            public List<Animator> additionalAnimators = new();
 
             [Header("Animation mode")]
             [Tooltip("Animator mantém o comportamento original. DOTween usa as configurações abaixo. AnimatorAndDOTween executa os dois em paralelo.")]
@@ -338,10 +342,9 @@ namespace Erumperem.Input
                 PlayDotweenAnimation(binding, binding.openTween, true);
             }
 
-            if (UsesAnimator(binding) && binding.animator != null)
+            if (UsesAnimator(binding))
             {
-                binding.animator.ResetTrigger(binding.closeTrigger);
-                binding.animator.SetTrigger(binding.openTrigger);
+                TriggerOpenAnimators(binding);
             }
         }
 
@@ -365,10 +368,8 @@ namespace Erumperem.Input
                 }
             }
 
-            if (UsesAnimator(binding) && binding.animator != null)
+            if (UsesAnimator(binding) && TriggerCloseAnimators(binding))
             {
-                binding.animator.ResetTrigger(binding.openTrigger);
-                binding.animator.SetTrigger(binding.closeTrigger);
                 waitDuration = Mathf.Max(waitDuration, _closeAnimationDuration);
             }
 
@@ -572,6 +573,68 @@ namespace Erumperem.Input
         {
             return binding.animationMode == PanelAnimationMode.Animator
                 || binding.animationMode == PanelAnimationMode.AnimatorAndDOTween;
+        }
+
+        private static bool TriggerOpenAnimators(PanelBinding binding)
+        {
+            bool hasAnimator = false;
+
+            if (binding.animator != null)
+            {
+                binding.animator.ResetTrigger(binding.closeTrigger);
+                binding.animator.SetTrigger(binding.openTrigger);
+                hasAnimator = true;
+            }
+
+            if (binding.additionalAnimators == null)
+            {
+                return hasAnimator;
+            }
+
+            foreach (var animator in binding.additionalAnimators)
+            {
+                if (animator == null)
+                {
+                    continue;
+                }
+
+                animator.ResetTrigger(binding.closeTrigger);
+                animator.SetTrigger(binding.openTrigger);
+                hasAnimator = true;
+            }
+
+            return hasAnimator;
+        }
+
+        private static bool TriggerCloseAnimators(PanelBinding binding)
+        {
+            bool hasAnimator = false;
+
+            if (binding.animator != null)
+            {
+                binding.animator.ResetTrigger(binding.openTrigger);
+                binding.animator.SetTrigger(binding.closeTrigger);
+                hasAnimator = true;
+            }
+
+            if (binding.additionalAnimators == null)
+            {
+                return hasAnimator;
+            }
+
+            foreach (var animator in binding.additionalAnimators)
+            {
+                if (animator == null)
+                {
+                    continue;
+                }
+
+                animator.ResetTrigger(binding.openTrigger);
+                animator.SetTrigger(binding.closeTrigger);
+                hasAnimator = true;
+            }
+
+            return hasAnimator;
         }
 
         private static bool UsesDotween(PanelBinding binding)
