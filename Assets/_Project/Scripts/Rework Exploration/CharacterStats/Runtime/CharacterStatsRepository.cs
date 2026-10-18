@@ -1,72 +1,110 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Erumperem.Characters;
 using Services.DebugUtilities;
 using UnityEngine;
 
 namespace Core.CharacterStats
 {
     /// <summary>
-    /// Reads and writes the single shared JSON file holding every
-    /// character's base stats. Not a MonoBehaviour — a plain static
-    /// service, since status-modifying items call it synchronously from
-    /// ExecuteItemEffect() (a void method with no async support).
+    /// Reads and writes the JSON file holding every character's SAVED
+    /// MODIFICATIONS (deltas over the base stats defined in
+    /// AllyCharacterStatDefinition). Not a MonoBehaviour — a plain static
+    /// service, since items call it synchronously from ExecuteItemEffect().
     ///
-    /// Each ApplyModifiers call performs a full read-modify-write cycle:
-    /// load the whole file, find or create the target character's entry,
-    /// apply every modifier cumulatively against the current stored value,
-    /// then save the whole file back. This is deliberately synchronous and
-    /// unbatched — using several status items in quick succession triggers
-    /// one full file read/write per item, not a single batched write. This
-    /// keeps each application correct and simple; if this ever becomes a
-    /// performance concern, batching multiple modifiers into one
-    /// read-modify-write call (already supported by ApplyModifiers'
-    /// signature) is the way to do it, since it already accepts a list.
+    /// The file lives inside the ACTIVE SAVE SLOT
+    /// (SaveSlotAccess.Data.SlotDirectory), so each slot has its own stats,
+    /// independent of the others. With no slot selected, reads return empty
+    /// data, writes are aborted, and <see cref="IsAvailable"/> is false.
+    ///
+    /// Characters are keyed by AllyCharacterStatDefinition.CharacterId, so
+    /// every save / edit / delete goes to the correct entry.
+    ///
+    /// I/O is synchronous on purpose (items need the result immediately);
+    /// each ApplyModifiers call is a full read-modify-write cycle.
     /// </summary>
     public static class CharacterStatsRepository
     {
         private const string FileName = "character_stats.json";
 
-        private static string FullPath => Path.Combine(Application.persistentDataPath, FileName);
+        /// <summary>True when a save slot is selected, i.e. stats can be read and written.</summary>
+        public static bool IsAvailable => TryGetFilePath(out _);
+
+        private static bool TryGetFilePath(out string path)
+        {
+            var slotData = SaveSlotAccess.Data;
+
+            if (slotData == null || !slotData.HasSlotSelected)
+            {
+                path = null;
+                return false;
+            }
+
+            path = Path.Combine(slotData.SlotDirectory, FileName);
+            return true;
+        }
 
         public static CharacterStatsFileData LoadAll()
         {
-            if (!File.Exists(FullPath))
+            if (!TryGetFilePath(out string path))
+            {
+                Log(LogLevel.Error, "No save slot selected (SaveSlotAccess.Data) — returning empty stats.");
+                return new CharacterStatsFileData();
+            }
+
+            if (!File.Exists(path))
                 return new CharacterStatsFileData();
 
             try
             {
-                string json = File.ReadAllText(FullPath);
+                string json = File.ReadAllText(path);
                 return JsonUtility.FromJson<CharacterStatsFileData>(json) ?? new CharacterStatsFileData();
             }
             catch (Exception ex)
             {
-                Log(LogLevel.Error, $"Failed to load character stats file: {ex.Message}");
+                Log(LogLevel.Error, $"Failed to load character stats file '{path}': {ex.Message}");
                 return new CharacterStatsFileData();
             }
         }
 
-        public static void SaveAll(CharacterStatsFileData data)
+        /// <summary>Returns false (and writes nothing) if no slot is selected or the write fails.</summary>
+        public static bool SaveAll(CharacterStatsFileData data)
         {
+            if (!TryGetFilePath(out string path))
+            {
+                Log(LogLevel.Error, "No save slot selected (SaveSlotAccess.Data) — save aborted.");
+                return false;
+            }
+
             try
             {
                 string json = JsonUtility.ToJson(data, prettyPrint: true);
-                File.WriteAllText(FullPath, json);
+                File.WriteAllText(path, json);
+                return true;
             }
             catch (Exception ex)
             {
-                Log(LogLevel.Error, $"Failed to save character stats file: {ex.Message}");
+                Log(LogLevel.Error, $"Failed to save character stats file '{path}': {ex.Message}");
+                return false;
             }
         }
 
+        /// <summary>Deletes the stats file of the ACTIVE slot only (every character in it).</summary>
         public static void DeleteFile()
         {
-            if (!File.Exists(FullPath)) return;
+            if (!TryGetFilePath(out string path))
+            {
+                Log(LogLevel.Error, "No save slot selected (SaveSlotAccess.Data) — nothing deleted.");
+                return;
+            }
+
+            if (!File.Exists(path)) return;
 
             try
             {
-                File.Delete(FullPath);
-                Log(LogLevel.Debug, $"Character stats file '{FullPath}' deleted.");
+                File.Delete(path);
+                Log(LogLevel.Debug, $"Character stats file '{path}' deleted.");
             }
             catch (Exception ex)
             {
@@ -74,10 +112,23 @@ namespace Core.CharacterStats
             }
         }
 
+        /// <summary>Removes only one character's saved modifications from the active slot, leaving the others intact.</summary>
+        public static void DeleteCharacter(string characterId)
+        {
+            if (string.IsNullOrEmpty(characterId) || !IsAvailable) return;
+
+            var fileData = LoadAll();
+            int removed = fileData.Characters.RemoveAll(c => c.CharacterId == characterId);
+            if (removed == 0) return;
+
+            if (SaveAll(fileData))
+                Log(LogLevel.Debug, $"Saved stats of character '{characterId}' deleted.");
+        }
+
         /// <summary>
-        /// Unpacks a single character's stats from the shared file. Returns
-        /// a zeroed CharacterStatsData (not yet persisted) if the character
-        /// has no entry in the file yet.
+        /// Saved modifications (deltas) of one character. Zeroed if the
+        /// character has no entry yet (or no slot is selected). This is NOT
+        /// the current value — see <see cref="GetEffectiveStat"/>.
         /// </summary>
         public static CharacterStatsData GetStatsForCharacter(string characterId)
         {
@@ -90,46 +141,56 @@ namespace Core.CharacterStats
             return ToStatsData(fileData.Characters[index]);
         }
 
-        /// <summary>
-        /// Applies every modifier cumulatively against the character's
-        /// current stored value (loaded fresh from disk), then persists the
-        /// result immediately. Absolute adds a flat delta; Relative adds a
-        /// percentage of the current value. E.g. repeated Absolute +1 on a
-        /// stat starting at 0 yields 1, then 2, then 3 — each use reads the
-        /// latest persisted value before adding.
-        /// </summary>
-        public static void ApplyModifiers(string characterId, IReadOnlyList<StatModifierEntry> modifiers)
+        /// <summary>Current value = base (definition) + saved modification (file).</summary>
+        public static float GetEffectiveStat(AllyCharacterStatDefinition definition, StatType stat)
         {
-            if (string.IsNullOrEmpty(characterId) || modifiers == null || modifiers.Count == 0) return;
+            if (definition == null) return 0f;
+            return CharacterStatResolver.GetEffective(definition, GetStatsForCharacter(definition.CharacterId), stat);
+        }
 
+        /// <summary>
+        /// Applies every resolved modifier cumulatively against the character's
+        /// current value (base + stored delta, loaded fresh from disk) and
+        /// persists immediately into the active slot. Returns false if nothing
+        /// was saved. Does NOT evaluate applicability rules — items must check
+        /// <see cref="StatApplicabilityRule"/> first.
+        /// </summary>
+        public static bool ApplyModifiers(AllyCharacterStatDefinition target, IReadOnlyList<ResolvedStatModifier> modifiers)
+        {
+            if (target == null || string.IsNullOrEmpty(target.CharacterId)) return false;
+            if (modifiers == null || modifiers.Count == 0) return false;
+
+            if (!IsAvailable)
+            {
+                Log(LogLevel.Error, "No save slot selected (SaveSlotAccess.Data) — modifiers NOT applied.");
+                return false;
+            }
+
+            string characterId = target.CharacterId;
             var fileData = LoadAll();
             int index = fileData.Characters.FindIndex(c => c.CharacterId == characterId);
 
-            var statsData = index >= 0 ? ToStatsData(fileData.Characters[index]) : new CharacterStatsData();
+            var saved = index >= 0 ? ToStatsData(fileData.Characters[index]) : new CharacterStatsData();
 
             foreach (var modifier in modifiers)
             {
-                float current = statsData.Get(modifier.StatType);
-                float updated = modifier.ModifierType switch
-                {
-                    StatModifierType.Absolute => current + modifier.Magnitude,
-                    StatModifierType.Relative => current + current * (modifier.Magnitude / 100f),
-                    _ => current
-                };
+                float baseValue = CharacterStatResolver.GetBase(target, modifier.Stat);
+                float delta = saved.Get(modifier.Stat);
 
-                statsData.Set(modifier.StatType, updated);
+                saved.Set(modifier.Stat, delta + StatModifierMath.ComputeDeltaChange(baseValue, delta, modifier));
             }
 
-            var updatedEntry = ToFileEntry(characterId, statsData);
+            var updatedEntry = ToFileEntry(characterId, saved);
 
             if (index >= 0)
                 fileData.Characters[index] = updatedEntry;
             else
                 fileData.Characters.Add(updatedEntry);
 
-            SaveAll(fileData);
+            if (!SaveAll(fileData)) return false;
 
             Log(LogLevel.Debug, $"Applied {modifiers.Count} modifier(s) to character '{characterId}'.");
+            return true;
         }
 
         private static CharacterStatsData ToStatsData(CharacterStatsFileData.CharacterEntry entry)

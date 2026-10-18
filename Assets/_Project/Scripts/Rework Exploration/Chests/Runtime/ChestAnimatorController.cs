@@ -1,3 +1,4 @@
+using Services.DebugUtilities;
 using UnityEngine;
 
 namespace Core.Chests
@@ -30,10 +31,26 @@ namespace Core.Chests
         private void Awake()
         {
             if (_chest == null)
+            {
                 _chest = GetComponentInParent<Chest>();
+                Log(LogLevel.Debug, _chest != null
+                    ? $"Chest não atribuído - resolvido via GetComponentInParent: '{_chest.name}'."
+                    : "Chest não atribuído e não encontrado nos pais.");
+            }
 
             if (_animator == null)
+            {
                 _animator = GetComponentInChildren<Animator>();
+                Log(LogLevel.Debug, _animator != null
+                    ? $"Animator não atribuído - resolvido via GetComponentInChildren: '{_animator.name}'."
+                    : "Animator não atribuído e não encontrado nos filhos.");
+            }
+
+            if (_chest == null)
+                Log(LogLevel.Warning, "Sem Chest: o controller não reagirá a mudanças de estado.");
+
+            if (_animator == null)
+                Log(LogLevel.Warning, "Sem Animator: nenhuma animação será aplicada.");
         }
 
         private void OnEnable()
@@ -43,9 +60,11 @@ namespace Core.Chests
 
             // Sincroniza com o estado atual do baú, caso já tenha sido consumido
             // antes deste componente ser habilitado.
-            ChestState state = _chest != null && _chest.IsConsumed
-                ? ChestState.Open
-                : _initialState;
+            bool consumed = _chest != null && _chest.IsConsumed;
+            ChestState state = consumed ? ChestState.Open : _initialState;
+
+            Log(LogLevel.Debug,
+                $"Habilitado. Consumido: {consumed}, estado inicial resolvido: {state}, snap: {_snapInitialState}.");
 
             Apply(state, snap: _snapInitialState);
         }
@@ -54,16 +73,20 @@ namespace Core.Chests
         {
             if (_chest != null)
                 _chest.OnChestStateChanged -= HandleChestStateChanged;
+
+            Log(LogLevel.Debug, "Desabilitado - inscrição em OnChestStateChanged removida.");
         }
 
         private void HandleChestStateChanged(ChestState state)
         {
+            Log(LogLevel.Debug, $"OnChestStateChanged recebido: {state}.");
             Apply(state, snap: false);
         }
 
         /// <summary>Também pode ser ligado a UnityEvents.</summary>
         public void SetOpen(bool open)
         {
+            Log(LogLevel.Debug, $"SetOpen({open}) chamado externamente.");
             Apply(open ? ChestState.Open : ChestState.Closed, snap: false);
         }
 
@@ -71,15 +94,17 @@ namespace Core.Chests
         {
             bool open = state == ChestState.Open;
 
-            if (_hasAppliedState && IsOpen == open && !snap)
-                return;
-
             IsOpen = open;
             _hasAppliedState = true;
 
-            if (_animator == null) return;
+            if (_animator == null)
+            {
+                Log(LogLevel.Warning, $"Estado '{state}' registrado, mas não há Animator para aplicar.");
+                return;
+            }
 
             _animator.SetBool(IsOpenId, open);
+            Log(LogLevel.Debug, $"Animator.SetBool(IsOpen, {open}) aplicado (snap: {snap}).");
 
             if (snap)
             {
@@ -87,7 +112,11 @@ namespace Core.Chests
                 _animator.Update(0f);
                 _animator.Play(0, 0, 1f);
                 _animator.Update(0f);
+                Log(LogLevel.Debug, "Snap aplicado: animator avançado direto para o fim do clip.");
             }
         }
+
+        private void Log(LogLevel level, string msg) =>
+            LoggerService.PrintLogMessage(level, $"[ChestAnimatorController:{gameObject.name}] {msg}", LogCategory.Inventory);
     }
 }
