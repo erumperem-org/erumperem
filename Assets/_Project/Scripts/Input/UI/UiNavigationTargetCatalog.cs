@@ -6,6 +6,8 @@ using UnityEngine.UI;
 
 public static class UiNavigationTargetCatalog
 {
+    private const string SettingsPanelName = "SettingsPanel";
+
     public static void Collect(KeyboardNavigablePanel panel, List<UiNavigationTarget> targets)
     {
         targets.Clear();
@@ -23,6 +25,8 @@ public static class UiNavigationTargetCatalog
         }
 
         var customRoots = new HashSet<Transform>();
+        var processedToggleGroups = new HashSet<ToggleGroup>();
+        var collapseToggleGroups = IsSettingsPanel(panel);
         var behaviours = navigationRoot.GetComponentsInChildren<MonoBehaviour>(true);
 
         for (var behaviourIndex = 0; behaviourIndex < behaviours.Length; behaviourIndex++)
@@ -52,6 +56,11 @@ public static class UiNavigationTargetCatalog
             var selectable = selectables[selectableIndex];
 
             if (!IsUsableSelectable(selectable) || !BelongsToPanel(panel, selectable.transform) || HasCustomUiButtonAncestor(selectable.transform, customRoots))
+            {
+                continue;
+            }
+
+            if (collapseToggleGroups && selectable is Toggle toggle && TryAddLogicalToggleGroupTarget(panel, toggle, processedToggleGroups, targets))
             {
                 continue;
             }
@@ -110,6 +119,108 @@ public static class UiNavigationTargetCatalog
         }
 
         return null;
+    }
+
+    private static bool TryAddLogicalToggleGroupTarget(KeyboardNavigablePanel panel, Toggle sourceToggle, HashSet<ToggleGroup> processedToggleGroups, List<UiNavigationTarget> targets)
+    {
+        if (sourceToggle == null || sourceToggle.group == null)
+        {
+            return false;
+        }
+
+        var toggleGroup = sourceToggle.group;
+
+        if (processedToggleGroups.Contains(toggleGroup))
+        {
+            return true;
+        }
+
+        if (!TryFindToggleGroupRepresentative(panel, toggleGroup, out var representativeToggle, out var usableToggleCount))
+        {
+            return false;
+        }
+
+        if (usableToggleCount < 2)
+        {
+            return false;
+        }
+
+        processedToggleGroups.Add(toggleGroup);
+
+        var groupRectTransform = toggleGroup.transform as RectTransform;
+
+        if (groupRectTransform == null)
+        {
+            groupRectTransform = representativeToggle.transform as RectTransform;
+        }
+
+        if (groupRectTransform == null)
+        {
+            return true;
+        }
+
+        targets.Add(new UiNavigationTarget(representativeToggle.gameObject, groupRectTransform, representativeToggle, false));
+        return true;
+    }
+
+    private static bool TryFindToggleGroupRepresentative(KeyboardNavigablePanel panel, ToggleGroup toggleGroup, out Toggle representativeToggle, out int usableToggleCount)
+    {
+        representativeToggle = null;
+        usableToggleCount = 0;
+
+        if (toggleGroup == null)
+        {
+            return false;
+        }
+
+        var toggles = toggleGroup.GetComponentsInChildren<Toggle>(true);
+        Toggle firstUsableToggle = null;
+
+        for (var toggleIndex = 0; toggleIndex < toggles.Length; toggleIndex++)
+        {
+            var toggle = toggles[toggleIndex];
+
+            if (toggle == null || toggle.group != toggleGroup || !IsUsableSelectable(toggle) || !BelongsToPanel(panel, toggle.transform))
+            {
+                continue;
+            }
+
+            usableToggleCount++;
+
+            if (firstUsableToggle == null)
+            {
+                firstUsableToggle = toggle;
+            }
+
+            if (toggle.isOn)
+            {
+                representativeToggle = toggle;
+            }
+        }
+
+        if (representativeToggle == null)
+        {
+            representativeToggle = firstUsableToggle;
+        }
+
+        return representativeToggle != null;
+    }
+
+    private static bool IsSettingsPanel(KeyboardNavigablePanel panel)
+    {
+        if (panel == null)
+        {
+            return false;
+        }
+
+        var navigationRoot = panel.NavigationRoot;
+
+        if (navigationRoot == null)
+        {
+            return false;
+        }
+
+        return string.Equals(navigationRoot.gameObject.name, SettingsPanelName, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool BelongsToPanel(KeyboardNavigablePanel panel, Transform targetTransform)
