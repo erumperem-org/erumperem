@@ -25,7 +25,12 @@ public sealed class CombatInputHoverMarkerBridge : MonoBehaviour
             return;
         }
 
-        // Se não estiver na fase de seleção de alvos ou não houver alvo no teclado, libera o marcador externo
+        if (InputDeviceModeManager.IsMouseMode)
+        {
+            hoverFocusMarker.ClearExternalTarget();
+            return;
+        }
+
         if (inputController.CurrentPhase != CombatInputPhase.TargetSelection ||
             string.IsNullOrEmpty(inputController.FocusedTargetCombatantId))
         {
@@ -33,7 +38,6 @@ public sealed class CombatInputHoverMarkerBridge : MonoBehaviour
             return;
         }
 
-        // Se o mouse estiver sobre a barra de UI de habilidades, libera o marcador externo
         if (skillBarUiManager != null && skillBarUiManager.TryGetHoveredLivingCombatant(out _))
         {
             hoverFocusMarker.ClearExternalTarget();
@@ -64,7 +68,6 @@ public sealed class CombatInputHoverMarkerBridge : MonoBehaviour
         markerPosition.y = topWorldY;
         markerPosition += hoverFocusMarker.MarkerOffset;
 
-        // Alimenta o marcador pelo canal externo limpo (sem reflection)
         hoverFocusMarker.PresentExternal(markerPosition, target.Identity.Id);
     }
 
@@ -99,5 +102,3 @@ public sealed class CombatInputHoverMarkerBridge : MonoBehaviour
         }
     }
 }
-
-//fiz umas mudanças nesses códigos de hover marker p evitar uns erros de áudio que estavam acontecendo

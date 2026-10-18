@@ -15,8 +15,15 @@ public static class UiNavigationTargetCatalog
             return;
         }
 
+        var navigationRoot = panel.NavigationRoot;
+
+        if (navigationRoot == null || !navigationRoot.gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
         var customRoots = new HashSet<Transform>();
-        var behaviours = panel.GetComponentsInChildren<MonoBehaviour>(true);
+        var behaviours = navigationRoot.GetComponentsInChildren<MonoBehaviour>(true);
 
         for (var behaviourIndex = 0; behaviourIndex < behaviours.Length; behaviourIndex++)
         {
@@ -38,7 +45,7 @@ public static class UiNavigationTargetCatalog
             targets.Add(new UiNavigationTarget(behaviour.gameObject, rectTransform, behaviour.GetComponent<Selectable>(), true));
         }
 
-        var selectables = panel.GetComponentsInChildren<Selectable>(true);
+        var selectables = navigationRoot.GetComponentsInChildren<Selectable>(true);
 
         for (var selectableIndex = 0; selectableIndex < selectables.Length; selectableIndex++)
         {
@@ -110,6 +117,18 @@ public static class UiNavigationTargetCatalog
         if (panel == null || targetTransform == null)
         {
             return false;
+        }
+
+        var navigationRoot = panel.NavigationRoot;
+
+        if (navigationRoot == null)
+        {
+            return false;
+        }
+
+        if (navigationRoot != panel.transform)
+        {
+            return targetTransform == navigationRoot || targetTransform.IsChildOf(navigationRoot);
         }
 
         var nearestPanel = targetTransform.GetComponentInParent<KeyboardNavigablePanel>(true);

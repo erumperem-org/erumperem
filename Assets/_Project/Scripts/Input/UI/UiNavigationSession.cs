@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 public sealed class UiNavigationSession
 {
@@ -21,6 +22,33 @@ public sealed class UiNavigationSession
     {
         SyncActivePanel();
         _gameplayInputBlocker.SetBlocked(_activePanel != null);
+
+        if (_activePanel == null)
+        {
+            return;
+        }
+
+        if (InputDeviceModeManager.IsMouseMode)
+        {
+            ClearFocus();
+        }
+    }
+
+    public void ActivateKeyboardMode()
+    {
+        SyncActivePanel();
+
+        if (_activePanel == null)
+        {
+            return;
+        }
+
+        RefreshTargets();
+
+        if (!UiNavigationTargetCatalog.IsValid(_currentTarget))
+        {
+            FocusDefault();
+        }
     }
 
     public void Navigate(UiNavigationDirection direction)
@@ -96,12 +124,23 @@ public sealed class UiNavigationSession
         }
 
         RefreshTargets();
+
         var cancelTarget = UiNavigationTargetCatalog.FindForGameObject(_targets, cancelTargetObject);
 
         if (cancelTarget != null)
         {
             UiNavigationEventDispatcher.Activate(_activePanel, cancelTarget, _debugActivation);
+            return;
         }
+
+        var cancelButton = cancelTargetObject.GetComponent<Button>();
+
+        if (cancelButton == null || !cancelButton.enabled || !cancelButton.interactable || !cancelButton.gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
+        cancelButton.onClick.Invoke();
     }
 
     public void Shutdown()
@@ -119,7 +158,7 @@ public sealed class UiNavigationSession
 
         if (ReferenceEquals(currentPanel, _activePanel))
         {
-            if (_activePanel != null && !UiNavigationTargetCatalog.IsValid(_currentTarget))
+            if (_activePanel != null && InputDeviceModeManager.IsKeyboardMode && !UiNavigationTargetCatalog.IsValid(_currentTarget))
             {
                 RefreshTargets();
                 FocusDefault();
@@ -140,7 +179,11 @@ public sealed class UiNavigationSession
 
         _eventSystemNavigationGuard.Capture();
         RefreshTargets();
-        FocusDefault();
+
+        if (InputDeviceModeManager.IsKeyboardMode)
+        {
+            FocusDefault();
+        }
     }
 
     private void EnsureCurrentTarget()
@@ -177,6 +220,11 @@ public sealed class UiNavigationSession
 
     private void ClearFocus()
     {
+        if (_currentTarget == null)
+        {
+            return;
+        }
+
         UiNavigationEventDispatcher.ClearFocus(_currentTarget);
         _currentTarget = null;
     }

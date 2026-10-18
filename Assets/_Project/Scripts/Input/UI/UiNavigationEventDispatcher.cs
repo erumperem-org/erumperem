@@ -11,7 +11,8 @@ public static class UiNavigationEventDispatcher
 
         if (EventSystem.current != null)
         {
-            EventSystem.current.SetSelectedGameObject(current?.GameObject);
+            var requiresEventSystemSelection = current != null && (current.Selectable is Slider || current.Selectable is Scrollbar);
+            EventSystem.current.SetSelectedGameObject(requiresEventSystemSelection ? current.GameObject : null);
         }
 
         DispatchPointerEnter(current);
@@ -230,9 +231,15 @@ public static class UiNavigationEventDispatcher
             return;
         }
 
-        var eventTarget = FindNonSelectableHandlerTarget<IPointerEnterHandler>(target.GameObject) ?? target.GameObject;
         var pointerEventData = CreatePointerEventData(target);
-        ExecuteEvents.Execute(eventTarget, pointerEventData, ExecuteEvents.pointerEnterHandler);
+        ExecuteEvents.Execute(target.GameObject, pointerEventData, ExecuteEvents.pointerEnterHandler);
+
+        var additionalEventTarget = FindNonSelectableHandlerTarget<IPointerEnterHandler>(target.GameObject);
+
+        if (additionalEventTarget != null && additionalEventTarget != target.GameObject)
+        {
+            ExecuteEvents.Execute(additionalEventTarget, pointerEventData, ExecuteEvents.pointerEnterHandler);
+        }
     }
 
     private static void DispatchPointerExit(UiNavigationTarget target)
@@ -242,9 +249,15 @@ public static class UiNavigationEventDispatcher
             return;
         }
 
-        var eventTarget = FindNonSelectableHandlerTarget<IPointerExitHandler>(target.GameObject) ?? target.GameObject;
         var pointerEventData = CreatePointerEventData(target);
-        ExecuteEvents.Execute(eventTarget, pointerEventData, ExecuteEvents.pointerExitHandler);
+        ExecuteEvents.Execute(target.GameObject, pointerEventData, ExecuteEvents.pointerExitHandler);
+
+        var additionalEventTarget = FindNonSelectableHandlerTarget<IPointerExitHandler>(target.GameObject);
+
+        if (additionalEventTarget != null && additionalEventTarget != target.GameObject)
+        {
+            ExecuteEvents.Execute(additionalEventTarget, pointerEventData, ExecuteEvents.pointerExitHandler);
+        }
     }
 
     private static void ExecuteMove(GameObject target, UiNavigationDirection direction)
