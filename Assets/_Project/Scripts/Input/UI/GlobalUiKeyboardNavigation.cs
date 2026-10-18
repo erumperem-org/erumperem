@@ -95,16 +95,22 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
 
     private void HandleNavigateRequested(UiNavigationDirection direction)
     {
+        InputDeviceModeManager.UseKeyboardMode();
+        _navigationSession?.ActivateKeyboardMode();
         _navigationSession?.Navigate(direction);
     }
 
     private void HandleSubmitRequested()
     {
+        InputDeviceModeManager.UseKeyboardMode();
+        _navigationSession?.ActivateKeyboardMode();
         _navigationSession?.Confirm();
     }
 
     private void HandleCancelRequested()
     {
+        InputDeviceModeManager.UseKeyboardMode();
+        _navigationSession?.ActivateKeyboardMode();
         _navigationSession?.Cancel();
     }
 }

@@ -61,11 +61,13 @@ public sealed class CombatInputController : MonoBehaviour
     {
         ResolveReferences();
         SubscribeInput();
+        SubscribeInputMode();
     }
 
     private void OnDisable()
     {
         UnsubscribeInput();
+        UnsubscribeInputMode();
         ClearSkillHover();
         SetFocusedTarget(null);
         SetPhase(CombatInputPhase.Inactive);
@@ -125,6 +127,48 @@ public sealed class CombatInputController : MonoBehaviour
         inputReader.NavigateRequested -= HandleNavigateRequested;
         inputReader.ConfirmRequested -= HandleConfirmRequested;
         inputReader.CancelRequested -= HandleCancelRequested;
+    }
+
+    private void SubscribeInputMode()
+    {
+        if (InputDeviceModeManager.Instance == null)
+        {
+            return;
+        }
+
+        InputDeviceModeManager.Instance.ModeChanged -= HandleInputModeChanged;
+        InputDeviceModeManager.Instance.ModeChanged += HandleInputModeChanged;
+    }
+
+    private void UnsubscribeInputMode()
+    {
+        if (InputDeviceModeManager.Instance == null)
+        {
+            return;
+        }
+
+        InputDeviceModeManager.Instance.ModeChanged -= HandleInputModeChanged;
+    }
+
+    private void HandleInputModeChanged(InputControlMode mode)
+    {
+        if (mode == InputControlMode.Mouse)
+        {
+            ClearSkillHover();
+            SetFocusedTarget(null);
+            return;
+        }
+
+        if (_phase == CombatInputPhase.SkillSelection)
+        {
+            FocusInitialSkill();
+            return;
+        }
+
+        if (_phase == CombatInputPhase.TargetSelection)
+        {
+            PrepareInitialTarget();
+        }
     }
 
     private void SyncPhaseWithCombat()
@@ -205,6 +249,8 @@ public sealed class CombatInputController : MonoBehaviour
 
     private void HandleNavigateRequested(CombatInputDirection direction)
     {
+        InputDeviceModeManager.UseKeyboardMode();
+
         if (_phase == CombatInputPhase.SkillSelection)
         {
             NavigateSkills(direction);
@@ -219,6 +265,8 @@ public sealed class CombatInputController : MonoBehaviour
 
     private void HandleConfirmRequested()
     {
+        InputDeviceModeManager.UseKeyboardMode();
+
         if (_phase == CombatInputPhase.SkillSelection)
         {
             ConfirmSkill();
@@ -233,6 +281,8 @@ public sealed class CombatInputController : MonoBehaviour
 
     private void HandleCancelRequested()
     {
+        InputDeviceModeManager.UseKeyboardMode();
+
         if (_phase != CombatInputPhase.TargetSelection || combatSession == null)
         {
             return;
@@ -604,7 +654,6 @@ public sealed class CombatInputController : MonoBehaviour
 
         return true;
     }
-
 
     private static bool IsEnemyTarget(SkillDefinition skill)
     {
