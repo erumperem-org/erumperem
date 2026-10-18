@@ -23,6 +23,7 @@ namespace Player
         [SerializeField] private bool _startsWithTorchOn = true;
 
         private bool _isOn;
+        public bool IsTorchOn => _isOn;
         private bool _hasAppliedInitialTorchState;
         private PlayableCharactersManager _charactersManager;
 

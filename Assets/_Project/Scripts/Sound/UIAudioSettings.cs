@@ -12,6 +12,15 @@ public class UIAudioSettings : MonoBehaviour
 
     private void Start()
     {
+        if (ambientSlider == null)
+        {
+            foreach (var slider in FindObjectsByType<Slider>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (slider.gameObject.scene != gameObject.scene || slider.name != "AmbienceSlider") continue;
+                ambientSlider = slider;
+                break;
+            }
+        }
         if (AudioManager.instance == null) return;
 
         InitializeSlider(masterSlider, "PrefMasterVolume", AudioManager.instance.SetMasterVolume);
@@ -25,7 +34,7 @@ public class UIAudioSettings : MonoBehaviour
         if (slider == null) return;
 
         float savedValue = PlayerPrefs.GetFloat(prefKey, 1f);
-        slider.value = savedValue;
+        slider.SetValueWithoutNotify(savedValue);
         
         slider.onValueChanged.AddListener(action);
         action.Invoke(savedValue);

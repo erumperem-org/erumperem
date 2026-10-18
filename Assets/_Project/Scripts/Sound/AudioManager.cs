@@ -20,6 +20,49 @@ public class AudioManager : MonoBehaviour
     private int lastBGMIndex = -1;
     private bool isBGMPlayingState = false;
     private Tween _bgmFade;
+    private readonly List<AudioSource> _musicTails = new();
+    private AudioSource _sliderVoice;
+    private readonly List<AudioSource> _enemySpotVoices = new();
+    [SerializeField, Min(0.1f)] private float _enemySpotFadeSeconds = 1.2f;
+
+    public void PlaySliderTick(string soundName)
+    {
+        var sound = sfxClips == null ? null : Array.Find(sfxClips, item => item != null && item.name == soundName);
+        var clip = sound?.clips == null ? null : Array.Find(sound.clips, item => item != null);
+        if (clip == null || sfxSource == null) return;
+        if (_sliderVoice == null)
+        {
+            var emitter = new GameObject("SliderAudio");
+            emitter.transform.SetParent(transform, false);
+            _sliderVoice = emitter.AddComponent<AudioSource>();
+            _sliderVoice.playOnAwake = false;
+        }
+        if (_sliderVoice.isPlaying) return;
+        _sliderVoice.outputAudioMixerGroup = sfxSource.outputAudioMixerGroup;
+        _sliderVoice.volume = sound.volume * sfxSource.volume * 0.4f;
+        _sliderVoice.mute = sfxSource.mute;
+        _sliderVoice.pitch = sound.pitch;
+        _sliderVoice.clip = clip;
+        _sliderVoice.Play();
+    }
+
+    public void FadeEnemyDetectionSounds()
+    {
+        foreach (var voice in _enemySpotVoices)
+        {
+            if (voice == null || !voice.isPlaying) continue;
+            voice.spatialBlend = 0f;
+            var reverb = voice.GetComponent<AudioReverbFilter>();
+            reverb.reverbPreset = AudioReverbPreset.Hallway;
+            reverb.enabled = true;
+            voice.DOFade(0f, _enemySpotFadeSeconds).SetUpdate(true)
+                .SetLink(voice.gameObject).OnComplete(() =>
+                {
+                    if (voice != null) Destroy(voice.gameObject);
+                });
+        }
+        _enemySpotVoices.Clear();
+    }
     public int BgmRevision { get; private set; }
     public string CurrentPlaylistName => currentPlaylist?.name;
 
@@ -34,6 +77,59 @@ public class AudioManager : MonoBehaviour
     [Header("Music Transitions")]
     [SerializeField, Min(0f)] private float _musicFadeInSeconds = 0.45f;
     [SerializeField, Min(0f)] private float _battleEndFadeSeconds = 0.8f;
+    [SerializeField, Min(0.05f)] private float _musicTransitionFadeSeconds = 0.65f;
+    [SerializeField, Range(0.1f, 5f)] private float _musicTransitionReverbSeconds = 1.2f;
+    [SerializeField, Range(-10000f, 0f)] private float _musicTransitionReverbLevel = -1700f;
+
+    private void FadeCurrentMusicWithReverb(float duration)
+    {
+        if (bgmSource == null || !bgmSource.isPlaying || bgmSource.clip == null) return;
+        if (bgmSource.volume <= 0.001f)
+        {
+            bgmSource.Stop();
+            return;
+        }
+
+        _musicTails.RemoveAll(source => source == null);
+        if (_musicTails.Count >= 2)
+        {
+            var oldest = _musicTails[0];
+            oldest.DOKill();
+            Destroy(oldest.gameObject);
+            _musicTails.RemoveAt(0);
+        }
+
+        var emitter = new GameObject("MusicTransitionTail");
+        emitter.transform.SetParent(transform, false);
+        var tail = emitter.AddComponent<AudioSource>();
+        tail.playOnAwake = false;
+        tail.outputAudioMixerGroup = bgmSource.outputAudioMixerGroup;
+        tail.clip = bgmSource.clip;
+        tail.volume = bgmSource.volume;
+        tail.pitch = bgmSource.pitch;
+        tail.mute = bgmSource.mute;
+        tail.priority = bgmSource.priority;
+        tail.panStereo = bgmSource.panStereo;
+        tail.ignoreListenerPause = bgmSource.ignoreListenerPause;
+        tail.loop = false;
+        tail.spatialBlend = 0f;
+        var reverb = emitter.AddComponent<AudioReverbFilter>();
+        reverb.reverbPreset = AudioReverbPreset.User;
+        reverb.decayTime = _musicTransitionReverbSeconds;
+        reverb.room = -1000f;
+        reverb.reverbLevel = _musicTransitionReverbLevel;
+        tail.timeSamples = Mathf.Clamp(bgmSource.timeSamples, 0, tail.clip.samples - 1);
+        bgmSource.Stop();
+        tail.Play();
+        _musicTails.Add(tail);
+        tail.DOFade(0f, Mathf.Max(_musicTransitionFadeSeconds, duration))
+            .SetEase(Ease.OutSine).SetUpdate(true).SetLink(emitter)
+            .OnComplete(() =>
+            {
+                _musicTails.Remove(tail);
+                if (tail != null) Destroy(tail.gameObject);
+            });
+    }
 
     private void Awake()
     {
@@ -158,7 +254,8 @@ public class AudioManager : MonoBehaviour
         if (ambientSource != null && ambientSource.outputAudioMixerGroup != null)
         {
             var groupMixer = ambientSource.outputAudioMixerGroup.audioMixer;
-            if (mainMixer == null || groupMixer == mainMixer)
+            if (ambientSource.outputAudioMixerGroup.name == "Ambient"
+                && (mainMixer == null || groupMixer == mainMixer))
                 return ambientSource.outputAudioMixerGroup;
         }
 
@@ -184,6 +281,15 @@ public class AudioManager : MonoBehaviour
         return true;
     }
 
+    private void Start()
+    {
+        if (instance != this) return;
+        ApplyMixerVolume("MasterVolume", PlayerPrefs.GetFloat("PrefMasterVolume", 1f));
+        ApplyMixerVolume("BGMVolume", PlayerPrefs.GetFloat("PrefBGMVolume", 1f));
+        ApplyMixerVolume("SFXVolume", PlayerPrefs.GetFloat("PrefSFXVolume", 1f));
+        ApplyMixerVolume("AmbientVolume", PlayerPrefs.GetFloat("PrefAmbientVolume", 1f));
+    }
+
     private void Update()
     {
         if (isBGMPlayingState && bgmSource != null && !bgmSource.isPlaying && currentPlaylist != null)
@@ -204,6 +310,7 @@ public class AudioManager : MonoBehaviour
         {
             BgmRevision++;
             _bgmFade?.Kill();
+            FadeCurrentMusicWithReverb(_musicTransitionFadeSeconds);
             currentPlaylist = p;
             bgmSource.volume = p.volume;
             bgmSource.pitch = p.pitch;
@@ -231,8 +338,8 @@ public class AudioManager : MonoBehaviour
         currentPlaylist = null;
         lastBGMIndex = -1;
         if (bgmSource == null) return;
-        _bgmFade = bgmSource.DOFade(0f, Mathf.Max(0f, duration))
-            .SetUpdate(true).OnComplete(() => bgmSource.Stop());
+        FadeCurrentMusicWithReverb(Mathf.Max(0f, duration));
+        bgmSource.volume = 0f;
     }
 
     public void PlayCombatOutcome(bool victory)
@@ -245,6 +352,8 @@ public class AudioManager : MonoBehaviour
     {
         if (instance != this) return;
         _bgmFade?.Kill();
+        foreach (var tail in _musicTails)
+            if (tail != null) tail.DOKill();
         instance = null;
     }
 
@@ -296,7 +405,22 @@ public class AudioManager : MonoBehaviour
             s.lastPlayedIndex = randomIndex;
             if (s.clips[randomIndex] != null)
             {
-                var voice = GetAvailableSfxVoice(position.HasValue);
+                var voice = soundName == "EnemySpot" ? null : GetAvailableSfxVoice(position.HasValue);
+                if (soundName == "EnemySpot")
+                {
+                    var emitter = new GameObject("EnemySpotAudio");
+                    emitter.transform.SetParent(transform, false);
+                    voice = emitter.AddComponent<AudioSource>();
+                    voice.playOnAwake = false;
+                    voice.outputAudioMixerGroup = sfxSource.outputAudioMixerGroup;
+                    voice.volume = sfxSource.volume;
+                    voice.mute = sfxSource.mute;
+                    voice.dopplerLevel = 0f;
+                    emitter.AddComponent<AudioReverbFilter>().enabled = false;
+                    _enemySpotVoices.RemoveAll(item => item == null);
+                    _enemySpotVoices.Add(voice);
+                    Destroy(emitter, s.clips[randomIndex].length / Mathf.Max(0.01f, Mathf.Abs(s.pitch)) + 3f);
+                }
                 if (position.HasValue)
                 {
                     voice.transform.position = position.Value;
@@ -411,6 +535,7 @@ public class AudioManager : MonoBehaviour
         lastBGMIndex = -1;
         if (bgmSource != null)
         {
+            FadeCurrentMusicWithReverb(_musicTransitionFadeSeconds);
             bgmSource.Stop();
             bgmSource.clip = null;
         }

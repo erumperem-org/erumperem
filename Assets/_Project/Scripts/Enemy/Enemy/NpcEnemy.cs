@@ -112,6 +112,10 @@ namespace Systems.NPC.Enemy
 
             PlayerTorchHandler.OnMainTorchChanged -= OnMainTorchChanged;
             PlayerTorchHandler.OnMainTorchChanged += OnMainTorchChanged;
+            var characters = FindFirstObjectByType<PlayableCharactersManager>();
+            var player = characters?.Main?.Transform;
+            var torch = player != null ? player.GetComponent<PlayerTorchHandler>() : null;
+            OnMainTorchChanged(torch != null && torch.IsTorchOn);
             _detectionHandler.StartPolling();
             _stateMachine.ToWander();
         }
