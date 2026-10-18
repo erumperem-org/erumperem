@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8644af204e4e13b4ba7e45bd1095f7bb, type: 3}
+  m_Name: ESCUDO_VIVO_BIG
+  m_EditorClassIdentifier: Assembly-CSharp::Core.CharacterStats.StatusModifierItem
+  _storageableId: ESCUDO_VIVO_BIG
+  _displayName: Escudo Vivo (Big)
+  _description: 'Extreme tank: barely crits.'
+  _sprite: {fileID: 0}
+  _rarity: 3
+  _storageStrategy:
+    rid: 4235599579339030648
+  _intensityLibrary: {fileID: 11400000, guid: 5643c6aad8e70da4699781166b1d8485, type: 2}
+  _modifiers:
+  - _statType: 0
+    _modifierType: 1
+    _intensity: 3
+  - _statType: 1
+    _modifierType: 1
+    _intensity: 3
+  - _statType: 2
+    _modifierType: 1
+    _intensity: -4
+  references:
+    version: 2
+    RefIds:
+    - rid: 4235599579339030648
+      type: {class: StackableStorageStrategy, ns: Core.Storage, asm: Assembly-CSharp}
+      data:
+        _maxPerSlot: 99

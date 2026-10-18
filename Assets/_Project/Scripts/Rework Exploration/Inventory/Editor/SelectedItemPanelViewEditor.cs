@@ -31,12 +31,6 @@ namespace Core.Inventory.UI.Editor
             _testInventory = (InventorySystem)EditorGUILayout.ObjectField(
                 "Test inventory", _testInventory, typeof(InventorySystem), true);
 
-            using (new EditorGUI.DisabledScope(_testItemAsset is not IIITem || _testInventory == null))
-            {
-                if (GUILayout.Button("Simulate Show"))
-                    panel.Show((IIITem)_testItemAsset, _testInventory);
-            }
-
             if (GUILayout.Button("Simulate Hide"))
                 panel.Hide();
 

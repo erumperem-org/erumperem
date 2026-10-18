@@ -15,6 +15,9 @@ GameObject:
   - component: {fileID: 5140141455969661432}
   - component: {fileID: 941302050387705730}
   - component: {fileID: 3429019102025543119}
+  - component: {fileID: 7700000000000000101}
+  - component: {fileID: 7700000000000000102}
+  - component: {fileID: 7700000000000000103}
   m_Layer: 0
   m_Name: Chaser
   m_TagString: Untagged
@@ -170,6 +173,56 @@ MonoBehaviour:
     tier: 3
   - view: {fileID: 8677903243203296975}
     tier: 4
+--- !u!114 &7700000000000000101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8892497982925844267}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a32cc5b22f34f8c9e6d8ba2222f3d34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChaserContactSensor
+--- !u!114 &7700000000000000102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8892497982925844267}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ecd20df8c8e045228eb69adce07f1bda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChaserAnimationDriver
+  speedParameter: Speed
+  grabTrigger: Grab
+  speedDampTime: 0.1
+  normalizeSpeed: 0
+  normalizeMaxSpeed: 6
+  animators: []
+--- !u!114 &7700000000000000103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8892497982925844267}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99e84fc2de984e96b5e9621e0bb8b101, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChaserProximityAudio
+  loopClip: {fileID: 0}
+  outputMixerGroup: {fileID: 0}
+  volume: 1
+  minDistance: 2
+  maxDistance: 25
+  rolloffMode: 1
+  stopMargin: 3
+  evaluationInterval: 0.25
 --- !u!1001 &420741498383878383
 PrefabInstance:
   m_ObjectHideFlags: 0
