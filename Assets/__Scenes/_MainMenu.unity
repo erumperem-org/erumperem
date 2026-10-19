@@ -1643,16 +1643,20 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4243351695500784539, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4243351695500784539, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Mode
-      value: 1
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 4243351695500784539, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 2042240645}
+    - target: {fileID: 4243351695500784539, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Target
+      value: 
+      objectReference: {fileID: 1618626635}
     - target: {fileID: 4243351695500784539, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_CallState
       value: 2
@@ -1662,8 +1666,20 @@ PrefabInstance:
       value: ClearAll
       objectReference: {fileID: 0}
     - target: {fileID: 4243351695500784539, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
+      value: LoadSceneByName
+      objectReference: {fileID: 0}
+    - target: {fileID: 4243351695500784539, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_TargetAssemblyTypeName
-      value: SaveFileWiper, Assembly-CSharp
+      value: ScenesManager, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 4243351695500784539, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Arguments.m_StringArgument
+      value: Overworld
+      objectReference: {fileID: 0}
+    - target: {fileID: 4243351695500784539, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 5054801247652651834, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
       propertyPath: m_Pivot.x
@@ -1789,7 +1805,8 @@ PrefabInstance:
       propertyPath: uiButtonModel.panelToOpen
       value: 
       objectReference: {fileID: 8632126812108429330}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 7495045023572212787, guid: 2f176acf0b42bfd4f81a3c966fc3a8b1, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
