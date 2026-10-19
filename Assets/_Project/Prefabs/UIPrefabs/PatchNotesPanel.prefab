@@ -34,7 +34,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 388.995, y: -4342.6426}
+  m_AnchoredPosition: {x: 388.995, y: -6999.867}
   m_SizeDelta: {x: 777.99, y: 93.594}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5709084834622341831
@@ -171,8 +171,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 388.995, y: -7653.0337}
-  m_SizeDelta: {x: 777.99, y: 592.081}
+  m_AnchoredPosition: {x: 388.995, y: -16350.625}
+  m_SizeDelta: {x: 777.99, y: 1464.014}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3802429104842208229
 CanvasRenderer:
@@ -202,23 +202,44 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Fixed Rich Text icons not displaying correctly inside tooltips.
+  m_text: 'Fixed enemy positioning issues during combat.
+
+
+    Fixed enemies spawning
+    partially underground.
+
+
+    Restored the enemy selection circle in combat.
+
 
     Improved
-    Token tooltip interaction during combat.
+    health bar visibility and death animations.
 
-    Fixed enemy positioning in combat.
 
-    Fixed
-    issues with audio settings.
+    Fixed keyboard and mouse input
+    conflicts.
 
-    Fixed and updated combat interfaces and skill
-    icons.
 
-    Improved and optimized several visual effects.
+    Fixed inventory slot refill behavior.
 
-    Improved various
-    underlying gameplay systems through refactoring.'
+
+    Fixed item usage
+    cancellation and rejection messages.
+
+
+    Improved combat accuracy and enemy
+    outline settings.
+
+
+    Updated and corrected environmental VFX.
+
+
+    Improved
+    audio settings and music transitions.
+
+
+    Refined character models, textures,
+    materials, and animations.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
   m_sharedMaterial: {fileID: -4590058019579560374, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
@@ -324,7 +345,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 388.995, y: -6786.302}
+  m_AnchoredPosition: {x: 388.995, y: -14654.126}
   m_SizeDelta: {x: 777.99, y: 93.594}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1718198144721663031
@@ -549,7 +570,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 5136111108121964070}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.09361651
+  m_Size: 0.046043493
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -681,151 +702,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RectMask2D
   m_Padding: {x: 0, y: 0, z: 0, w: 0}
   m_Softness: {x: 0, y: 30}
---- !u!1 &1052302758662586618
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7618692951993480691}
-  - component: {fileID: 768300203642271177}
-  - component: {fileID: 6897585227551390545}
-  m_Layer: 5
-  m_Name: CheatsText
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &7618692951993480691
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1052302758662586618}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.999989, y: 0.999989, z: 0.999989}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 597642312125936265}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 388.995, y: -8229.061}
-  m_SizeDelta: {x: 777.99, y: 372.784}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!222 &768300203642271177
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1052302758662586618}
-  m_CullTransparentMesh: 1
---- !u!114 &6897585227551390545
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1052302758662586618}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_text: 'Added on-screen feedback when Combat Cheats are activated or deactivated.
-
-    Added
-    a dedicated option to enable or disable the Cursor.
-
-    Added visual settings
-    to enable or disable Film Grain and other effects.
-
-    Added Combat Speed controls.'
-  m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
-  m_sharedMaterial: {fileID: -4590058019579560374, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
-  m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
-  m_fontMaterials: []
-  m_fontColor32:
-    serializedVersion: 2
-    rgba: 4278190080
-  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
-  m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
-  m_fontColorGradientPreset: {fileID: 0}
-  m_spriteAsset: {fileID: 0}
-  m_tintAllSprites: 0
-  m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: -1183493901
-  m_overrideHtmlColors: 0
-  m_faceColor:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontSize: 35
-  m_fontSizeBase: 35
-  m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
-  m_fontStyle: 16
-  m_HorizontalAlignment: 1
-  m_VerticalAlignment: 256
-  m_textAlignment: 65535
-  m_characterSpacing: 0
-  m_characterHorizontalScale: 1
-  m_wordSpacing: 0
-  m_lineSpacing: 0
-  m_lineSpacingMax: 0
-  m_paragraphSpacing: 0
-  m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
-  m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
-  m_linkedTextComponent: {fileID: 0}
-  parentLinkedComponent: {fileID: 0}
-  m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
-  m_enableExtraPadding: 0
-  checkPaddingRequired: 0
-  m_isRichText: 1
-  m_EmojiFallbackSupport: 1
-  m_parseCtrlCharacters: 1
-  m_isOrthographic: 1
-  m_isCullingEnabled: 0
-  m_horizontalMapping: 0
-  m_verticalMapping: 0
-  m_uvLineOffset: 0
-  m_geometrySortingOrder: 0
-  m_IsTextObjectScaleStatic: 0
-  m_VertexBufferAutoSizeReduction: 0
-  m_useMaxVisibleDescender: 1
-  m_pageToDisplay: 1
-  m_margin: {x: 0, y: 2.7222898, z: -3.373169, w: 0}
-  m_isUsingLegacyAnimationComponent: 0
-  m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
-  m_baseMaterial: {fileID: 0}
-  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &1895088584723656192
 GameObject:
   m_ObjectHideFlags: 0
@@ -937,7 +813,7 @@ GameObject:
   - component: {fileID: 7631268909333929041}
   - component: {fileID: 5929766163012250012}
   m_Layer: 5
-  m_Name: AssetsSub
+  m_Name: CombatSub
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -959,7 +835,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 388.995, y: -5568.07}
+  m_AnchoredPosition: {x: 388.995, y: -9386.959}
   m_SizeDelta: {x: 777.99, y: 93.594}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7631268909333929041
@@ -990,7 +866,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: CHARACTER & ASSETS
+  m_text: COMBAT
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
   m_sharedMaterial: {fileID: -4590058019579560374, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
@@ -1099,18 +975,18 @@ RectTransform:
   - {fileID: 5282773830617828072}
   - {fileID: 2427349690552832926}
   - {fileID: 844437770862671439}
+  - {fileID: 8691037658514002852}
+  - {fileID: 6504831084614393676}
   - {fileID: 4061415804933004509}
   - {fileID: 4854951086016289029}
   - {fileID: 2379011762515645110}
   - {fileID: 8473422784017932494}
-  - {fileID: 3946890185707306158}
-  - {fileID: 7618692951993480691}
   m_Father: {fileID: 5657333810336927994}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -0}
-  m_SizeDelta: {x: 0, y: 8438.65}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 17157.627}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &7030970471540881150
 MonoBehaviour:
@@ -1150,7 +1026,7 @@ GameObject:
   - component: {fileID: 7606133660567712452}
   - component: {fileID: 2551615752949260398}
   m_Layer: 5
-  m_Name: AssetsText
+  m_Name: CombatText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1172,8 +1048,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 388.995, y: -6177.186}
-  m_SizeDelta: {x: 777.99, y: 1124.638}
+  m_AnchoredPosition: {x: 388.995, y: -10643.008}
+  m_SizeDelta: {x: 777.99, y: 2418.515}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7606133660567712452
 CanvasRenderer:
@@ -1203,11 +1079,74 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Rotten Fairy:\n\nAdded the new Rotten Fairy version.\nUpdated Fairy animations:\n\tIdle;\n\tLight
-    Attack;\n\tHit Taken;\n\tDeath.\nAdded new Fairy animations:\n\tHeavy Attack;\n\tSelf
-    Buff;\n\tParty Buff.\n\nCombat Assets:\n\nUpdated enemy portraits in the Combat
-    HUD.\nUpdated enemy positioning during combat.\nFixed the Buck model.\n\nItems:\n\nAdded
-    new item icons to the Market."
+  m_text: 'Combat UI & Health Bars
+
+
+    Improved the combat HUD and introduced new
+    color variations.
+
+
+    Restored the enemy selection circle with corrected prefab
+    and positioning.
+
+
+    Added animated health bar trails:
+
+
+    Yellow trails
+    indicate damage.
+
+
+    Green trails indicate healing.
+
+
+    Health bar fills
+    update immediately while their trails animate toward the new values.
+
+
+    Ally
+    health bars and the selected enemy''s health bar remain visible. Other enemy
+    bars appear on hover or during animations.
+
+
+    Health bars now finish their
+    depletion animation when a character dies instead of disappearing immediately.
+
+
+    Combat
+    Effects & Behavior
+
+
+    Added Token visual effects to character models.
+
+
+    Added
+    support for summons and Damage over Time (DoT) effects, including Bleed and Burn.
+
+
+    Fixed
+    enemies spawning partially underground.
+
+
+    Improved enemy outline settings.
+
+
+    Improved
+    the combat environment and its visual effects.
+
+
+    Characters & Combat Animations
+
+
+    Added
+    new Buck animations, including rifle and alternate revolver attacks.
+
+
+    Fixed
+    and refined Buck''s idle animations.
+
+
+    Refined Wulfric''s model and animations.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
   m_sharedMaterial: {fileID: -4590058019579560374, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
@@ -1674,143 +1613,6 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
---- !u!1 &5690859234128628403
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 3946890185707306158}
-  - component: {fileID: 6846969257732436866}
-  - component: {fileID: 6680378433332598206}
-  m_Layer: 5
-  m_Name: CheatsSub
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &3946890185707306158
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5690859234128628403}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.999989, y: 0.999989, z: 0.999989}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 597642312125936265}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 388.995, y: -7995.871}
-  m_SizeDelta: {x: 777.99, y: 93.594}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!222 &6846969257732436866
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5690859234128628403}
-  m_CullTransparentMesh: 1
---- !u!114 &6680378433332598206
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5690859234128628403}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_text: CHEATS & ACCESSIBILITY
-  m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
-  m_sharedMaterial: {fileID: -4590058019579560374, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
-  m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
-  m_fontMaterials: []
-  m_fontColor32:
-    serializedVersion: 2
-    rgba: 4278190080
-  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
-  m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
-  m_fontColorGradientPreset: {fileID: 0}
-  m_spriteAsset: {fileID: 0}
-  m_tintAllSprites: 0
-  m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: -1183493901
-  m_overrideHtmlColors: 0
-  m_faceColor:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontSize: 45
-  m_fontSizeBase: 45
-  m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
-  m_fontStyle: 16
-  m_HorizontalAlignment: 1
-  m_VerticalAlignment: 256
-  m_textAlignment: 65535
-  m_characterSpacing: 0
-  m_characterHorizontalScale: 1
-  m_wordSpacing: 0
-  m_lineSpacing: 0
-  m_lineSpacingMax: 0
-  m_paragraphSpacing: 0
-  m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
-  m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
-  m_linkedTextComponent: {fileID: 0}
-  parentLinkedComponent: {fileID: 0}
-  m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
-  m_enableExtraPadding: 0
-  checkPaddingRequired: 0
-  m_isRichText: 1
-  m_EmojiFallbackSupport: 1
-  m_parseCtrlCharacters: 1
-  m_isOrthographic: 1
-  m_isCullingEnabled: 0
-  m_horizontalMapping: 0
-  m_verticalMapping: 0
-  m_uvLineOffset: 0
-  m_geometrySortingOrder: 0
-  m_IsTextObjectScaleStatic: 0
-  m_VertexBufferAutoSizeReduction: 0
-  m_useMaxVisibleDescender: 1
-  m_pageToDisplay: 1
-  m_margin: {x: 0, y: 2.7222898, z: -3.373169, w: 0}
-  m_isUsingLegacyAnimationComponent: 0
-  m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
-  m_baseMaterial: {fileID: 0}
-  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &5952824452889115378
 GameObject:
   m_ObjectHideFlags: 0
@@ -1987,8 +1789,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 388.995, y: -1004.9785}
-  m_SizeDelta: {x: 777.99, y: 1822.769}
+  m_AnchoredPosition: {x: 388.995, y: -2324.3025}
+  m_SizeDelta: {x: 777.99, y: 4461.417}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1282535670888762302
 CanvasRenderer:
@@ -2018,73 +1820,125 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'New Systems:
+  m_text: 'Item Usage System
 
 
-    Added a Dialogue System, allowing the creation of dialogue
-    trees for character interactions.
+    Introduced a new three-step item usage flow: select
+    an item, choose a target character, and confirm.
 
-    Added a Torch System.
 
-    Added a Stamina
-    System.
+    Added cancellation at
+    any step of the process.
 
-    Added a Safe Area System.
 
-    Added Save Slots and integrated them
-    with the game''s other systems.
+    Items that do not require a target, such as Skill
+    Tree Resets and Restorative Drinks, skip character selection.
 
-    Added Exploration Save/Load, allowing the
-    exploration scenario to be saved and loaded.
 
-    Added an Object Placement System.
+    Item usage
+    now tracks the source inventory, slot, item, and target character.
+
+
+    Items
+    are removed from their exact source slot, whether they belong to the temporary
+    or permanent inventory.
+
+
+    The usage flow cancels automatically if an item
+    changes slots during the process.
+
+
+    Characters who cannot receive an item
+    are shown as unavailable, with an explanation.
+
+
+    Character-Targeted Items
+
+
+    Introduced
+    a new system for items that apply effects to a specific character.
+
 
     Added
-    a dedicated service for physics-based movement logic.
-
-    Added a character
-    movement system using physics.
-
-    Added Combat Speed controls.
+    compatibility checks to determine whether an item can be applied to a selected
+    character.
 
 
-    Skill
-    & Character Systems:
+    Improved item effect execution to account for the target character''s
+    stats.
 
 
-    Refactored the character skills system.
+    New Item: Restorative Drink
+
+
+    Added Restorative Drinks, which
+    heal every character in the playable roster.
+
+
+    Healing values are configurable
+    per item.
+
+
+    Restorative Drinks do not require a target character.
+
+
+    Item
+    Intensity System
+
+
+    Introduced a four-level intensity system: +, ++, +++,
+    and ++++.
+
+
+    Item intensity is now represented by symbols instead of directly
+    stored numeric values.
+
+
+    Added a centralized Intensity Library that maps
+    stats, modifier types, and intensity symbols to their corresponding values.
+
 
     Updated
-    character base kits and skill trees.
-
-    Updated Wulfric''s skills in the Skill
-    Tree.
+    the editor interface with a table-based layout for easier balancing.
 
 
-    System Refactoring:
+    Existing
+    item assets are migrated automatically to the new format.
 
 
-    Refactored the Health Bar system.
+    Character Stats
+    & Persistence
 
-    Refactored
-    the Corruption Bar system.
 
-    Refactored the Item Base system.
+    Character stat modifications are now saved separately for
+    each save slot.
 
-    Refactored
-    the Chest system.
 
-    Refactored the Item Generation system.
+    The current stat value is calculated from the base stat
+    plus its saved modification.
 
-    Refactored
-    the Inventory system.
 
-    Refactored the Shop system.
+    Relative modifiers now apply percentages to
+    the current effective stat value.
 
-    Refactored the Exploration
-    Enemy AI.
 
-    Refactored the Character Switching system.'
+    Status items are unavailable when no
+    save slot is selected, preventing unintended item consumption.
+
+
+    Improved
+    stat retrieval, availability checks, and save operations.
+
+
+    Deleting a save
+    file now affects only the active slot.
+
+
+    Accuracy System
+
+
+    Improved the
+    combat accuracy system.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
   m_sharedMaterial: {fileID: -4590058019579560374, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
@@ -2150,7 +2004,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 2.7222898, z: -3.373169, w: 0}
+  m_margin: {x: 0, y: 2.7222898, z: -3.373169, w: 14.081665}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -2190,8 +2044,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 388.995, y: -3152.9014}
-  m_SizeDelta: {x: 777.99, y: 2285.889}
+  m_AnchoredPosition: {x: 388.995, y: -5800.838}
+  m_SizeDelta: {x: 777.99, y: 2304.465}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &360649743715617441
 CanvasRenderer:
@@ -2221,21 +2075,63 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "New Interfaces & Content:\n\nAdded a new Splash Screen.\nAdded a new Tutorial.\nAdded
-    a new Almanac.\nAdded a Skill Panel with Rich Text and Token/DoT icons in skill
-    descriptions.\nAdded Combat Cheat activation indicators.\nAdded visual settings
-    for enabling or disabling Film Grain and other visual effects.\nAdded an option
-    to enable or disable the Cursor.\n\nInterface Redesign:\n\nChanged the game's
-    main font from Edo to MedievalSharp.\nRedesigned and animated all game interfaces.\n\tPause
-    Menu: \n\t- Added a sliding screen transition with a black gradient background.\n\tSettings,
-    Extras, Credits & Patch Notes:\n\t- Added a paper-opening transition;\n\t- Content
-    now appears as the paper opens;\n\t- Buttons slide into view behind the content.\n\tCharacter
-    Selection:\n\t- Redesigned the layout;\n\t- Added new colors;\n\t- Added a new
-    sliding screen transition.\n\nUI Improvements:\n\nAdded new styles and visual
-    details to Sliders, Scrollbars, and Handles.\nImproved Token tooltips during
-    combat.\nAdded Rich Text icon support inside tooltips.\nRemoved the yellow damage
-    preview from enemy health bars when hovering over them.\nUpdated combat skill
-    icons.\nImproved the combat interface."
+  m_text: 'Input Improvements
+
+
+    Fixed keyboard input handling to prevent conflicts
+    with mouse input.
+
+
+    Improved input behavior across the battle scene, main
+    menu, and other game menus.
+
+
+    Inventory & Item Interaction
+
+
+    Added exact-slot
+    item removal to prevent items from being removed from the wrong inventory location.
+
+
+    Improved
+    inventory slot ownership and click handling.
+
+
+    Integrated the item usage
+    flow into the Use buttons in the selected-item and transfer-item panels.
+
+
+    Updated
+    the Discard action to remove the item from its exact slot.
+
+
+    Fixed an issue
+    where removing an item from the temporary inventory could incorrectly refill
+    multiple empty slots in the permanent inventory.
+
+
+    Fixed item rejection messages
+    disappearing during transitions between usage steps.
+
+
+    Item Creation & Editor
+    Tools
+
+
+    Added editor tools to generate all 37 game items and the Intensity
+    Library.
+
+
+    Added a tool to create Restorative Drink assets.
+
+
+    Added a
+    tool to build the Item Use Flow interface and connect its required components
+    without overwriting existing prefabs.
+
+
+    Updated character stats and item
+    effect test environments.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
   m_sharedMaterial: {fileID: -4590058019579560374, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
@@ -2871,8 +2767,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 388.995, y: -7048.249}
-  m_SizeDelta: {x: 777.99, y: 430.3}
+  m_AnchoredPosition: {x: 388.995, y: -15112.973}
+  m_SizeDelta: {x: 777.99, y: 824.104}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &9075409493185570072
 CanvasRenderer:
@@ -2902,17 +2798,27 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Interface Audio:
+  m_text: 'Sound & Music Improvements
 
 
-    Added sound effects to the game''s interfaces.
+    Added interface sound effects.
 
 
-    Audio
-    Settings:
+    Added
+    directional environmental audio and distance-based sound behavior.
 
 
-    Fixed bugs related to audio settings.'
+    Improved
+    audio pitch, music transitions, and audio source routing.
+
+
+    Updated the Main
+    Mixer routing to ensure sounds play through their appropriate audio categories,
+    including dynamically generated ambient sounds.
+
+
+    Improved village and exploration
+    music transitions.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
   m_sharedMaterial: {fileID: -4590058019579560374, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
@@ -3016,7 +2922,7 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 7249755610287130044}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.9063835}
+  m_AnchorMin: {x: 0, y: 0.9539565}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 20}
@@ -3093,8 +2999,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 388.995, y: -4955.3564}
-  m_SizeDelta: {x: 777.99, y: 1131.833}
+  m_AnchoredPosition: {x: 388.995, y: -8193.414}
+  m_SizeDelta: {x: 777.99, y: 2293.498}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5358863274877229466
 CanvasRenderer:
@@ -3124,48 +3030,76 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Visual Improvements:
+  m_text: 'Environment & Materials
 
 
-    Updated anomaly materials.
+    Updated the Corrupted Miner model, materials,
+    and textures.
 
-    Updated the
-    village protection circle.
 
-    Updated lamp post materials.
+    Updated the Scavenger''s materials and textures.
 
-    Updated metallic
-    materials.
 
-    Updated the Global Volume.
+    Improved
+    combat environment visuals.
 
-    Optimized fire effects.
 
-    Optimized
-    light insect effects.
+    Updated and corrected environmental visual
+    effects.
 
-    Optimized fog effects.
 
-    Optimized blood effects.
+    Improved materials and textures across the game.
+
+
+    Character
+    & Enemy Assets
+
+
+    Added new proxy enemies: Extranger and Trap Chest.
+
+
+    Refined
+    the Wulfric model and animations.
+
+
+    Updated the Buck model and animations.
+
+
+    New
+    & Updated Animations
+
+
+    Corrupted Miner: Idle and Death cycles;
+
+
+    Trap
+    Chest: Idle cycle;
+
+
+    Extranger: Attack,  Idle,  Hit Taken and Death cycles;
+
+
+    Buck:
+    New rifle attack animation;
+
+    New alternate revolver attack animation;
+
+    Idle
+    animation fixes;
+
+
+    Interface Visuals;
+
+
+    Updated combat HUD colors.
+
 
     Added
-    new Corrupted Flame effects.
+    an animation to the Rewards Panel.
 
 
-    Cursor:
-
-
-    Updated the cursor visual effect,
-    changing its color from purple to red.
-
-
-    Exploration UI:
-
-
-    Added control
-    icons to the Exploration UI.
-
-    Added a Stamina Bar to the Exploration UI.'
+    Removed the game title from the Splash
+    Screen.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
   m_sharedMaterial: {fileID: -4590058019579560374, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
@@ -3271,7 +3205,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 388.995, y: -1963.16}
+  m_AnchoredPosition: {x: 388.995, y: -4601.808}
   m_SizeDelta: {x: 777.99, y: 93.594}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8876177466797360383
@@ -3374,6 +3308,206 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &8856000697085450296
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6504831084614393676}
+  - component: {fileID: 494051067729252911}
+  - component: {fileID: 7835474824732468850}
+  m_Layer: 5
+  m_Name: ExplorationText
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &6504831084614393676
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8856000697085450296}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.999989, y: 0.999989, z: 0.999989}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 597642312125936265}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 388.995, y: -13276.596}
+  m_SizeDelta: {x: 777.99, y: 2661.465}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &494051067729252911
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8856000697085450296}
+  m_CullTransparentMesh: 1
+--- !u!114 &7835474824732468850
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8856000697085450296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: 'Torch Mechanics
+
+
+    Added a 5-second cooldown when switching the torch
+    on or off.
+
+
+    Added an on-screen notification when the torch cannot be switched
+    due to cooldown.
+
+
+    Prevented the torch from being lit near the village.
+
+
+    The
+    torch now turns off automatically when entering the protected area.
+
+
+    Enemy
+    Threat & Pursuit
+
+
+    Added a new threat warning: "They see you".
+
+
+    Introduced
+    distant screams, subtle red visual pulses, camera shake, and music transitions
+    to reinforce the threat of being spotted.
+
+
+    Camera shake now increases gradually
+    as enemies approach and decreases as they move away.
+
+
+    Adjusted enemy detection
+    screams to prevent repeated playback during the same activation.
+
+
+    Exploration
+    Audio
+
+
+    Added directional ambient sounds at randomized positions and intervals
+    around the player, outside the village and combat.
+
+
+    Added distance-based
+    directional audio for torches and campfires.
+
+
+    Added proximity-based ambient
+    audio that responds to the corruption boundary.
+
+
+    Added sound effects for
+    opening chests and interacting with objects.
+
+
+    Added a dedicated musical
+    track for the village.
+
+
+    Improved music transitions when returning to exploration
+    to prevent threat music from playing incorrectly while the torch is off.'
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
+  m_sharedMaterial: {fileID: -4590058019579560374, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: -1183493901
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 35
+  m_fontSizeBase: 35
+  m_fontWeight: 400
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 16
+  m_HorizontalAlignment: 1
+  m_VerticalAlignment: 256
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 1
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656b
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 2.7222898, z: -3.373169, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &8885840978901799773
 GameObject:
   m_ObjectHideFlags: 0
@@ -3408,7 +3542,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 388.995, y: -7310.196}
+  m_AnchoredPosition: {x: 388.995, y: -15571.824}
   m_SizeDelta: {x: 777.99, y: 93.594}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1179834057415389823
@@ -3440,6 +3574,145 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_text: FIXES & IMPROVEMENTS
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
+  m_sharedMaterial: {fileID: -4590058019579560374, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4278190080
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: -1183493901
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 45
+  m_fontSizeBase: 45
+  m_fontWeight: 400
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 16
+  m_HorizontalAlignment: 1
+  m_VerticalAlignment: 256
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 1
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656b
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 2.7222898, z: -3.373169, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &9011693073042496773
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8691037658514002852}
+  - component: {fileID: 1148561055339124031}
+  - component: {fileID: 6084875080059072700}
+  m_Layer: 5
+  m_Name: ExplorationSub
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &8691037658514002852
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9011693073042496773}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.999989, y: 0.999989, z: 0.999989}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 597642312125936265}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 388.995, y: -11899.067}
+  m_SizeDelta: {x: 777.99, y: 93.594}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &1148561055339124031
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9011693073042496773}
+  m_CullTransparentMesh: 1
+--- !u!114 &6084875080059072700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9011693073042496773}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: 'EXPLORATION & ATMOSPHERE
+
+'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
   m_sharedMaterial: {fileID: -4590058019579560374, guid: 5f8e6024aadc5a046ade11ad5290a252, type: 2}
