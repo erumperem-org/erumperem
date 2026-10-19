@@ -27,16 +27,16 @@ public sealed class CombatInputController : MonoBehaviour
     [SerializeField] private InfinitySkillScroll skillScroll;
 
     [Header("Enemy Direction Mapping - Stable Slots")]
-    [Tooltip("Slot lógico fixo do inimigo selecionado quando o jogador aperta Cima. O slot não muda quando outro inimigo morre ou quando FrontRank é compactado.")]
+    [Tooltip("Slot lógico fixo do inimigo selecionado quando o jogador aperta Cima.")]
     [SerializeField, Min(1)] private int upEnemyRank = 1;
 
-    [Tooltip("Slot lógico fixo do inimigo selecionado quando o jogador aperta Baixo. O slot não muda quando outro inimigo morre ou quando FrontRank é compactado.")]
+    [Tooltip("Slot lógico fixo do inimigo selecionado quando o jogador aperta Baixo.")]
     [SerializeField, Min(1)] private int downEnemyRank = 3;
 
-    [Tooltip("Slot lógico fixo do inimigo selecionado quando o jogador aperta Esquerda. O slot não muda quando outro inimigo morre ou quando FrontRank é compactado.")]
+    [Tooltip("Slot lógico fixo do inimigo selecionado quando o jogador aperta Esquerda.")]
     [SerializeField, Min(1)] private int leftEnemyRank = 4;
 
-    [Tooltip("Slot lógico fixo do inimigo selecionado quando o jogador aperta Direita. O slot não muda quando outro inimigo morre ou quando FrontRank é compactado.")]
+    [Tooltip("Slot lógico fixo do inimigo selecionado quando o jogador aperta Direita.")]
     [SerializeField, Min(1)] private int rightEnemyRank = 2;
 
     private CombatInputPhase _phase;
@@ -112,6 +112,7 @@ public sealed class CombatInputController : MonoBehaviour
         inputReader.NavigateRequested -= HandleNavigateRequested;
         inputReader.ConfirmRequested -= HandleConfirmRequested;
         inputReader.CancelRequested -= HandleCancelRequested;
+
         inputReader.NavigateRequested += HandleNavigateRequested;
         inputReader.ConfirmRequested += HandleConfirmRequested;
         inputReader.CancelRequested += HandleCancelRequested;
@@ -303,7 +304,9 @@ public sealed class CombatInputController : MonoBehaviour
             return;
         }
 
-        var currentIndex = _focusedSkillPanel != null ? panels.IndexOf(_focusedSkillPanel) : -1;
+        var currentIndex = _focusedSkillPanel != null
+            ? panels.IndexOf(_focusedSkillPanel)
+            : -1;
 
         if (currentIndex < 0)
         {
@@ -311,8 +314,16 @@ public sealed class CombatInputController : MonoBehaviour
             return;
         }
 
-        var step = direction == CombatInputDirection.Left || direction == CombatInputDirection.Up ? -1 : 1;
-        var nextIndex = (currentIndex + step + panels.Count) % panels.Count;
+        var step =
+            direction == CombatInputDirection.Left ||
+            direction == CombatInputDirection.Up
+                ? -1
+                : 1;
+
+        var nextIndex =
+            (currentIndex + step + panels.Count) %
+            panels.Count;
+
         FocusSkillPanel(panels[nextIndex]);
     }
 
@@ -323,7 +334,9 @@ public sealed class CombatInputController : MonoBehaviour
             return false;
         }
 
-        var button = _focusedSkillPanel.GetComponentInChildren<Button>(true);
+        var button =
+            _focusedSkillPanel.GetComponentInChildren<Button>(true);
+
         return button != null && button.interactable;
     }
 
@@ -339,7 +352,11 @@ public sealed class CombatInputController : MonoBehaviour
 
         if (_focusedSkillSlotIndex.HasValue)
         {
-            var matchingPanel = panels.FirstOrDefault(panel => panel.ZeroBasedSlotIndex == _focusedSkillSlotIndex.Value);
+            var matchingPanel =
+                panels.FirstOrDefault(
+                    panel =>
+                        panel.ZeroBasedSlotIndex ==
+                        _focusedSkillSlotIndex.Value);
 
             if (matchingPanel != null)
             {
@@ -353,26 +370,34 @@ public sealed class CombatInputController : MonoBehaviour
 
     private List<SkillButtonPanelView> GetInteractableSkillPanels()
     {
-        var result = new List<SkillButtonPanelView>();
-        var row = skillBarUiManager != null ? skillBarUiManager.SkillsRowView : null;
+        var result =
+            new List<SkillButtonPanelView>();
+
+        var row =
+            skillBarUiManager != null
+                ? skillBarUiManager.SkillsRowView
+                : null;
 
         if (row == null)
         {
             return result;
         }
 
-        var panels = row.GetComponentsInChildren<SkillButtonPanelView>(true);
+        var panels =
+            row.GetComponentsInChildren<SkillButtonPanelView>(true);
 
         for (var panelIndex = 0; panelIndex < panels.Length; panelIndex++)
         {
-            var panel = panels[panelIndex];
+            var panel =
+                panels[panelIndex];
 
             if (panel == null || !panel.gameObject.activeInHierarchy)
             {
                 continue;
             }
 
-            var button = panel.GetComponentInChildren<Button>(true);
+            var button =
+                panel.GetComponentInChildren<Button>(true);
 
             if (button == null || !button.interactable)
             {
@@ -382,7 +407,11 @@ public sealed class CombatInputController : MonoBehaviour
             result.Add(panel);
         }
 
-        result.Sort((left, right) => left.ZeroBasedSlotIndex.CompareTo(right.ZeroBasedSlotIndex));
+        result.Sort(
+            (left, right) =>
+                left.ZeroBasedSlotIndex
+                    .CompareTo(right.ZeroBasedSlotIndex));
+
         return result;
     }
 
@@ -400,6 +429,7 @@ public sealed class CombatInputController : MonoBehaviour
 
         _focusedSkillPanel = panel;
         _focusedSkillSlotIndex = panel.ZeroBasedSlotIndex;
+
         _focusedSkillPanel.HandlePointerEnter();
 
         CenterFocusedSkill();
@@ -416,7 +446,8 @@ public sealed class CombatInputController : MonoBehaviour
 
         if (skillScroll == null)
         {
-            skillScroll = FindFirstObjectByType<InfinitySkillScroll>();
+            skillScroll =
+                FindFirstObjectByType<InfinitySkillScroll>();
         }
 
         if (skillScroll == null)
@@ -424,16 +455,19 @@ public sealed class CombatInputController : MonoBehaviour
             return;
         }
 
-        skillScroll.ScrollToItem(_focusedSkillSlotIndex.Value);
+        skillScroll.ScrollToItem(
+            _focusedSkillSlotIndex.Value);
     }
 
     private void ClearSkillHover()
     {
-        if (_focusedSkillPanel != null)
+        if (_focusedSkillPanel == null)
         {
-            _focusedSkillPanel.HandlePointerExit();
-            _focusedSkillPanel = null;
+            return;
         }
+
+        _focusedSkillPanel.HandlePointerExit();
+        _focusedSkillPanel = null;
     }
 
     private void ConfirmSkill()
@@ -453,40 +487,80 @@ public sealed class CombatInputController : MonoBehaviour
             return;
         }
 
-        var ownerCombatantId = combatSession.PendingPlayerCombatantId;
+        var ownerCombatantId =
+            combatSession.PendingPlayerCombatantId;
 
         if (string.IsNullOrEmpty(ownerCombatantId))
         {
             return;
         }
 
-        var selectedSlot = _focusedSkillPanel.ZeroBasedSlotIndex;
+        var selectedSlot =
+            _focusedSkillPanel.ZeroBasedSlotIndex;
 
-        if (!combatSession.TrySelectSkillBarSlot(ownerCombatantId, selectedSlot))
+        if (!combatSession.TrySelectSkillBarSlot(
+                ownerCombatantId,
+                selectedSlot))
         {
-            combatSession.NotifySkillBarSlotRequestFailed(selectedSlot);
+            combatSession.NotifySkillBarSlotRequestFailed(
+                selectedSlot);
+
             return;
         }
 
         _focusedSkillSlotIndex = selectedSlot;
+
         SyncPhaseWithCombat();
     }
 
     private void NavigateTargets(CombatInputDirection direction)
     {
-        if (!TryGetSelectedSkillContext(out var actor, out _, out var skill, out var candidates))
+        if (!TryGetSelectedSkillContext(
+                out var actor,
+                out _,
+                out var skill,
+                out var candidates))
         {
             return;
         }
 
-        if (!IsEnemyTarget(skill) || combatSession == null || combatSession.BattleState == null)
+        /*
+         * IMPORTANTE:
+         *
+         * Antes o código verificava:
+         *
+         * (int)skill.TargetKind == 0
+         *
+         * Isso aceitava somente OneEnemy.
+         *
+         * Agora usamos a classificação oficial do Game.Core.
+         * Portanto entram:
+         *
+         * OneEnemy
+         * UpToThreeEnemies
+         * AllEnemies
+         */
+        if (!IsEnemyTarget(skill) ||
+            combatSession == null ||
+            combatSession.BattleState == null)
         {
             return;
         }
 
-        var stableEnemyRoster = ResolveEnemyRoster(combatSession.BattleState, actor);
+        var stableEnemyRoster =
+            ResolveEnemyRoster(
+                combatSession.BattleState,
+                actor);
 
-        if (!CombatDirectionalTargetResolver.TryResolve(stableEnemyRoster, candidates, direction, upEnemyRank, downEnemyRank, leftEnemyRank, rightEnemyRank, out var target))
+        if (!CombatDirectionalTargetResolver.TryResolve(
+                stableEnemyRoster,
+                candidates,
+                direction,
+                upEnemyRank,
+                downEnemyRank,
+                leftEnemyRank,
+                rightEnemyRank,
+                out var target))
         {
             return;
         }
@@ -496,7 +570,11 @@ public sealed class CombatInputController : MonoBehaviour
 
     private void PrepareInitialTarget()
     {
-        if (!TryGetSelectedSkillContext(out var actor, out _, out var skill, out var candidates))
+        if (!TryGetSelectedSkillContext(
+                out var actor,
+                out _,
+                out var skill,
+                out var candidates))
         {
             SetFocusedTarget(null);
             return;
@@ -512,26 +590,49 @@ public sealed class CombatInputController : MonoBehaviour
         {
             if (candidates.Count > 0)
             {
-                SetFocusedTarget(candidates[0].Identity.Id);
+                SetFocusedTarget(
+                    candidates[0].Identity.Id);
             }
 
             return;
         }
 
-        var currentSelectedEnemy = combatSession.CurrentSelectedEnemy;
-
-        if (currentSelectedEnemy != null && candidates.Contains(currentSelectedEnemy))
+        if (!IsEnemyTarget(skill))
         {
-            SetFocusedTarget(currentSelectedEnemy.Identity.Id);
+            SetFocusedTarget(null);
             return;
         }
 
+        var currentSelectedEnemy =
+            combatSession.CurrentSelectedEnemy;
+
+        if (currentSelectedEnemy != null &&
+            candidates.Contains(currentSelectedEnemy))
+        {
+            SetFocusedTarget(
+                currentSelectedEnemy.Identity.Id);
+
+            return;
+        }
+
+        /*
+         * Se houver apenas um inimigo válido, já usamos ele como alvo.
+         * Isso também funciona para UpToThreeEnemies quando só resta
+         * um inimigo vivo.
+         */
         if (candidates.Count == 1)
         {
             PreviewTarget(candidates[0]);
             return;
         }
 
+        /*
+         * Com múltiplos inimigos deixamos o jogador escolher a direção.
+         *
+         * Isso é importante principalmente para UpToThreeEnemies,
+         * pois o inimigo escolhido define qual inimigo oposto fica fora
+         * da área.
+         */
         SetFocusedTarget(null);
     }
 
@@ -542,12 +643,15 @@ public sealed class CombatInputController : MonoBehaviour
             return;
         }
 
-        if (!CombatExistingTargetInputAdapter.TryPreviewTarget(combatSession, target))
+        if (!CombatExistingTargetInputAdapter.TryPreviewTarget(
+                combatSession,
+                target))
         {
             return;
         }
 
-        SetFocusedTarget(target.Identity.Id);
+        SetFocusedTarget(
+            target.Identity.Id);
     }
 
     private void ConfirmTarget()
@@ -567,14 +671,29 @@ public sealed class CombatInputController : MonoBehaviour
             return;
         }
 
-        var target = combatSession.FindCombatantById(_focusedTargetCombatantId);
+        var target =
+            combatSession.FindCombatantById(
+                _focusedTargetCombatantId);
 
         if (target == null)
         {
             return;
         }
 
-        if (!CombatExistingTargetInputAdapter.TryConfirmTarget(combatSession, target))
+        /*
+         * O adapter chama o mesmo pipeline usado pelo mouse:
+         *
+         * PlayerActionBuilder
+         *      ↓
+         * SkillTargetResolver
+         *      ↓
+         * BattleSimulator
+         *
+         * Assim UpToThreeEnemies usa a regra real do Game.Core.
+         */
+        if (!CombatExistingTargetInputAdapter.TryConfirmTarget(
+                combatSession,
+                target))
         {
             return;
         }
@@ -586,67 +705,131 @@ public sealed class CombatInputController : MonoBehaviour
 
     private void SetFocusedTarget(string combatantId)
     {
-        if (string.Equals(_focusedTargetCombatantId, combatantId, StringComparison.Ordinal))
+        if (string.Equals(
+                _focusedTargetCombatantId,
+                combatantId,
+                StringComparison.Ordinal))
         {
             return;
         }
 
-        _focusedTargetCombatantId = combatantId;
-        TargetFocusChanged?.Invoke(_focusedTargetCombatantId);
+        _focusedTargetCombatantId =
+            combatantId;
+
+        TargetFocusChanged?.Invoke(
+            _focusedTargetCombatantId);
     }
 
-    private bool TryGetSelectedSkillContext(out Combatant actor, out int zeroBasedSlot, out SkillDefinition skill, out List<Combatant> validTargets)
+    private bool TryGetSelectedSkillContext(
+        out Combatant actor,
+        out int zeroBasedSlot,
+        out SkillDefinition skill,
+        out List<Combatant> validTargets)
     {
         actor = null;
         zeroBasedSlot = default;
         skill = null;
-        validTargets = new List<Combatant>();
+        validTargets =
+            new List<Combatant>();
 
-        if (combatSession == null || combatSession.BattleState == null || combatSession.BattleSimulator == null)
+        if (combatSession == null ||
+            combatSession.BattleState == null ||
+            combatSession.BattleSimulator == null)
         {
             return false;
         }
 
-        combatSession.GetSkillBarSelection(out var selectedSlot, out var selectedOwnerCombatantId);
+        combatSession.GetSkillBarSelection(
+            out var selectedSlot,
+            out var selectedOwnerCombatantId);
 
-        if (!selectedSlot.HasValue || string.IsNullOrEmpty(selectedOwnerCombatantId))
+        if (!selectedSlot.HasValue ||
+            string.IsNullOrEmpty(selectedOwnerCombatantId))
         {
             return false;
         }
 
-        actor = combatSession.FindCombatantById(selectedOwnerCombatantId);
+        actor =
+            combatSession.FindCombatantById(
+                selectedOwnerCombatantId);
 
-        if (actor == null || actor.Health.IsDead || !combatSession.IsPlayerCommandingCombatant(actor))
+        if (actor == null ||
+            actor.Health.IsDead ||
+            !combatSession.IsPlayerCommandingCombatant(actor))
         {
             return false;
         }
 
-        zeroBasedSlot = selectedSlot.Value;
-        var battleState = combatSession.BattleState;
-        var skillIds = actor.SkillLoadout.Skills.Where(skillId => battleState.SkillsById.ContainsKey(skillId)).Take(CharacterSkillButtonsRowView.MaxVisibleSlots).ToList();
+        zeroBasedSlot =
+            selectedSlot.Value;
 
-        if (zeroBasedSlot < 0 || zeroBasedSlot >= skillIds.Count)
+        var battleState =
+            combatSession.BattleState;
+
+        var skillIds =
+            actor.SkillLoadout.Skills
+                .Where(
+                    skillId =>
+                        battleState.SkillsById
+                            .ContainsKey(skillId))
+                .Take(
+                    CharacterSkillButtonsRowView
+                        .MaxVisibleSlots)
+                .ToList();
+
+        if (zeroBasedSlot < 0 ||
+            zeroBasedSlot >= skillIds.Count)
         {
             return false;
         }
 
-        if (!battleState.SkillsById.TryGetValue(skillIds[zeroBasedSlot], out skill))
+        if (!battleState.SkillsById.TryGetValue(
+                skillIds[zeroBasedSlot],
+                out skill))
         {
             return false;
         }
 
-        var candidatePool = ResolveCandidatePool(battleState, actor, skill);
+        var candidatePool =
+            ResolveCandidatePool(
+                battleState,
+                actor,
+                skill);
 
-        for (var candidateIndex = 0; candidateIndex < candidatePool.Count; candidateIndex++)
+        for (var candidateIndex = 0;
+             candidateIndex < candidatePool.Count;
+             candidateIndex++)
         {
-            var candidate = candidatePool[candidateIndex];
+            var candidate =
+                candidatePool[candidateIndex];
 
-            if (candidate == null || candidate.Health.IsDead)
+            if (candidate == null)
             {
                 continue;
             }
 
-            if (PlayerActionBuilder.TryCreate(battleState, combatSession.BattleSimulator, actor, zeroBasedSlot, candidate) != null)
+            /*
+             * Mantemos mortos fora da seleção normal.
+             * Essa regra é a mesma que já existia aqui.
+             */
+            if (candidate.Health.IsDead)
+            {
+                continue;
+            }
+
+            /*
+             * Não assumimos que um alvo é válido só por estar no roster.
+             *
+             * O PlayerActionBuilder é usado como validação final,
+             * portanto Taunt, regras da skill e SkillTargetResolver
+             * continuam sendo respeitados.
+             */
+            if (PlayerActionBuilder.TryCreate(
+                    battleState,
+                    combatSession.BattleSimulator,
+                    actor,
+                    zeroBasedSlot,
+                    candidate) != null)
             {
                 validTargets.Add(candidate);
             }
@@ -655,43 +838,87 @@ public sealed class CombatInputController : MonoBehaviour
         return true;
     }
 
-    private static bool IsEnemyTarget(SkillDefinition skill)
+    private static bool IsEnemyTarget(
+        SkillDefinition skill)
     {
-        return skill != null && (int)skill.TargetKind == 0;
+        if (skill == null)
+        {
+            return false;
+        }
+
+        return SkillTargetKindRules
+            .DirectsPrimaryDamageAtEnemies(
+                skill.TargetKind);
     }
 
-    private static bool IsAllyTarget(SkillDefinition skill)
+    private static bool IsAllyTarget(
+        SkillDefinition skill)
     {
-        return skill != null && (int)skill.TargetKind == 1;
+        if (skill == null)
+        {
+            return false;
+        }
+
+        return SkillTargetKindRules
+            .DirectsPrimaryDamageAtAllies(
+                skill.TargetKind);
     }
 
-    private static bool IsSelfTarget(SkillDefinition skill)
+    private static bool IsSelfTarget(
+        SkillDefinition skill)
     {
-        return skill != null && (int)skill.TargetKind == 2;
+        if (skill == null)
+        {
+            return false;
+        }
+
+        return SkillTargetKindRules
+            .IsSelfOnly(
+                skill.TargetKind);
     }
 
-    private static IReadOnlyList<Combatant> ResolveEnemyRoster(BattleState battleState, Combatant actor)
+    private static IReadOnlyList<Combatant> ResolveEnemyRoster(
+        BattleState battleState,
+        Combatant actor)
     {
-        if (battleState == null || actor == null)
+        if (battleState == null ||
+            actor == null)
         {
             return Array.Empty<Combatant>();
         }
 
-        return actor.Position.Side == Side.Allies ? battleState.Enemies.ToList() : battleState.Allies.ToList();
+        return actor.Position.Side == Side.Allies
+            ? battleState.Enemies.ToList()
+            : battleState.Allies.ToList();
     }
 
-    private static List<Combatant> ResolveCandidatePool(BattleState battleState, Combatant actor, SkillDefinition skill)
+    private static List<Combatant> ResolveCandidatePool(
+        BattleState battleState,
+        Combatant actor,
+        SkillDefinition skill)
     {
         if (IsSelfTarget(skill))
         {
-            return new List<Combatant> { actor };
+            return new List<Combatant>
+            {
+                actor
+            };
         }
 
         if (IsAllyTarget(skill))
         {
-            return (actor.Position.Side == Side.Allies ? battleState.Allies : battleState.Enemies).ToList();
+            return actor.Position.Side == Side.Allies
+                ? battleState.Allies.ToList()
+                : battleState.Enemies.ToList();
         }
 
-        return (actor.Position.Side == Side.Allies ? battleState.Enemies : battleState.Allies).ToList();
+        if (IsEnemyTarget(skill))
+        {
+            return actor.Position.Side == Side.Allies
+                ? battleState.Enemies.ToList()
+                : battleState.Allies.ToList();
+        }
+
+        return new List<Combatant>();
     }
 }
