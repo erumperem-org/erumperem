@@ -1,5 +1,6 @@
 using Game.Core.Domain;
 using Game.Core.Models;
+using System;
 
 namespace Game.Core.Engine;
 
@@ -76,18 +77,6 @@ public static class SkillDamagePreviewCalculator
         BattleState state,
         Combatant actor,
         Combatant target,
-        SkillDefinition skill)
-    {
-        var hitChance = CombatDamageCalculator.ComputeEffectiveHitChanceFraction(state, actor, target, skill);
-
-        if (skill.Accuracy <= 0 && hitChance <= 0)
-        {
-            return Math.Max(0, hitChance);
-        }
-
-        return Math.Clamp(
-            hitChance,
-            CombatStatusRules.MinimumHitChanceFraction,
-            CombatStatusRules.MaximumHitChanceFraction);
-    }
+        SkillDefinition skill) =>
+        CombatDamageCalculator.ComputeEffectiveHitChanceFraction(state, actor, target, skill);
 }

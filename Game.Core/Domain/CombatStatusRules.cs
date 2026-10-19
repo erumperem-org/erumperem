@@ -1,4 +1,6 @@
 using Game.Core.Models;
+using System;
+using System.Collections.Generic;
 
 namespace Game.Core.Domain;
 
@@ -32,7 +34,11 @@ public static class CombatStatusRules
     public const double CriticalStrikeBaseDamageMultiplier = 2.0;
     public const double MinimumHitChanceFraction = 0.05;
     public const double MaximumHitChanceFraction = 1.0;
+    public const double MaximumAccuracyReductionFraction = 0.50;
     public const double PermanentStatusEfficiencyMultiplier = 0.25;
+
+    public static double ComputeMinimumHitChance(double baseHitChance) =>
+        Math.Max(0.0, baseHitChance * (1.0 - MaximumAccuracyReductionFraction));
 
     private static readonly HashSet<TokenType> DebuffTokenTypes =
     [

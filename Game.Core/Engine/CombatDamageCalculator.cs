@@ -2,6 +2,8 @@ using Game.Core.Config;
 using Game.Core.Domain;
 using Game.Core.Models;
 using Game.Core.Passives;
+using System;
+using System.Collections.Generic;
 
 namespace Game.Core.Engine;
 
@@ -283,7 +285,8 @@ public static class CombatDamageCalculator
         var actorModifiers = PassiveDataDrivenEngine.GetPermanentStatModifiers(state, actor, target, skill);
         var actorTokenEfficiency = PassiveDataDrivenEngine.CreateTokenEfficiencyLookup(state, actor, target);
         var targetTokenEfficiency = PassiveDataDrivenEngine.CreateTokenEfficiencyLookup(state, target, actor);
-        var hitChance = skill.Accuracy * actor.Stats.Accuracy;
+        var baseHitChance = skill.Accuracy * actor.Stats.Accuracy;
+        var hitChance = baseHitChance;
         hitChance += actorModifiers.AccuracyAdditive + actorModifiers.SkillAccuracyAdditive;
         hitChance += CombatStatusRules.AccuracyModifierFromActorTokens(actor.Tokens, actorTokenEfficiency);
         hitChance += CombatStatusRules.AccuracyBonusFromTargetExposition(target.Tokens, targetTokenEfficiency);
@@ -314,9 +317,10 @@ public static class CombatDamageCalculator
             return Math.Max(0, hitChance);
         }
 
+        var minimumHitChance = CombatStatusRules.ComputeMinimumHitChance(baseHitChance);
         return Math.Clamp(
             hitChance,
-            CombatStatusRules.MinimumHitChanceFraction,
+            minimumHitChance,
             CombatStatusRules.MaximumHitChanceFraction);
     }
 
