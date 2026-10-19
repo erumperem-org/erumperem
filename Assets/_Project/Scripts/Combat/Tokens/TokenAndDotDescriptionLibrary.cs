@@ -52,7 +52,7 @@ namespace Erumperem.Combat.Tokens
             TokenType.Clumsy =>
                 "Status — [token clumsy]: -20% accuracy per stack. Lose 1 stack at the end of turn.",
             TokenType.BonusAction =>
-                "Status — [token bonusaction]: may act again before the turn fully ends.",
+                "Status — [token bonusaction]: may act again before the turn fully ends. Each extra turn in a row reduces the next extra-turn chance by 20%.",
             TokenType.Hypnosis =>
                 "Status — [token hypnosis]: can only use the skill last used before this Status. Lose 1 stack at the end of turn.",
             TokenType.Dizzy =>
@@ -83,12 +83,13 @@ namespace Erumperem.Combat.Tokens
             IReadOnlyList<DotInstance> activeDots = null)
         {
             var potencyRangePhrase = BuildPotencyRangePhrase(activeDots, dotType);
+            var remainingTurnsPhrase = BuildRemainingTurnsPhrase(activeDots, dotType);
 
             return dotType switch
             {
-                DotType.Bleed => FormatPerTurnDotLine("bleed damage", "[dot bleed]", potencyRangePhrase),
-                DotType.Blight => FormatPerTurnDotLine("blight damage", "[dot blight]", potencyRangePhrase),
-                DotType.Burn => FormatPerTurnDotLine("burn damage", "[dot burn]", potencyRangePhrase),
+                DotType.Bleed => FormatPerTurnDotLine("bleed damage", "[dot bleed]", potencyRangePhrase, remainingTurnsPhrase),
+                DotType.Blight => FormatPerTurnDotLine("blight damage", "[dot blight]", potencyRangePhrase, remainingTurnsPhrase),
+                DotType.Burn => FormatPerTurnDotLine("burn damage", "[dot burn]", potencyRangePhrase, remainingTurnsPhrase),
                 _ => dotType.ToString(),
             };
         }
@@ -96,14 +97,45 @@ namespace Erumperem.Combat.Tokens
         private static string FormatPerTurnDotLine(
             string damageKindLabel,
             string dotMarkupTag,
-            string potencyRangePhrase)
+            string potencyRangePhrase,
+            string remainingTurnsPhrase)
         {
-            if (string.IsNullOrEmpty(potencyRangePhrase))
+            var potencyPrefix = string.IsNullOrEmpty(potencyRangePhrase)
+                ? string.Empty
+                : potencyRangePhrase + " ";
+            var durationSuffix = string.IsNullOrEmpty(remainingTurnsPhrase)
+                ? string.Empty
+                : " " + remainingTurnsPhrase;
+
+            return $"Deals {potencyPrefix}{dotMarkupTag} {damageKindLabel} per turn{durationSuffix}.";
+        }
+
+        private static string BuildRemainingTurnsPhrase(IReadOnlyList<DotInstance> activeDots, DotType dotType)
+        {
+            if (activeDots == null || activeDots.Count == 0)
             {
-                return $"Deals {dotMarkupTag} {damageKindLabel} per turn.";
+                return string.Empty;
             }
 
-            return $"Deals {potencyRangePhrase} {dotMarkupTag} {damageKindLabel} per turn.";
+            var remainingTurns = 0;
+            foreach (var dotInstance in activeDots)
+            {
+                if (dotInstance.Type != dotType)
+                {
+                    continue;
+                }
+
+                remainingTurns = System.Math.Max(remainingTurns, dotInstance.RemainingTurns);
+            }
+
+            if (remainingTurns <= 0)
+            {
+                return string.Empty;
+            }
+
+            return remainingTurns == 1
+                ? "for 1 turn"
+                : $"for {remainingTurns.ToString(CultureInfo.InvariantCulture)} turns";
         }
 
         private static string BuildPotencyRangePhrase(IReadOnlyList<DotInstance> activeDots, DotType dotType)

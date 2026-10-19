@@ -101,7 +101,7 @@ public static class SkillPlayerDescriptionBuilder
             detailParts.Add(followUpPart);
         }
 
-        var extraTurnPart = DescribeExtraTurn(skill, context);
+        var extraTurnPart = DescribeExtraTurn(skill);
         if (!string.IsNullOrEmpty(extraTurnPart))
         {
             detailParts.Add(extraTurnPart);
@@ -136,7 +136,7 @@ public static class SkillPlayerDescriptionBuilder
             detailParts.Add(DescribeCriticalChance(skill, context));
         }
 
-        var effectsPart = DescribeEffects(skill.EffectsOnHit, skill, context, prefix: null);
+        var effectsPart = DescribeEffects(skill.EffectsOnHit, skill, prefix: null);
         if (!string.IsNullOrEmpty(effectsPart))
         {
             detailParts.Add(effectsPart);
@@ -228,22 +228,16 @@ public static class SkillPlayerDescriptionBuilder
         return "then fires " + string.Join(", then ", followUpNames);
     }
 
-    private static string DescribeExtraTurn(SkillDefinition skill, SkillDescriptionContext? context)
+    private static string DescribeExtraTurn(SkillDefinition skill)
     {
-        var decayPerUse = context?.BattleState?.BalanceConfig.ExtraTurnChanceDecayPerConsecutiveUse
-                          ?? CombatBalanceConfig.DefaultExtraTurnChanceDecayPerConsecutiveUse;
-        var decayNote = decayPerUse > 0
-            ? $" (consecutive extra-turn skills reduce this chance by {FormatPercentFromFraction(decayPerUse)} each)"
-            : string.Empty;
-
         if (skill.GrantsBonusActionsToAllies)
         {
-            return "extra turn for self and ally" + decayNote;
+            return "extra turn for self and ally";
         }
 
         if (skill.ChanceToNotEndTurn > 0)
         {
-            return $"{FormatPercentFromFraction(skill.ChanceToNotEndTurn)} chance of extra turn" + decayNote;
+            return $"{FormatPercentFromFraction(skill.ChanceToNotEndTurn)} chance of extra turn";
         }
 
         return string.Empty;
@@ -362,7 +356,6 @@ public static class SkillPlayerDescriptionBuilder
     private static string DescribeEffects(
         IReadOnlyList<EffectSpec> effects,
         SkillDefinition skill,
-        SkillDescriptionContext? context,
         string? prefix)
     {
         if (effects == null || effects.Count == 0)
@@ -373,7 +366,7 @@ public static class SkillPlayerDescriptionBuilder
         var effectPhrases = new List<string>();
         foreach (var effect in effects)
         {
-            var phrase = DescribeSingleEffect(effect, skill, context);
+            var phrase = DescribeSingleEffect(effect, skill);
             if (!string.IsNullOrEmpty(phrase))
             {
                 effectPhrases.Add(phrase);
@@ -391,8 +384,7 @@ public static class SkillPlayerDescriptionBuilder
 
     private static string DescribeSingleEffect(
         EffectSpec effect,
-        SkillDefinition skill,
-        SkillDescriptionContext? context)
+        SkillDefinition skill)
     {
         var chancePrefix = effect.Chance < 0.9995
             ? $"{FormatPercentFromFraction(effect.Chance)} "
@@ -403,7 +395,7 @@ public static class SkillPlayerDescriptionBuilder
             EffectType.ApplyToken when effect.Token.HasValue =>
                 $"{chancePrefix}{FormatTokenGrantPhrase(effect, skill)}",
             EffectType.ApplyDot when effect.Dot.HasValue =>
-                $"{chancePrefix}{FormatDotGrantPhrase(effect, skill, context)}",
+                $"{chancePrefix}{DotDisplayName(effect.Dot.Value)}",
             EffectType.HealHpPercent =>
                 $"{chancePrefix}heals {FormatPlainNumber(Math.Max(0, effect.Potency))}% HP",
             EffectType.HealHp =>
@@ -446,27 +438,6 @@ public static class SkillPlayerDescriptionBuilder
         return string.IsNullOrEmpty(scopePrefix)
             ? $"+{stackPhrase} {tokenName}"
             : $"{scopePrefix}: +{stackPhrase} {tokenName}";
-    }
-
-    private static string FormatDotGrantPhrase(
-        EffectSpec effect,
-        SkillDefinition skill,
-        SkillDescriptionContext? context)
-    {
-        var dotName = DotDisplayName(effect.Dot!.Value);
-        var potency = Math.Max(1, effect.Potency);
-        var baseDuration = Math.Max(1, effect.Duration);
-        var duration = baseDuration;
-        if (context?.BattleState != null && context.Actor != null)
-        {
-            duration = PassiveRuleApplier.AdjustDotDuration(
-                context.BattleState,
-                context.Actor,
-                effect.Dot.Value,
-                baseDuration);
-        }
-
-        return $"{dotName} ({potency} damage for {FormatTurnCount(duration)})";
     }
 
     private static string DescribeEffectScopePrefix(EffectScope effectScope, SkillDefinition skill)
