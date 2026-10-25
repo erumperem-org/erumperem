@@ -65,14 +65,21 @@ public class ObstacleAvoidanceValidator : IMovementValidator
         // obstáculo. Por isso tratamos esse caso antes, com um vetor de
         // empurrão explícito.
         Vector3 pushOut = ComputePushOut(origin, castRadius, obstacleMask);
+        pushOut.y = 0f;
         if (pushOut.sqrMagnitude > 0.0001f)
         {
-            pushOut.y = 0f;
+            Vector3 n = pushOut.normalized;
+            Vector3 dir = normalizedDirection;
 
-            if (pushOut.sqrMagnitude > 0.0001f)
-            {
-                return pushOut.normalized * magnitude;
-            }
+            // Só remove a componente que aponta para dentro do obstáculo.
+            if (Vector3.Dot(dir, n) < 0f)
+                dir = Vector3.ProjectOnPlane(dir, n);
+
+            // Frontal puro: contorna pelo lado em vez de quicar para trás.
+            if (dir.sqrMagnitude < 0.0001f)
+                dir = Vector3.Cross(Vector3.up, n);
+
+            return dir.normalized * magnitude;
         }
 
         // 2) Sem sobreposição: segue a lógica original de busca angular.
@@ -99,7 +106,9 @@ public class ObstacleAvoidanceValidator : IMovementValidator
         // 3) Fallback final: nenhuma direção testada ficou livre.
         if (Physics.SphereCast(origin, castRadius, normalizedDirection, out RaycastHit hit, checkDistance, obstacleMask, QueryTriggerInteraction.Ignore))
         {
-            return Vector3.ProjectOnPlane(desiredDirection, hit.normal);
+            Vector3 slide = Vector3.ProjectOnPlane(desiredDirection, hit.normal);
+            slide.y = 0f;
+            return slide.sqrMagnitude > 0.0001f ? slide.normalized * magnitude : Vector3.zero;
         }
 
         return desiredDirection;
