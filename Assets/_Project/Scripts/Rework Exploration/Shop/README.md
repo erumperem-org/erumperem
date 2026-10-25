@@ -73,3 +73,28 @@ next currency in the configured order. Example: `100A, 200A, 300A, 100B,
   `ISkillPointGrantable.GrantSkillPoint()` throws after currency has
   already been spent and the tier index incremented — currently assumed to
   never fail once wired up correctly.
+
+## Rotating shop (`RotatingItemShopButton`)
+
+An item button with N offers (`item X for price Y`). On
+`RotatingShopEvents.OnAdvance` it moves to the next offer and **stays on the
+last one** when the list ends. Purchasing does NOT advance the state.
+
+| File | Responsibility |
+|---|---|
+| `RotatingShopEvents.cs` | Static event. `RaiseAdvance()` advances every rotating button; `RaiseAdvance("channel")` only those listening to that channel. |
+| `RotatingItemShopButton.cs` | Holds the offer list and current index; pushes the current offer into the sibling `ItemShopButton` via `SetOffer`. Purchase flow (popup, `CanFit`, refund) is untouched. |
+| `RotatingItemShopButtonView.cs` | Presentation; replaces `ItemShopButtonView` (refreshes on every offer change). |
+| `RotatingShopStateRegistry.cs` | Central orchestrator. Single JSON (`rotating_shop.json`, id -> index) stored in the active slot folder (`SaveSlotAccess.Data.SlotDirectory`). Saves on each change; reloads on `OnSlotChanged`. |
+| `RotatingShopSaveData.cs` | JSON DTO. |
+
+Setup: add `RotatingShopStateRegistry` to the root object holding `SaveSlotAccess`;
+on the shop button keep the `ItemShopButton` configured and add `RotatingItemShopButton`;
+use `RotatingItemShopButtonView` instead of `ItemShopButtonView`.
+
+Notes:
+- `ItemShopButton` stays stateless; it only gained `SetOffer(...)` (no state added).
+- Each button needs a **unique, stable `_id`** (auto-generated in the Editor). Duplicated
+  buttons/prefab instances must get distinct IDs or they will share state.
+- With no slot selected, state is kept in memory only (warning logged).
+- The saved index is clamped to the offer list size on load.
