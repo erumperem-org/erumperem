@@ -13,6 +13,12 @@ public static class SkillPlayerDescriptionBuilder
     public static string TranslateToEnglish(string name) =>
         CombatDisplayTerms.TranslateExactName(name);
 
+    public static string TranslateEmbeddedTerms(string text) =>
+        CombatDisplayTerms.TranslateEmbeddedTerms(text);
+
+    public static string FormatDotDisplayName(DotType dotType) =>
+        CombatDisplayTerms.FormatDotDisplayName(dotType);
+
     public sealed class SkillDescriptionContext
     {
         public Combatant? Actor { get; init; }

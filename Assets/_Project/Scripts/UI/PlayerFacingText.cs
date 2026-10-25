@@ -38,11 +38,11 @@ namespace Erumperem.UI
             {
                 return "Corrupted Enemy";
             }
-            return CombatDisplayTerms.TranslateExactName(name);
+            return SkillPlayerDescriptionBuilder.TranslateToEnglish(name);
         }
 
         public static string TranslateToEnglish(string text) =>
-            CombatDisplayTerms.TranslateEmbeddedTerms(text);
+            SkillPlayerDescriptionBuilder.TranslateEmbeddedTerms(text);
 
         public static string PresentForUi(string rawTechnicalText, BattleState battleContext = null)
         {
@@ -536,7 +536,7 @@ namespace Erumperem.UI
         }
 
         public static string FormatTokenTypeDisplayName(TokenType tokenType) =>
-            CombatDisplayTerms.FormatTokenDisplayName(tokenType);
+            SkillPlayerDescriptionBuilder.FormatStatusDisplayName(tokenType);
 
         public static string FormatTokenTypeDisplayName(string tokenTypeName)
         {
@@ -604,6 +604,6 @@ namespace Erumperem.UI
         }
 
         public static string FormatDotTypeDisplayName(DotType dotType) =>
-            CombatDisplayTerms.FormatDotDisplayName(dotType);
+            SkillPlayerDescriptionBuilder.FormatDotDisplayName(dotType);
     }
 }
