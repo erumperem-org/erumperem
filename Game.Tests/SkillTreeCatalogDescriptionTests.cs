@@ -177,7 +177,7 @@ public sealed class SkillTreeCatalogDescriptionTests
         var summary = SkillPlayerDescriptionBuilder.BuildSummaryLine(skill);
 
         Assert.Contains("extra turn for self and ally", summary, StringComparison.Ordinal);
-        Assert.Contains("20%", summary, StringComparison.Ordinal);
+        Assert.Contains("10% hit chance per living enemy", summary, StringComparison.Ordinal);
     }
 
     [Fact]

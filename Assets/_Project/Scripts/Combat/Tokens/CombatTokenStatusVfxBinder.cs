@@ -16,6 +16,7 @@ namespace Erumperem.Combat.Tokens
 
         private CombatPrototypeController _combatSession;
         private readonly List<CombatantTokenStatusVfxPresenter> _presenters = new();
+        private readonly HashSet<string> _presenterCombatantIds = new();
 
         private void OnEnable()
         {
@@ -42,14 +43,47 @@ namespace Erumperem.Combat.Tokens
 
         private void LateUpdate()
         {
-            if (_presenters.Count == 0 || _combatSession == null || !_combatSession.IsBattleOngoing)
+            if (_combatSession == null || !_combatSession.IsBattleOngoing)
             {
                 return;
             }
 
+            EnsurePresentersForSpawnedCombatants();
+
             foreach (var presenter in _presenters)
             {
                 presenter?.RefreshFromBattleState();
+            }
+        }
+
+        private void EnsurePresentersForSpawnedCombatants()
+        {
+            var battleState = _combatSession.BattleState;
+            if (battleState == null || tokenVisualCatalog == null)
+            {
+                return;
+            }
+
+            foreach (var combatant in battleState.GetAllCombatants())
+            {
+                var combatantId = combatant.Identity.Id;
+                if (string.IsNullOrEmpty(combatantId) || !_presenterCombatantIds.Add(combatantId))
+                {
+                    continue;
+                }
+
+                var unitVisualRoot = _combatSession.TryGetUnitVisualRoot(combatantId);
+                if (unitVisualRoot == null)
+                {
+                    _presenterCombatantIds.Remove(combatantId);
+                    continue;
+                }
+
+                _presenters.Add(new CombatantTokenStatusVfxPresenter(
+                    _combatSession,
+                    combatantId,
+                    tokenVisualCatalog,
+                    unitVisualRoot));
             }
         }
 
@@ -68,21 +102,10 @@ namespace Erumperem.Combat.Tokens
                 return;
             }
 
-            foreach (var combatant in battleState.GetAllCombatants())
+            EnsurePresentersForSpawnedCombatants();
+            foreach (var presenter in _presenters)
             {
-                var unitVisualRoot = controller.TryGetUnitVisualRoot(combatant.Identity.Id);
-                if (unitVisualRoot == null)
-                {
-                    continue;
-                }
-
-                var presenter = new CombatantTokenStatusVfxPresenter(
-                    controller,
-                    combatant.Identity.Id,
-                    tokenVisualCatalog,
-                    unitVisualRoot);
                 presenter.RefreshFromBattleState();
-                _presenters.Add(presenter);
             }
         }
 
@@ -100,6 +123,7 @@ namespace Erumperem.Combat.Tokens
             }
 
             _presenters.Clear();
+            _presenterCombatantIds.Clear();
         }
     }
 }

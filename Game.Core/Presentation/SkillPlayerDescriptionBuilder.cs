@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text;
 using Game.Core.Config;
 using Game.Core.Domain;
 using Game.Core.Models;
@@ -12,67 +10,14 @@ namespace Game.Core.Presentation;
 /// </summary>
 public static class SkillPlayerDescriptionBuilder
 {
-    private static readonly CultureInfo EnglishCulture = CultureInfo.InvariantCulture;
+    public static string TranslateToEnglish(string name) =>
+        CombatDisplayTerms.TranslateExactName(name);
 
-    private static readonly Dictionary<string, string> EnglishTranslations = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Wulfric"] = "Splintered Knight",
-        ["Buck"] = "The Gunslinger",
-        ["Talho direto"] = "Direct Slash",
-        ["Empurrão brutal"] = "Brutal Shove",
-        ["Postura de lobo"] = "Wolf Stance",
-        ["Rasgar tendão"] = "Tear Tendon",
-        ["Fio candente"] = "Searing Thread",
-        ["Execução de leilão"] = "Auction Execution",
-        ["Remendar couraça"] = "Mend Cuirass",
-        ["Muralha"] = "Bulwark",
-        ["Salvaguarda"] = "Safeguard",
-        ["Fio da anomalia"] = "Anomaly Thread",
-        ["Puxar o veio"] = "Pull the Veil",
-        ["Puxar o véu"] = "Pull the Veil",
-        ["Abrir o vão"] = "Open the Gap",
-        ["Soco Normal"] = "Normal Punch",
-        ["Lança Pedra"] = "Rock Throw",
-        ["Para-raio"] = "Lightning Rod",
-        ["Laser Distorcido"] = "Distorted Laser",
-        ["Giro Turbina (Ametista)"] = "Turbine Spin (Amethyst)",
-        ["Giro Turbina (Ágata)"] = "Turbine Spin (Agate)",
-        ["Giro Turbina (Citrino)"] = "Turbine Spin (Citrine)",
-        ["Giro Turbina (Esmeralda)"] = "Turbine Spin (Emerald)",
-        ["Açoite Metálico"] = "Iron Lash",
-        ["Brilho Hipnótico"] = "Hypnotic Glare",
-        ["Sussurro do Vício"] = "Whisper of Vice",
-        ["Colapso da Armadura"] = "Armor Collapse",
-        ["Garra"] = "Claw",
-        ["Garras afiadas"] = "Sharp Claws",
-        ["Mordida dilacerante"] = "Painful Bite",
-        ["Uivo gelado"] = "Chilling Howl",
-        ["Vómito cegante"] = "Blinding Vomit",
-        ["Vomito cegante"] = "Blinding Vomit",
-        ["Disparo rápido"] = "Quick Shot",
-        ["Empurrão do coldre"] = "Holster Shove",
-        ["Postura do duelista"] = "Duelist Stance",
-        ["Tiro incendiário"] = "Incendiary Shot",
-        ["Rajada flamejante"] = "Flaming Volley",
-        ["Execução do pistoleiro"] = "Gunslinger Execution",
-        ["Reforço de couro"] = "Leather Reinforcement",
-        ["Barricada"] = "Barricade",
-        ["Último recurso"] = "Last Resort",
-        ["Fio do revólver"] = "Revolver Thread",
-        ["Puxar o gatilho"] = "Pull the Trigger",
-        ["Abrir fogo"] = "Open Fire",
-        ["Aranha Stunadora"] = "Stunner Spider"
-    };
+    public static string TranslateEmbeddedTerms(string text) =>
+        CombatDisplayTerms.TranslateEmbeddedTerms(text);
 
-    public static string TranslateToEnglish(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return name;
-        if (EnglishTranslations.TryGetValue(name.Trim(), out var translated))
-        {
-            return translated;
-        }
-        return name;
-    }
+    public static string FormatDotDisplayName(DotType dotType) =>
+        CombatDisplayTerms.FormatDotDisplayName(dotType);
 
     public sealed class SkillDescriptionContext
     {
@@ -89,67 +34,39 @@ public static class SkillPlayerDescriptionBuilder
             return string.Empty;
         }
 
-        var detailParts = new List<string>
-        {
-            DescribeTarget(skill),
-            DescribeDirectDamage(skill),
-        };
-
-        var followUpPart = DescribeFollowUpSkills(skill, context);
-        if (!string.IsNullOrEmpty(followUpPart))
-        {
-            detailParts.Add(followUpPart);
-        }
-
-        var extraTurnPart = DescribeExtraTurn(skill, context);
-        if (!string.IsNullOrEmpty(extraTurnPart))
-        {
-            detailParts.Add(extraTurnPart);
-        }
-
-        var accuracyPenaltyPart = DescribeAccuracyPenaltyPerLivingEnemy(skill);
-        if (!string.IsNullOrEmpty(accuracyPenaltyPart))
-        {
-            detailParts.Add(accuracyPenaltyPart);
-        }
-
-        var ownTokenDamagePart = DescribeBonusDamagePerOwnToken(skill);
-        if (!string.IsNullOrEmpty(ownTokenDamagePart))
-        {
-            detailParts.Add(ownTokenDamagePart);
-        }
-
-        var stranglePart = DescribeDebuffScaling(skill);
-        if (!string.IsNullOrEmpty(stranglePart))
-        {
-            detailParts.Add(stranglePart);
-        }
-
-        var hitChancePart = DescribeHitChance(skill, context);
-        if (!string.IsNullOrEmpty(hitChancePart))
-        {
-            detailParts.Add(hitChancePart);
-        }
+        var detailParts = new List<string>();
+        AppendIfNotEmpty(detailParts, DescribeTarget(skill));
+        AppendIfNotEmpty(detailParts, DescribeDirectDamage(skill));
+        AppendIfNotEmpty(detailParts, DescribeDebuffScaling(skill));
+        AppendIfNotEmpty(detailParts, DescribeBonusDamagePerOwnToken(skill));
+        AppendIfNotEmpty(detailParts, DescribeAccuracyPenaltyPerLivingEnemy(skill));
+        AppendIfNotEmpty(detailParts, DescribeHitChance(skill, context));
 
         if (ShouldShowCriticalChance(skill, context))
         {
-            detailParts.Add(DescribeCriticalChance(skill, context));
+            AppendIfNotEmpty(detailParts, DescribeCriticalChance(skill, context));
         }
 
-        var effectsPart = DescribeEffects(skill.EffectsOnHit, skill, context, prefix: null);
-        if (!string.IsNullOrEmpty(effectsPart))
+        AppendIfNotEmpty(detailParts, DescribeEffects(skill.EffectsOnHit, skill, prefix: null));
+        AppendIfNotEmpty(detailParts, DescribeFollowUpSkills(skill, context));
+        AppendIfNotEmpty(detailParts, DescribeExtraTurn(skill));
+        AppendIfNotEmpty(detailParts, DescribeCorruptionCost(skill));
+
+        foreach (var passivePart in DescribePassiveModifiersForSkill(skill, context))
         {
-            detailParts.Add(effectsPart);
+            AppendIfNotEmpty(detailParts, passivePart);
         }
-
-        detailParts.Add(DescribeCorruptionCost(skill));
-
-        var passiveParts = DescribePassiveModifiersForSkill(skill, context);
-        detailParts.AddRange(passiveParts);
 
         var translatedName = TranslateToEnglish(skill.Name);
+        return $"{translatedName}: {string.Join(" | ", detailParts)}.";
+    }
 
-        return $"{translatedName}: {string.Join(" | ", detailParts.Where(part => !string.IsNullOrEmpty(part)))}.";
+    private static void AppendIfNotEmpty(List<string> parts, string phrase)
+    {
+        if (!string.IsNullOrEmpty(phrase))
+        {
+            parts.Add(phrase);
+        }
     }
 
     private static string DescribeTarget(SkillDefinition skill) =>
@@ -225,25 +142,19 @@ public static class SkillPlayerDescriptionBuilder
             return string.Empty;
         }
 
-        return "then fires " + string.Join(", then ", followUpNames);
+        return "follow-up: " + string.Join(", then ", followUpNames);
     }
 
-    private static string DescribeExtraTurn(SkillDefinition skill, SkillDescriptionContext? context)
+    private static string DescribeExtraTurn(SkillDefinition skill)
     {
-        var decayPerUse = context?.BattleState?.BalanceConfig.ExtraTurnChanceDecayPerConsecutiveUse
-                          ?? CombatBalanceConfig.DefaultExtraTurnChanceDecayPerConsecutiveUse;
-        var decayNote = decayPerUse > 0
-            ? $" (consecutive extra-turn skills reduce this chance by {FormatPercentFromFraction(decayPerUse)} each)"
-            : string.Empty;
-
         if (skill.GrantsBonusActionsToAllies)
         {
-            return "extra turn for self and ally" + decayNote;
+            return "extra turn for self and ally";
         }
 
         if (skill.ChanceToNotEndTurn > 0)
         {
-            return $"{FormatPercentFromFraction(skill.ChanceToNotEndTurn)} chance of extra turn" + decayNote;
+            return $"{FormatPercentFromFraction(skill.ChanceToNotEndTurn)} chance of extra turn";
         }
 
         return string.Empty;
@@ -362,7 +273,6 @@ public static class SkillPlayerDescriptionBuilder
     private static string DescribeEffects(
         IReadOnlyList<EffectSpec> effects,
         SkillDefinition skill,
-        SkillDescriptionContext? context,
         string? prefix)
     {
         if (effects == null || effects.Count == 0)
@@ -373,7 +283,7 @@ public static class SkillPlayerDescriptionBuilder
         var effectPhrases = new List<string>();
         foreach (var effect in effects)
         {
-            var phrase = DescribeSingleEffect(effect, skill, context);
+            var phrase = DescribeSingleEffect(effect, skill);
             if (!string.IsNullOrEmpty(phrase))
             {
                 effectPhrases.Add(phrase);
@@ -391,8 +301,7 @@ public static class SkillPlayerDescriptionBuilder
 
     private static string DescribeSingleEffect(
         EffectSpec effect,
-        SkillDefinition skill,
-        SkillDescriptionContext? context)
+        SkillDefinition skill)
     {
         var chancePrefix = effect.Chance < 0.9995
             ? $"{FormatPercentFromFraction(effect.Chance)} "
@@ -403,7 +312,7 @@ public static class SkillPlayerDescriptionBuilder
             EffectType.ApplyToken when effect.Token.HasValue =>
                 $"{chancePrefix}{FormatTokenGrantPhrase(effect, skill)}",
             EffectType.ApplyDot when effect.Dot.HasValue =>
-                $"{chancePrefix}{FormatDotGrantPhrase(effect, skill, context)}",
+                DescribeApplyDotEffect(chancePrefix, effect),
             EffectType.HealHpPercent =>
                 $"{chancePrefix}heals {FormatPlainNumber(Math.Max(0, effect.Potency))}% HP",
             EffectType.HealHp =>
@@ -432,6 +341,20 @@ public static class SkillPlayerDescriptionBuilder
         };
     }
 
+    private static string DescribeApplyDotEffect(string chancePrefix, EffectSpec effect)
+    {
+        var dotName = DotDisplayName(effect.Dot!.Value);
+        var potency = Math.Max(0, effect.Potency);
+        var durationTurns = Math.Max(1, effect.Duration);
+        if (potency > 0 && durationTurns > 0)
+        {
+            return
+                $"{chancePrefix}applies {dotName} ({potency} damage/turn, {FormatTurnCount(durationTurns)})";
+        }
+
+        return $"{chancePrefix}applies {dotName}";
+    }
+
     private static string FormatTokenGrantPhrase(EffectSpec effect, SkillDefinition skill)
     {
         var stacks = Math.Max(1, effect.Stacks);
@@ -446,27 +369,6 @@ public static class SkillPlayerDescriptionBuilder
         return string.IsNullOrEmpty(scopePrefix)
             ? $"+{stackPhrase} {tokenName}"
             : $"{scopePrefix}: +{stackPhrase} {tokenName}";
-    }
-
-    private static string FormatDotGrantPhrase(
-        EffectSpec effect,
-        SkillDefinition skill,
-        SkillDescriptionContext? context)
-    {
-        var dotName = DotDisplayName(effect.Dot!.Value);
-        var potency = Math.Max(1, effect.Potency);
-        var baseDuration = Math.Max(1, effect.Duration);
-        var duration = baseDuration;
-        if (context?.BattleState != null && context.Actor != null)
-        {
-            duration = PassiveRuleApplier.AdjustDotDuration(
-                context.BattleState,
-                context.Actor,
-                effect.Dot.Value,
-                baseDuration);
-        }
-
-        return $"{dotName} ({potency} damage for {FormatTurnCount(duration)})";
     }
 
     private static string DescribeEffectScopePrefix(EffectScope effectScope, SkillDefinition skill)
@@ -543,19 +445,19 @@ public static class SkillPlayerDescriptionBuilder
             PassiveEffectKind.DamageCausedVsSkillId
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
                      passiveDefinition.Additive != 0 =>
-                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)}",
+                $"passive: {CombatDisplayTerms.FormatDamageCausedBonus(passiveDefinition.Additive)}",
 
             PassiveEffectKind.DamageCausedVsSkillIfTargetHasDot
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
                      passiveDefinition.DotType.HasValue &&
                      passiveDefinition.Additive != 0 =>
-                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} if target has " +
+                $"passive: {CombatDisplayTerms.FormatDamageCausedBonus(passiveDefinition.Additive)} if target has " +
                 $"{DotDisplayName(passiveDefinition.DotType.Value)}",
 
             PassiveEffectKind.DamageCausedAfterPrerequisiteSkill
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
                      passiveDefinition.Additive != 0 =>
-                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} after prep skill",
+                $"passive: {CombatDisplayTerms.FormatDamageCausedBonus(passiveDefinition.Additive)} after prep skill",
 
             PassiveEffectKind.ApplyExtraDotAfterSkillIfTargetHasDot
                 when string.Equals(passiveDefinition.SkillId, skill.Id, StringComparison.Ordinal) &&
@@ -576,7 +478,7 @@ public static class SkillPlayerDescriptionBuilder
                 when passiveDefinition.TokenType.HasValue &&
                      context.Actor!.Tokens.GetStacks(passiveDefinition.TokenType.Value) > 0 &&
                      passiveDefinition.Additive != 0 =>
-                $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} with " +
+                $"passive: {CombatDisplayTerms.FormatDamageCausedBonus(passiveDefinition.Additive)} while you have " +
                 $"{TokenDisplayName(passiveDefinition.TokenType.Value)}",
 
             PassiveEffectKind.DamageCausedVsDotOnTarget
@@ -601,13 +503,13 @@ public static class SkillPlayerDescriptionBuilder
         if (passiveDefinition.AdditivePerStack > 0 && passiveDefinition.Cap > 0)
         {
             return
-                $"passive: Damage Caused +{FormatPercentFromFraction(passiveDefinition.AdditivePerStack)} per " +
+                $"passive: deal +{FormatPercentFromFraction(passiveDefinition.AdditivePerStack)} more damage per " +
                 $"{dotName} stack on target (max. +{FormatPercentFromFraction(passiveDefinition.Cap)})";
         }
 
         if (passiveDefinition.Additive != 0)
         {
-            return $"passive: Damage Caused {FormatSignedPercentBonus(passiveDefinition.Additive)} against target with {dotName}";
+            return $"passive: {CombatDisplayTerms.FormatDamageCausedBonus(passiveDefinition.Additive)} against targets with {dotName}";
         }
 
         return string.Empty;
@@ -626,71 +528,23 @@ public static class SkillPlayerDescriptionBuilder
         return false;
     }
 
-    private static string FormatSignedPercentBonus(double additiveFraction)
-    {
-        if (additiveFraction >= 0)
-        {
-            return $"+{FormatPercentFromFraction(additiveFraction)}";
-        }
+    private static string FormatTokenStackCount(int stacks) =>
+        stacks == 1 ? "1" : stacks.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
-        return FormatPercentFromFraction(additiveFraction);
-    }
-
-    private static string FormatTokenStackCount(int stacks) => stacks == 1 ? "1" : stacks.ToString(CultureInfo.InvariantCulture);
-
-    private static string FormatTurnCount(int turns) =>
-        turns == 1 ? "1 turn" : $"{turns} turns";
+    private static string FormatTurnCount(int turns) => CombatDisplayTerms.FormatTurnCount(turns);
 
     private static string FormatPercentFromFraction(double fraction) =>
-        (fraction * 100.0).ToString("0.##", EnglishCulture) + "%";
+        CombatDisplayTerms.FormatPercentFromFraction(fraction);
 
     private static string FormatPlainNumber(double value) =>
-        value.ToString("0.##", EnglishCulture);
+        CombatDisplayTerms.FormatPlainNumber(value);
 
-    public static string FormatStatusDisplayName(TokenType tokenType) => TokenDisplayName(tokenType);
+    public static string FormatStatusDisplayName(TokenType tokenType) =>
+        CombatDisplayTerms.FormatTokenDisplayName(tokenType);
 
     private static string TokenDisplayName(TokenType tokenType) =>
-        tokenType switch
-        {
-            TokenType.Taunt => "Taunt",
-            TokenType.Stealth => "Stealth",
-            TokenType.Stun => "Stun",
-            TokenType.ControlledInstability => "Controlled Instability",
-            TokenType.Destabilization => "Destabilization",
-            TokenType.Strength => "Strength",
-            TokenType.Defense => "Defense",
-            TokenType.Weaken => "Weaken",
-            TokenType.Vulnerability => "Vulnerability",
-            TokenType.Confusion => "Confusion",
-            TokenType.Bleeding => "Bleeding",
-            TokenType.LuckyShot => "Lucky Shot",
-            TokenType.Dexterity => "Dexterity",
-            TokenType.Exposition => "Exposition",
-            TokenType.Corrosion => "Corrosion",
-            TokenType.Mark => "Mark",
-            TokenType.Regeneration => "Regeneration",
-            TokenType.Clumsy => "Clumsy",
-            TokenType.BonusAction => "Bonus Action",
-            TokenType.Hypnosis => "Hypnosis",
-            TokenType.Dizzy => "Dizzy",
-            TokenType.Burn => "Burn",
-            TokenType.PermaStrength => "Perma Strength",
-            TokenType.PermaDefense => "Perma Defense",
-            TokenType.PermaWeaken => "Perma Weaken",
-            TokenType.PermaVulnerability => "Perma Vulnerability",
-            TokenType.PermaDexterity => "Perma Dexterity",
-            TokenType.PermaClumsy => "Perma Clumsy",
-            TokenType.PermaExposition => "Perma Exposition",
-            TokenType.PermaStealth => "Perma Stealth",
-            _ => tokenType.ToString(),
-        };
+        CombatDisplayTerms.FormatTokenDisplayName(tokenType);
 
     private static string DotDisplayName(DotType dotType) =>
-        dotType switch
-        {
-            DotType.Bleed => "Bleed",
-            DotType.Blight => "Blight",
-            DotType.Burn => "Burn",
-            _ => dotType.ToString(),
-        };
+        CombatDisplayTerms.FormatDotDisplayName(dotType);
 }

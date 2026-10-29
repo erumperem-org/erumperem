@@ -22,56 +22,6 @@ namespace Erumperem.UI
         private static readonly CultureInfo BrazilianCulture = CultureInfo.GetCultureInfo("pt-BR");
         private static Dictionary<string, string> _nodeIdToDisplayName;
 
-        private static readonly Dictionary<string, string> EnglishTranslations = new(StringComparer.OrdinalIgnoreCase)
-        {
-            ["Wulfric"] = "Splintered Knight",
-            ["Buck"] = "The Gunslinger",
-            ["Talho direto"] = "Direct Slash",
-            ["Empurrão brutal"] = "Brutal Shove",
-            ["Postura de lobo"] = "Wolf Stance",
-            ["Rasgar tendão"] = "Tear Tendon",
-            ["Fio candente"] = "Searing Thread",
-            ["Execução de leilão"] = "Auction Execution",
-            ["Remendar couraça"] = "Mend Cuirass",
-            ["Muralha"] = "Bulwark",
-            ["Salvaguarda"] = "Safeguard",
-            ["Fio da anomalia"] = "Anomaly Thread",
-            ["Puxar o veio"] = "Pull the Veil",
-            ["Puxar o véu"] = "Pull the Veil",
-            ["Abrir o vão"] = "Open the Gap",
-            ["Soco Normal"] = "Normal Punch",
-            ["Lança Pedra"] = "Rock Throw",
-            ["Para-raio"] = "Lightning Rod",
-            ["Laser Distorcido"] = "Distorted Laser",
-            ["Giro Turbina (Ametista)"] = "Turbine Spin (Amethyst)",
-            ["Giro Turbina (Ágata)"] = "Turbine Spin (Agate)",
-            ["Giro Turbina (Citrino)"] = "Turbine Spin (Citrine)",
-            ["Giro Turbina (Esmeralda)"] = "Turbine Spin (Emerald)",
-            ["Açoite Metálico"] = "Iron Lash",
-            ["Brilho Hipnótico"] = "Hypnotic Glare",
-            ["Sussurro do Vício"] = "Whisper of Vice",
-            ["Colapso da Armadura"] = "Armor Collapse",
-            ["Garra"] = "Claw",
-            ["Garras afiadas"] = "Sharp Claws",
-            ["Mordida dilacerante"] = "Painful Bite",
-            ["Uivo gelado"] = "Chilling Howl",
-            ["Vómito cegante"] = "Blinding Vomit",
-            ["Vomito cegante"] = "Blinding Vomit",
-            ["Disparo rápido"] = "Quick Shot",
-            ["Empurrão do coldre"] = "Holster Shove",
-            ["Postura do duelista"] = "Duelist Stance",
-            ["Tiro incendiário"] = "Incendiary Shot",
-            ["Rajada flamejante"] = "Flaming Volley",
-            ["Execução do pistoleiro"] = "Gunslinger Execution",
-            ["Reforço de couro"] = "Leather Reinforcement",
-            ["Barricada"] = "Barricade",
-            ["Último recurso"] = "Last Resort",
-            ["Fio do revólver"] = "Revolver Thread",
-            ["Puxar o gatilho"] = "Pull the Trigger",
-            ["Abrir fogo"] = "Open Fire",
-            ["Aranha Stunadora"] = "Stunner Spider"
-        };
-
         public static string FormatCombatantName(string name)
         {
             if (string.IsNullOrEmpty(name)) return string.Empty;
@@ -88,28 +38,11 @@ namespace Erumperem.UI
             {
                 return "Corrupted Enemy";
             }
-            if (EnglishTranslations.TryGetValue(name.Trim(), out var translated))
-            {
-                return translated;
-            }
-            return name;
+            return SkillPlayerDescriptionBuilder.TranslateToEnglish(name);
         }
 
-        public static string TranslateToEnglish(string text)
-        {
-            if (string.IsNullOrEmpty(text)) return text;
-
-            var working = text;
-            foreach (var kvp in EnglishTranslations)
-            {
-                working = Regex.Replace(working, @"\b" + Regex.Escape(kvp.Key) + @"\b", kvp.Value, RegexOptions.IgnoreCase);
-            }
-
-            // Map technical enemy names (e.g. enemy_1, enemy_01)
-            working = Regex.Replace(working, @"\benemy_?\d+\b", "Corrupted Enemy", RegexOptions.IgnoreCase);
-
-            return working;
-        }
+        public static string TranslateToEnglish(string text) =>
+            SkillPlayerDescriptionBuilder.TranslateEmbeddedTerms(text);
 
         public static string PresentForUi(string rawTechnicalText, BattleState battleContext = null)
         {
@@ -603,40 +536,7 @@ namespace Erumperem.UI
         }
 
         public static string FormatTokenTypeDisplayName(TokenType tokenType) =>
-            tokenType switch
-            {
-                TokenType.Taunt => "Taunt",
-                TokenType.Stealth => "Stealth",
-                TokenType.Stun => "Stun",
-                TokenType.ControlledInstability => "Controlled Instability",
-                TokenType.Destabilization => "Destabilization",
-                TokenType.Strength => "Strength",
-                TokenType.Defense => "Defense",
-                TokenType.Weaken => "Weaken",
-                TokenType.Vulnerability => "Vulnerability",
-                TokenType.Confusion => "Confusion",
-                TokenType.Bleeding => "Bleeding",
-                TokenType.LuckyShot => "Lucky Shot",
-                TokenType.Dexterity => "Dexterity",
-                TokenType.Exposition => "Exposition",
-                TokenType.Corrosion => "Corrosion",
-                TokenType.Mark => "Mark",
-                TokenType.Regeneration => "Regeneration",
-                TokenType.Clumsy => "Clumsy",
-                TokenType.BonusAction => "Bonus Action",
-                TokenType.Hypnosis => "Hypnosis",
-                TokenType.Dizzy => "Dizzy",
-                TokenType.Burn => "Burn",
-                TokenType.PermaStrength => "Perma Strength",
-                TokenType.PermaDefense => "Perma Defense",
-                TokenType.PermaWeaken => "Perma Weaken",
-                TokenType.PermaVulnerability => "Perma Vulnerability",
-                TokenType.PermaDexterity => "Perma Dexterity",
-                TokenType.PermaClumsy => "Perma Clumsy",
-                TokenType.PermaExposition => "Perma Exposition",
-                TokenType.PermaStealth => "Perma Stealth",
-                _ => tokenType.ToString(),
-            };
+            SkillPlayerDescriptionBuilder.FormatStatusDisplayName(tokenType);
 
         public static string FormatTokenTypeDisplayName(string tokenTypeName)
         {
@@ -704,12 +604,6 @@ namespace Erumperem.UI
         }
 
         public static string FormatDotTypeDisplayName(DotType dotType) =>
-            dotType switch
-            {
-                DotType.Bleed => "Bleed",
-                DotType.Blight => "Blight",
-                DotType.Burn => "Burn",
-                _ => dotType.ToString(),
-            };
+            SkillPlayerDescriptionBuilder.FormatDotDisplayName(dotType);
     }
 }

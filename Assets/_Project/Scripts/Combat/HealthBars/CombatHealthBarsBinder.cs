@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Erumperem.Combat.Runtime;
 using Erumperem.Combat.Tokens;
+using Game.Core.Domain;
 using UnityEngine;
 
 namespace Erumperem.Combat.HealthBars
@@ -38,7 +39,8 @@ namespace Erumperem.Combat.HealthBars
         [SerializeField] private bool faceMainCameraEachFrame = true;
 
         [Header("Visibilidade")]
-        [Tooltip("Só mostra a barra de vida da unidade sob o rato.")]
+        [Tooltip("Quando ligado: aliados sempre visíveis, inimigo selecionado sempre visível, restantes só no hover " +
+                 "(a barra também fica visível enquanto anima trail/punch).")]
         [SerializeField] private bool showHealthBarOnlyOnHover = true;
 
         [SerializeField] private float pointerRaycastMaxDistance = 200f;
@@ -230,21 +232,60 @@ namespace Erumperem.Combat.HealthBars
             }
 
             string hoveredCombatantId = null;
+            string selectedEnemyCombatantId = null;
             if (_combatSession != null && _combatSession.IsBattleOngoing)
             {
                 var hoveredCombatant = TryRaycastLivingCombatantUnderPointer();
                 hoveredCombatantId = hoveredCombatant?.Identity.Id;
+                selectedEnemyCombatantId = _combatSession.CurrentSelectedEnemy?.Identity.Id;
             }
 
             foreach (var combatantIdAndHealthBarView in _healthBarHudViewsByCombatantId)
             {
-                var isHovered = !string.IsNullOrEmpty(hoveredCombatantId) &&
-                                string.Equals(
-                                    combatantIdAndHealthBarView.Key,
-                                    hoveredCombatantId,
-                                    System.StringComparison.Ordinal);
-                combatantIdAndHealthBarView.Value.SetHoverVisible(isHovered);
+                var combatantId = combatantIdAndHealthBarView.Key;
+                var healthBarView = combatantIdAndHealthBarView.Value;
+                var shouldShowHealthBar = ShouldShowHealthBarForCombatant(
+                    combatantId,
+                    hoveredCombatantId,
+                    selectedEnemyCombatantId);
+                healthBarView.SetHoverVisible(shouldShowHealthBar);
             }
+        }
+
+        private bool ShouldShowHealthBarForCombatant(
+            string combatantId,
+            string hoveredCombatantId,
+            string selectedEnemyCombatantId)
+        {
+            if (_combatSession == null || string.IsNullOrEmpty(combatantId))
+            {
+                return false;
+            }
+
+            var combatant = _combatSession.FindCombatantById(combatantId);
+            if (combatant == null || combatant.Health.IsDead)
+            {
+                return false;
+            }
+
+            if (combatant.Identity.Faction == Faction.Player)
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrEmpty(selectedEnemyCombatantId)
+                && string.Equals(combatantId, selectedEnemyCombatantId, System.StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrEmpty(hoveredCombatantId)
+                && string.Equals(combatantId, hoveredCombatantId, System.StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private Game.Core.Models.Combatant TryRaycastLivingCombatantUnderPointer()

@@ -19,7 +19,7 @@ namespace Erumperem.Combat.Tokens
         private readonly Transform _unitVisualRoot;
         private readonly Dictionary<TokenStatusVfxSocketSlot, Transform> _socketsBySlot = new();
         private readonly Dictionary<TokenType, GameObject> _activeVfxByTokenType = new();
-        private readonly HashSet<TokenStatusVfxSocketSlot> _missingSocketWarned = new();
+        private readonly List<GameObject> _fallbackSockets = new();
         private bool _socketsCached;
 
         public CombatantTokenStatusVfxPresenter(
@@ -83,16 +83,23 @@ namespace Erumperem.Combat.Tokens
             }
 
             _activeVfxByTokenType.Clear();
+            foreach (var fallbackSocket in _fallbackSockets)
+            {
+                if (fallbackSocket != null)
+                {
+                    Object.Destroy(fallbackSocket);
+                }
+            }
+
+            _fallbackSockets.Clear();
             _socketsBySlot.Clear();
-            _missingSocketWarned.Clear();
             _socketsCached = false;
         }
 
         private void SyncTokenVfx(Combatant combatant, TokenVisualDefinition definition)
         {
             var tokenType = definition.TokenType;
-            var stackCount = combatant.Tokens.GetStacks(tokenType);
-            var hasStacks = stackCount > 0;
+            var hasStacks = IsTokenVisuallyActive(combatant, tokenType);
 
             if (!hasStacks)
             {
@@ -107,10 +114,9 @@ namespace Erumperem.Combat.Tokens
                 return;
             }
 
-            if (!_socketsBySlot.TryGetValue(definition.statusVfxSocket, out var socketTransform)
-                || socketTransform == null)
+            var socketTransform = ResolveOrCreateSocket(definition.statusVfxSocket);
+            if (socketTransform == null)
             {
-                WarnMissingSocketOnce(definition.statusVfxSocket);
                 return;
             }
 
@@ -171,18 +177,98 @@ namespace Erumperem.Combat.Tokens
             }
         }
 
-        private void WarnMissingSocketOnce(TokenStatusVfxSocketSlot socketSlot)
+        private static bool IsTokenVisuallyActive(Combatant combatant, TokenType tokenType)
         {
-            if (!_missingSocketWarned.Add(socketSlot))
+            if (combatant.Tokens.GetStacks(tokenType) > 0)
             {
-                return;
+                return true;
+            }
+
+            if (tokenType == TokenType.Bleeding && HasActiveDot(combatant, DotType.Bleed))
+            {
+                return true;
+            }
+
+            if (tokenType == TokenType.Burn && HasActiveDot(combatant, DotType.Burn))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool HasActiveDot(Combatant combatant, DotType dotType)
+        {
+            var activeDots = combatant.Dots?.ActiveDots;
+            if (activeDots == null)
+            {
+                return false;
+            }
+
+            foreach (var dotInstance in activeDots)
+            {
+                if (dotInstance.Type == dotType && dotInstance.RemainingTurns > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private Transform ResolveOrCreateSocket(TokenStatusVfxSocketSlot socketSlot)
+        {
+            if (_socketsBySlot.TryGetValue(socketSlot, out var existingSocket) && existingSocket != null)
+            {
+                return existingSocket;
+            }
+
+            if (_unitVisualRoot == null)
+            {
+                return null;
             }
 
             var socketName = TokenStatusVfxSocketNames.Resolve(socketSlot);
-            Debug.LogWarning(
-                $"{nameof(CombatantTokenStatusVfxPresenter)}: combatant '{_combatantId}' visual " +
-                $"'{_unitVisualRoot.name}' has no '{socketName}' — token VFX for that slot skipped.",
-                _unitVisualRoot);
+            if (string.IsNullOrEmpty(socketName))
+            {
+                return null;
+            }
+
+            var fallbackSocket = new GameObject(socketName);
+            fallbackSocket.transform.SetParent(_unitVisualRoot, false);
+            fallbackSocket.transform.localPosition = EstimateFallbackLocalPosition(socketSlot);
+            fallbackSocket.transform.localRotation = Quaternion.identity;
+            fallbackSocket.transform.localScale = Vector3.one;
+            _socketsBySlot[socketSlot] = fallbackSocket.transform;
+            _fallbackSockets.Add(fallbackSocket);
+            return fallbackSocket.transform;
+        }
+
+        private Vector3 EstimateFallbackLocalPosition(TokenStatusVfxSocketSlot socketSlot)
+        {
+            var renderers = _unitVisualRoot.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0)
+            {
+                return socketSlot == TokenStatusVfxSocketSlot.Head1
+                    ? new Vector3(0f, 1.6f, 0f)
+                    : Vector3.zero;
+            }
+
+            var combinedBounds = renderers[0].bounds;
+            for (var rendererIndex = 1; rendererIndex < renderers.Length; rendererIndex++)
+            {
+                combinedBounds.Encapsulate(renderers[rendererIndex].bounds);
+            }
+
+            var worldPoint = socketSlot switch
+            {
+                TokenStatusVfxSocketSlot.Feet1 => new Vector3(combinedBounds.center.x, combinedBounds.min.y, combinedBounds.center.z),
+                TokenStatusVfxSocketSlot.Chest1 => combinedBounds.center,
+                TokenStatusVfxSocketSlot.Root => combinedBounds.center,
+                _ => new Vector3(combinedBounds.center.x, combinedBounds.max.y, combinedBounds.center.z),
+            };
+
+            return _unitVisualRoot.InverseTransformPoint(worldPoint);
         }
 
         private static void RestartParticleSystems(GameObject vfxRoot)
