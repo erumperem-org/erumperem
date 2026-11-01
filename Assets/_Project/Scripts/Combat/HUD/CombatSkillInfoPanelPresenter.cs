@@ -40,6 +40,7 @@ namespace Erumperem.Combat
         private CharacterSkillButtonsRowView _skillsRowView;
         private string _lastRenderedDisplaySignature = string.Empty;
         private readonly Dictionary<string, int> _lastShownSlotByOwner = new();
+        private bool _descriptionLabelIsRuntimeClone;
 
         private void Awake()
         {
@@ -365,11 +366,42 @@ namespace Erumperem.Combat
                 skillDescriptionLabel.fontSizeMin = 8f;
                 skillDescriptionLabel.fontSizeMax = Mathf.Max(10f, skillTitleLabel.fontSize * 0.6f);
                 skillDescriptionLabel.textWrappingMode = TextWrappingModes.Normal;
-                skillDescriptionLabel.rectTransform.anchoredPosition -=
-                    new Vector2(0f, skillTitleLabel.rectTransform.rect.height);
+                _descriptionLabelIsRuntimeClone = true;
+            }
+
+            if (_descriptionLabelIsRuntimeClone)
+            {
+                PositionDescriptionBelowSkillIcons();
             }
 
             return skillDescriptionLabel;
+        }
+
+        /// <summary>Ancora o clone runtime abaixo da fileira de ícones de skills, sem cobri-los.</summary>
+        private void PositionDescriptionBelowSkillIcons()
+        {
+            if (_skillsRowView == null || skillDescriptionLabel == null)
+            {
+                return;
+            }
+
+            if (_skillsRowView.transform is not RectTransform rowRect
+                || skillDescriptionLabel.transform.parent is not RectTransform parentRect)
+            {
+                return;
+            }
+
+            var corners = new Vector3[4];
+            rowRect.GetWorldCorners(corners);
+            var bottomLeft = parentRect.InverseTransformPoint(corners[0]);
+            var bottomRight = parentRect.InverseTransformPoint(corners[3]);
+            var width = Mathf.Max(200f, Mathf.Abs(bottomRight.x - bottomLeft.x));
+
+            var label = skillDescriptionLabel.rectTransform;
+            label.anchorMin = label.anchorMax = new Vector2(0.5f, 0.5f);
+            label.pivot = new Vector2(0.5f, 1f);
+            label.sizeDelta = new Vector2(width, 90f);
+            label.localPosition = new Vector3((bottomLeft.x + bottomRight.x) * 0.5f, bottomLeft.y - 12f, 0f);
         }
 
         private void ClearSkillInfoPanel()
