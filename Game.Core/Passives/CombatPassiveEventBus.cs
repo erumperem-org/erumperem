@@ -319,7 +319,8 @@ public sealed class CombatPassiveEventBus
         Combatant recipient,
         SkillDefinition? skill,
         TokenType tokenType,
-        int delta)
+        int delta,
+        bool grantedByPassive = false)
     {
         var contextBase = new CombatPassiveEventContext
         {
@@ -339,6 +340,10 @@ public sealed class CombatPassiveEventBus
                 selfApply ? PassiveTrigger.TokenAppliedToSelf : PassiveTrigger.TokenAppliedToOther,
                 state,
                 contextBase);
+            if (grantedByPassive)
+            {
+                return; // passive-granted tokens never retrigger apply/receive passives (no feedback loops)
+            }
 
             PassiveDataDrivenEngine.HandleActivation(
                 state,

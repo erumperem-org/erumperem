@@ -1483,7 +1483,8 @@ public static class PassiveDataDrivenEngine
                         recipient,
                         context.Skill,
                         tokenToManipulate,
-                        stacks);
+                        stacks,
+                        grantedByPassive: true);
                 }
             }
         }
