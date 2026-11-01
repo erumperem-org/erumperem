@@ -3898,6 +3898,95 @@ Transform:
   - {fileID: 220584352}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &342813668
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1145353128}
+    m_Modifications:
+    - target: {fileID: 1460984945013081286, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+      propertyPath: m_Name
+      value: Matsuda Variant
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359686490222536009, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.54
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359686490222536009, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359686490222536009, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 5.09
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359686490222536009, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359686490222536009, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359686490222536009, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359686490222536009, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359686490222536009, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359686490222536009, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359686490222536009, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4128105123989632776, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+      propertyPath: _icon
+      value: 
+      objectReference: {fileID: 294471993, guid: b13d7933d86e69942937319734068cda, type: 3}
+    - target: {fileID: 4128105123989632776, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+      propertyPath: _restingPoint
+      value: 
+      objectReference: {fileID: 826128655}
+    - target: {fileID: 4128105123989632776, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+      propertyPath: _characterName
+      value: Matsuda
+      objectReference: {fileID: 0}
+    - target: {fileID: 4128105123989632776, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+      propertyPath: _characterExplorationDisplayName
+      value: The Star
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+--- !u!4 &342813669 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2359686490222536009, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+  m_PrefabInstance: {fileID: 342813668}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &342813670 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4128105123989632776, guid: 5f9c01809d8d64d4383a14e2eee69259, type: 3}
+  m_PrefabInstance: {fileID: 342813668}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16ed37e7ea558fb469c1d350b12cdecd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayableCharacter
 --- !u!1 &350919470 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8907977242868360543, guid: 969030f0c6fba954fbecb70806b9b4d6, type: 3}
@@ -5311,6 +5400,7 @@ MonoBehaviour:
   _playables:
   - {fileID: 1927338037}
   - {fileID: 2094760528}
+  - {fileID: 342813670}
   _inputReader: {fileID: 1616503563}
 --- !u!1 &784414135 stripped
 GameObject:
@@ -5658,6 +5748,37 @@ MonoBehaviour:
     - {fileID: 100687787}
     - {fileID: 668307388}
   _closeAnimationDuration: 0.5
+--- !u!1 &826128654
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 826128655}
+  m_Layer: 0
+  m_Name: Matsuda
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &826128655
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 826128654}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.54, y: 0, z: 5.09}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1315741654}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &854399750
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9247,12 +9368,12 @@ GameObject:
   - component: {fileID: 1004528954}
   - component: {fileID: 1004528955}
   m_Layer: 0
-  m_Name: Matsuda
+  m_Name: Matsuda_LegacyNPC (disabled, superseded by playable)
   m_TagString: Interactable Object
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1004528949
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9533,6 +9654,7 @@ Transform:
   - {fileID: 1927338034}
   - {fileID: 2094760529}
   - {fileID: 1315741654}
+  - {fileID: 342813669}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1153160288
@@ -9911,6 +10033,9 @@ MonoBehaviour:
   - Character: {fileID: 2094760528}
     InitialState: 2
     StartingCurrentHealth: 0
+  - Character: {fileID: 342813670}
+    InitialState: 3
+    StartingCurrentHealth: 0
   _allyCharacterStatCatalog: {fileID: 11400000, guid: aabbcc11dd22ee33ff44556677889900, type: 2}
   _corruptionSystem: {fileID: 198571126}
   _saveFileName: exploration_save.json
@@ -10019,6 +10144,7 @@ Transform:
   - {fileID: 1293477789}
   - {fileID: 1900462684}
   - {fileID: 1800000002}
+  - {fileID: 826128655}
   m_Father: {fileID: 1145353128}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1334381792 stripped
