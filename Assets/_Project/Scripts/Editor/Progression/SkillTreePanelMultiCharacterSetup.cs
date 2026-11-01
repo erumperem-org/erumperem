@@ -257,17 +257,28 @@ namespace Erumperem.Editor.Progression
                     continue;
                 }
 
-                var sourceBuckNodeId = MapSourceNodeIdToCurrentBuckNodeId(wulfricNodeAsset.NodeId);
+                const string wulfricPrefix = "wulfric_";
                 const string buckPrefix = "buck_";
-                if (string.IsNullOrWhiteSpace(sourceBuckNodeId)
-                    || !sourceBuckNodeId.StartsWith(buckPrefix, StringComparison.Ordinal))
+                string matsudaNodeId;
+                if (wulfricNodeAsset.NodeId.StartsWith(wulfricPrefix, StringComparison.Ordinal))
                 {
-                    Debug.LogWarning(
-                        $"SkillTreePanelMultiCharacterSetup: cannot map '{wulfricNodeAsset.NodeId}' to a Matsuda node.");
-                    continue;
+                    // Current Wulfric tree ids share the tree{n}_tier{n}_(active|passive{k}) suffix with Matsuda.
+                    matsudaNodeId = "matsuda_" + wulfricNodeAsset.NodeId.Substring(wulfricPrefix.Length);
+                }
+                else
+                {
+                    var sourceBuckNodeId = MapSourceNodeIdToCurrentBuckNodeId(wulfricNodeAsset.NodeId);
+                    if (string.IsNullOrWhiteSpace(sourceBuckNodeId)
+                        || !sourceBuckNodeId.StartsWith(buckPrefix, StringComparison.Ordinal))
+                    {
+                        Debug.LogWarning(
+                            $"SkillTreePanelMultiCharacterSetup: cannot map '{wulfricNodeAsset.NodeId}' to a Matsuda node.");
+                        continue;
+                    }
+
+                    matsudaNodeId = "matsuda_" + sourceBuckNodeId.Substring(buckPrefix.Length);
                 }
 
-                var matsudaNodeId = "matsuda_" + sourceBuckNodeId.Substring(buckPrefix.Length);
                 if (!nodeAssetsById.TryGetValue(matsudaNodeId, out var matsudaNodeAsset))
                 {
                     Debug.LogWarning(
