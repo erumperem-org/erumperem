@@ -93,7 +93,7 @@ Tipos: `ApplyToken`, `ApplyDot`, `ApplyRandomDot`, `Push`, `Pull`, `ApplyStun`, 
 
 ## Notas de runtime (kits actuais)
 
-- **Confusion:** MVP retarget — 33% chance de escolher inimigo válido aleatório em skills inimigas; não troca Ally↔Enemy nem Self→None.
+- **Confusion:** no início do turno do portador, cada skill tem 33% de chance de trocar os alvos pelo resto do turno (a decisão é tomada uma vez por skill): Ally↔Enemy, e Self→None (a skill resolve sem alvos). Aplica-se a heróis e inimigos, em turnos manuais e de IA.
 - **Juggling / ChanceToNotEndTurn:** usam `TokenType.BonusAction` + `ShouldRetainTurnForBonusAction` (Simulate + Unity turn driver).
 - **Resurrection Hymn:** revive/cura aliados mortos se `canTargetDeadAllies`; não modela cutscene.
 - **Passivas:** kits de herói usam Conditions + Effects. `PassiveEffectKind` legado permanece só para conteúdo de inimigo (ex. Horse Boss summon) e testes sintéticos. Não acrescentes cases one-off.

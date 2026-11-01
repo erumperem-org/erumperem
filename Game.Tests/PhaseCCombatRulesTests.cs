@@ -1,4 +1,4 @@
-using Game.Core.Abstractions;
+﻿using Game.Core.Abstractions;
 using Game.Core.Analytics;
 using Game.Core.Domain;
 using Game.Core.Engine;
@@ -155,6 +155,71 @@ public sealed class PhaseCCombatRulesTests
         actor.PassiveRuntime.ConfusedSkillIdsThisTurn.Add(selfSkill.Id);
 
         Assert.Empty(SkillTargetResolver.ResolvePrimaryTargets(battle, actor, selfSkill, actor));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Confusion_AtTurnStart_SwappedEnemySkillHitsAllyInsteadOfEnemy(bool heroActs)
+    {
+        var skill = CreateFixedDamageSkill("phase_c_confusion_e2e_enemy", FixedSkillDamage);
+        var battle = CreateNeutralBattle(skill, allyCount: 2, enemyCount: 2);
+        var actor = heroActs ? battle.Allies[0] : battle.Enemies[0];
+        var friends = heroActs ? battle.Allies : battle.Enemies;
+        var foes = heroActs ? battle.Enemies : battle.Allies;
+        actor.SkillLoadout.Skills.Clear();
+        actor.SkillLoadout.Skills.Add(skill.Id);
+        actor.Tokens.Add(TokenType.Confusion, 1);
+        actor.Tokens.Add(TokenType.BonusAction, 1);
+        var friendHp = friends.Sum(c => c.Health.CurrentHp);
+        var foeHp = foes.Sum(c => c.Health.CurrentHp);
+        var simulator = CreateAlwaysHittingSimulator();
+
+        Assert.True(simulator.TryPrepareActorTurn(battle, actor));
+        for (var i = 0; i < 2; i++)
+        {
+            // Bonus action keeps the turn open: the swap decision holds for both uses.
+            simulator.ResolveChosenAction(battle, new ChosenAction
+            {
+                Actor = actor, Target = foes[0], Skill = skill, ActionType = ActionType.Skill,
+            });
+        }
+
+        Assert.Equal(foeHp, foes.Sum(c => c.Health.CurrentHp));
+        Assert.True(friends.Sum(c => c.Health.CurrentHp) < friendHp);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Confusion_AtTurnStart_SwappedAllySkillHitsEnemy_AndSelfSkillDoesNothing(bool heroActs)
+    {
+        var allySkill = CreateTokenSkill("phase_c_confusion_e2e_ally", SkillTargetKind.OneAlly, TokenType.Taunt);
+        var selfSkill = CreateTokenSkill("phase_c_confusion_e2e_self", SkillTargetKind.Self, TokenType.Strength);
+        var battle = CreateNeutralBattle(allySkill, allyCount: 2, enemyCount: 2);
+        battle.SkillsById[selfSkill.Id] = selfSkill;
+        var actor = heroActs ? battle.Allies[0] : battle.Enemies[0];
+        var friends = heroActs ? battle.Allies : battle.Enemies;
+        var foes = heroActs ? battle.Enemies : battle.Allies;
+        actor.SkillLoadout.Skills.Clear();
+        actor.SkillLoadout.Skills.Add(allySkill.Id);
+        actor.SkillLoadout.Skills.Add(selfSkill.Id);
+        actor.Tokens.Add(TokenType.Confusion, 1);
+        var simulator = CreateAlwaysHittingSimulator();
+
+        Assert.True(simulator.TryPrepareActorTurn(battle, actor));
+        simulator.ResolveChosenAction(battle, new ChosenAction
+        {
+            Actor = actor, Target = friends[1], Skill = allySkill, ActionType = ActionType.Skill,
+        });
+        simulator.ResolveChosenAction(battle, new ChosenAction
+        {
+            Actor = actor, Target = actor, Skill = selfSkill, ActionType = ActionType.Skill,
+        });
+
+        Assert.Equal(1, foes.Sum(c => c.Tokens.GetStacks(TokenType.Taunt)));
+        Assert.Equal(0, friends.Sum(c => c.Tokens.GetStacks(TokenType.Taunt)));
+        Assert.Equal(0, actor.Tokens.GetStacks(TokenType.Strength));
     }
 
     [Fact]
