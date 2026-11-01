@@ -456,7 +456,7 @@ internal sealed class BattleCombatEffectApplicator
         TokenType tokenType,
         int stacks)
     {
-        recipient.Tokens.Add(tokenType, stacks);
+        recipient.Tokens.Add(tokenType, stacks, actor.Identity.Id);
         if (tokenType == TokenType.Hypnosis)
         {
             CombatHypnosisRules.CaptureLockFromLastResolvedSkill(recipient);

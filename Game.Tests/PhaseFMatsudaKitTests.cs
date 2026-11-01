@@ -153,7 +153,7 @@ public sealed class PhaseFMatsudaKitTests
         Assert.Contains(
             corruptionPassive.Effects,
             effect =>
-                effect.Operation == PassiveEffectOperationKind.TokenStatChange &&
+                effect.Operation == PassiveEffectOperationKind.TokenStatChange && effect.StatChangeTarget == PassiveStatChangeTarget.AppliedByOwner &&
                 effect.Magnitude == CorruptionTier1TokenEfficiency);
         Assert.Contains(
             corruptionPassive.Effects,
@@ -170,6 +170,7 @@ public sealed class PhaseFMatsudaKitTests
             unlockPassiveIds: ["matsuda_corruption_tier1_passive1"],
             corruptionValue: CorruptionRules.Tier0UpperInclusive + 1);
         var matsuda = battle.Allies[0];
+        matsuda.Tokens.Add(TokenType.Strength, 2, matsuda.Identity.Id);
         Assert.Equal(
             1.0 + CorruptionTier1TokenEfficiency,
             PassiveDataDrivenEngine.GetTokenEfficiencyMultiplier(battle, matsuda, TokenType.Strength),

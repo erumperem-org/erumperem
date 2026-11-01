@@ -236,6 +236,8 @@ public enum PassiveStatChangeTarget
     AllOpposites = 4,
     /// <summary>The event token recipient / other combatant, including self (extra stack of the applied token).</summary>
     EventRecipient = 5,
+    /// <summary>TokenStatChange only: potency bonus for tokens the passive owner applied (weighted by the owner-applied share of the stacks held).</summary>
+    AppliedByOwner = 6,
 }
 
 /// <summary>Apply versus remove for TokenManipulation.</summary>

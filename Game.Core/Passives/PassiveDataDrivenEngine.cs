@@ -249,7 +249,58 @@ public static class PassiveDataDrivenEngine
             }
         }
 
+        efficiencyAdditive += SumAppliedByOwnerTokenPotency(state, combatant, tokenType);
+
         return 1.0 + efficiencyAdditive;
+    }
+
+    /// <summary>
+    /// Potency bonus from <see cref="PassiveStatChangeTarget.AppliedByOwner"/> effects of whoever applied the stacks
+    /// <paramref name="holder"/> carries, weighted by each applier's share of the stacks.
+    /// </summary>
+    private static double SumAppliedByOwnerTokenPotency(BattleState state, Combatant holder, TokenType tokenType)
+    {
+        var total = holder.Tokens.GetStacks(tokenType);
+        if (total <= 0)
+        {
+            return 0.0;
+        }
+
+        var bonus = 0.0;
+        foreach (var applier in state.GetAllCombatants())
+        {
+            var appliedStacks = holder.Tokens.GetStacksAppliedBy(tokenType, applier.Identity.Id);
+            if (appliedStacks <= 0)
+            {
+                continue;
+            }
+
+            var ownerBonus = 0.0;
+            foreach (var passiveDefinition in PassiveRuleApplier.EnumerateActivePassives(applier, state))
+            {
+                if (!passiveDefinition.HasDataDrivenEffects ||
+                    !HasContinuousActivation(passiveDefinition, applier, oppositeCombatant: holder))
+                {
+                    continue;
+                }
+
+                foreach (var effect in passiveDefinition.Effects)
+                {
+                    if (effect.Operation != PassiveEffectOperationKind.TokenStatChange ||
+                        effect.StatChangeTarget != PassiveStatChangeTarget.AppliedByOwner ||
+                        (effect.Token is not null && effect.Token.Value != tokenType))
+                    {
+                        continue;
+                    }
+
+                    ownerBonus += effect.Magnitude * ReadResourceScaleOrOne(applier, holder, effect);
+                }
+            }
+
+            bonus += ownerBonus * appliedStacks / total;
+        }
+
+        return bonus;
     }
 
     private static double SumTokenStatChangeMagnitude(
@@ -263,6 +314,11 @@ public static class PassiveDataDrivenEngine
         foreach (var effect in passiveDefinition.Effects)
         {
             if (effect.Operation != PassiveEffectOperationKind.TokenStatChange)
+            {
+                continue;
+            }
+
+            if (effect.StatChangeTarget == PassiveStatChangeTarget.AppliedByOwner)
             {
                 continue;
             }
@@ -1244,7 +1300,16 @@ public static class PassiveDataDrivenEngine
             case PassiveEffectOperationKind.CastSkill:
                 if (!string.IsNullOrWhiteSpace(effect.SkillId))
                 {
-                    var preferredTargetCombatantId = context.Other?.Identity.Id ?? context.Victim?.Identity.Id;
+                    var preferredTarget = context.Other ?? context.Victim;
+                    if (effect.StatChangeTarget is PassiveStatChangeTarget.Opposite or PassiveStatChangeTarget.AllOpposites &&
+                        (preferredTarget is null ||
+                         preferredTarget.Identity.Faction == owner.Identity.Faction ||
+                         preferredTarget.Health.IsDead))
+                    {
+                        break;
+                    }
+
+                    var preferredTargetCombatantId = preferredTarget?.Identity.Id;
                     owner.PassiveRuntime.PendingCastSkills.Enqueue(
                         new PendingCastSkillRequest(effect.SkillId, preferredTargetCombatantId));
                 }
@@ -1404,7 +1469,7 @@ public static class PassiveDataDrivenEngine
             }
             else
             {
-                recipient.Tokens.Add(tokenToManipulate, stacks);
+                recipient.Tokens.Add(tokenToManipulate, stacks, owner.Identity.Id);
                 if (tokenToManipulate == TokenType.Hypnosis)
                 {
                     CombatHypnosisRules.CaptureLockFromLastResolvedSkill(recipient);

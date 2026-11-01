@@ -10,7 +10,7 @@ Contrato de runtime (Unity, `Game.Core`, testes, CLI): **um** JSON em `Assets/St
 1. Project window → duplica um `CombatAbilityAsset` existente (ex. `wulfric_innate_active1`).
 2. Preenche `abilityId` em **snake_case**, `displayName`, `ownerCharacterId` (`wulfric` / `buck` / `matsuda`, ou id de inimigo).
 3. `abilityKind`: Active ou Passive. `placement`: InnateActive, TreeNode, LeaderPassive, CompanionPassive, CorruptionPassive, EnemyPassive.
-4. TreeNode: `treeIndex` 1–3, `tierIndex` 1–3, `passiveIndex` 1–3 (passivas). CorruptionPassive: `corruptionMinTier`.
+4. TreeNode: `treeIndex` 1–3, `tierIndex` 1–3, `passiveIndex` 1–3 (passivas). CorruptionPassive: `corruptionMinTier` (+ optional `corruptionMaxTier`, same value for an exact-tier passive). Token potency "X% more effective for tokens this hero applied": TokenStatChange with `statChangeTarget: AppliedByOwner`.
 5. Activa: todos os campos de combate (dano, `hitCount`, follow-ups, `effectsOnHit` com AmountMax / ScaleFromToken / EffectScope). Passiva: `requiredPartyRole`, chance, caps, listas Conditions + Effects (o motor avalia-as em combate).
 6. Opcional: arrasta o asset para o `CharacterCombatKitAsset` do herói (organização). O export **varre todos** os `CombatAbilityAsset` da pasta de Combat / Resources.
 7. Menu **Erumperem/Combat/Export Catalog**.

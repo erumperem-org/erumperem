@@ -1473,6 +1473,7 @@
     "id": "matsuda_corruption_tier1_passive1",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 1,
+    "corruptionMaxTier": 1,
     "chanceToTrigger": 1,
     "conditions": [
       {
@@ -1487,13 +1488,7 @@
         "chanceToTrigger": 1,
         "operation": "TokenStatChange",
         "magnitude": 0.25,
-        "statChangeTarget": "Self"
-      },
-      {
-        "chanceToTrigger": 1,
-        "operation": "TokenStatChange",
-        "magnitude": 0.25,
-        "statChangeTarget": "Opposite"
+        "statChangeTarget": "AppliedByOwner"
       },
       {
         "chanceToTrigger": 0.05,
@@ -1507,6 +1502,7 @@
     "id": "matsuda_corruption_tier2_passive1",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 2,
+    "corruptionMaxTier": 2,
     "chanceToTrigger": 1,
     "conditions": [
       {
@@ -1521,13 +1517,7 @@
         "chanceToTrigger": 1,
         "operation": "TokenStatChange",
         "magnitude": 0.5,
-        "statChangeTarget": "Self"
-      },
-      {
-        "chanceToTrigger": 1,
-        "operation": "TokenStatChange",
-        "magnitude": 0.5,
-        "statChangeTarget": "Opposite"
+        "statChangeTarget": "AppliedByOwner"
       },
       {
         "chanceToTrigger": 0.1,
@@ -1541,6 +1531,7 @@
     "id": "matsuda_corruption_tier3_passive1",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 3,
+    "corruptionMaxTier": 3,
     "chanceToTrigger": 1,
     "conditions": [
       {
@@ -1555,13 +1546,7 @@
         "chanceToTrigger": 1,
         "operation": "TokenStatChange",
         "magnitude": 1,
-        "statChangeTarget": "Self"
-      },
-      {
-        "chanceToTrigger": 1,
-        "operation": "TokenStatChange",
-        "magnitude": 1,
-        "statChangeTarget": "Opposite"
+        "statChangeTarget": "AppliedByOwner"
       },
       {
         "chanceToTrigger": 0.15,

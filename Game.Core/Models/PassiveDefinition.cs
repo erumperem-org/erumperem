@@ -63,6 +63,9 @@ public sealed class PassiveDefinition
     /// <summary>0 = no corruption gate. Otherwise the battle <c>CorruptionTier</c> must be &gt;= this value.</summary>
     public int CorruptionMinTier { get; init; }
 
+    /// <summary>0 = no upper gate. Otherwise the passive is inactive once the battle <c>CorruptionTier</c> exceeds this value (use with min for an exact tier).</summary>
+    public int CorruptionMaxTier { get; init; }
+
     /// <summary>Absolute chance to fire when conditions match. Default 1 = always.</summary>
     public double ChanceToTrigger { get; init; } = 1.0;
 
