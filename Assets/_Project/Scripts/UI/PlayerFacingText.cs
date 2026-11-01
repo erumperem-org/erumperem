@@ -142,7 +142,9 @@ namespace Erumperem.UI
 
             if (nodeAsset.IsPassiveNode)
             {
+                // Placeholder display names are internal slugs (e.g. "m_lf_t1_p1"); never show those to the player.
                 if (!string.IsNullOrWhiteSpace(nodeAsset.DisplayName) &&
+                    !(nodeAsset.DisplayName.Contains('_') && !nodeAsset.DisplayName.Contains(' ')) &&
                     !string.Equals(nodeAsset.DisplayName, nodeAsset.NodeId, StringComparison.OrdinalIgnoreCase))
                 {
                     return TranslateToEnglish(nodeAsset.DisplayName);

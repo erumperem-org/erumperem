@@ -69,6 +69,12 @@ namespace Erumperem.Editor.Progression
                     RemapPresentersToMatsudaNodeAssets(matsudaRootTransform);
                 }
 
+                // Tree roots must draw BEHIND the panel chrome (title, portrait, detail panel, reset button).
+                // Instantiate() appends at the end of Content, which would cover them and block hover raycasts.
+                wulfricRootTransform.SetSiblingIndex(0);
+                buckRootTransform.SetSiblingIndex(1);
+                matsudaRootTransform.SetSiblingIndex(2);
+
                 wulfricRootTransform.gameObject.SetActive(true);
                 buckRootTransform.gameObject.SetActive(false);
                 matsudaRootTransform.gameObject.SetActive(false);
