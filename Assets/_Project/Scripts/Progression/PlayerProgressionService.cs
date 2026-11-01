@@ -12,14 +12,14 @@ namespace Erumperem.Progression
 {
     /// <summary>
     /// Persists skill-tree unlocks and a <see cref="SharedSkillLevel"/> cap (default max 12).
-    /// Wulfric and Buck share the same level value (e.g. 4/12): each may spend up to that many
+    /// Wulfric, Buck and Matsuda share the same level value (e.g. 4/12): each may spend up to that many
     /// points in their own tree; spending on one does not reduce the other's budget.
     /// </summary>
     public sealed class PlayerProgressionService : MonoBehaviour
     {
         public static PlayerProgressionService? Instance { get; private set; }
 
-        private static readonly string[] DefaultSharedSkillLevelCharacterIds = { "wulfric", "buck" };
+        private static readonly string[] DefaultSharedSkillLevelCharacterIds = { "wulfric", "buck", "matsuda" };
 
         private static readonly JsonSerializerOptions JsonOptions = new()
         {

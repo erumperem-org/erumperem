@@ -34,6 +34,10 @@ namespace Erumperem.UI
             {
                 return "The Gunslinger";
             }
+            if (name.Contains("Matsuda", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Matsuda";
+            }
             if (Regex.IsMatch(name, @"^enemy_?\d+$", RegexOptions.IgnoreCase))
             {
                 return "Corrupted Enemy";

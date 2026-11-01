@@ -11,7 +11,7 @@ using Game.Core.Progression;
 namespace Erumperem.Progression
 {
     /// <summary>
-    /// Skill tree UI for Wulfric and Buck with shared skill-point budget and arrow navigation.
+    /// Skill tree UI for Wulfric, Buck and Matsuda with shared skill-point budget and arrow navigation.
     /// </summary>
     public sealed class SkillTreeView : MonoBehaviour
     {
@@ -82,6 +82,7 @@ namespace Erumperem.Progression
 
         private static readonly Color DefaultWulfricBackground = new(0.17f, 0.21f, 0.23f, 0.996f);
         private static readonly Color DefaultBuckBackground = new(0.25f, 0.19f, 0.18f, 0.996f);
+        private static readonly Color DefaultMatsudaBackground = new(0.22f, 0.17f, 0.26f, 0.996f);
 
         [Header("Data")]
         [SerializeField] private PlayerProgressionService _progressionService;
@@ -107,6 +108,13 @@ namespace Erumperem.Progression
                 ProgressionCharacterId = "buck",
                 SkillTreeTitle = "The Gunslinger",
                 PanelBackgroundColor = DefaultBuckBackground,
+                SkillTreeRoot = null
+            },
+            new()
+            {
+                ProgressionCharacterId = "matsuda",
+                SkillTreeTitle = "The Star",
+                PanelBackgroundColor = DefaultMatsudaBackground,
                 SkillTreeRoot = null
             },
         };
@@ -339,6 +347,13 @@ namespace Erumperem.Progression
 
             _characterProfiles[0] = wulfricProfile;
             _characterProfiles[1] = buckProfile;
+
+            if (_characterProfiles.Length >= 3)
+            {
+                var matsudaProfile = _characterProfiles[2];
+                matsudaProfile.SkillTreeRoot ??= FindChildTransform("SkillTree_Matsuda")?.gameObject;
+                _characterProfiles[2] = matsudaProfile;
+            }
         }
 
         private Transform FindChildTransform(string childName)
