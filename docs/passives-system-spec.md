@@ -176,7 +176,7 @@ Evitar um `switch` gigante no simulador: **um** `switch` ou dicionário em `Pass
 
 ## 9. Convenções e documentação para designers
 
-- IDs de nó: `{hero}_tree{N}_tier{M}_{passiveK|active}` — ex. `wulfric_tree1_tier1_passive1`, `maria_tree2_tier3_active`.
+- IDs de nó: `{hero}_tree{N}_tier{M}_{passiveK|active}` — ex. `wulfric_tree1_tier1_passive1`, `matsuda_tree2_tier3_active`.
 - Cada passiva documentada no Inspector do `CombatAbilityAsset` + entrada exportada em `Assets/StreamingAssets/Data/passives.json`.
 - README: link para `docs/skill-authoring.md` na secção de dados.
 

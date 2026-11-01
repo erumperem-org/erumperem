@@ -421,7 +421,7 @@ function updateJsonCatalog() {
   const skillsPath = join(STREAMING, "skills.json");
   const skills = JSON.parse(readFileSync(skillsPath, "utf8"));
   const rebuilt = skills.filter((entry) => !OLD_SKILL_ORDER.includes(entry.id));
-  const insertAt = rebuilt.findIndex((entry) => entry.id.startsWith("maria"));
+  const insertAt = rebuilt.findIndex((entry) => entry.id.startsWith("matsuda"));
   rebuilt.splice(insertAt, 0, ...OLD_SKILL_ORDER.map((oldId) => SKILL_DEFS[oldId]));
   writeFileSync(skillsPath, JSON.stringify(rebuilt, null, 2) + "\n");
 

@@ -219,7 +219,7 @@ namespace Erumperem.Combat.Authoring
         [Tooltip("Player-facing name exported as SkillDefinition.Name (actives) or left as the passive id when empty.")]
         [SerializeField] private string _displayName = "";
 
-        [Tooltip("Owner character id: wulfric, buck, maria, or an enemy id for EnemyPassive. Not Matsuda.")]
+        [Tooltip("Owner character id: wulfric, buck, matsuda, or an enemy id for EnemyPassive.")]
         [SerializeField] private string _ownerCharacterId = "";
 
         [Tooltip("Active = skill in skills.json. Passive = entry in passives.json.")]

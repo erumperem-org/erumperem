@@ -518,7 +518,7 @@ Tier 3: All tokens you apply are 100% more effective, you have a 15% chance to u
 Base Kit
 
 ACTIVE SKILL - BASIC ATTACK
-id: mariaBasicHit
+id: matsudaBasicHit
 name: Sound strike
 corruption cost: 0
 element: anomaly
@@ -529,7 +529,7 @@ accuracy: 90%
 effects on hit: none
 
 ACTIVE SKILL - 1
-id: mariaHealVoice
+id: matsudaHealVoice
 name: Healing voice
 corruption cost: 4
 element: anomaly
@@ -539,7 +539,7 @@ base crit chance: 0%
 accuracy: 80%
 effects on hit: Heal the target 5 to 10
 ACTIVE SKILL - 2
-id: mariaScreamAttack
+id: matsudaScreamAttack
 name: Amplified Scream
 corruption cost: 3
 element: anomaly
@@ -551,7 +551,7 @@ effects on hit: Apply 2 Vulnerability tokens
 
 
 ACTIVE SKILL - 3
-id: mariaDamageBuff
+id: matsudaDamageBuff
 name: Inspirational song
 corruption cost: 4
 element: anomaly
@@ -569,7 +569,7 @@ Receive 2 Strength tokens after healing
 When any of your effects heal a target, there’s a 25% chance you also apply 2 Defense tokens to it
 
 ACTIVE SKILL - 4
-id: mariaEchoHeal
+id: matsudaEchoHeal
 name: Echoing regeneration
 corruption cost: 6
 element: anomaly
@@ -586,7 +586,7 @@ Applying a debuff to a target also heals yourself by 3
 At the start of battle apply 3 regeneration tokens to you and your ally
 
 ACTIVE SKILL - 5
-id: mariaCleanse
+id: matsudaCleanse
 name: Refreshing song
 corruption cost: 6
 element: anomaly
@@ -602,7 +602,7 @@ If you are below 25% of your health at the start of your turn: apply 5 regenerat
 Healing skills have a 10% chance to heal double the amount.
 
 ACTIVE SKILL - 6
-id: mariaResurrection
+id: matsudaResurrection
 name: Resurrection Hymn
 corruption cost: 20
 element: anomaly
@@ -628,7 +628,7 @@ When you apply any token to an ally, apply +1 strength token.
 
 
 ACTIVE SKILL - 4
-id: mariaChanceBuff
+id: matsudaChanceBuff
 name: Higher Pitch
 corruption cost: 4
 element: anomaly
@@ -646,7 +646,7 @@ Your scream has 20% more accuracy
 
 
 ACTIVE SKILL - 5
-id: mariaDefenseBuff
+id: matsudaDefenseBuff
 name: Protection song
 corruption cost: 5
 element: anomaly
@@ -666,7 +666,7 @@ Your team takes 10% less damage while buffed.
 Your team’s critical strikes deal triple damage instead of double if the attacker is buffed while attacking.
 
 ACTIVE SKILL - 6
-id: mariaShow
+id: matsudaShow
 name: Dance of the Revolution
 corruption cost: 9
 element: anomaly
@@ -684,7 +684,7 @@ Hitting a debuffed enemy has a 50% chance to heal you by 6
 You take 10% less damage from debuffed enemies
 
 ACTIVE SKILL - 4
-id: mariaScreechNoise
+id: matsudaScreechNoise
 name: Screech Noise
 corruption cost: 4
 element: anomaly
@@ -700,7 +700,7 @@ Upon using a healing skill there is 40% chance to apply 1 weaken to all enemies
 Upon using a buff skill there is 40% chance to apply 1 vulnerability to all enemies
 
 ACTIVE SKILL - 5
-id: mariaPiercingYell
+id: matsudaPiercingYell
 name: Piercing Yell
 corruption cost: 6
 element: anomaly
@@ -717,7 +717,7 @@ When your team gets hit, apply 1 vulnerability to the attacker
 
 
 ACTIVE SKILL - 6
-id: mariaChaosMelody
+id: matsudaChaosMelody
 name: Chaos Melody
 corruption cost: 8
 element: anomaly
@@ -762,7 +762,7 @@ Confusion: Triggered at the start of turn: each skill has 33% chance to swap tar
 
 
 Lista de Tokens
-Tokens servem para demarcar quando um personagem está sofrendo influência de um tipo específico de mecânica, como “damage over time”, buffs e debuffs temporários ou não e quaisquer efeitos relativos aos mesmos, influenciados primariamente pela quantidade de tokens presentes no personagem. Para o Player vamos usar a palavra “Status” ao invés de “Token”
+Tokens servem para demarcar quando um personagem está sofrendo influência de um tipo específico de mecânica, como “damage over time”, buffs e debuffs temporários ou não e quaisquer efeitos relativos aos mesmos, influenciados primatsudamente pela quantidade de tokens presentes no personagem. Para o Player vamos usar a palavra “Status” ao invés de “Token”
 
 Buffs e Debuffs básicos (afetam apenas dano ou pontaria):
 

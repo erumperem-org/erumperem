@@ -4,7 +4,7 @@ using Game.Core.Domain;
 namespace Game.Core.Items;
 
 /// <summary>
-/// Persistent list of consumed status/thematic items, keyed by combat characterId (wulfric, buck, maria).
+/// Persistent list of consumed status/thematic items, keyed by combat characterId (wulfric, buck, matsuda).
 /// Replay onto SO baselines so combat and exploration stay aligned.
 /// </summary>
 public sealed class CombatItemBonusLedger

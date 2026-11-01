@@ -837,7 +837,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         {
             "Wulfric" => 100f,
             "Buck" => 200f,
-            "Matsuda" => 100f,
+            "Matsuda" => 70f,
             _ => 100f,
         };
     }
@@ -1758,7 +1758,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
     {
         return characterName switch
         {
-            "Matsuda" => 0f,
+            "Matsuda" => 70f,
             _ => 0f,
         };
     }

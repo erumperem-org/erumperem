@@ -20,10 +20,10 @@ public sealed class HeroKitSkillTests
         "buck_tree1_tier1_active", "buck_tree1_tier2_active", "buck_tree1_tier3_active",
         "buck_tree2_tier1_active", "buck_tree2_tier2_active", "buck_tree2_tier3_active",
         "buck_tree3_tier1_active", "buck_tree3_tier2_active", "buck_tree3_tier3_active",
-        "maria_innate_active1", "maria_innate_active2", "maria_innate_active3", "maria_innate_active4",
-        "maria_tree1_tier1_active", "maria_tree1_tier2_active", "maria_tree1_tier3_active",
-        "maria_tree2_tier1_active", "maria_tree2_tier2_active", "maria_tree2_tier3_active",
-        "maria_tree3_tier1_active", "maria_tree3_tier2_active", "maria_tree3_tier3_active",
+        "matsuda_innate_active1", "matsuda_innate_active2", "matsuda_innate_active3", "matsuda_innate_active4",
+        "matsuda_tree1_tier1_active", "matsuda_tree1_tier2_active", "matsuda_tree1_tier3_active",
+        "matsuda_tree2_tier1_active", "matsuda_tree2_tier2_active", "matsuda_tree2_tier3_active",
+        "matsuda_tree3_tier1_active", "matsuda_tree3_tier2_active", "matsuda_tree3_tier3_active",
     ];
 
     [Fact]
@@ -149,11 +149,11 @@ public sealed class HeroKitSkillTests
     }
 
     [Fact]
-    public void MariaHealVoice_HealsWhenCombatHealingUnlocked()
+    public void MatsudaHealVoice_HealsWhenCombatHealingUnlocked()
     {
         Assert.True(CombatHealUnlock.IsCombatHealingUnlocked);
         var skills = SampleCombatData.CreateSkills();
-        var healSkill = skills.First(skill => skill.Id == "maria_innate_active2");
+        var healSkill = skills.First(skill => skill.Id == "matsuda_innate_active2");
         var battle = BattleFactory.CreateSampleBattle(
             skills,
             allyCount: 1,
@@ -364,20 +364,20 @@ public sealed class HeroKitSkillTests
     }
 
     [Fact]
-    public void SkillTrees_IncludeMariaAndNewActiveNodeIds()
+    public void SkillTrees_IncludeMatsudaAndNewActiveNodeIds()
     {
         var trees = CombatDataLoader.LoadSkillTrees(CombatDataLoader.ResolveDefaultSkillTreesPath());
-        Assert.Contains(trees, character => character.CharacterId == "maria");
+        Assert.Contains(trees, character => character.CharacterId == "matsuda");
         var wulfric = SkillTreeLookup.FindCharacterTrees(trees, "wulfric");
         Assert.NotNull(wulfric);
         Assert.True(SkillTreeLookup.TryFindNode(wulfric!, "wulfric_tree1_tier1_active", out _, out _));
         var buck = SkillTreeLookup.FindCharacterTrees(trees, "buck");
         Assert.NotNull(buck);
         Assert.True(SkillTreeLookup.TryFindNode(buck!, "buck_tree1_tier2_active", out _, out _));
-        var maria = SkillTreeLookup.FindCharacterTrees(trees, "maria");
-        Assert.NotNull(maria);
-        Assert.True(SkillTreeLookup.TryFindNode(maria!, "maria_innate_active2", out _, out _) == false);
-        Assert.True(SkillTreeLookup.TryFindNode(maria!, "maria_tree1_tier1_active", out _, out _));
+        var matsuda = SkillTreeLookup.FindCharacterTrees(trees, "matsuda");
+        Assert.NotNull(matsuda);
+        Assert.True(SkillTreeLookup.TryFindNode(matsuda!, "matsuda_innate_active2", out _, out _) == false);
+        Assert.True(SkillTreeLookup.TryFindNode(matsuda!, "matsuda_tree1_tier1_active", out _, out _));
     }
 
     private sealed class AlwaysZeroRandomSource : IRandomSource

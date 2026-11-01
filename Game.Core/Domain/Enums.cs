@@ -282,7 +282,7 @@ public enum PassiveActivationKind
     WhileOppositeHasStatus = 13,
     /// <summary>Fires once per player-chosen skill resolution (not follow-up invocations).</summary>
     UponUsingSkill = 14,
-    /// <summary>Fires on living same-side allies when another ally takes damage (Maria team-hit passives).</summary>
+    /// <summary>Fires on living same-side allies when another ally takes damage (Matsuda team-hit passives).</summary>
     UponAllyDamageTaken = 15,
     /// <summary>Fires on living same-side allies when another ally deals damage.</summary>
     UponAllyDealingDamage = 16,
@@ -342,6 +342,6 @@ public enum CombatItemUtilityKind
     ResetAllSkillTrees = 1,
     ResetBuckSkillTree = 2,
     ResetWulfricSkillTree = 3,
-    /// <summary>Spec "Reset Matsuda" — combat characterId is maria. Do not invent a Matsuda kit.</summary>
-    ResetMariaSkillTree = 4,
+    /// <summary>Spec "Reset Matsuda" — combat characterId is matsuda.</summary>
+    ResetMatsudaSkillTree = 4,
 }

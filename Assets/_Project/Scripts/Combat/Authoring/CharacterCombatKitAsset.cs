@@ -10,7 +10,7 @@ namespace Erumperem.Combat.Authoring
     [CreateAssetMenu(fileName = "CharacterCombatKit", menuName = "Erumperem/Combat/Character Kit")]
     public sealed class CharacterCombatKitAsset : ScriptableObject
     {
-        [Tooltip("Character id this kit belongs to (wulfric, buck, maria). Not Matsuda.")]
+        [Tooltip("Character id this kit belongs to (wulfric, buck, matsuda).")]
         [SerializeField] private string _characterId = "";
 
         [Tooltip("Abilities in this kit. Duplicate a CombatAbilityAsset, fill it, then drag it here.")]

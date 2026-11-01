@@ -19,8 +19,7 @@ public sealed class PhaseICombatItemAndAlmanacTests
 
         Assert.Contains(catalog, item => item.Id == "health_potion_small" && item.Rarity == CombatItemRarity.Common);
         Assert.Contains(catalog, item => item.Id == "paladin_extreme" && item.Rarity == CombatItemRarity.Legendary);
-        Assert.Contains(catalog, item => item.Id == "reset_skill_tree_maria" && item.UtilityKind == CombatItemUtilityKind.ResetMariaSkillTree);
-        Assert.DoesNotContain(catalog, item => item.Id.Contains("matsuda", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(catalog, item => item.Id == "reset_skill_tree_matsuda" && item.UtilityKind == CombatItemUtilityKind.ResetMatsudaSkillTree);
     }
 
     [Fact]
@@ -81,28 +80,23 @@ public sealed class PhaseICombatItemAndAlmanacTests
     }
 
     [Fact]
-    public void MariaTreeReset_TargetsCharacterIdMaria_NotMatsuda()
+    public void MatsudaTreeReset_TargetsCharacterIdMatsuda()
     {
-        var resetMariaItem = CombatItemCatalogFactory.CreateDefaultCatalogById()["reset_skill_tree_maria"];
-        Assert.Equal(CombatItemUtilityKind.ResetMariaSkillTree, resetMariaItem.UtilityKind);
-        Assert.Equal(["maria"], SkillTreeResetRules.ResolveCharacterIdsToReset(resetMariaItem.UtilityKind));
-        Assert.DoesNotContain(
-            SkillTreeResetRules.ResolveCharacterIdsToReset(resetMariaItem.UtilityKind),
-            characterId => characterId.Contains("matsuda", StringComparison.OrdinalIgnoreCase));
+        var resetMatsudaItem = CombatItemCatalogFactory.CreateDefaultCatalogById()["reset_skill_tree_matsuda"];
+        Assert.Equal(CombatItemUtilityKind.ResetMatsudaSkillTree, resetMatsudaItem.UtilityKind);
+        Assert.Equal(["matsuda"], SkillTreeResetRules.ResolveCharacterIdsToReset(resetMatsudaItem.UtilityKind));
 
         var unlockedNodes = new Dictionary<string, Dictionary<string, bool>>(StringComparer.OrdinalIgnoreCase)
         {
             ["wulfric"] = new Dictionary<string, bool> { ["wulfric_tree1_tier1_active"] = true },
             ["buck"] = new Dictionary<string, bool> { ["buck_tree1_tier1_active"] = true },
-            ["maria"] = new Dictionary<string, bool> { ["maria_tree1_tier1_active"] = true },
-            ["matsuda"] = new Dictionary<string, bool> { ["should_not_be_a_combat_kit"] = true },
+            ["matsuda"] = new Dictionary<string, bool> { ["matsuda_tree1_tier1_active"] = true },
         };
 
-        var afterReset = SkillTreeResetRules.ResetUnlockedNodes(unlockedNodes, resetMariaItem.UtilityKind);
-        Assert.False(afterReset.ContainsKey("maria"));
+        var afterReset = SkillTreeResetRules.ResetUnlockedNodes(unlockedNodes, resetMatsudaItem.UtilityKind);
+        Assert.False(afterReset.ContainsKey("matsuda"));
         Assert.True(afterReset["wulfric"]["wulfric_tree1_tier1_active"]);
         Assert.True(afterReset["buck"]["buck_tree1_tier1_active"]);
-        Assert.True(afterReset["matsuda"]["should_not_be_a_combat_kit"]);
     }
 
     [Fact]

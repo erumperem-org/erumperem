@@ -288,7 +288,7 @@ public static class CombatItemCatalogFactory
         {
             Id = "reset_skill_tree_all",
             DisplayName = "Reset Skill Tree (All)",
-            Description = "Resets invested skill-tree points for Wulfric, Buck Wyatt, and Maria.",
+            Description = "Resets invested skill-tree points for Wulfric, Buck Wyatt, and Matsuda.",
             Rarity = CombatItemRarity.Legendary,
             Kind = CombatItemKind.Utility,
             IconFamilyId = "reset_skill_tree_all",
@@ -316,14 +316,14 @@ public static class CombatItemCatalogFactory
         };
         yield return new CombatItemDefinition
         {
-            Id = "reset_skill_tree_maria",
-            DisplayName = "Reset Skill Tree — Maria",
+            Id = "reset_skill_tree_matsuda",
+            DisplayName = "Reset Skill Tree — Matsuda",
             Description =
-                "Resets invested skill-tree points for Maria (The Star). Spec name Matsuda maps to characterId maria; there is no Matsuda combat kit.",
+                "Resets invested skill-tree points for Matsuda (The Star).",
             Rarity = CombatItemRarity.Epic,
             Kind = CombatItemKind.Utility,
-            IconFamilyId = "reset_skill_tree_maria",
-            UtilityKind = CombatItemUtilityKind.ResetMariaSkillTree,
+            IconFamilyId = "reset_skill_tree_matsuda",
+            UtilityKind = CombatItemUtilityKind.ResetMatsudaSkillTree,
         };
     }
 

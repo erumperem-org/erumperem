@@ -10,7 +10,6 @@ public static class CombatPartyRoleRules
 {
     public const string DefaultLeaderCharacterName = "Wulfric";
     public const string DefaultCompanionCharacterName = "Buck";
-    public const string IgnoredExplorationCharacterName = "Matsuda";
 
     public static CombatantPartyRole FromAllyPartyIndex(int partyIndex) =>
         partyIndex == 0 ? CombatantPartyRole.Leader : CombatantPartyRole.Companion;
@@ -28,12 +27,9 @@ public static class CombatPartyRoleRules
         };
     }
 
-    public static bool ShouldIgnoreExplorationCharacter(string? characterName) =>
-        string.Equals(characterName, IgnoredExplorationCharacterName, StringComparison.OrdinalIgnoreCase);
-
     /// <summary>
-    /// First non-ignored name is Leader; the next distinct name is Companion.
-    /// Matsuda never enters combat. Empty slots fall back to Wulfric / Buck without swapping an existing Main.
+    /// First name is Leader; the next distinct name is Companion.
+    /// Empty slots fall back to Wulfric / Buck without swapping an existing Main.
     /// </summary>
     public static CombatantPartyRole FromOverworldPartyNames(
         string characterName,
@@ -59,8 +55,7 @@ public static class CombatPartyRoleRules
             for (var partyIndex = 0; partyIndex < rawPartyCharacterNames.Count; partyIndex++)
             {
                 var candidateCharacterName = rawPartyCharacterNames[partyIndex];
-                if (string.IsNullOrWhiteSpace(candidateCharacterName) ||
-                    ShouldIgnoreExplorationCharacter(candidateCharacterName))
+                if (string.IsNullOrWhiteSpace(candidateCharacterName))
                 {
                     continue;
                 }
@@ -82,7 +77,6 @@ public static class CombatPartyRoleRules
         leaderCharacterName ??= DefaultLeaderCharacterName;
 
         if (string.IsNullOrWhiteSpace(companionCharacterName) ||
-            ShouldIgnoreExplorationCharacter(companionCharacterName) ||
             string.Equals(companionCharacterName, leaderCharacterName, StringComparison.OrdinalIgnoreCase))
         {
             companionCharacterName = string.Equals(
@@ -97,7 +91,7 @@ public static class CombatPartyRoleRules
     }
 
     /// <summary>
-    /// Combat roster order is identity-stable (Wulfric, Buck, Maria) so kits and visuals
+    /// Combat roster order is identity-stable (Wulfric, Buck, Matsuda) so kits and visuals
     /// follow the character, not the Main/Companion slot. PartyRole still comes from overworld Main.
     /// </summary>
     public static IReadOnlyList<string> SortIdentityStableCombatRoster(IReadOnlyList<string> partyCharacterNames)
@@ -111,7 +105,7 @@ public static class CombatPartyRoleRules
         {
             DefaultLeaderCharacterName,
             DefaultCompanionCharacterName,
-            "Maria",
+            "Matsuda",
         };
 
         var remainingNames = partyCharacterNames

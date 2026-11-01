@@ -26,13 +26,13 @@ public static class BattleFactory
         "buck_innate_active4",
     ];
 
-    /// <summary>Innate loadout for Maria / The Star.</summary>
-    public static readonly string[] MariaInnateSkillIds =
+    /// <summary>Innate loadout for Matsuda / The Star.</summary>
+    public static readonly string[] MatsudaInnateSkillIds =
     [
-        "maria_innate_active1",
-        "maria_innate_active2",
-        "maria_innate_active3",
-        "maria_innate_active4",
+        "matsuda_innate_active1",
+        "matsuda_innate_active2",
+        "matsuda_innate_active3",
+        "matsuda_innate_active4",
     ];
 
     public static IReadOnlyList<string> ResolveInnateSkillIds(string progressionCharacterId)
@@ -42,9 +42,9 @@ public static class BattleFactory
             return BuckInnateSkillIds;
         }
 
-        if (string.Equals(progressionCharacterId, "maria", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(progressionCharacterId, "matsuda", StringComparison.OrdinalIgnoreCase))
         {
-            return MariaInnateSkillIds;
+            return MatsudaInnateSkillIds;
         }
 
         if (string.Equals(progressionCharacterId, "wulfric", StringComparison.OrdinalIgnoreCase))
@@ -67,9 +67,9 @@ public static class BattleFactory
             return BuckAlwaysOnPassiveIds;
         }
 
-        if (string.Equals(progressionCharacterId, "maria", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(progressionCharacterId, "matsuda", StringComparison.OrdinalIgnoreCase))
         {
-            return MariaAlwaysOnPassiveIds;
+            return MatsudaAlwaysOnPassiveIds;
         }
 
         return [];
@@ -128,21 +128,21 @@ public static class BattleFactory
         "buck_corruption_tier3_passive1",
     ];
 
-    public static readonly string[] MariaFullSkillLoadout =
+    public static readonly string[] MatsudaFullSkillLoadout =
     [
-        "maria_innate_active1", "maria_innate_active2", "maria_innate_active3", "maria_innate_active4",
-        "maria_tree1_tier1_active", "maria_tree1_tier2_active", "maria_tree1_tier3_active",
-        "maria_tree2_tier1_active", "maria_tree2_tier2_active", "maria_tree2_tier3_active",
-        "maria_tree3_tier1_active", "maria_tree3_tier2_active", "maria_tree3_tier3_active",
+        "matsuda_innate_active1", "matsuda_innate_active2", "matsuda_innate_active3", "matsuda_innate_active4",
+        "matsuda_tree1_tier1_active", "matsuda_tree1_tier2_active", "matsuda_tree1_tier3_active",
+        "matsuda_tree2_tier1_active", "matsuda_tree2_tier2_active", "matsuda_tree2_tier3_active",
+        "matsuda_tree3_tier1_active", "matsuda_tree3_tier2_active", "matsuda_tree3_tier3_active",
     ];
 
-    public static readonly string[] MariaAlwaysOnPassiveIds =
+    public static readonly string[] MatsudaAlwaysOnPassiveIds =
     [
-        "maria_leader_passive1",
-        "maria_companion_passive1",
-        "maria_corruption_tier1_passive1",
-        "maria_corruption_tier2_passive1",
-        "maria_corruption_tier3_passive1",
+        "matsuda_leader_passive1",
+        "matsuda_companion_passive1",
+        "matsuda_corruption_tier1_passive1",
+        "matsuda_corruption_tier2_passive1",
+        "matsuda_corruption_tier3_passive1",
     ];
 
     public static readonly string[] DefaultEnemySkillIds = ["spider_bite", "spider_web", "enemy_claw"];

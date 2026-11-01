@@ -3,7 +3,7 @@ using Game.Core.Models;
 namespace Game.Core.Engine;
 
 /// <summary>
-/// Hook for HealHp / HealHpPercent. Combat healing is unlocked for hero kits (Maria).
+/// Hook for HealHp / HealHpPercent. Combat healing is unlocked for hero kits (Matsuda).
 /// </summary>
 public static class CombatHealUnlock
 {
