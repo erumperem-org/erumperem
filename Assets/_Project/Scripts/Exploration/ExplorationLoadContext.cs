@@ -837,7 +837,7 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         {
             "Wulfric" => 100f,
             "Buck" => 200f,
-            "Matsuda" => 70f,
+            "Matsuda" => MatsudaDefaultMaxHealth,
             _ => 100f,
         };
     }
@@ -1754,11 +1754,13 @@ public sealed class ExplorationLoadContext : MonoBehaviour
         };
     }
 
+    private const float MatsudaDefaultMaxHealth = 70f;
+
     private static float ResolveDefaultStartingHealth(string characterName)
     {
         return characterName switch
         {
-            "Matsuda" => 70f,
+            "Matsuda" => MatsudaDefaultMaxHealth,
             _ => 0f,
         };
     }

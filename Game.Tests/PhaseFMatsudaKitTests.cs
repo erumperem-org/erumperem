@@ -219,7 +219,7 @@ public sealed class PhaseFMatsudaKitTests
         Assert.True(File.Exists(matsudaStatDefinitionPath), matsudaStatDefinitionPath);
         var assetText = File.ReadAllText(matsudaStatDefinitionPath);
         Assert.Contains("characterId: Matsuda", assetText, StringComparison.Ordinal);
-        Assert.Contains("displayName: The Star", assetText, StringComparison.Ordinal);
+        Assert.Contains("displayName: Matsuda", assetText, StringComparison.Ordinal);
         Assert.Contains("progressionCharacterId: matsuda", assetText, StringComparison.Ordinal);
         Assert.Contains($"maxHitPoints: {MatsudaAllyMaxHitPoints}", assetText, StringComparison.Ordinal);
         Assert.Contains(

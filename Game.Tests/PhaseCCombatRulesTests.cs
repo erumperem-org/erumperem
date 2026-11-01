@@ -190,6 +190,58 @@ public sealed class PhaseCCombatRulesTests
     }
 
     [Theory]
+    [InlineData(0.10, true)]
+    [InlineData(0.90, false)]
+    public void Confusion_RollThroughRng_DecidesOncePerTurnAndPersistsAcrossActions(double roll, bool swapped)
+    {
+        var skill = CreateFixedDamageSkill("phase_c_confusion_rng", FixedSkillDamage);
+        var battle = CreateNeutralBattle(skill, allyCount: 2, enemyCount: 2);
+        var actor = battle.Allies[0];
+        actor.SkillLoadout.Skills.Clear();
+        actor.SkillLoadout.Skills.Add(skill.Id);
+        actor.Tokens.Add(TokenType.Confusion, 1);
+        actor.Tokens.Add(TokenType.BonusAction, 1);
+        var allyHp = battle.Allies.Sum(c => c.Health.CurrentHp);
+        var enemyHp = battle.Enemies.Sum(c => c.Health.CurrentHp);
+        // First NextDouble is the 33% confusion roll at turn start; afterwards always hit.
+        var simulator = new BattleSimulator(new ConfusionRollRandom(roll), new CombatEventCollector());
+
+        Assert.True(simulator.TryPrepareActorTurn(battle, actor));
+        Assert.Equal(swapped, actor.PassiveRuntime.ConfusedSkillIdsThisTurn.Contains(skill.Id));
+        for (var i = 0; i < 2; i++)
+        {
+            simulator.ResolveChosenAction(battle, new ChosenAction
+            {
+                Actor = actor, Target = battle.Enemies[0], Skill = skill, ActionType = ActionType.Skill,
+            });
+            Assert.Equal(swapped, actor.PassiveRuntime.ConfusedSkillIdsThisTurn.Contains(skill.Id));
+        }
+
+        if (swapped)
+        {
+            Assert.Equal(enemyHp, battle.Enemies.Sum(c => c.Health.CurrentHp));
+            Assert.True(battle.Allies.Sum(c => c.Health.CurrentHp) < allyHp);
+        }
+        else
+        {
+            Assert.True(battle.Enemies.Sum(c => c.Health.CurrentHp) < enemyHp);
+            Assert.Equal(allyHp, battle.Allies.Sum(c => c.Health.CurrentHp));
+        }
+    }
+
+    private sealed class ConfusionRollRandom(double firstRoll) : IRandomSource
+    {
+        private bool _first = true;
+        public int Next(int minValue, int maxValue) => minValue;
+        public double NextDouble()
+        {
+            if (!_first) return 0.0;
+            _first = false;
+            return firstRoll;
+        }
+    }
+
+    [Theory]
     [InlineData(true)]
     [InlineData(false)]
     public void Confusion_AtTurnStart_SwappedAllySkillHitsEnemy_AndSelfSkillDoesNothing(bool heroActs)
