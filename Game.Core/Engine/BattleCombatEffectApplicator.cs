@@ -48,7 +48,8 @@ internal sealed class BattleCombatEffectApplicator
                 state,
                 actor,
                 target,
-                effect.EffectScope);
+                effect.EffectScope,
+                allowDeadPrimaryTarget: skill.CanTargetDeadAllies);
 
             ApplyEffectToRecipients(state, actor, skill, effect, effectRecipients);
         }
