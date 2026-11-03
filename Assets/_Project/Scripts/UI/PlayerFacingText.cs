@@ -34,6 +34,10 @@ namespace Erumperem.UI
             {
                 return "The Gunslinger";
             }
+            if (name.Contains("Matsuda", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Matsuda";
+            }
             if (Regex.IsMatch(name, @"^enemy_?\d+$", RegexOptions.IgnoreCase))
             {
                 return "Corrupted Enemy";
@@ -138,7 +142,9 @@ namespace Erumperem.UI
 
             if (nodeAsset.IsPassiveNode)
             {
+                // Placeholder display names are internal slugs (e.g. "m_lf_t1_p1"); never show those to the player.
                 if (!string.IsNullOrWhiteSpace(nodeAsset.DisplayName) &&
+                    !(nodeAsset.DisplayName.Contains('_') && !nodeAsset.DisplayName.Contains(' ')) &&
                     !string.Equals(nodeAsset.DisplayName, nodeAsset.NodeId, StringComparison.OrdinalIgnoreCase))
                 {
                     return TranslateToEnglish(nodeAsset.DisplayName);

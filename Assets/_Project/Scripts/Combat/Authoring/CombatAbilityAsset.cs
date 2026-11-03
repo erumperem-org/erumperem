@@ -219,7 +219,7 @@ namespace Erumperem.Combat.Authoring
         [Tooltip("Player-facing name exported as SkillDefinition.Name (actives) or left as the passive id when empty.")]
         [SerializeField] private string _displayName = "";
 
-        [Tooltip("Owner character id: wulfric, buck, maria, or an enemy id for EnemyPassive. Not Matsuda.")]
+        [Tooltip("Owner character id: wulfric, buck, matsuda, or an enemy id for EnemyPassive.")]
         [SerializeField] private string _ownerCharacterId = "";
 
         [Tooltip("Active = skill in skills.json. Passive = entry in passives.json.")]
@@ -239,6 +239,9 @@ namespace Erumperem.Combat.Authoring
 
         [Tooltip("CorruptionPassive: minimum corruption tier (1–3) required. Ignored otherwise.")]
         [SerializeField] private int _corruptionMinTier;
+
+        [Tooltip("CorruptionPassive: maximum corruption tier (1-3) the passive stays active in; 0 = no upper gate. Set equal to the min tier for an exact-tier passive.")]
+        [SerializeField] private int _corruptionMaxTier;
 
         [Tooltip("Designer notes only. Not exported to the runtime catalog.")]
         [TextArea(2, 8)]
@@ -359,6 +362,7 @@ namespace Erumperem.Combat.Authoring
         public int TierIndex => _tierIndex;
         public int PassiveIndex => _passiveIndex;
         public int CorruptionMinTier => _corruptionMinTier;
+        public int CorruptionMaxTier => _corruptionMaxTier;
         public int TreeNodeUnlockCost => _treeNodeUnlockCost;
         public IReadOnlyList<string> TreeNodePrerequisiteAbilityIds => _treeNodePrerequisiteAbilityIds ?? new List<string>();
 
@@ -425,6 +429,7 @@ namespace Erumperem.Combat.Authoring
                 MaxTriggersPerBattle = _maxTriggersPerBattle,
                 MaxTriggersPerTurn = _maxTriggersPerTurn,
                 CorruptionMinTier = _corruptionMinTier,
+                CorruptionMaxTier = _corruptionMaxTier,
                 Conditions = (_passiveConditions ?? Enumerable.Empty<SerializablePassiveCondition>())
                     .Select(condition => condition.ToRuntimeCondition())
                     .ToList(),
@@ -477,6 +482,7 @@ namespace Erumperem.Combat.Authoring
             _tierIndex = Math.Clamp(_tierIndex, 1, 3);
             _passiveIndex = Math.Clamp(_passiveIndex, 1, 3);
             _corruptionMinTier = Math.Clamp(_corruptionMinTier, 0, 3);
+            _corruptionMaxTier = Math.Clamp(_corruptionMaxTier, 0, 3);
             _bonusDamagePerOwnTokenStacks = Math.Max(1, _bonusDamagePerOwnTokenStacks);
             _treeNodeUnlockCost = Math.Max(0, _treeNodeUnlockCost);
 

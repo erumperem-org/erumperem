@@ -350,7 +350,7 @@ public sealed class SkillContractValidationTests
         var skills = CombatDataLoader.LoadSkills(skillsPath);
         Assert.Contains(skills, skill => skill.Id == "wulfric_innate_active1" && skill.TargetKind == SkillTargetKind.OneEnemy);
         Assert.Contains(skills, skill => skill.Id == "wulfric_innate_active3" && skill.TargetKind == SkillTargetKind.UpToThreeEnemies);
-        Assert.Contains(skills, skill => skill.Id == "maria_innate_active2" && skill.TargetKind == SkillTargetKind.SelfOrAlly);
+        Assert.Contains(skills, skill => skill.Id == "matsuda_innate_active2" && skill.TargetKind == SkillTargetKind.SelfOrAlly);
         Assert.Contains(skills, skill => skill.Id == "horse_boss_painful_bite");
         Assert.DoesNotContain(skills, skill => skill.Id == "wulfric_innate_cleave");
     }

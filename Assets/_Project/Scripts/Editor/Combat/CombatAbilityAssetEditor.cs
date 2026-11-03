@@ -58,6 +58,7 @@ namespace Erumperem.Editor.Combat
             if (placement == CombatAbilityPlacement.CorruptionPassive)
             {
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("_corruptionMinTier"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("_corruptionMaxTier"));
             }
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("_designerNotes"));

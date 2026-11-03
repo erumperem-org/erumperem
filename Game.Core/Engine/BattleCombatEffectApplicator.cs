@@ -48,7 +48,8 @@ internal sealed class BattleCombatEffectApplicator
                 state,
                 actor,
                 target,
-                effect.EffectScope);
+                effect.EffectScope,
+                allowDeadPrimaryTarget: skill.CanTargetDeadAllies);
 
             ApplyEffectToRecipients(state, actor, skill, effect, effectRecipients);
         }
@@ -456,7 +457,7 @@ internal sealed class BattleCombatEffectApplicator
         TokenType tokenType,
         int stacks)
     {
-        recipient.Tokens.Add(tokenType, stacks);
+        recipient.Tokens.Add(tokenType, stacks, actor.Identity.Id);
         if (tokenType == TokenType.Hypnosis)
         {
             CombatHypnosisRules.CaptureLockFromLastResolvedSkill(recipient);

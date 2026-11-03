@@ -11,7 +11,7 @@ namespace Erumperem.Editor.Progression
 {
     /// <summary>
     /// Duplicates the Wulfric skill-tree root for Buck (b_* node assets) and wires <see cref="SkillTreeView"/>.
-    /// Run once after pulling: Erumperem/Setup SkillTreePanel (Wulfric + Buck).
+    /// Run once after pulling: Erumperem/Setup SkillTreePanel (Wulfric + Buck + Matsuda).
     /// </summary>
     public static class SkillTreePanelMultiCharacterSetup
     {
@@ -22,8 +22,10 @@ namespace Erumperem.Editor.Progression
         private static readonly Color WulfricPanelBackground = new(0.17f, 0.21f, 0.23f, 0.996f);
         private static readonly Color BuckPanelBackground = new(0.25f, 0.19f, 0.18f, 0.996f);
 
-        [MenuItem("Erumperem/Setup SkillTreePanel (Wulfric + Buck)")]
-        public static void SetupSkillTreePanelForWulfricAndBuck()
+        private static readonly Color MatsudaPanelBackground = new(0.22f, 0.17f, 0.26f, 0.996f);
+
+        [MenuItem("Erumperem/Setup SkillTreePanel (Wulfric + Buck + Matsuda)")]
+        public static void SetupSkillTreePanelForAllCharacters()
         {
             var prefabRoot = PrefabUtility.LoadPrefabContents(SkillTreePanelPrefabPath);
             try
@@ -56,8 +58,26 @@ namespace Erumperem.Editor.Progression
                     RemapPresentersToBuckNodeAssets(buckRootTransform);
                 }
 
+                var matsudaRootTransform = FindChildTransform(contentTransform, "SkillTree_Matsuda");
+                if (matsudaRootTransform == null)
+                {
+                    var matsudaRootObject = UnityEngine.Object.Instantiate(
+                        wulfricRootTransform.gameObject,
+                        contentTransform);
+                    matsudaRootTransform = matsudaRootObject.transform;
+                    matsudaRootTransform.name = "SkillTree_Matsuda";
+                    RemapPresentersToMatsudaNodeAssets(matsudaRootTransform);
+                }
+
+                // Tree roots must draw BEHIND the panel chrome (title, portrait, detail panel, reset button).
+                // Instantiate() appends at the end of Content, which would cover them and block hover raycasts.
+                wulfricRootTransform.SetSiblingIndex(0);
+                buckRootTransform.SetSiblingIndex(1);
+                matsudaRootTransform.SetSiblingIndex(2);
+
                 wulfricRootTransform.gameObject.SetActive(true);
                 buckRootTransform.gameObject.SetActive(false);
+                matsudaRootTransform.gameObject.SetActive(false);
 
                 var skillTreeView = prefabRoot.GetComponent<SkillTreeView>();
                 if (skillTreeView == null)
@@ -74,14 +94,16 @@ namespace Erumperem.Editor.Progression
                     prefabRoot.transform,
                     wulfricRootTransform.gameObject,
                     buckRootTransform.gameObject,
+                    matsudaRootTransform.gameObject,
                     wulfricPortraitSprite,
-                    buckPortraitSprite);
+                    buckPortraitSprite,
+                    buckPortraitSprite); // placeholder portrait for Matsuda
 
                 WireResetButton(prefabRoot, skillTreeView);
 
                 PrefabUtility.SaveAsPrefabAsset(prefabRoot, SkillTreePanelPrefabPath);
                 Debug.Log(
-                    "SkillTreePanelMultiCharacterSetup: SkillTreePanel updated with SkillTree_Wulfric + SkillTree_Buck.");
+                    "SkillTreePanelMultiCharacterSetup: SkillTreePanel updated with SkillTree_Wulfric + SkillTree_Buck + SkillTree_Matsuda.");
             }
             finally
             {
@@ -94,8 +116,10 @@ namespace Erumperem.Editor.Progression
             Transform prefabRootTransform,
             GameObject wulfricSkillTreeRoot,
             GameObject buckSkillTreeRoot,
+            GameObject matsudaSkillTreeRoot,
             Sprite wulfricPortraitSprite,
-            Sprite buckPortraitSprite)
+            Sprite buckPortraitSprite,
+            Sprite matsudaPortraitSprite)
         {
             var skillTreeViewSerializedObject = new SerializedObject(skillTreeView);
 
@@ -122,7 +146,7 @@ namespace Erumperem.Editor.Progression
                     ?.GetComponentInChildren<TMP_Text>(true);
 
             var profilesProperty = skillTreeViewSerializedObject.FindProperty("_characterProfiles");
-            profilesProperty.arraySize = 2;
+            profilesProperty.arraySize = 3;
 
             WriteCharacterProfile(
                 profilesProperty.GetArrayElementAtIndex(0),
@@ -138,6 +162,13 @@ namespace Erumperem.Editor.Progression
                 buckPortraitSprite,
                 BuckPanelBackground,
                 buckSkillTreeRoot);
+            WriteCharacterProfile(
+                profilesProperty.GetArrayElementAtIndex(2),
+                "matsuda",
+                "The Star",
+                matsudaPortraitSprite,
+                MatsudaPanelBackground,
+                matsudaSkillTreeRoot);
 
             skillTreeViewSerializedObject.ApplyModifiedPropertiesWithoutUndo();
         }
@@ -201,6 +232,67 @@ namespace Erumperem.Editor.Progression
                 }
 
                 nodeAssetProperty.objectReferenceValue = buckNodeAsset;
+                presenterSerializedObject.ApplyModifiedPropertiesWithoutUndo();
+            }
+        }
+
+        /// <summary>
+        /// Remaps the cloned Wulfric presenters to Matsuda node assets. Assets are located by NodeId
+        /// (matsuda_tree{1..3}_tier{n}_active|passive{k}) because their file names do not follow the id.
+        /// </summary>
+        private static void RemapPresentersToMatsudaNodeAssets(Transform matsudaSkillTreeRoot)
+        {
+            var nodeAssetsById = new Dictionary<string, SkillTreeNodeAsset>(StringComparer.Ordinal);
+            foreach (var guid in AssetDatabase.FindAssets("t:SkillTreeNodeAsset", new[] { SkillTreeNodesFolder }))
+            {
+                var loadedAsset = AssetDatabase.LoadAssetAtPath<SkillTreeNodeAsset>(
+                    AssetDatabase.GUIDToAssetPath(guid));
+                if (loadedAsset != null && !string.IsNullOrWhiteSpace(loadedAsset.NodeId))
+                {
+                    nodeAssetsById[loadedAsset.NodeId] = loadedAsset;
+                }
+            }
+
+            foreach (var presenter in matsudaSkillTreeRoot.GetComponentsInChildren<SkillTreeNodePresenter>(true))
+            {
+                var presenterSerializedObject = new SerializedObject(presenter);
+                var nodeAssetProperty = presenterSerializedObject.FindProperty("_nodeAsset");
+                var wulfricNodeAsset = nodeAssetProperty.objectReferenceValue as SkillTreeNodeAsset;
+                if (wulfricNodeAsset == null || string.IsNullOrWhiteSpace(wulfricNodeAsset.NodeId))
+                {
+                    continue;
+                }
+
+                const string wulfricPrefix = "wulfric_";
+                const string buckPrefix = "buck_";
+                string matsudaNodeId;
+                if (wulfricNodeAsset.NodeId.StartsWith(wulfricPrefix, StringComparison.Ordinal))
+                {
+                    // Current Wulfric tree ids share the tree{n}_tier{n}_(active|passive{k}) suffix with Matsuda.
+                    matsudaNodeId = "matsuda_" + wulfricNodeAsset.NodeId.Substring(wulfricPrefix.Length);
+                }
+                else
+                {
+                    var sourceBuckNodeId = MapSourceNodeIdToCurrentBuckNodeId(wulfricNodeAsset.NodeId);
+                    if (string.IsNullOrWhiteSpace(sourceBuckNodeId)
+                        || !sourceBuckNodeId.StartsWith(buckPrefix, StringComparison.Ordinal))
+                    {
+                        Debug.LogWarning(
+                            $"SkillTreePanelMultiCharacterSetup: cannot map '{wulfricNodeAsset.NodeId}' to a Matsuda node.");
+                        continue;
+                    }
+
+                    matsudaNodeId = "matsuda_" + sourceBuckNodeId.Substring(buckPrefix.Length);
+                }
+
+                if (!nodeAssetsById.TryGetValue(matsudaNodeId, out var matsudaNodeAsset))
+                {
+                    Debug.LogWarning(
+                        $"SkillTreePanelMultiCharacterSetup: missing Matsuda node asset with id '{matsudaNodeId}'.");
+                    continue;
+                }
+
+                nodeAssetProperty.objectReferenceValue = matsudaNodeAsset;
                 presenterSerializedObject.ApplyModifiedPropertiesWithoutUndo();
             }
         }

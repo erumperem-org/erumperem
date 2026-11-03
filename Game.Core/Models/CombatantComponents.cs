@@ -51,6 +51,9 @@ public sealed class TokenEntry
 {
     public required TokenType Type { get; init; }
     public int Stacks { get; set; }
+
+    /// <summary>Stacks attributed to the combatant that applied them (id to stacks). Untracked stacks have no entry.</summary>
+    public Dictionary<string, int> StacksByApplier { get; } = [];
 }
 
 public sealed class TokenComponent
@@ -62,16 +65,35 @@ public sealed class TokenComponent
         return Entries.FirstOrDefault(tokenEntry => tokenEntry.Type == tokenType)?.Stacks ?? 0;
     }
 
-    public void Add(TokenType tokenType, int stacks)
+    public void Add(TokenType tokenType, int stacks, string? applierId = null)
     {
         var entry = Entries.FirstOrDefault(tokenEntry => tokenEntry.Type == tokenType);
         if (entry is null)
         {
-            Entries.Add(new TokenEntry { Type = tokenType, Stacks = stacks });
-            return;
+            entry = new TokenEntry { Type = tokenType, Stacks = stacks };
+            Entries.Add(entry);
+        }
+        else
+        {
+            entry.Stacks += stacks;
         }
 
-        entry.Stacks += stacks;
+        if (applierId is not null && stacks > 0)
+        {
+            entry.StacksByApplier[applierId] = entry.StacksByApplier.GetValueOrDefault(applierId) + stacks;
+        }
+    }
+
+    /// <summary>Live stacks of <paramref name="tokenType"/> attributed to <paramref name="applierId"/> (never above the live stack count).</summary>
+    public int GetStacksAppliedBy(TokenType tokenType, string applierId)
+    {
+        var entry = Entries.FirstOrDefault(tokenEntry => tokenEntry.Type == tokenType);
+        if (entry is null || !entry.StacksByApplier.TryGetValue(applierId, out var applied))
+        {
+            return 0;
+        }
+
+        return Math.Min(applied, entry.Stacks);
     }
 
     public bool ConsumeOne(TokenType tokenType)

@@ -212,6 +212,36 @@ public sealed class SkillTreeCatalogDescriptionTests
         Assert.Contains("75% chance of extra turn", summary, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void MatsudaTreeNodes_AllHaveCatalogEntriesWithDescriptions()
+    {
+        var skillsById = LoadSkillsById();
+        var passivesById = CombatDataLoader.LoadPassives(CombatDataLoader.ResolveDefaultPassivesPath())
+            .ToDictionary(passive => passive.Id, StringComparer.Ordinal);
+        var treesJson = File.ReadAllText(CombatDataLoader.ResolveDefaultSkillTreesPath());
+        var nodeIds = System.Text.RegularExpressions.Regex
+            .Matches(treesJson, "\"id\":\\s*\"(matsuda_tree\\d_tier\\d_(?:active|passive\\d))\"")
+            .Select(match => match.Groups[1].Value)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        Assert.Equal(36, nodeIds.Count);
+        foreach (var nodeId in nodeIds)
+        {
+            if (nodeId.EndsWith("_active", StringComparison.Ordinal))
+            {
+                Assert.True(skillsById.TryGetValue(nodeId, out var skill), $"missing skill {nodeId}");
+                Assert.False(string.IsNullOrWhiteSpace(skill!.Name), $"skill {nodeId} has no name");
+                Assert.False(string.IsNullOrWhiteSpace(SkillPlayerDescriptionBuilder.BuildSummaryLine(skill)));
+            }
+            else
+            {
+                Assert.True(passivesById.TryGetValue(nodeId, out var passive), $"missing passive {nodeId}");
+                Assert.False(string.IsNullOrWhiteSpace(PassivePlayerDescriptionBuilder.BuildSummaryLine(passive!, skillsById)));
+            }
+        }
+    }
+
     private static SkillDefinition LoadSkill(string skillId)
     {
         var skill = CombatDataLoader.LoadSkills(CombatDataLoader.ResolveDefaultSkillsPath())

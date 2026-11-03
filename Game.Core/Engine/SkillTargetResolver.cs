@@ -62,7 +62,8 @@ public static class SkillTargetResolver
         BattleState battleState,
         Combatant actor,
         Combatant primaryHitTarget,
-        EffectScope effectScope)
+        EffectScope effectScope,
+        bool allowDeadPrimaryTarget = false)
     {
         if (battleState == null || actor == null)
         {
@@ -75,7 +76,7 @@ public static class SkillTargetResolver
             EffectScope.AllAllies => LivingCombatantsOnRoster(SameSideRoster(battleState, actor)),
             EffectScope.AllEnemies => LivingCombatantsOnRoster(OppositeSideRoster(battleState, actor)),
             EffectScope.Default =>
-                primaryHitTarget != null && !primaryHitTarget.Health.IsDead
+                primaryHitTarget != null && (allowDeadPrimaryTarget || !primaryHitTarget.Health.IsDead)
                     ? new[] { primaryHitTarget }
                     : Array.Empty<Combatant>(),
             _ => Array.Empty<Combatant>(),

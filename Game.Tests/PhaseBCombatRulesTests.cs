@@ -205,10 +205,10 @@ public sealed class PhaseBCombatRulesTests
     public void CombatPartyRoleRules_DoesNotForceWulfricToLeaderWhenListedSecond()
     {
         var wulfricForcedAsLeader = CombatPartyRoleRules.NormalizeOverworldCombatParty(["Wulfric", "Buck"]);
-        var matsudaSkipped = CombatPartyRoleRules.NormalizeOverworldCombatParty(["Matsuda", "Buck", "Wulfric"]);
+        var matsudaLeading = CombatPartyRoleRules.NormalizeOverworldCombatParty(["Matsuda", "Buck", "Wulfric"]);
 
         Assert.Equal(["Wulfric", "Buck"], wulfricForcedAsLeader);
-        Assert.Equal(["Buck", "Wulfric"], matsudaSkipped);
+        Assert.Equal(["Matsuda", "Buck"], matsudaLeading);
     }
 
     [Fact]

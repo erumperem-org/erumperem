@@ -1430,7 +1430,7 @@
     ]
   },
   {
-    "id": "maria_leader_passive1",
+    "id": "matsuda_leader_passive1",
     "requiredPartyRole": "Leader",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1450,7 +1450,7 @@
     ]
   },
   {
-    "id": "maria_companion_passive1",
+    "id": "matsuda_companion_passive1",
     "requiredPartyRole": "Companion",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1470,9 +1470,10 @@
     ]
   },
   {
-    "id": "maria_corruption_tier1_passive1",
+    "id": "matsuda_corruption_tier1_passive1",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 1,
+    "corruptionMaxTier": 1,
     "chanceToTrigger": 1,
     "conditions": [
       {
@@ -1487,26 +1488,21 @@
         "chanceToTrigger": 1,
         "operation": "TokenStatChange",
         "magnitude": 0.25,
-        "statChangeTarget": "Self"
-      },
-      {
-        "chanceToTrigger": 1,
-        "operation": "TokenStatChange",
-        "magnitude": 0.25,
-        "statChangeTarget": "Opposite"
+        "statChangeTarget": "AppliedByOwner"
       },
       {
         "chanceToTrigger": 0.05,
         "operation": "CastSkill",
-        "skillId": "maria_innate_active1",
+        "skillId": "matsuda_innate_active1",
         "statChangeTarget": "Opposite"
       }
     ]
   },
   {
-    "id": "maria_corruption_tier2_passive1",
+    "id": "matsuda_corruption_tier2_passive1",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 2,
+    "corruptionMaxTier": 2,
     "chanceToTrigger": 1,
     "conditions": [
       {
@@ -1521,26 +1517,21 @@
         "chanceToTrigger": 1,
         "operation": "TokenStatChange",
         "magnitude": 0.5,
-        "statChangeTarget": "Self"
-      },
-      {
-        "chanceToTrigger": 1,
-        "operation": "TokenStatChange",
-        "magnitude": 0.5,
-        "statChangeTarget": "Opposite"
+        "statChangeTarget": "AppliedByOwner"
       },
       {
         "chanceToTrigger": 0.1,
         "operation": "CastSkill",
-        "skillId": "maria_innate_active1",
+        "skillId": "matsuda_innate_active1",
         "statChangeTarget": "Opposite"
       }
     ]
   },
   {
-    "id": "maria_corruption_tier3_passive1",
+    "id": "matsuda_corruption_tier3_passive1",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 3,
+    "corruptionMaxTier": 3,
     "chanceToTrigger": 1,
     "conditions": [
       {
@@ -1555,24 +1546,18 @@
         "chanceToTrigger": 1,
         "operation": "TokenStatChange",
         "magnitude": 1,
-        "statChangeTarget": "Self"
-      },
-      {
-        "chanceToTrigger": 1,
-        "operation": "TokenStatChange",
-        "magnitude": 1,
-        "statChangeTarget": "Opposite"
+        "statChangeTarget": "AppliedByOwner"
       },
       {
         "chanceToTrigger": 0.15,
         "operation": "CastSkill",
-        "skillId": "maria_innate_active1",
+        "skillId": "matsuda_innate_active1",
         "statChangeTarget": "Opposite"
       }
     ]
   },
   {
-    "id": "maria_tree1_tier1_passive1",
+    "id": "matsuda_tree1_tier1_passive1",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1586,13 +1571,13 @@
         "chanceToTrigger": 1,
         "operation": "SkillStatChange",
         "magnitude": 0.5,
-        "skillId": "maria_innate_active2",
+        "skillId": "matsuda_innate_active2",
         "skillStat": "HealEffectiveness"
       }
     ]
   },
   {
-    "id": "maria_tree1_tier1_passive2",
+    "id": "matsuda_tree1_tier1_passive2",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1612,7 +1597,7 @@
     ]
   },
   {
-    "id": "maria_tree1_tier1_passive3",
+    "id": "matsuda_tree1_tier1_passive3",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1632,7 +1617,7 @@
     ]
   },
   {
-    "id": "maria_tree1_tier2_passive1",
+    "id": "matsuda_tree1_tier2_passive1",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1652,7 +1637,7 @@
     ]
   },
   {
-    "id": "maria_tree1_tier2_passive2",
+    "id": "matsuda_tree1_tier2_passive2",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1672,7 +1657,7 @@
     ]
   },
   {
-    "id": "maria_tree1_tier2_passive3",
+    "id": "matsuda_tree1_tier2_passive3",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1694,7 +1679,7 @@
     ]
   },
   {
-    "id": "maria_tree1_tier3_passive1",
+    "id": "matsuda_tree1_tier3_passive1",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1713,7 +1698,7 @@
     ]
   },
   {
-    "id": "maria_tree1_tier3_passive2",
+    "id": "matsuda_tree1_tier3_passive2",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1736,7 +1721,7 @@
     ]
   },
   {
-    "id": "maria_tree1_tier3_passive3",
+    "id": "matsuda_tree1_tier3_passive3",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1755,7 +1740,7 @@
     ]
   },
   {
-    "id": "maria_tree2_tier1_passive1",
+    "id": "matsuda_tree2_tier1_passive1",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1769,13 +1754,13 @@
         "chanceToTrigger": 1,
         "operation": "SkillStatChange",
         "magnitude": 0.1,
-        "skillId": "maria_innate_active4",
+        "skillId": "matsuda_innate_active4",
         "skillStat": "Accuracy"
       }
     ]
   },
   {
-    "id": "maria_tree2_tier1_passive2",
+    "id": "matsuda_tree2_tier1_passive2",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1799,7 +1784,7 @@
     ]
   },
   {
-    "id": "maria_tree2_tier1_passive3",
+    "id": "matsuda_tree2_tier1_passive3",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1820,7 +1805,7 @@
     ]
   },
   {
-    "id": "maria_tree2_tier2_passive1",
+    "id": "matsuda_tree2_tier2_passive1",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1840,7 +1825,7 @@
     ]
   },
   {
-    "id": "maria_tree2_tier2_passive2",
+    "id": "matsuda_tree2_tier2_passive2",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1861,7 +1846,7 @@
     ]
   },
   {
-    "id": "maria_tree2_tier2_passive3",
+    "id": "matsuda_tree2_tier2_passive3",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1875,19 +1860,22 @@
         "chanceToTrigger": 1,
         "operation": "SkillStatChange",
         "magnitude": 0.2,
-        "skillId": "maria_innate_active3",
+        "skillId": "matsuda_innate_active3",
         "skillStat": "Accuracy"
       }
     ]
   },
   {
-    "id": "maria_tree2_tier3_passive1",
+    "id": "matsuda_tree2_tier3_passive1",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
     "conditions": [
       {
         "activation": "UponDealingDamage"
+      },
+      {
+        "activation": "UponAllyDealingDamage"
       }
     ],
     "effects": [
@@ -1901,7 +1889,7 @@
     ]
   },
   {
-    "id": "maria_tree2_tier3_passive2",
+    "id": "matsuda_tree2_tier3_passive2",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1922,7 +1910,7 @@
     ]
   },
   {
-    "id": "maria_tree2_tier3_passive3",
+    "id": "matsuda_tree2_tier3_passive3",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1943,7 +1931,7 @@
     ]
   },
   {
-    "id": "maria_tree3_tier1_passive1",
+    "id": "matsuda_tree3_tier1_passive1",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1965,7 +1953,7 @@
     ]
   },
   {
-    "id": "maria_tree3_tier1_passive2",
+    "id": "matsuda_tree3_tier1_passive2",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -1985,7 +1973,7 @@
     ]
   },
   {
-    "id": "maria_tree3_tier1_passive3",
+    "id": "matsuda_tree3_tier1_passive3",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -2005,14 +1993,14 @@
     ]
   },
   {
-    "id": "maria_tree3_tier2_passive1",
+    "id": "matsuda_tree3_tier2_passive1",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
     "conditions": [
       {
         "activation": "UponHittingTargetWithStatus",
-        "skillId": "maria_innate_active1"
+        "skillId": "matsuda_innate_active1"
       }
     ],
     "effects": [
@@ -2026,26 +2014,26 @@
     ]
   },
   {
-    "id": "maria_tree3_tier2_passive2",
+    "id": "matsuda_tree3_tier2_passive2",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
     "conditions": [
       {
         "activation": "UponUsingSkill",
-        "skillId": "maria_innate_active2"
+        "skillId": "matsuda_innate_active2"
       },
       {
         "activation": "UponUsingSkill",
-        "skillId": "maria_tree1_tier1_active"
+        "skillId": "matsuda_tree1_tier1_active"
       },
       {
         "activation": "UponUsingSkill",
-        "skillId": "maria_tree1_tier2_active"
+        "skillId": "matsuda_tree1_tier2_active"
       },
       {
         "activation": "UponUsingSkill",
-        "skillId": "maria_tree1_tier3_active"
+        "skillId": "matsuda_tree1_tier3_active"
       }
     ],
     "effects": [
@@ -2059,26 +2047,26 @@
     ]
   },
   {
-    "id": "maria_tree3_tier2_passive3",
+    "id": "matsuda_tree3_tier2_passive3",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
     "conditions": [
       {
         "activation": "UponUsingSkill",
-        "skillId": "maria_innate_active4"
+        "skillId": "matsuda_innate_active4"
       },
       {
         "activation": "UponUsingSkill",
-        "skillId": "maria_tree2_tier1_active"
+        "skillId": "matsuda_tree2_tier1_active"
       },
       {
         "activation": "UponUsingSkill",
-        "skillId": "maria_tree2_tier2_active"
+        "skillId": "matsuda_tree2_tier2_active"
       },
       {
         "activation": "UponUsingSkill",
-        "skillId": "maria_tree2_tier3_active"
+        "skillId": "matsuda_tree2_tier3_active"
       }
     ],
     "effects": [
@@ -2092,7 +2080,7 @@
     ]
   },
   {
-    "id": "maria_tree3_tier3_passive1",
+    "id": "matsuda_tree3_tier3_passive1",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -2115,7 +2103,7 @@
     ]
   },
   {
-    "id": "maria_tree3_tier3_passive2",
+    "id": "matsuda_tree3_tier3_passive2",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,
@@ -2184,7 +2172,7 @@
     ]
   },
   {
-    "id": "maria_tree3_tier3_passive3",
+    "id": "matsuda_tree3_tier3_passive3",
     "requiredPartyRole": "Any",
     "corruptionMinTier": 0,
     "chanceToTrigger": 1,

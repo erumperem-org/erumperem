@@ -3,19 +3,19 @@ using Game.Core.Domain;
 namespace Game.Core.Progression;
 
 /// <summary>
-/// Utility combat items reset skill-tree unlocks. Spec "Matsuda" maps to characterId <see cref="MariaCharacterId"/>.
+/// Utility combat items reset skill-tree unlocks. Combat characterId is <see cref="MatsudaCharacterId"/>.
 /// </summary>
 public static class SkillTreeResetRules
 {
     public const string WulfricCharacterId = "wulfric";
     public const string BuckCharacterId = "buck";
-    public const string MariaCharacterId = "maria";
+    public const string MatsudaCharacterId = "matsuda";
 
     public static readonly IReadOnlyList<string> AllPlayableCharacterIds =
     [
         WulfricCharacterId,
         BuckCharacterId,
-        MariaCharacterId,
+        MatsudaCharacterId,
     ];
 
     public static IReadOnlyList<string> ResolveCharacterIdsToReset(CombatItemUtilityKind utilityKind) =>
@@ -24,7 +24,7 @@ public static class SkillTreeResetRules
             CombatItemUtilityKind.ResetAllSkillTrees => AllPlayableCharacterIds,
             CombatItemUtilityKind.ResetBuckSkillTree => [BuckCharacterId],
             CombatItemUtilityKind.ResetWulfricSkillTree => [WulfricCharacterId],
-            CombatItemUtilityKind.ResetMariaSkillTree => [MariaCharacterId],
+            CombatItemUtilityKind.ResetMatsudaSkillTree => [MatsudaCharacterId],
             _ => [],
         };
 

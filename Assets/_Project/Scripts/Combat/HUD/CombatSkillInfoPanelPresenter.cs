@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Erumperem.Combat.Runtime;
 using Game.Core.Engine;
 using Game.Core.Models;
+using Erumperem.UI;
 using Game.Core.Presentation;
 using TMPro;
 using UnityEngine;
@@ -25,6 +27,8 @@ namespace Erumperem.Combat
 
         [SerializeField] private CombatSkillButtonBarUIManager skillButtonBarUIManager;
         [SerializeField] private TextMeshProUGUI skillTitleLabel;
+        [Tooltip("Descrição persistente da skill atual. Se vazio, é criado em runtime a partir do SkillTitle.")]
+        [SerializeField] private TextMeshProUGUI skillDescriptionLabel;
         [SerializeField] private TextMeshProUGUI targetCountLabel;
         [SerializeField] private TextMeshProUGUI damageRangeLabel;
         [SerializeField] private TextMeshProUGUI criticalChanceLabel;
@@ -35,6 +39,8 @@ namespace Erumperem.Combat
         private CombatPrototypeController _combatSession;
         private CharacterSkillButtonsRowView _skillsRowView;
         private string _lastRenderedDisplaySignature = string.Empty;
+        private readonly Dictionary<string, int> _lastShownSlotByOwner = new();
+        private bool _descriptionLabelIsRuntimeClone;
 
         private void Awake()
         {
@@ -223,6 +229,17 @@ namespace Erumperem.Combat
                 skillTitleLabel.text = skillDefinition.Name;
             }
 
+            var descriptionLabel = ResolveDescriptionLabel();
+            if (descriptionLabel != null)
+            {
+                descriptionLabel.text = PlayerFacingText.PresentForUi(
+                    CombatSkillPlayerDescriptionFormatter.BuildSummaryLine(
+                        skillDefinition,
+                        _combatSession.BattleState,
+                        actingCombatant,
+                        previewTarget));
+            }
+
             if (targetCountLabel != null)
             {
                 targetCountLabel.text = CombatSkillHudInfoFormatter.FormatTargetCountLine(skillStats.TargetCount);
@@ -279,28 +296,27 @@ namespace Erumperem.Combat
             var hasLockedSelection = selectedSlot.HasValue &&
                 string.Equals(selectedOwnerCombatantId, ownerCombatantId, StringComparison.Ordinal);
 
-            if (hasLockedSelection)
-            {
-                zeroBasedSlotIndex = selectedSlot.Value;
-            }
-            else if (_skillsRowView.HoveredZeroBasedSlotIndex.HasValue)
-            {
-                zeroBasedSlotIndex = _skillsRowView.HoveredZeroBasedSlotIndex.Value;
-            }
-            else
-            {
-                return false;
-            }
-
             var skillIds = actingCombatant.SkillLoadout.Skills
                 .Where(skillId => battleState.SkillsById.ContainsKey(skillId))
                 .Take(CharacterSkillButtonsRowView.MaxVisibleSlots)
                 .ToList();
 
-            if (zeroBasedSlotIndex < 0 || zeroBasedSlotIndex >= skillIds.Count)
+            // Selecao > hover > ultima skill mostrada > primeira: a descricao nunca fica vazia no turno do heroi.
+            int? lastShownSlot = _lastShownSlotByOwner.TryGetValue(ownerCombatantId, out var rememberedSlot)
+                ? rememberedSlot
+                : null;
+            var resolvedSlot = CombatSkillDescriptionSlotResolver.Resolve(
+                skillIds.Count,
+                hasLockedSelection ? selectedSlot : null,
+                _skillsRowView.HoveredZeroBasedSlotIndex,
+                lastShownSlot);
+            if (!resolvedSlot.HasValue)
             {
                 return false;
             }
+
+            zeroBasedSlotIndex = resolvedSlot.Value;
+            _lastShownSlotByOwner[ownerCombatantId] = zeroBasedSlotIndex;
 
             return battleState.SkillsById.TryGetValue(skillIds[zeroBasedSlotIndex], out skillDefinition);
         }
@@ -338,9 +354,64 @@ namespace Erumperem.Combat
             string previewTargetElement) =>
             $"{ownerCombatantId}|{zeroBasedSlotIndex}|{previewTargetCombatantId}|{corruptionTier}|{previewTargetElement}";
 
+        private TextMeshProUGUI ResolveDescriptionLabel()
+        {
+            if (skillDescriptionLabel == null && skillTitleLabel != null)
+            {
+                // Sem objeto na cena: clona o SkillTitle logo abaixo dele (ajustar layout no Editor se preciso).
+                skillDescriptionLabel = Instantiate(skillTitleLabel, skillTitleLabel.transform.parent, false);
+                skillDescriptionLabel.name = "SkillDescription";
+                skillDescriptionLabel.transform.SetSiblingIndex(skillTitleLabel.transform.GetSiblingIndex() + 1);
+                skillDescriptionLabel.enableAutoSizing = true;
+                skillDescriptionLabel.fontSizeMin = 8f;
+                skillDescriptionLabel.fontSizeMax = Mathf.Max(10f, skillTitleLabel.fontSize * 0.6f);
+                skillDescriptionLabel.textWrappingMode = TextWrappingModes.Normal;
+                _descriptionLabelIsRuntimeClone = true;
+            }
+
+            if (_descriptionLabelIsRuntimeClone)
+            {
+                PositionDescriptionBelowSkillIcons();
+            }
+
+            return skillDescriptionLabel;
+        }
+
+        /// <summary>Ancora o clone runtime abaixo da fileira de ícones de skills, sem cobri-los.</summary>
+        private void PositionDescriptionBelowSkillIcons()
+        {
+            if (_skillsRowView == null || skillDescriptionLabel == null)
+            {
+                return;
+            }
+
+            if (_skillsRowView.transform is not RectTransform rowRect
+                || skillDescriptionLabel.transform.parent is not RectTransform parentRect)
+            {
+                return;
+            }
+
+            var corners = new Vector3[4];
+            rowRect.GetWorldCorners(corners);
+            var bottomLeft = parentRect.InverseTransformPoint(corners[0]);
+            var bottomRight = parentRect.InverseTransformPoint(corners[3]);
+            var width = Mathf.Max(200f, Mathf.Abs(bottomRight.x - bottomLeft.x));
+
+            var label = skillDescriptionLabel.rectTransform;
+            label.anchorMin = label.anchorMax = new Vector2(0.5f, 0.5f);
+            label.pivot = new Vector2(0.5f, 1f);
+            label.sizeDelta = new Vector2(width, 90f);
+            label.localPosition = new Vector3((bottomLeft.x + bottomRight.x) * 0.5f, bottomLeft.y - 12f, 0f);
+        }
+
         private void ClearSkillInfoPanel()
         {
             _lastRenderedDisplaySignature = string.Empty;
+
+            if (skillDescriptionLabel != null)
+            {
+                skillDescriptionLabel.text = string.Empty;
+            }
 
             if (skillTitleLabel != null)
             {

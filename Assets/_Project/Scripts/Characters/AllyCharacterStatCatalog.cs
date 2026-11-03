@@ -64,8 +64,7 @@ namespace Erumperem.Characters
             {
                 "Wulfric" => 100f,
                 "Buck" => 85f,
-                "Matsuda" => 100f,
-                "Maria" => 70f,
+                "Matsuda" => 70f,
                 _ => 100f,
             };
         }

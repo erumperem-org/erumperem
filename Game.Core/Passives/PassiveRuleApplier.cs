@@ -35,6 +35,12 @@ public static class PassiveRuleApplier
                 continue;
             }
 
+            if (passiveDefinition.CorruptionMaxTier > 0 &&
+                state.CorruptionTier > passiveDefinition.CorruptionMaxTier)
+            {
+                continue;
+            }
+
             yield return passiveDefinition;
         }
     }

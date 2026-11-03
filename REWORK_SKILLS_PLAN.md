@@ -73,7 +73,7 @@ Não criar `*_innate_passive*` — o GDD não lista passivas inatas de kit.
 |---|---|---|---|---|---|
 | Wulfric | Splintered Knight | 100 | 25% | +3% | `wulfric` |
 | Buck Wyatt | Pistoleer | 85 | 17% | +5% | `buck` |
-| Maria | The Star | 70 | 12% | +1% | `maria` |
+| Matsuda | The Star | 70 | 12% | +1% | `matsuda` |
 
 ### Cobertura (estado)
 
@@ -149,7 +149,7 @@ Falsos positivos descartados:
 
 - `Game.Simulations/Data/*.json` (clone)
 - `tools/CloneBuckSkillData.ps1`, `BuckSkillDataCloner.cs`
-- Assets `Resources/SkillTreeNodes` com prefixos `f_t`, `a_t`, `m_t` (legado Maria-element), `b_f_`, `b_m_`, `b_a_`
+- Assets `Resources/SkillTreeNodes` com prefixos `f_t`, `a_t`, `m_t` (legado Matsuda-element), `b_f_`, `b_m_`, `b_a_`
 - Entradas JSON `f_t*`, `m_t*`, `a_t*`, `b_f_*`, `b_m_*`, `b_a_*`, skills `wulfric_innate_cleave/shove/guard` e equivalentes Buck legado se não estiverem no spec
 - `Assets/_Project/Scripts/Token/Concrete Implementations/Tokens/Exemplos/` (e o resto de `Scripts/Token/` na fase H)
 - `PassiveEffectKind` de 13 cases (substituído pelo modelo novo; **excepto** manter operação de summon do Horse Boss como effect de inimigo)
@@ -293,23 +293,23 @@ Apagar: `wulfric_innate_cleave`, `wulfric_innate_shove`, `wulfric_innate_guard`.
 
 Árvores: 1 Arachnid, 2 Snake, 3 Duelist.
 
-### 6.3 Maria
+### 6.3 Matsuda
 
 | Velho | Novo |
 |---|---|
-| `mariaBasicHit` | `maria_innate_active1` |
-| `mariaHealVoice` | `maria_innate_active2` |
-| `mariaScreamAttack` | `maria_innate_active3` |
-| `mariaDamageBuff` | `maria_innate_active4` |
-| — | `maria_leader_passive1` / `maria_companion_passive1` |
-| — | `maria_corruption_tier1..3_passive1` |
-| `m_lf_*` / `mariaEchoHeal` / `mariaCleanse` / `mariaResurrection` | `maria_tree1_...` |
-| `m_bh_*` / `mariaChanceBuff` / `mariaDefenseBuff` / `mariaShow` | `maria_tree2_...` |
-| `m_ds_*` / `mariaScreechNoise` / `mariaPiercingYell` / `mariaChaosMelody` | `maria_tree3_...` |
+| `matsudaBasicHit` | `matsuda_innate_active1` |
+| `matsudaHealVoice` | `matsuda_innate_active2` |
+| `matsudaScreamAttack` | `matsuda_innate_active3` |
+| `matsudaDamageBuff` | `matsuda_innate_active4` |
+| — | `matsuda_leader_passive1` / `matsuda_companion_passive1` |
+| — | `matsuda_corruption_tier1..3_passive1` |
+| `m_lf_*` / `matsudaEchoHeal` / `matsudaCleanse` / `matsudaResurrection` | `matsuda_tree1_...` |
+| `m_bh_*` / `matsudaChanceBuff` / `matsudaDefenseBuff` / `matsudaShow` | `matsuda_tree2_...` |
+| `m_ds_*` / `matsudaScreechNoise` / `matsudaPiercingYell` / `matsudaChaosMelody` | `matsuda_tree3_...` |
 
 Árvores: 1 Life Symphony, 2 Battle Hymn, 3 Deafening Scream.
 
-`characterId` de progressão permanece **`maria`**. Display name: The Star. Ver decisão Matsuda abaixo.
+`characterId` de progressão permanece **`matsuda`**. Display name: The Star. Ver decisão Matsuda abaixo.
 
 ---
 
@@ -319,14 +319,14 @@ Apagar: `wulfric_innate_cleave`, `wulfric_innate_shove`, `wulfric_innate_guard`.
 |---|---|
 | IDs spec camelCase vs designer | Designer. Sem alias runtime. |
 | Passiva de posição (spec copia corrupção) | É Leader/Companion. Texto de corrupção nessa secção é copy-paste — ignorar. |
-| Matsuda vs maria vs The Star | Kit combate = `maria` (The Star). Matsuda = personagem de exploração / pai na sinopse; **sem kit**. `CombatPartyResolver` continua a ignorar o nome Matsuda. Item “Reset Skill Tree — Matsuda” implementa-se como reset da árvore **maria**. |
+| Matsuda (The Star) | Id único `matsuda` para combate, progressão e exploração (renomeado de `maria`). Item "Reset Skill Tree — Matsuda" reseta a árvore **matsuda**. |
 | Innate passives | Não criar nós vazios. |
 | Destabilization “nearby” | Comportamento actual: todos os **outros** combatentes vivos, todos os lados (`BattleCombatStatusTicker.cs` ~160–183). Documentar como regra. Sem range. |
 | Unleash Instability | `TriggerDestabilizationOnTargets` consome **todas** as stacks no alvo e explode; o portador **não** leva o dano da própria explosão; não mata por ser o trigger. Morte também explode (`BattleSimulator`). Manter. |
 | Buck Accuracy 0 (`buckAllGuns`) | Wrapper não precisa de hit; follow-ups têm accuracy própria. Manter 0. `buckSnakeTail`: base 0% + bónus por tipo de debuff. |
 | `buckAllGuns` vs Pistol 3 enemies | Follow-up usa o inimigo clicado como `SelectedTarget` e **mantém** o `TargetKind` de cada skill (código actual `BattleSimulator.cs` ~363–378). Pistol ainda pode splash. Spec “this enemy” fica documentado assim; flag extra só se o designer pedir depois. |
 | Buck leader crit stacking | Acumulativo **por batalha**, sem decay, sem cap. +50% crit damage por crit que **este** combatente realizou. |
-| Maria corrupção basic extra | Proc: não gasta turno, não concede BonusAction extra. Resolve um `maria_innate_active1` no alvo do token. Chance 5/10/15% T1/T2/T3. |
+| Matsuda corrupção basic extra | Proc: não gasta turno, não concede BonusAction extra. Resolve um `matsuda_innate_active1` no alvo do token. Chance 5/10/15% T1/T2/T3. |
 | Confusion | Implementar o spec completo (Ally↔Enemy, Self↔None) na fase C/G; o MVP actual é insuficiente. |
 | Min dano / accuracy | Dano mínimo 1 se o hit conectou; accuracy floor 5% (spec L787). |
 | PermaBuff / Hypnosis / Dizzy / Burn / Stealth | Motor na fase C (lista canónica). Não ligar a kits que não os usam. |
@@ -341,7 +341,7 @@ Apagar: `wulfric_innate_cleave`, `wulfric_innate_shove`, `wulfric_innate_guard`.
 | Combo token | Sem payoff no spec. Não usar em kits. Grants existentes: limpar na fase H se não houver leitor. |
 | Bleed DOT vs Bleeding token | Kits usam **token Bleeding** (5% MaxHP). Migrar `DotType.Bleed` de inimigos para o mesmo token ou adapter; um canal player-facing. |
 | `Scripts/Token/` | Legado (`TokenTestScene` only). Combate = `Combat/Tokens/` + Core. Apagar Exemplos já; pasta inteira na fase H após arquivar a cena de teste. |
-| Cura Maria | `CombatHealUnlock` não pode bloquear o kit Maria em combate; cura on para heróis do spec (fase F). |
+| Cura Matsuda | `CombatHealUnlock` não pode bloquear o kit Matsuda em combate; cura on para heróis do spec (fase F). |
 
 ---
 
@@ -365,7 +365,7 @@ Não saltar A. Uma fase = PR mental; pastas disjuntas. `Game.Core` sem UnityEngi
 
 **Pastas:** `Game.Core/Models/CombatantComponents.cs`, `CombatDamageCalculator.cs`, `CombatStatusRules.cs`, `BattleFactory`, `AllyCharacterStatDefinition`, `CombatPartyResolver` / spawn de aliados, `PlayerFacingText.cs`, accumulators `OutgoingDamage*` → `DamageCaused*`.
 
-**Fazer:** role no combatant a partir do overworld (**sem** forçar Wulfric a Main); HP/Def%/Crit dos três heróis nos SOs de aliado (corrigir Buck 100→85, Wulfric crit 5%→3%, Maria 70/12%/1%); floor dano 1 e accuracy 5%; rename copy Damage Caused.
+**Fazer:** role no combatant a partir do overworld (**sem** forçar Wulfric a Main); HP/Def%/Crit dos três heróis nos SOs de aliado (corrigir Buck 100→85, Wulfric crit 5%→3%, Matsuda 70/12%/1%); floor dano 1 e accuracy 5%; rename copy Damage Caused.
 
 **Pronto quando:** teste Wulfric 25% def: 100 dano → 75 int; Companion não corre `*_leader_passive*` (stub role filter ok); party Buck-Main / Wulfric-Companion aplica roles certos.
 
@@ -389,13 +389,13 @@ Não saltar A. Uma fase = PR mental; pastas disjuntas. `Game.Core` sem UnityEngi
 
 **Pronto quando:** testes: innate hit, Taunt tokens, destab explode all-others, leader heal-on-kill só se `PartyRole.Leader`, companion def-per-missing-HP só se Companion, corrupção T1 on-hit defense.
 
-**Não mexer:** Buck/Maria dados.
+**Não mexer:** Buck/Matsuda dados.
 
 ### Fase E — Buck funcional
 
 Mesmo padrão. Incluir follow-ups, hitCount 3, BonusAction/Juggle, Mark/Lucky Shot. Teste `buck_tree1_tier2_active` (Guns for all) + leader crit stacking.
 
-### Fase F — Maria funcional
+### Fase F — Matsuda funcional
 
 Cura on; SelfOrAlly / SelfAndAlly; Resurrection `canTargetDeadAllies`; leader +1 debuff; companion +1 buff; corrupção token efficiency + proc basic.
 
@@ -411,7 +411,7 @@ Cura on; SelfOrAlly / SelfAndAlly; Resurrection `canTargetDeadAllies`; leader +1
 
 ### Fase I — Itens 37 + almanaque (depois do núcleo)
 
-Itens de status/temáticos/reset (reset Maria, não inventar kit Matsuda). Almanaque de inimigos (skills vistas). Fora do núcleo de skills mas **não omitido**.
+Itens de status/temáticos/reset (reset Matsuda). Almanaque de inimigos (skills vistas). Fora do núcleo de skills mas **não omitido**.
 
 ---
 

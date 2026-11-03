@@ -161,7 +161,7 @@ Não edites JSON à mão. O fluxo é **ScriptableObject → Export Catalog → S
    Create menu: **Erumperem → Combat → Ability**.
 2. Preenche no Inspector:
    - `abilityId` em **snake_case** (ex.: `buck_innate_active2`)
-   - `displayName`, `ownerCharacterId` (`wulfric` / `buck` / `maria`, ou id de inimigo)
+   - `displayName`, `ownerCharacterId` (`wulfric` / `buck` / `matsuda`, ou id de inimigo)
    - `abilityKind`: **Active** ou **Passive**
    - `placement`: InnateActive, TreeNode, LeaderPassive, CompanionPassive, CorruptionPassive, EnemyPassive
 3. **Active:** dano, `hitCount`, `targetKind`, `effectsOnHit`, follow-ups, etc.  
@@ -170,7 +170,7 @@ Não edites JSON à mão. O fluxo é **ScriptableObject → Export Catalog → S
 5. Menu Unity: **Erumperem → Combat → Export Catalog**. Isto escreve `skills.json`, `passives.json` e `skill_trees.json` em `Assets/StreamingAssets/Data/` (contrato partilhado com Play Mode, testes e CLI).
 6. Opcional: liga o asset ao `CharacterCombatKitAsset` do herói (organização). O export varre **todos** os `CombatAbilityAsset` da pasta de Combat / Resources.
 
-Convenções de id (kits Wulfric / Buck / Maria):
+Convenções de id (kits Wulfric / Buck / Matsuda):
 
 | Tipo | Padrão de id |
 | ---- | ------------ |
@@ -179,7 +179,7 @@ Convenções de id (kits Wulfric / Buck / Maria):
 | Role | `{hero}_leader_passive1`, `{hero}_companion_passive1` |
 | Corrupção | `{hero}_corruption_tier{N}_passive1` |
 
-Não cries `*_innate_passive*`. Não inventes kit Matsuda (`characterId` de progressão da Star é `maria`).
+Não cries `*_innate_passive*`. O `characterId` de Matsuda (The Star) é `matsuda`.
 
 Guia completo (campos de `targetKind`, `effectScope`, `effectsOnHit`, notas de runtime): [`docs/skill-authoring.md`](docs/skill-authoring.md).  
 Árvores Wulfric: [`docs/wulfric-skill-trees.md`](docs/wulfric-skill-trees.md).  

@@ -15,6 +15,8 @@ public sealed class CombatExplorationBridge : MonoBehaviour
 {
     private const float CombatReentryBlockSeconds = 3f;
     private const float HorseBossCombatReentryBlockSeconds = 3f;
+    // enemy_2 é o slot mais à direita na CombatScene (maior z no CombatSceneCore).
+    private const int HorseBossRightmostEnemySlotIndex = 1;
     private const float PostCombatMonsterSpawnBlockSeconds = 3f;
     private const float ExplorationSceneCombatContactActivationDelaySeconds = 3f;
     private const float VictoryReturnSeparationFromCombatEntry = 6f;
@@ -158,7 +160,7 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         }
 
         var clampedRosterSize = Mathf.Max(1, enemyRosterSize);
-        var horseBossEnemySlotIndex = UnityEngine.Random.Range(0, clampedRosterSize);
+        var horseBossEnemySlotIndex = HorseBossRightmostEnemySlotIndex;
         RememberPendingHorseBossEncounter(horseBossEnemySlotIndex);
         _staticEnteredCombatFromHorseBoss = true;
 
@@ -173,7 +175,7 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     public void NotifyEnteringHorseBossCombat(int enemyRosterSize = DefaultCombatEnemyRosterSize)
     {
         var clampedRosterSize = Mathf.Max(1, enemyRosterSize);
-        var horseBossEnemySlotIndex = UnityEngine.Random.Range(0, clampedRosterSize);
+        var horseBossEnemySlotIndex = HorseBossRightmostEnemySlotIndex;
         RememberPendingHorseBossEncounter(horseBossEnemySlotIndex);
         _enteredCombatFromHorseBoss = true;
         _staticEnteredCombatFromHorseBoss = true;
