@@ -135,9 +135,10 @@ public class PhysicsMovementService : MonoBehaviour
             return direction;
 
         Vector3 origin = transform.position + Vector3.up * settings.obstacleCastHeight;
-        return validator.Validate(
-            direction, origin,
+        Vector3 v = validator.Validate(direction, origin,
             settings.obstacleCastRadius, settings.obstacleCheckDistance, settings.obstacleMask);
+        v.y = 0f;
+        return v;
     }
 
     private void HandleHorizontalMovement(Vector3 direction, float dt)
