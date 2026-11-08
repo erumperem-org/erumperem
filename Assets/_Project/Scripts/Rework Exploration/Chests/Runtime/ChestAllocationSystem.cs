@@ -5,6 +5,7 @@ using Services.DebugUtilities;
 using UnityEngine;
 using SceneAllocation;
 using BarSystem.Bars.Corruption;
+using InteractionSystem;
 
 namespace Core.Chests
 {
@@ -54,7 +55,7 @@ namespace Core.Chests
 
         [Tooltip("Index = tier (0 to 4). Number of ACTIVE chests at that tier is rolled within this range on every (re)allocation.")]
         [SerializeField] private ChestCountRange[] _chestCountRangeByTier = new ChestCountRange[5];
-
+        [SerializeField] private GameObject instigatorProvider;
         private readonly List<GameObject> _chestPoolInstances = new();
 
         private bool _poolCreated;
@@ -192,7 +193,8 @@ namespace Core.Chests
                     continue;
                 }
 
-                OnChestCreated?.Invoke(chest);
+                chest.GetComponentInChildren<InstigatorProximityZone>()._instigatorProvider = instigatorProvider.GetComponent<IInstigatorProvider>();
+                OnChestCreated?.Invoke(chest);  
             }
 
             _poolCreated = true;

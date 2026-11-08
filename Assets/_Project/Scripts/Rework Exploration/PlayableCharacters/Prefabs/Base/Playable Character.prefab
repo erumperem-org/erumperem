@@ -20,6 +20,7 @@ GameObject:
   - component: {fileID: 7416488466462243716}
   - component: {fileID: 7049038911637844777}
   - component: {fileID: 3504003075534502572}
+  - component: {fileID: 1733189180495569057}
   m_Layer: 0
   m_Name: Playable Character
   m_TagString: Untagged
@@ -249,14 +250,59 @@ MonoBehaviour:
       m_Calls: []
   onInstigatorInRange:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1733189180495569057}
+        m_TargetAssemblyTypeName: InteractableBaseOutline, Assembly-CSharp
+        m_MethodName: Show
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   onInstigatorOutOfRange:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1733189180495569057}
+        m_TargetAssemblyTypeName: InteractableBaseOutline, Assembly-CSharp
+        m_MethodName: Hide
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   proximityZone: {fileID: 8027482515422868466}
   instigatorProviderSource: {fileID: 0}
   hub: {fileID: 0}
   sensor: {fileID: 0}
+--- !u!114 &1733189180495569057
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5098464914717200541}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8291cc53f0ec8cf4e9dbf1d3a65e680c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InteractableBaseOutline
+  _interactable: {fileID: 3504003075534502572}
+  _activationMode: 1
+  _requireCanInteract: 1
+  _outlineMaterial: {fileID: 0}
+  _outlineColor: {r: 1, g: 0.82, b: 0.15, a: 1}
+  _outlineWidth: 0.0005
+  _fadeInDuration: 0.18
+  _fadeOutDuration: 0.22
+  _targetRenderers: []
 --- !u!1 &5970124432538641736
 GameObject:
   m_ObjectHideFlags: 0

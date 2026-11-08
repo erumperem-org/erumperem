@@ -117,6 +117,7 @@ namespace Core.Chests
                 Log(LogLevel.Warning, "Chest content contained no IIITem — " +
                                        "check the LootTable (README directive: avoid coin-only tables).");
             }
+            
         }
         private ItemRarity? FindBestItemRarity()
         {

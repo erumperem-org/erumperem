@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e891c960adc25c047866076c67ac7383, type: 3}
+  m_Name: SKILLTREE_RESET_GENERAL
+  m_EditorClassIdentifier: Assembly-CSharp::Core.CharacterStats.SkillTreeResetItem
+  _storageableId: SKILLTREE_RESET_GENERAL
+  _displayName: Reset de Skill Tree Geral
+  _description: Resets every point invested in the general skill tree.
+  _sprite: {fileID: 1454947273, guid: 5c5f7d8223a43ed4cb77b3f9b2e7b9c4, type: 3}
+  _rarity: 4
+  _storageStrategy:
+    rid: 4235599579339030664
+  _scope: 0
+  TargetCharacter: {fileID: 0}
+  references:
+    version: 2
+    RefIds:
+    - rid: 4235599579339030664
+      type: {class: StackableStorageStrategy, ns: Core.Storage, asm: Assembly-CSharp}
+      data:
+        _maxPerSlot: 99

@@ -26,9 +26,9 @@ namespace InteractionSystem
         [Header("Alcance")]
         [SerializeField] private float radius = 2f;
 
-        private IInstigatorProvider _instigatorProvider;
+        public IInstigatorProvider _instigatorProvider;
         private SphereCollider _triggerCollider;
-        private GameObject _currentInstigator;
+        public GameObject _currentInstigator;
         private bool _isInstigatorInside;
 
         /// <summary>Estado atual, para consulta direta sem precisar assinar os eventos.</summary>

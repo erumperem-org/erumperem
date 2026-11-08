@@ -49,6 +49,7 @@ namespace Core.Inventory.UI
             {
                 var slotView = Instantiate(_slotPrefab, _slotContainer);
                 slotView.SetSlotIndex(i);
+                slotView.SetOwner(_inventory); // <- novo: o slot passa a saber a qual inventário pertence
                 slotView.OnClicked += HandleSlotClicked;
                 _slotViews.Add(slotView);
             }
@@ -91,7 +92,7 @@ namespace Core.Inventory.UI
                 return;
             }
 
-            _detailPanel?.Show(slot.Item, _inventory);
+            _detailPanel?.Show(slot.Item, _inventory, slotIndex);
         }
 
         private void Log(LogLevel level, string msg) =>

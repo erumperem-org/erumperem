@@ -44,6 +44,7 @@ public sealed class BoundaryAmbientAudio : MonoBehaviour
                 _configured = AudioManager.instance.TryConfigureAmbientSource(_soundName, _source);
                 if (_configured)
                 {
+                    AudioManager.instance.TryRouteAmbientSource(_source);
                     _clipVolume = _source.volume;
                     _source.volume = 0f;
                 }

@@ -1,5 +1,8 @@
 using UnityEngine;
 using Core.Exploration.Items;
+using Erumperem.Characters;
+using Erumperem.Progression;
+using Services.DebugUtilities;
 
 namespace Core.CharacterStats
 {
@@ -14,23 +17,32 @@ namespace Core.CharacterStats
     public sealed class SkillTreeResetItem : ItemDefinition
     {
         [SerializeField] private SkillTreeResetScope _scope = SkillTreeResetScope.General;
-
-        [Tooltip("Only used when Scope is CharacterSpecific. Placeholder id, same caveat as CharacterIdentityResolver.")]
-        [SerializeField] private string _targetCharacterId;
-
         public SkillTreeResetScope Scope => _scope;
-        public string TargetCharacterId => _targetCharacterId;
+        [Tooltip("Only used when Scope is CharacterSpecific. Placeholder id, same caveat as CharacterIdentityResolver.")]
+        public AllyCharacterStatDefinition TargetCharacter;
 
         public override void ExecuteItemEffect()
         {
-            // Empty on purpose — the real skill tree system does not exist yet.
-            //
-            // TODO: once the skill tree system is available, call it here, e.g.:
-            //
-            // if (_scope == SkillTreeResetScope.General)
-            //     SkillTreeSystem.Instance.ResetGeneralTree();
-            // else
-            //     SkillTreeSystem.Instance.ResetCharacterTree(_targetCharacterId);
+            var progression = PlayerProgressionService.Instance;
+            if (progression == null)
+            {
+                LoggerService.PrintLogMessage(LogLevel.Error, "[SkillTreeResetItem] PlayerProgressionService não encontrado na cena.", LogCategory.Interaction);
+                return;
+            }
+            if (Scope == SkillTreeResetScope.CharacterSpecific)
+            {
+                if (TargetCharacter == null)
+                {
+                    LoggerService.PrintLogMessage(LogLevel.Error, "[SkillTreeResetItem] TargetCharacter não definido para Scope CharacterSpecific.", LogCategory.Interaction);
+                    return;
+                }
+                progression.ResetCharacter(TargetCharacter.CharacterId);
+                return;
+            }
+            else
+            {
+                progression.ResetAllCharacters(); LoggerService.PrintLogMessage(LogLevel.Debug, "[SkillTreeResetItem] Arquivo de progressão inteiro resetado.", LogCategory.Interaction);
+            }
         }
     }
 }

@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e891c960adc25c047866076c67ac7383, type: 3}
+  m_Name: SKILLTREE_RESET_WULFRIC
+  m_EditorClassIdentifier: Assembly-CSharp::Core.CharacterStats.SkillTreeResetItem
+  _storageableId: SKILLTREE_RESET_WULFRIC
+  _displayName: "Reset de Skill Tree \u2014 Wulfric"
+  _description: Resets the points invested in Wulfric's skill tree.
+  _sprite: {fileID: 1218670379, guid: 5c5f7d8223a43ed4cb77b3f9b2e7b9c4, type: 3}
+  _rarity: 3
+  _storageStrategy:
+    rid: 4235599579339030668
+  _scope: 1
+  TargetCharacter: {fileID: 11400000, guid: 0a1b2c3d4e5f6789012345678abcdef0, type: 2}
+  references:
+    version: 2
+    RefIds:
+    - rid: 4235599579339030668
+      type: {class: StackableStorageStrategy, ns: Core.Storage, asm: Assembly-CSharp}
+      data:
+        _maxPerSlot: 99

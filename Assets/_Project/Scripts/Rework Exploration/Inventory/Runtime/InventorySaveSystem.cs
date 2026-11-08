@@ -6,13 +6,16 @@ using System.Threading.Tasks;
 using Services.DebugUtilities;
 using UnityEngine;
 using Core.Exploration.Items;
+using SceneAllocation;
 
 namespace Core.Inventory
 {
     /// <summary>
     /// Persists/restores an InventorySystem to/from its own JSON file
     /// (one file per inventory — the losable and permanent inventories
-    /// are independent).
+    /// are independent). The file lives inside the currently selected
+    /// save slot's directory (SaveSlotAccess.Data.SlotDirectory), the same
+    /// way SceneObjectAllocationSaveSystem resolves its path.
     /// </summary>
     public sealed class InventorySaveSystem : MonoBehaviour
     {
@@ -29,13 +32,45 @@ namespace Core.Inventory
         [SerializeField] private NewItemRegistry _NewItemRegistry;
         [SerializeField] private string _fileName = DefaultFileName;
 
-        private string FullPath => Path.Combine(Application.persistentDataPath, ResolveFileName());
+        // ── Path resolution (slot-based) ─────────────────────────────
+
+        /// <summary>
+        /// Absolute path to this inventory's save file inside the selected
+        /// slot directory, or null if no save slot is currently selected.
+        /// </summary>
+        public string GetSavePath()
+        {
+            var slotData = SaveSlotAccess.Data;
+
+            if (slotData == null || !slotData.HasSlotSelected)
+            {
+                Log(LogLevel.Error,
+                    "No save slot selected (SaveSlotAccess.Data is null or HasSlotSelected is false) — cannot resolve a save path.");
+                return null;
+            }
+
+            return Path.Combine(slotData.SlotDirectory, ResolveFileName());
+        }
+
+        public bool SaveFileExists()
+        {
+            string path = GetSavePath();
+            return path != null && File.Exists(path);
+        }
+
+        // ── Public API ───────────────────────────────────────────────
 
         public async void SaveAsync()
         {
             if (!Validate())
             {
                 return;
+            }
+
+            var destinationPath = GetSavePath();
+            if (destinationPath == null)
+            {
+                return; // error already logged by GetSavePath
             }
 
             var data = new InventorySaveData { Size = _inventory.Size };
@@ -56,7 +91,6 @@ namespace Core.Inventory
             }
 
             string json = JsonUtility.ToJson(data, prettyPrint: true);
-            var destinationPath = FullPath;
 
             try
             {
@@ -76,7 +110,12 @@ namespace Core.Inventory
                 return;
             }
 
-            var sourcePath = FullPath;
+            var sourcePath = GetSavePath();
+            if (sourcePath == null)
+            {
+                return; // error already logged by GetSavePath
+            }
+
             if (!File.Exists(sourcePath))
             {
                 Log(LogLevel.Debug, "No inventory save found — keeping current state.");
@@ -120,7 +159,12 @@ namespace Core.Inventory
         /// </summary>
         public void DeleteSave()
         {
-            var savePath = FullPath;
+            var savePath = GetSavePath();
+            if (savePath == null)
+            {
+                return; // error already logged by GetSavePath
+            }
+
             if (!File.Exists(savePath))
             {
                 Log(LogLevel.Debug, "No save to delete.");
@@ -137,6 +181,8 @@ namespace Core.Inventory
                 Log(LogLevel.Error, $"Failed to delete save: {exception.Message}");
             }
         }
+
+        // ── File name ────────────────────────────────────────────────
 
         private string ResolveFileName()
         {
@@ -158,6 +204,8 @@ namespace Core.Inventory
 
             return _fileName;
         }
+
+        // ── File I/O ─────────────────────────────────────────────────
 
         private static async Task WriteTextWithRetryAsync(string destinationPath, string content)
         {
@@ -253,6 +301,8 @@ namespace Core.Inventory
             return ioException.HResult == sharingViolationHResult
                 || ioException.Message.IndexOf("Sharing violation", StringComparison.OrdinalIgnoreCase) >= 0;
         }
+
+        // ── Validation ───────────────────────────────────────────────
 
         private bool Validate()
         {

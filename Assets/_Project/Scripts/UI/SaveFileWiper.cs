@@ -1,138 +1,140 @@
 using System;
 using System.IO;
-using Services.DebugUtilities;
 using UnityEngine;
 
-/// <summary>
-/// Deleta todos os arquivos de save do jogo:
-///   • exploration_save.json
-///   • corruption_save.json
-///   • inventory_save.json
-///   • player_skill_progression.json
-///   • enemy_almanac.json
-///   • combat_item_bonuses.json
-///   • ShopState/*.sav
-/// </summary>
 public sealed class SaveFileWiper : MonoBehaviour
 {
-    [Header("IO Settings")]
-    [SerializeField] private string _saveFolderName = "Saves";
+    [Header("References")]
+    [SerializeField] private SaveSlotManager saveSlotManager;
+
+    [Header("Directory Settings")]
+    [SerializeField] private string saveFolderName = "Saves";
 
     private string SaveDirectory =>
-        Path.Combine(Application.persistentDataPath, _saveFolderName);
+        Path.Combine(Application.persistentDataPath, saveFolderName);
 
-    private string ShopStateDirectory =>
-        Path.Combine(Application.persistentDataPath, "ShopState");
-
-    private string SkillProgressionFilePath =>
-        Path.Combine(Application.persistentDataPath, "player_skill_progression.json");
-
-    private string EnemyAlmanacFilePath =>
-        Path.Combine(SaveDirectory, "enemy_almanac.json");
-
-    private string CombatItemBonusesFilePath =>
-        Path.Combine(SaveDirectory, "combat_item_bonuses.json");
-
-    private string[] SaveFileNames => new[]
+    // Deletes the currently selected slot through SaveSlotManager.
+    public void DeleteCurrentSlot()
     {
-        "exploration_save.json",
-        "corruption_save.json",
-        "inventory_save.json",
-    };
+        CurrentSlotData currentSlot = SaveSlotAccess.Data;
 
-    // ── API pública ───────────────────────────────────────────────────────
+        if (currentSlot == null || !currentSlot.HasSlotSelected)
+        {
+            Debug.LogWarning(
+                "[SaveFileWiper] No save slot is currently selected.",
+                this);
+            return;
+        }
 
-    public void WipeAllSaves()
-    {
-        foreach (var fileName in SaveFileNames)
-            DeleteFile(Path.Combine(SaveDirectory, fileName));
+        if (saveSlotManager == null)
+        {
+            Debug.LogError(
+                "[SaveFileWiper] SaveSlotManager is not assigned.",
+                this);
+            return;
+        }
 
-        DeleteFile(SkillProgressionFilePath);
-        DeleteFile(EnemyAlmanacFilePath);
-        DeleteFile(CombatItemBonusesFilePath);
-        DeleteDirectory(ShopStateDirectory);
+        int slotIndex = currentSlot.SlotIndex;
 
-        LoggerService.PrintLogMessage(LogLevel.Debug,
-            "[SaveFileWiper] Todos os arquivos de save deletados.",
-            LogCategory.Player);
+        saveSlotManager.DeleteSlot(slotIndex);
+
+        Debug.Log(
+            $"[SaveFileWiper] Deletion requested for slot {slotIndex}.",
+            this);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
-
-    private static void DeleteFile(string fullPath)
+    // Deletes every file and subdirectory inside Saves, preserving Saves itself.
+    public void ClearSavesDirectory()
     {
+        if (!Directory.Exists(SaveDirectory))
+        {
+            Debug.LogWarning(
+                $"[SaveFileWiper] Saves directory not found: {SaveDirectory}",
+                this);
+            return;
+        }
+
         try
         {
-            if (!File.Exists(fullPath))
+            foreach (string file in Directory.GetFiles(
+                SaveDirectory, "*", SearchOption.AllDirectories))
             {
-                LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"[SaveFileWiper] Arquivo não encontrado (ignorado): {fullPath}",
-                    LogCategory.Player);
-                return;
+                File.Delete(file);
             }
 
-            File.Delete(fullPath);
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[SaveFileWiper] Deletado: {fullPath}",
-                LogCategory.Player);
+            foreach (string directory in Directory.GetDirectories(
+                SaveDirectory, "*", SearchOption.AllDirectories))
+            {
+                Directory.Delete(directory, false);
+            }
+
+            Debug.Log(
+                $"[SaveFileWiper] Saves directory cleared: {SaveDirectory}",
+                this);
         }
         catch (Exception ex)
         {
-            LoggerService.PrintLogMessage(LogLevel.Warning,
-                $"[SaveFileWiper] Falha ao deletar '{fullPath}': {ex.Message}",
-                LogCategory.Player);
+            Debug.LogError(
+                $"[SaveFileWiper] Failed to clear Saves directory: {ex.Message}",
+                this);
         }
     }
 
-    private static void DeleteDirectory(string directoryPath)
+    // Executes both operations.
+    public void ClearAll()
     {
-        try
-        {
-            if (!Directory.Exists(directoryPath))
-            {
-                LoggerService.PrintLogMessage(LogLevel.Debug,
-                    $"[SaveFileWiper] Diretório não encontrado (ignorado): {directoryPath}",
-                    LogCategory.Player);
-                return;
-            }
-
-            Directory.Delete(directoryPath, recursive: true);
-            LoggerService.PrintLogMessage(LogLevel.Debug,
-                $"[SaveFileWiper] Diretório deletado: {directoryPath}",
-                LogCategory.Player);
-        }
-        catch (Exception ex)
-        {
-            LoggerService.PrintLogMessage(LogLevel.Warning,
-                $"[SaveFileWiper] Falha ao deletar diretório '{directoryPath}': {ex.Message}",
-                LogCategory.Player);
-        }
+        DeleteCurrentSlot();
+        ClearSavesDirectory();
     }
 
 #if UNITY_EDITOR
     [UnityEditor.CustomEditor(typeof(SaveFileWiper))]
-    private class SaveFileWiperEditor : UnityEditor.Editor
+    private sealed class SaveFileWiperEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
             DrawDefaultInspector();
 
-            UnityEditor.EditorGUILayout.Space(8);
-            UnityEngine.GUI.enabled = Application.isPlaying;
+            UnityEditor.EditorGUILayout.Space(10);
+            UnityEditor.EditorGUILayout.LabelField(
+                "Save Cleanup",
+                UnityEditor.EditorStyles.boldLabel);
 
-            var prevColor = UnityEngine.GUI.backgroundColor;
-            UnityEngine.GUI.backgroundColor = new Color(1f, 0.4f, 0.4f);
+            bool isPlaying = Application.isPlaying;
+            GUI.enabled = isPlaying;
 
-            if (GUILayout.Button("Wipe All Saves"))
-                ((SaveFileWiper)target).WipeAllSaves();
+            Color previousColor = GUI.backgroundColor;
 
-            UnityEngine.GUI.backgroundColor = prevColor;
-            UnityEngine.GUI.enabled = true;
+            GUI.backgroundColor = new Color(1f, 0.65f, 0.3f);
 
-            if (!Application.isPlaying)
+            if (GUILayout.Button("Delete Current Slot"))
+            {
+                ((SaveFileWiper)target).DeleteCurrentSlot();
+            }
+
+            if (GUILayout.Button("Clear Saves Directory"))
+            {
+                ((SaveFileWiper)target).ClearSavesDirectory();
+            }
+
+            UnityEditor.EditorGUILayout.Space(5);
+
+            GUI.backgroundColor = new Color(1f, 0.35f, 0.35f);
+
+            if (GUILayout.Button("Clear All"))
+            {
+                ((SaveFileWiper)target).ClearAll();
+            }
+
+            GUI.backgroundColor = previousColor;
+            GUI.enabled = true;
+
+            if (!isPlaying)
+            {
                 UnityEditor.EditorGUILayout.HelpBox(
-                    "Entre em Play Mode para usar o botão acima.",
+                    "Enter Play Mode to use these buttons.",
                     UnityEditor.MessageType.Info);
+            }
         }
     }
 #endif

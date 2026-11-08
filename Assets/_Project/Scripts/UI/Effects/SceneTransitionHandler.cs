@@ -330,6 +330,7 @@ public class SceneTransitionHandler : MonoBehaviour
 
             if (enteringCombat)
             {
+                AudioManager.instance?.FadeEnemyDetectionSounds();
                 yield return PlayCombatEntrance();
             }
             else

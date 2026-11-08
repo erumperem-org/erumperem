@@ -53,6 +53,14 @@ namespace Core.Shop
         public ICoin Currency => _currencyAsset as ICoin;
         public int UnitPrice => _unitPrice;
 
+        /// <summary>Troca a oferta em runtime. Usado por RotatingItemShopButton; não persiste nada.</summary>
+        public void SetOffer(ScriptableObject itemAsset, ScriptableObject currencyAsset, int unitPrice)
+        {
+            _itemAsset = itemAsset;
+            _currencyAsset = currencyAsset;
+            _unitPrice = Mathf.Max(0, unitPrice);
+        }
+
         // ── Unity lifecycle ───────────────────────────────────────────────
 
         private void Awake() => _button.onClick.AddListener(OnClick);

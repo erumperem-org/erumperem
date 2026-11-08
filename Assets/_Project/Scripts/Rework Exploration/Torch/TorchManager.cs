@@ -77,6 +77,7 @@ public class TorchManager : MonoBehaviour
         }
 
         Instance = this;
+        TorchThreatFeedback.Ensure(gameObject);
     }
 
     private void OnEnable()
@@ -120,7 +121,11 @@ public class TorchManager : MonoBehaviour
     }
 
     /// <summary>Flips the current torch state - the action this component's input toggle button performs.</summary>
-    public void ToggleTorchState() => SetTorchState(!isTorchLit);
+    public void ToggleTorchState()
+    {
+        if (TorchThreatFeedback.Ensure(gameObject).TryToggle(!isTorchLit))
+            SetTorchState(!isTorchLit);
+    }
 
     /// <summary>
     /// Public entry point for changing the overall torch state.
@@ -134,10 +139,12 @@ public class TorchManager : MonoBehaviour
 
     public void SetTorchState(bool lit)
     {
+        if (lit && !TorchThreatFeedback.Ensure(gameObject).CanLightTorch) return;
         if (isTorchLit == lit)
             return;
 
         isTorchLit = lit;
+        TorchThreatFeedback.Ensure(gameObject).SetTorchLit(isTorchLit);
         OnTorchStateChange?.Invoke(isTorchLit);
     }
 
@@ -215,7 +222,8 @@ public class TorchManager : MonoBehaviour
             }
         }
 
-        isTorchLit = true;
+        isTorchLit = TorchThreatFeedback.Ensure(gameObject).CanLightTorch;
+        TorchThreatFeedback.Ensure(gameObject).SetTorchLit(isTorchLit);
         OnTorchStateChange?.Invoke(isTorchLit);
     }
 

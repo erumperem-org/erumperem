@@ -6,6 +6,15 @@ public class SceneAudioTrigger : MonoBehaviour
     [Header("Audio Tracks")]
     public string bgmPlaylistName;
     public string ambientLoopName;
+    [SerializeField] private AudioManager _audioManagerPrefab;
+    [SerializeField] private TMPro.TMP_FontAsset _torchMessageFont;
+
+    private void Awake()
+    {
+        if (AudioManager.instance == null && _audioManagerPrefab != null)
+            Instantiate(_audioManagerPrefab);
+        TorchThreatFeedback.ConfigureFont(_torchMessageFont);
+    }
 
     // Transformamos o Start em um IEnumerator para gerar um micro-atraso calculado
     private IEnumerator Start()

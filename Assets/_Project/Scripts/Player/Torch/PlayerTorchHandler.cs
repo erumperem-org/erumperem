@@ -23,6 +23,7 @@ namespace Player
         [SerializeField] private bool _startsWithTorchOn = true;
 
         private bool _isOn;
+        public bool IsTorchOn => _isOn;
         private bool _hasAppliedInitialTorchState;
         private PlayableCharactersManager _charactersManager;
 
@@ -132,12 +133,18 @@ namespace Player
                 return;
             }
 
+            if (!TorchThreatFeedback.Ensure(_charactersManager != null ? _charactersManager.gameObject : gameObject).TryToggle(!_isOn))
+                return;
+
             _isOn = !_isOn;
             ApplyTorchVisuals(notifyEvent: true);
         }
 
         private void ApplyTorchVisuals(bool notifyEvent = false)
         {
+            if (_isOn && !TorchThreatFeedback.Ensure(_charactersManager != null ? _charactersManager.gameObject : gameObject).CanLightTorch)
+                _isOn = false;
+
             if (_naturalLightObject != null)
                 _naturalLightObject.SetActive(!_isOn);
 
@@ -157,8 +164,16 @@ namespace Player
 
             if (notifyEvent && _character?.CurrentState == PlayableCharacterState.Main)
             {
+                TorchThreatFeedback.Ensure(_charactersManager != null ? _charactersManager.gameObject : gameObject).SetTorchLit(_isOn);
                 OnMainTorchChanged?.Invoke(_isOn);
             }
+        }
+
+        public void Extinguish()
+        {
+            if (!_isOn) return;
+            _isOn = false;
+            ApplyTorchVisuals(notifyEvent: true);
         }
 
         private void DeactivateTorch()
