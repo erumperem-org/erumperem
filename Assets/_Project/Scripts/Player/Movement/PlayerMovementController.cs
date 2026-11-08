@@ -70,7 +70,7 @@ namespace Player
             var agent = _adapter.Agent;
             if (agent == null) return false;
             var filter = new NavMeshQueryFilter { agentTypeID = agent.agentTypeID, areaMask = agent.areaMask };
-            for (int i = 0; i < 32; i++) filter.SetAreaCost(i, agent.GetAreaCost(i));
+            for (int i = 0; i < 32; i++) filter.SetAreaCost(i, NavMesh.GetAreaCost(i));
             if (!NavMesh.SamplePosition(transform.position, out var start, 1f, filter)
                 || !NavMesh.SamplePosition(destination, out var end, sampleRadius, filter)) return false;
             var path = new NavMeshPath();

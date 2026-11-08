@@ -10,15 +10,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 58a4bccab1f12b54bb4d5491468008b7, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.414
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 58a4bccab1f12b54bb4d5491468008b7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.00000011823488
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 58a4bccab1f12b54bb4d5491468008b7, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -1.823
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 58a4bccab1f12b54bb4d5491468008b7, type: 3}
       propertyPath: m_LocalRotation.w
@@ -59,5 +59,132 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 58a4bccab1f12b54bb4d5491468008b7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7412056893320415601}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 58a4bccab1f12b54bb4d5491468008b7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5230984716628841903}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 58a4bccab1f12b54bb4d5491468008b7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1583027469912356471}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 58a4bccab1f12b54bb4d5491468008b7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6620194375081732915}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 58a4bccab1f12b54bb4d5491468008b7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3097745120684419226}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 58a4bccab1f12b54bb4d5491468008b7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8841650273194620057}
   m_SourcePrefab: {fileID: 100100000, guid: 58a4bccab1f12b54bb4d5491468008b7, type: 3}
+--- !u!1 &4373460632598993751 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 58a4bccab1f12b54bb4d5491468008b7, type: 3}
+  m_PrefabInstance: {fileID: 3490516863194686982}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &7412056893320415601
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4373460632598993751}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 0}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage:
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!136 &5230984716628841903
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4373460632598993751}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.3
+  m_Height: 2
+  m_Direction: 1
+  m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &1583027469912356471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4373460632598993751}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8d8a6a5e6d0fab41b9d7bac5329a3c2, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::AnimationSoundEmitter
+  mainVolume: 1
+  companionVolume: 0.35
+--- !u!114 &6620194375081732915
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4373460632598993751}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fec0989ba484cc4797cfce475a2bd56, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatCapsuleTag
+  combatantId:
+--- !u!114 &3097745120684419226
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4373460632598993751}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6cbc71808506d944bb9dd305e49c5d7, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Erumperem.Combat.CombatCapsuleAnimatorBridge
+  combatSessionHub: {fileID: 0}
+  defaultAttackAnimatorTrigger: Attack
+  skillAttackAnimationBindings: []
+--- !u!114 &8841650273194620057
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4373460632598993751}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e2fa43ff361f14438625a701d6826f0, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Systems.Audio.CombatantSkillAudio
+  sfxMixerGroup: {fileID: 0}
+  skillSounds: []
+  minDistance: 2
+  maxDistance: 20
+  _pitch: 1
