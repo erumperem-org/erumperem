@@ -33,10 +33,10 @@ namespace Erumperem.Combat
         [SerializeField] private float maxCorruptionForSliderNormalization = 100f;
 
         [Header("Fill (piscar durante o movimento — só cor, sem escala/layout)")]
-        [SerializeField] [Range(0f, 1f)] private float fillPeakWhitenessBlend = 0.55f;
+        [SerializeField][Range(0f, 1f)] private float fillPeakWhitenessBlend = 0.55f;
 
         [Tooltip("Número de picos (claro) num ciclo de 1 s; cada pico inclui volta à cor base.")]
-        [SerializeField] [Min(1)] private int fillBlinkPeakCount = 6;
+        [SerializeField][Min(1)] private int fillBlinkPeakCount = 6;
 
         [Header("Tier icon (beside the bar, not along it)")]
         [SerializeField] private Image corruptionTierIcon;
@@ -44,14 +44,10 @@ namespace Erumperem.Combat
         [SerializeField] private TextMeshProUGUI corruptionTierHoverLabel;
 
         private Graphic _fillGraphic;
-
         private Color _fillGraphicBaselineColor;
-
         private Sequence _presentationSequence;
         private Tweener _sliderValueTween;
-
         private CorruptionManager _subscribedCorruptionManager;
-
         private bool _fillGraphicBaselineCaptured;
         private bool _corruptionEventsSubscribed;
         private int _presentedCorruptionTier = -1;
@@ -85,6 +81,7 @@ namespace Erumperem.Combat
             EnsureFillGraphicBaselineCaptured();
             SubscribeCorruptionEventsIfNeeded();
             RefreshSliderFromCurrentCorruptionWithoutTween();
+            RefreshTierHoverCopy(); // GARANTE A ATUALIZAÇÃO DO TEXTO AO HABILITAR
         }
 
         private void Start()
@@ -94,6 +91,7 @@ namespace Erumperem.Combat
             EnsureFillGraphicBaselineCaptured();
             SubscribeCorruptionEventsIfNeeded();
             RefreshSliderFromCurrentCorruptionWithoutTween();
+            RefreshTierHoverCopy(); // GARANTE A ATUALIZAÇÃO DO TEXTO NO START
         }
 
         private void OnDisable()
@@ -160,8 +158,6 @@ namespace Erumperem.Combat
             {
                 CreateRuntimeHoverPanel();
             }
-
-            HideTierHoverPanel();
         }
 
         private void CreateRuntimeHoverPanel()
@@ -197,6 +193,8 @@ namespace Erumperem.Combat
             corruptionTierHoverLabel.alignment = TextAlignmentOptions.TopLeft;
             corruptionTierHoverLabel.enableWordWrapping = true;
             corruptionTierHoverLabel.raycastTarget = false;
+
+            HideTierHoverPanel();
         }
 
         internal void ShowTierHoverPanel()
@@ -228,7 +226,7 @@ namespace Erumperem.Combat
             hoverRoot.localScale = Vector3.one;
         }
 
-        private void RefreshTierHoverCopy()
+        public void RefreshTierHoverCopy()
         {
             if (corruptionTierHoverLabel == null)
             {
@@ -239,6 +237,7 @@ namespace Erumperem.Combat
             var corruptionTier = CorruptionTierCalculator.GetTier(worldCorruption);
             var tierModifiers = CombatBalanceConfig.CreateDefault().GetTierModifiers(corruptionTier);
             var authoredMarkup = CorruptionPresentation.BuildTierHoverAuthoredMarkup(corruptionTier, tierModifiers);
+
             corruptionTierHoverLabel.text = Erumperem.UI.PlayerFacingText.PresentForUi(authoredMarkup);
         }
 
@@ -416,11 +415,8 @@ namespace Erumperem.Combat
                 corruptionTierIcon.color = FallbackTierIconColors[clampedTier];
             }
 
-            if (corruptionTierHoverLabel != null &&
-                corruptionTierHoverLabel.transform.parent.gameObject.activeSelf)
-            {
-                RefreshTierHoverCopy();
-            }
+            // Atualiza sempre o texto do label para o tier correto
+            RefreshTierHoverCopy();
         }
 
         private void AnimateSliderToWorldCorruption(double worldCorruption)

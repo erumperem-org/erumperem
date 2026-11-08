@@ -1153,6 +1153,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 264985856521489918, guid: aad9d6fbcded3ed48a4287cea84c36ea, type: 3}
   m_PrefabInstance: {fileID: 1944608869}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &879119038 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2131674260113091094, guid: ead337ffec35f314599de802b8674835, type: 3}
+  m_PrefabInstance: {fileID: 943759217}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!1001 &896256413
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2007,6 +2018,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2131674260113091094, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_text
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 2142269810404050083, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_text
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 2223630701288361303, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -2035,6 +2054,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4821699815013018487, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: corruptionTierHoverLabel
+      value: 
+      objectReference: {fileID: 879119038}
     - target: {fileID: 6370334789199048287, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_Name
       value: CombatSceneCore
@@ -2081,7 +2104,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8037261891658296691, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 20.34549
+      value: 20.345459
       objectReference: {fileID: 0}
     - target: {fileID: 8600198838393195798, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_AnchorMax.x
@@ -2112,7 +2135,8 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 4579578882146307574, guid: ead337ffec35f314599de802b8674835, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ead337ffec35f314599de802b8674835, type: 3}
@@ -4517,6 +4541,7 @@ MonoBehaviour:
   - activationKey: 34
     panelObject: {fileID: 853062846}
     animator: {fileID: 0}
+    additionalAnimators: []
     animationMode: 0
     openTrigger: 
     closeTrigger: 
@@ -4552,6 +4577,7 @@ MonoBehaviour:
   - activationKey: 60
     panelObject: {fileID: 0}
     animator: {fileID: 0}
+    additionalAnimators: []
     animationMode: 0
     openTrigger: 
     closeTrigger: 
@@ -4587,6 +4613,7 @@ MonoBehaviour:
   - activationKey: 17
     panelObject: {fileID: 723919491}
     animator: {fileID: 0}
+    additionalAnimators: []
     animationMode: 0
     openTrigger: 
     closeTrigger: 

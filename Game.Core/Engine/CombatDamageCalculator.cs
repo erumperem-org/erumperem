@@ -4,6 +4,7 @@ using Game.Core.Models;
 using Game.Core.Passives;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Game.Core.Engine;
 
@@ -12,6 +13,8 @@ namespace Game.Core.Engine;
 /// </summary>
 public static class CombatDamageCalculator
 {
+    public const double MaxDamageReduction = 0.90; // Redução máxima de dano de 90%
+
     public static double GetElementalMultiplier(
         BattleState state,
         Combatant actor,
@@ -77,18 +80,26 @@ public static class CombatDamageCalculator
         Combatant target,
         SkillDefinition skill)
     {
-        var actorModifiers = PassiveDataDrivenEngine.GetPermanentStatModifiers(state, actor, target, skill);
-        var baseChance = skill.BaseCritChance + actor.Stats.CritChance + actorModifiers.CritChanceAdditive;
-        var tierModifiers = state.BalanceConfig.GetTierModifiers(state.CorruptionTier);
+        var isEnemy = actor.Identity.Faction == Faction.Enemy || actor.Position?.Side == Side.Enemies;
+        var tierModifiers = state?.BalanceConfig?.GetTierModifiers(state.CorruptionTier);
 
-        if (actor.Identity.Faction == Faction.Player)
+        // REGRA: Last tier: enemies Always crit
+        if (isEnemy && (tierModifiers?.EnemiesAlwaysCrit == true || state?.CorruptionTier >= 4))
         {
-            baseChance += tierModifiers.PlayerCritBonus;
+            return 1.0;
         }
 
-        if (target.Identity.Faction == Faction.Player)
+        var actorModifiers = PassiveDataDrivenEngine.GetPermanentStatModifiers(state, actor, target, skill);
+        var baseChance = skill.BaseCritChance + actor.Stats.CritChance + actorModifiers.CritChanceAdditive;
+
+        // REGRA: every tier: +5% critical to all skills for players and enemies
+        if (tierModifiers != null)
         {
-            baseChance += tierModifiers.EnemyCritBonusAgainstPlayer;
+            baseChance += tierModifiers.GlobalCritBonus;
+        }
+        else if (state != null)
+        {
+            baseChance += state.CorruptionTier * 0.05;
         }
 
         baseChance += CombatStatusRules.CritChanceBonusFromAttackerTokens(actor.Tokens);
@@ -128,6 +139,13 @@ public static class CombatDamageCalculator
             target,
             damageBeforeMitigation,
             consumeMitigationTokens);
+
+        // REGRA: on hit, if dmg < 1; dmg becomes 1
+        if (damageBeforeMitigation > 0 && damageAfterMitigation < 1)
+        {
+            damageAfterMitigation = 1;
+        }
+
         return FloorConnectedHitDamage(damageAfterMitigation, damageBeforeMitigation);
     }
 
@@ -172,10 +190,14 @@ public static class CombatDamageCalculator
 
         damage *= CorruptionDamageMultiplier(state, actor, target);
         damage *= CombatStatusRules.DamageCausedMultiplierFromTokens(actor.Tokens, actorTokenEfficiency);
+
+        // Multiplicador defensivo de tokens
         damage *= CombatStatusRules.IncomingDamageMultiplierFromTokens(target.Tokens, targetTokenEfficiency);
-        damage = CombatStatusRules.ApplyBaseDefenseChance(
-            damage,
-            target.Stats.DefenseChance + defenderModifiers.DefenseChanceAdditive);
+
+        // REGRA: maximum damage reduction = 90% (clamp da defesa base entre 0.0 e 0.90)
+        double defenseChance = target.Stats.DefenseChance + defenderModifiers.DefenseChanceAdditive;
+        double clampedDefenseChance = Math.Clamp(defenseChance, 0.0, MaxDamageReduction);
+        damage = CombatStatusRules.ApplyBaseDefenseChance(damage, clampedDefenseChance);
 
         var shouldClearImpetoCleaveBonus = false;
         if (damage > 0 && target.Identity.Id != actor.Identity.Id)
@@ -215,6 +237,12 @@ public static class CombatDamageCalculator
             damage = Math.Max(0, damage);
         }
 
+        // REGRA: on hit, if dmg < 1; dmg becomes 1 (se a skill possui dano base)
+        if (baseDamageAmount > 0 && damage < 1.0)
+        {
+            damage = 1.0;
+        }
+
         IReadOnlyList<PassiveCombatNote> resolvedOutgoingNotes = outgoingPassiveNotes != null
             ? outgoingPassiveNotes
             : Array.Empty<PassiveCombatNote>();
@@ -222,8 +250,14 @@ public static class CombatDamageCalculator
             ? incomingPassiveNotes
             : Array.Empty<PassiveCombatNote>();
 
+        int roundedDamage = (int)Math.Round(damage);
+        if (baseDamageAmount > 0 && roundedDamage < 1)
+        {
+            roundedDamage = 1;
+        }
+
         return new DirectDamageBeforeMitigation(
-            FloorConnectedHitDamage((int)Math.Round(damage), damage),
+            FloorConnectedHitDamage(roundedDamage, damage),
             shouldClearImpetoCleaveBonus,
             resolvedOutgoingNotes,
             resolvedIncomingNotes);
@@ -282,6 +316,15 @@ public static class CombatDamageCalculator
         Combatant target,
         SkillDefinition skill)
     {
+        var isEnemy = actor.Identity.Faction == Faction.Enemy || actor.Position?.Side == Side.Enemies;
+        var tierModifiers = state?.BalanceConfig?.GetTierModifiers(state.CorruptionTier);
+
+        // REGRA: Last tier: enemies have guaranteed hits
+        if (isEnemy && (tierModifiers?.EnemiesGuaranteedHit == true || state?.CorruptionTier >= 4))
+        {
+            return 1.0;
+        }
+
         var actorModifiers = PassiveDataDrivenEngine.GetPermanentStatModifiers(state, actor, target, skill);
         var actorTokenEfficiency = PassiveDataDrivenEngine.CreateTokenEfficiencyLookup(state, actor, target);
         var targetTokenEfficiency = PassiveDataDrivenEngine.CreateTokenEfficiencyLookup(state, target, actor);
@@ -306,10 +349,14 @@ public static class CombatDamageCalculator
             hitChance += skill.AccuracyPerDistinctDebuffType * distinctDebuffCount;
         }
 
-        if (actor.Identity.Faction == Faction.Enemy)
+        // REGRA: every tier: +10% base accuracy to all skills for players and enemies
+        if (tierModifiers != null)
         {
-            var enemyAccuracyTierModifiers = state.BalanceConfig.GetTierModifiers(state.CorruptionTier);
-            hitChance += enemyAccuracyTierModifiers.EnemyAccuracyBonus;
+            hitChance += tierModifiers.GlobalAccuracyBonus;
+        }
+        else if (state != null)
+        {
+            hitChance += state.CorruptionTier * 0.10;
         }
 
         if (skill.Accuracy <= 0 && hitChance <= 0)
@@ -326,7 +373,8 @@ public static class CombatDamageCalculator
 
     public static int FloorConnectedHitDamage(int roundedDamage, double unroundedDamage)
     {
-        if (unroundedDamage > 0)
+        // REGRA: on hit, if dmg < 1; dmg becomes 1 (para ataques conectados com dano)
+        if (unroundedDamage > 0 || roundedDamage > 0)
         {
             return Math.Max(1, roundedDamage);
         }
