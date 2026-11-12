@@ -20,6 +20,10 @@ _Avoid_: Nickname
 
 ## Combat
 
+**Action Shot**:
+The camera sequence that presents a combatant using an active skill; nothing else (DoT ticks, passives, turn-start effects) triggers one. Actor Focus: the camera zooms in on the actor, who plays the attack animation. Target Focus: a near-instant snap that frames every affected combatant while they play their reaction. Return: the camera eases back to the battle overview.
+_Avoid_: Camera setting, cutscene
+
 **Token**:
 A stacking status on a combatant that decays one stack at end of turn; either a buff or a debuff.
 _Avoid_: Status effect

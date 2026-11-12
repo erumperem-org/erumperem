@@ -62,6 +62,7 @@ namespace Erumperem.Combat
 
             combatSessionHub.OnCombatSkillExecutionPresentationStarted += HandleSkillStarted;
             combatSessionHub.OnCombatantPresentationDeath += HandleDeath;
+            combatSessionHub.OnCombatantPresentationHitTaken += HandleHitTaken;
         }
 
         private void OnDisable()
@@ -73,6 +74,7 @@ namespace Erumperem.Combat
 
             combatSessionHub.OnCombatSkillExecutionPresentationStarted -= HandleSkillStarted;
             combatSessionHub.OnCombatantPresentationDeath -= HandleDeath;
+            combatSessionHub.OnCombatantPresentationHitTaken -= HandleHitTaken;
         }
 
         private void HandleSkillStarted(string actorCombatantId, string targetCombatantId, string skillId)
@@ -82,10 +84,12 @@ namespace Erumperem.Combat
             if (actorCombatantId == capsuleCombatantId)
             {
                 FireAttackTriggerForSkill(skillId);
-                return;
             }
+        }
 
-            if (targetCombatantId == capsuleCombatantId)
+        private void HandleHitTaken(string hitCombatantId)
+        {
+            if (hitCombatantId == _capsuleTag.combatantId)
             {
                 _animator.SetTrigger(HitTakenTrigger);
             }

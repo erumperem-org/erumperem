@@ -92,6 +92,9 @@ namespace Erumperem.Combat
         [SerializeField] private float enemyAttackClipMarginSeconds = 0.5f;
         [SerializeField] private float enemyDeathClipMarginSeconds = 1f;
 
+        [Tooltip("Action Shot: tempo máximo que a câmera segura no alvo esperando a animação de morte.")]
+        [SerializeField, Min(0f)] private float actionShotDeathHoldCapSeconds = 1.5f;
+
         [Header("Feedback de dano (DOTween)")]
         [SerializeField] private Vector3 damagePunchScale = new(0.18f, 0.28f, 0.18f);
         [SerializeField] private float damagePunchDuration = 0.32f;
@@ -548,6 +551,7 @@ namespace Erumperem.Combat
                 SkillTimings = skillTimings,
                 EnemyAttackClipMarginSeconds = enemyAttackClipMarginSeconds,
                 EnemyDeathClipMarginSeconds = enemyDeathClipMarginSeconds,
+                ActionShotDeathHoldCapSeconds = actionShotDeathHoldCapSeconds,
                 DamagePunchScale = damagePunchScale,
                 DamagePunchDuration = damagePunchDuration,
                 DamagePunchVibrato = damagePunchVibrato,

@@ -37,7 +37,13 @@ namespace Erumperem.Combat
         /// <summary>Fires when the player side or the enemy side begins acting in the current round.</summary>
         public event Action<Side> OnCombatRoundSideBegan;
 
-        public event Action<Transform, Transform> OnCinemachineFocusBegan;
+        /// <summary>Action Shot passo 1: zoom no ator.</summary>
+        public event Action<Transform> OnActionShotActorFocus;
+
+        /// <summary>Action Shot passo 3: enquadrar todos os combatentes afetados.</summary>
+        public event Action<IReadOnlyList<Transform>> OnActionShotTargetFocus;
+
+        /// <summary>Action Shot passo 5 (Return): volta ao plano geral.</summary>
         public event Action OnCinemachineFocusEnded;
 
         /// <summary>delta, newValue, previousTier (nullable before first combat sync), newTier.</summary>
@@ -57,6 +63,9 @@ namespace Erumperem.Combat
 
         /// <summary>Morte apresentável (após resolução da ação); <paramref name="combatantId"/> = combatente eliminado.</summary>
         public event Action<string> OnCombatantPresentationDeath;
+
+        /// <summary>Um hit com dano chegou ao alvo (Action Shot passo 4); dispara uma vez por hit.</summary>
+        public event Action<string> OnCombatantPresentationHitTaken;
 
         internal void RaiseTurnStarted() => OnTurnStarted?.Invoke();
 
@@ -90,8 +99,10 @@ namespace Erumperem.Combat
         internal void RaiseCombatRoundSideBegan(Side actingSide) =>
             OnCombatRoundSideBegan?.Invoke(actingSide);
 
-        internal void RaiseCinemachineFocusBegan(Transform actorRoot, Transform targetRoot) =>
-            OnCinemachineFocusBegan?.Invoke(actorRoot, targetRoot);
+        internal void RaiseActionShotActorFocus(Transform actorRoot) => OnActionShotActorFocus?.Invoke(actorRoot);
+
+        internal void RaiseActionShotTargetFocus(IReadOnlyList<Transform> affectedRoots) =>
+            OnActionShotTargetFocus?.Invoke(affectedRoots);
 
         internal void RaiseCinemachineFocusEnded() => OnCinemachineFocusEnded?.Invoke();
 
@@ -112,5 +123,8 @@ namespace Erumperem.Combat
 
         internal void RaiseCombatantPresentationDeath(string combatantId) =>
             OnCombatantPresentationDeath?.Invoke(combatantId);
+
+        internal void RaiseCombatantPresentationHitTaken(string combatantId) =>
+            OnCombatantPresentationHitTaken?.Invoke(combatantId);
     }
 }

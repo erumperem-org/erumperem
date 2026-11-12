@@ -46,7 +46,8 @@ namespace Erumperem.Combat
             sessionHub.OnActionPresentationStarted += HandleActionPresentationStarted;
             sessionHub.OnActionPresentationEnded += HandleActionPresentationEnded;
             sessionHub.OnCombatSessionClosed += HandleCombatSessionClosed;
-            sessionHub.OnCinemachineFocusBegan += HandleCinemachineFocusBegan;
+            sessionHub.OnActionShotActorFocus += HandleActionShotActorFocus;
+            sessionHub.OnActionShotTargetFocus += HandleActionShotTargetFocus;
             sessionHub.OnCinemachineFocusEnded += HandleCinemachineFocusEnded;
             sessionHub.OnSkillBarBindingShouldSync += HandleSkillBarBindingShouldSync;
             sessionHub.OnSkillBarSelectionClearedBySession += HandleSkillBarSelectionClearedBySession;
@@ -65,7 +66,8 @@ namespace Erumperem.Combat
             sessionHub.OnActionPresentationStarted -= HandleActionPresentationStarted;
             sessionHub.OnActionPresentationEnded -= HandleActionPresentationEnded;
             sessionHub.OnCombatSessionClosed -= HandleCombatSessionClosed;
-            sessionHub.OnCinemachineFocusBegan -= HandleCinemachineFocusBegan;
+            sessionHub.OnActionShotActorFocus -= HandleActionShotActorFocus;
+            sessionHub.OnActionShotTargetFocus -= HandleActionShotTargetFocus;
             sessionHub.OnCinemachineFocusEnded -= HandleCinemachineFocusEnded;
             sessionHub.OnSkillBarBindingShouldSync -= HandleSkillBarBindingShouldSync;
             sessionHub.OnSkillBarSelectionClearedBySession -= HandleSkillBarSelectionClearedBySession;
@@ -153,9 +155,14 @@ namespace Erumperem.Combat
             skillButtonBarUIManager?.OnBattleEnded();
         }
 
-        private void HandleCinemachineFocusBegan(Transform actorRoot, Transform targetRoot)
+        private void HandleActionShotActorFocus(Transform actorRoot)
         {
-            combatCinemachineDirector?.BeginActionFocus(actorRoot, targetRoot);
+            combatCinemachineDirector?.BeginActorFocus(actorRoot);
+        }
+
+        private void HandleActionShotTargetFocus(IReadOnlyList<Transform> affectedRoots)
+        {
+            combatCinemachineDirector?.BeginTargetFocus(affectedRoots);
         }
 
         private void HandleCinemachineFocusEnded()

@@ -7,6 +7,7 @@ using Game.Core.Analytics;
 using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
+using Game.Core.Presentation;
 using UnityEngine;
 
 namespace Erumperem.Combat.Runtime
@@ -96,14 +97,20 @@ namespace Erumperem.Combat.Runtime
             sequence.OnComplete(() => _session.DamageFeedbackBusy.Remove(targetCombatantId));
         }
 
+        /// <summary>
+        /// Action Shot: Actor Focus (zoom + ataque) → Target Focus no Impact (snap + reações) → Return.
+        /// A simulação resolve no início, mas todo o feedback fica segurado até o Impact.
+        /// </summary>
         private IEnumerator PresentActionRoutine(ChosenAction action, Action onStepComplete)
         {
             float speedMultiplier = Mathf.Max(0.2f, CombatSpeedSettings.SpeedMultiplier);
+            CombatAttackImpactRelay impactRelay = null;
+            var impactReceived = false;
+            void HandleImpact() => impactReceived = true;
 
             try
             {
                 StopActorActionRock();
-                _sessionHub?.RaiseCinemachineFocusEnded();
                 GetTimingForSkill(action.Skill.Id, out var playSeconds, out var postPauseSeconds);
 
                 EnemyAnimationController enemyActorVisual = null;
@@ -124,114 +131,81 @@ namespace Erumperem.Combat.Runtime
                     if (_currentActingAnimator != null)
                     {
                         _currentActingAnimator.speed = speedMultiplier;
+                        if (!_currentActingAnimator.TryGetComponent(out impactRelay))
+                        {
+                            impactRelay = _currentActingAnimator.gameObject.AddComponent<CombatAttackImpactRelay>();
+                        }
+
+                        impactRelay.Impacted += HandleImpact;
                     }
                 }
 
                 _sessionHub?.RaiseActionPresentationStarted();
                 _session.OngoingPresentationActorCombatantId = action.Actor.Identity.Id;
                 _session.OngoingPresentationTargetCombatantId = action.Target.Identity.Id;
+
+                // Passo 1: zoom no ator.
+                if (actorVisual != null)
+                {
+                    _sessionHub?.RaiseActionShotActorFocus(actorVisual);
+                }
+
+                // Passo 2: animação de ataque.
                 _sessionHub?.RaiseCombatSkillExecutionPresentationStarted(
                     _session.OngoingPresentationActorCombatantId,
                     _session.OngoingPresentationTargetCombatantId,
                     action.Skill?.Id ?? string.Empty);
-
                 enemyActorVisual?.NotifyAttackPresentationBegin(playSeconds, speedMultiplier);
-                var rockDuration = Mathf.Max(0f, playSeconds + postPauseSeconds);
+                if (playSeconds > 0.02f)
+                {
+                    BeginActorActionRock(action, playSeconds);
+                }
 
                 var startEventIndex = _session.EventCollector.Events.Count;
                 _session.Simulator.ResolveChosenAction(_session.State, action);
-                var endEventIndex = _session.EventCollector.Events.Count;
-                var eventCount = endEventIndex - startEventIndex;
+                var eventSlice = _session.EventCollector.Events.GetRange(
+                    startEventIndex,
+                    _session.EventCollector.Events.Count - startEventIndex);
+                var plan = ActionShotPlan.Build(action.Actor.Identity.Id, action.Target.Identity.Id, eventSlice);
 
-                if (eventCount > 0)
+                var secondsUntilImpact = 0f;
+                while (!impactReceived && secondsUntilImpact < playSeconds)
                 {
-                    var eventSlice = _session.EventCollector.Events.GetRange(startEventIndex, eventCount);
-                    var narrativeLines = CombatNarrativeFormatter.BuildLines(_session.State, action, eventSlice).ToList();
-                    if (narrativeLines.Count > 0)
-                    {
-                        _sessionHub?.RaiseNarrativeLines(narrativeLines);
-                    }
-
-                    var damageFeedbackEventCount = 0;
-                    foreach (var combatEvent in eventSlice)
-                    {
-                        if (combatEvent.EventType == BattleEventType.CorruptionAdjusted)
-                        {
-                            PublishCorruptionPresentation(combatEvent);
-                        }
-
-                        if (combatEvent.EventType == BattleEventType.CombatantDied && !string.IsNullOrEmpty(combatEvent.TargetId))
-                        {
-                            _sessionHub?.RaiseCombatantPresentationDeath(combatEvent.TargetId);
-                            if (_unitVisualSynchronizer.TryGetAnimationController(combatEvent.TargetId, out var deadEnemyVisual))
-                            {
-                                deadEnemyVisual.EnsureDeathVisualSequenceStarted(_settings.EnemyDeathClipMarginSeconds, speedMultiplier);
-                            }
-                        }
-
-                        if (combatEvent.EventType == BattleEventType.DamageApplied && combatEvent.DamageAmount > 0)
-                        {
-                            damageFeedbackEventCount++;
-                            PlayDamageVisualFeedback(
-                                combatEvent.TargetId,
-                                (damageFeedbackEventCount - 1) * MultiHitDamageStaggerSeconds);
-
-                            if (_unitVisualSynchronizer.TryGetAnimationController(combatEvent.TargetId, out var hitEnemyAnimationController))
-                            {
-                                hitEnemyAnimationController.NotifyHitTakenPresentationBegin(
-                                    hitEnemyAnimationController.ComputeHitTakenPresentationDurationSeconds(0f) / speedMultiplier,
-                                    speedMultiplier);
-                            }
-                        }
-                    }
-
-                    LogLastCombatEvent();
-
-                    if (damageFeedbackEventCount > 1)
-                    {
-                        playSeconds = Mathf.Max(
-                            playSeconds,
-                            ((damageFeedbackEventCount - 1) * MultiHitDamageStaggerSeconds + _settings.DamagePunchDuration) /
-                            speedMultiplier);
-                    }
+                    secondsUntilImpact += Time.deltaTime;
+                    yield return null;
                 }
 
-                var actorAfter = _session.FindCombatantById(action.Actor.Identity.Id);
-                if (actorAfter != null && !actorAfter.Health.IsDead &&
-                    _session.UnitVisualRootsByCombatantId.TryGetValue(action.Actor.Identity.Id, out var actorVisualRoot))
+                // Passo 3: snap para todos os afetados.
+                if (plan.HasTargetFocus)
                 {
-                    _session.UnitVisualRootsByCombatantId.TryGetValue(action.Target.Identity.Id, out var targetVisualRoot);
-                    _sessionHub?.RaiseCinemachineFocusBegan(actorVisualRoot, targetVisualRoot);
+                    _sessionHub?.RaiseActionShotTargetFocus(ResolveVisualRoots(plan.AffectedCombatantIds));
                 }
 
-                if (actorAfter != null && !actorAfter.Health.IsDead && rockDuration > 0.02f)
+                // Passo 4: reações (HitTaken, dano, morte, narrativa).
+                var targetHoldSeconds = Mathf.Max(postPauseSeconds, ApplyImpactFeedback(action, eventSlice, speedMultiplier));
+                var deathHoldCapSeconds = _settings.ActionShotDeathHoldCapSeconds / speedMultiplier;
+                var heldSeconds = 0f;
+                while (heldSeconds < targetHoldSeconds ||
+                       (heldSeconds < deathHoldCapSeconds && AnyDeathVisualPending(plan.DiedCombatantIds)))
                 {
-                    BeginActorActionRock(action, rockDuration);
-                }
-
-                if (playSeconds > 0f)
-                {
-                    yield return new WaitForSeconds(playSeconds);
-                }
-
-                if (_session.BattleEnded)
-                {
-                    yield break;
-                }
-
-                if (postPauseSeconds > 0f)
-                {
-                    yield return new WaitForSeconds(postPauseSeconds);
+                    heldSeconds += Time.deltaTime;
+                    yield return null;
                 }
             }
             finally
             {
+                if (impactRelay != null)
+                {
+                    impactRelay.Impacted -= HandleImpact;
+                }
+
                 if (_currentActingAnimator != null)
                 {
                     _currentActingAnimator.speed = 1f;
                     _currentActingAnimator = null;
                 }
 
+                // Passo 5: Return. O próximo turno pode começar durante o blend.
                 _sessionHub?.RaiseCinemachineFocusEnded();
                 StopActorActionRock();
                 _session.OngoingPresentationActorCombatantId = string.Empty;
@@ -241,6 +215,100 @@ namespace Erumperem.Combat.Runtime
                 _sessionHub?.RaiseTurnEnded();
                 _coroutineHost.StartCoroutine(NotifyPresentationEndedDeferred());
             }
+        }
+
+        /// <summary>Publica o feedback segurado até o Impact. Retorna quanto tempo a câmera precisa ficar no alvo.</summary>
+        private float ApplyImpactFeedback(ChosenAction action, IReadOnlyList<CombatEvent> eventSlice, float speedMultiplier)
+        {
+            if (eventSlice.Count == 0)
+            {
+                return 0f;
+            }
+
+            var narrativeLines = CombatNarrativeFormatter.BuildLines(_session.State, action, eventSlice).ToList();
+            if (narrativeLines.Count > 0)
+            {
+                _sessionHub?.RaiseNarrativeLines(narrativeLines);
+            }
+
+            var requiredHoldSeconds = 0f;
+            var damageFeedbackEventCount = 0;
+            foreach (var combatEvent in eventSlice)
+            {
+                if (combatEvent.EventType == BattleEventType.CorruptionAdjusted)
+                {
+                    PublishCorruptionPresentation(combatEvent);
+                }
+
+                if (combatEvent.EventType == BattleEventType.CombatantDied && !string.IsNullOrEmpty(combatEvent.TargetId))
+                {
+                    _sessionHub?.RaiseCombatantPresentationDeath(combatEvent.TargetId);
+                    if (_unitVisualSynchronizer.TryGetAnimationController(combatEvent.TargetId, out var deadEnemyVisual))
+                    {
+                        deadEnemyVisual.EnsureDeathVisualSequenceStarted(_settings.EnemyDeathClipMarginSeconds, speedMultiplier);
+                    }
+                }
+
+                if (combatEvent.EventType == BattleEventType.DamageApplied && combatEvent.DamageAmount > 0)
+                {
+                    damageFeedbackEventCount++;
+                    var hitDelaySeconds = (damageFeedbackEventCount - 1) * MultiHitDamageStaggerSeconds;
+                    PlayDamageVisualFeedback(combatEvent.TargetId, hitDelaySeconds);
+
+                    var hitCombatantId = combatEvent.TargetId;
+                    var hitTakenSeconds = 0f;
+                    _unitVisualSynchronizer.TryGetAnimationController(hitCombatantId, out var hitEnemyAnimationController);
+                    if (hitEnemyAnimationController != null)
+                    {
+                        hitTakenSeconds = hitEnemyAnimationController.ComputeHitTakenPresentationDurationSeconds(0f) / speedMultiplier;
+                    }
+
+                    var scaledHitDelaySeconds = hitDelaySeconds / speedMultiplier;
+                    DOVirtual.DelayedCall(scaledHitDelaySeconds, () =>
+                    {
+                        _sessionHub?.RaiseCombatantPresentationHitTaken(hitCombatantId);
+                        if (hitEnemyAnimationController != null)
+                        {
+                            hitEnemyAnimationController.NotifyHitTakenPresentationBegin(hitTakenSeconds, speedMultiplier);
+                        }
+                    });
+
+                    requiredHoldSeconds = Mathf.Max(
+                        requiredHoldSeconds,
+                        scaledHitDelaySeconds + Mathf.Max(hitTakenSeconds, _settings.DamagePunchDuration / speedMultiplier));
+                }
+            }
+
+            LogLastCombatEvent();
+            return requiredHoldSeconds;
+        }
+
+        private List<Transform> ResolveVisualRoots(IReadOnlyList<string> combatantIds)
+        {
+            var visualRoots = new List<Transform>(combatantIds.Count);
+            foreach (var combatantId in combatantIds)
+            {
+                if (_session.UnitVisualRootsByCombatantId.TryGetValue(combatantId, out var visualRoot) && visualRoot != null)
+                {
+                    visualRoots.Add(visualRoot);
+                }
+            }
+
+            return visualRoots;
+        }
+
+        private bool AnyDeathVisualPending(IReadOnlyList<string> diedCombatantIds)
+        {
+            foreach (var combatantId in diedCombatantIds)
+            {
+                if (_unitVisualSynchronizer.TryGetAnimationController(combatantId, out var enemyVisual) &&
+                    !enemyVisual.IsDeathVisualSequenceFinished)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private IEnumerator NotifyPresentationEndedDeferred()
@@ -368,6 +436,7 @@ namespace Erumperem.Combat.Runtime
         public CombatSkillPresentationTiming[] SkillTimings { get; set; }
         public float EnemyAttackClipMarginSeconds { get; set; }
         public float EnemyDeathClipMarginSeconds { get; set; }
+        public float ActionShotDeathHoldCapSeconds { get; set; }
         public Vector3 DamagePunchScale { get; set; }
         public float DamagePunchDuration { get; set; }
         public int DamagePunchVibrato { get; set; }
