@@ -38,7 +38,7 @@ namespace Erumperem.Combat
         public event Action<Side> OnCombatRoundSideBegan;
 
         /// <summary>Action Shot passo 1: zoom no ator.</summary>
-        public event Action<Transform> OnActionShotActorFocus;
+        public event Action<Transform, bool> OnActionShotActorFocus;
 
         /// <summary>Action Shot passo 3: enquadrar todos os combatentes afetados.</summary>
         public event Action<IReadOnlyList<Transform>> OnActionShotTargetFocus;
@@ -99,7 +99,8 @@ namespace Erumperem.Combat
         internal void RaiseCombatRoundSideBegan(Side actingSide) =>
             OnCombatRoundSideBegan?.Invoke(actingSide);
 
-        internal void RaiseActionShotActorFocus(Transform actorRoot) => OnActionShotActorFocus?.Invoke(actorRoot);
+        internal void RaiseActionShotActorFocus(Transform actorRoot, bool isEnemyActor) =>
+            OnActionShotActorFocus?.Invoke(actorRoot, isEnemyActor);
 
         internal void RaiseActionShotTargetFocus(IReadOnlyList<Transform> affectedRoots) =>
             OnActionShotTargetFocus?.Invoke(affectedRoots);

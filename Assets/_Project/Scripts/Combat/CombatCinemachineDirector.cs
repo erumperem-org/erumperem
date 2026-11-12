@@ -39,6 +39,11 @@ namespace Erumperem.Combat
         [Tooltip("FOV vertical no Actor Focus. Menor = zoom mais forte (lente tele).")]
         [SerializeField, Range(10f, 90f)] private float actorShotFieldOfView = 32f;
 
+        [Tooltip("Actor Focus quando o ator é inimigo: um pouco menos de zoom que o dos aliados.")]
+        [SerializeField] private float enemyActorShotDistance = 4.2f;
+
+        [SerializeField, Range(10f, 90f)] private float enemyActorShotFieldOfView = 40f;
+
         [Tooltip("FOV vertical no Target Focus; usado também no cálculo de enquadramento dos afetados.")]
         [SerializeField, Range(10f, 90f)] private float targetShotFieldOfView = 55f;
 
@@ -90,7 +95,7 @@ namespace Erumperem.Combat
         }
 
         /// <summary>Passo 1: blend suave do plano geral até o ator.</summary>
-        public void BeginActorFocus(Transform actorVisualRoot)
+        public void BeginActorFocus(Transform actorVisualRoot, bool isEnemyActor)
         {
             if (actionZoomCamera == null || actorVisualRoot == null)
             {
@@ -98,12 +103,12 @@ namespace Erumperem.Combat
             }
 
             DOTween.Kill(TargetSnapTweenId, false);
-            SetZoomCameraFieldOfView(actorShotFieldOfView);
+            SetZoomCameraFieldOfView(isEnemyActor ? enemyActorShotFieldOfView : actorShotFieldOfView);
 
             // O ponto de mira fica exatamente no eixo da câmera, então o ator aparece centralizado na tela.
             var lookPoint = actorVisualRoot.position + Vector3.up * lookHeight;
             actionZoomCamera.transform.SetPositionAndRotation(
-                lookPoint - _shotRotation * Vector3.forward * actorShotDistance,
+                lookPoint - _shotRotation * Vector3.forward * (isEnemyActor ? enemyActorShotDistance : actorShotDistance),
                 _shotRotation);
 
             SetBrainBlend(actorFocusBlendSeconds);

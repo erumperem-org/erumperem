@@ -155,9 +155,9 @@ namespace Erumperem.Combat
             skillButtonBarUIManager?.OnBattleEnded();
         }
 
-        private void HandleActionShotActorFocus(Transform actorRoot)
+        private void HandleActionShotActorFocus(Transform actorRoot, bool isEnemyActor)
         {
-            combatCinemachineDirector?.BeginActorFocus(actorRoot);
+            combatCinemachineDirector?.BeginActorFocus(actorRoot, isEnemyActor);
         }
 
         private void HandleActionShotTargetFocus(IReadOnlyList<Transform> affectedRoots)

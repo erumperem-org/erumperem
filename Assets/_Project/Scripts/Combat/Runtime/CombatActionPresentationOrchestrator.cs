@@ -147,7 +147,7 @@ namespace Erumperem.Combat.Runtime
                 // Passo 1: zoom no ator.
                 if (actorVisual != null)
                 {
-                    _sessionHub?.RaiseActionShotActorFocus(actorVisual);
+                    _sessionHub?.RaiseActionShotActorFocus(actorVisual, action.Actor.Identity.Faction == Faction.Enemy);
                 }
 
                 // Passo 2: animação de ataque.
