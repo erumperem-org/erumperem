@@ -14,7 +14,7 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 10
-  m_Fog: 1
+  m_Fog: 0
   m_FogColor: {r: 0, g: 0, b: 0, a: 1}
   m_FogMode: 3
   m_FogDensity: 0.08
@@ -1958,6 +1958,10 @@ PrefabInstance:
       propertyPath: sharedHealthBarParent
       value: 
       objectReference: {fileID: 560644803}
+    - target: {fileID: 237723915510155360, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: field of view
+      value: 20
+      objectReference: {fileID: 0}
     - target: {fileID: 483189601477649328, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -1973,6 +1977,26 @@ PrefabInstance:
     - target: {fileID: 483189601477649328, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 700127918518784528, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 34.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 700127918518784528, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 21.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 713259878232779700, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 34.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 713259878232779700, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 21.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 789937522821889719, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: Lens.FieldOfView
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 918294471684145873, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: sharedStripParent
@@ -2035,6 +2059,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4516470937124944555, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4516470937124944555, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: returnToOriginDuration
       value: 0.22
       objectReference: {fileID: 0}
@@ -2058,6 +2086,30 @@ PrefabInstance:
       propertyPath: corruptionTierHoverLabel
       value: 
       objectReference: {fileID: 879119038}
+    - target: {fileID: 5279091798252058134, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 34.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 5279091798252058134, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 21.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5279091798252058134, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.66234887
+      objectReference: {fileID: 0}
+    - target: {fileID: 5279091798252058134, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.2475762
+      objectReference: {fileID: 0}
+    - target: {fileID: 5279091798252058134, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.66234887
+      objectReference: {fileID: 0}
+    - target: {fileID: 5279091798252058134, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.2475762
+      objectReference: {fileID: 0}
     - target: {fileID: 6370334789199048287, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_Name
       value: CombatSceneCore
@@ -2070,6 +2122,10 @@ PrefabInstance:
       propertyPath: _inventorySave
       value: 
       objectReference: {fileID: 1082739274}
+    - target: {fileID: 7127764260611148258, guid: ead337ffec35f314599de802b8674835, type: 3}
+      propertyPath: Lens.FieldOfView
+      value: 20
+      objectReference: {fileID: 0}
     - target: {fileID: 7383568663281157679, guid: ead337ffec35f314599de802b8674835, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -2137,6 +2193,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: 4579578882146307574, guid: ead337ffec35f314599de802b8674835, type: 3}
+    - {fileID: 3783349550268606139, guid: ead337ffec35f314599de802b8674835, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ead337ffec35f314599de802b8674835, type: 3}
