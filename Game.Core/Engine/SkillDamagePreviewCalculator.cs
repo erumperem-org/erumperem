@@ -38,6 +38,8 @@ public static class SkillDamagePreviewCalculator
             return false;
         }
 
+        var isCritPreview = CombatDamageCalculator.EffectiveCritChanceFraction(state, actor, target, skill) > 0;
+
         var minDamageOnHit = CombatDamageCalculator.ComputeDirectDamageOnHit(
             state,
             actor,
@@ -52,8 +54,12 @@ public static class SkillDamagePreviewCalculator
             target,
             skill,
             skill.BaseDamage.Max,
-            isCriticalStrike: CombatDamageCalculator.EffectiveCritChanceFraction(state, actor, target, skill) > 0,
+            isCriticalStrike: isCritPreview,
             consumeMitigationTokens: false);
+
+        // REGRA: on hit, if dmg < 1; dmg becomes 1
+        if (minDamageOnHit < 1) minDamageOnHit = 1;
+        if (maxDamageOnHit < 1) maxDamageOnHit = 1;
 
         var currentHp = target.Health.CurrentHp;
         var minHpAfterHit = Math.Max(0, currentHp - maxDamageOnHit);

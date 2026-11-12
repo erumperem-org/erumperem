@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using System.Text;
 
@@ -32,14 +33,16 @@ public static class CorruptionPresentation
         if (corruptionTier <= 0)
         {
             markupBuilder.Append('\n');
-            markupBuilder.Append("The world is relatively calm. Monsters have no accuracy bonus from corruption.");
+            markupBuilder.Append("The world is calm. No accuracy or critical bonus from corruption.");
             return markupBuilder.ToString();
         }
 
         markupBuilder.Append('\n');
-        markupBuilder.Append("Monsters have ");
-        markupBuilder.Append(FormatSignedPercent(tierModifiers.EnemyAccuracyBonus));
-        markupBuilder.Append(" accuracy.");
+        markupBuilder.Append("All skills gain ");
+        markupBuilder.Append(FormatSignedPercent(tierModifiers.GlobalAccuracyBonus));
+        markupBuilder.Append(" accuracy and ");
+        markupBuilder.Append(FormatSignedPercent(tierModifiers.GlobalCritBonus));
+        markupBuilder.Append(" critical chance.");
 
         if (corruptionTier >= 1 && corruptionTier <= 3)
         {
@@ -52,7 +55,7 @@ public static class CorruptionPresentation
         if (corruptionTier >= 4)
         {
             markupBuilder.Append('\n');
-            markupBuilder.Append("Enemies are considerably stronger. Player damage caused is unchanged.");
+            markupBuilder.Append("<color=#FF4444>Enemies have guaranteed hits and always crit!</color>");
             markupBuilder.Append('\n');
             markupBuilder.Append("You take ");
             markupBuilder.Append(FormatSignedPercent(tierModifiers.PlayerDamageTakenMultiplier - 1.0));

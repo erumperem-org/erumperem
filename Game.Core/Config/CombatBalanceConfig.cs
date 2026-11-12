@@ -1,4 +1,7 @@
 using Game.Core.Domain;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Game.Core.Config;
 
@@ -13,8 +16,20 @@ public sealed class CorruptionTierModifiers
     /// <summary>Extra multiplier applied to critical hit damage when an enemy critically strikes a player.</summary>
     public double EnemyCritDamageMultiplierAgainstPlayer { get; init; } = 1.0;
 
-    /// <summary>Added to enemy hit chance. Player actors never receive this bonus.</summary>
+    /// <summary>Added to enemy hit chance.</summary>
     public double EnemyAccuracyBonus { get; init; }
+
+    /// <summary>Global accuracy bonus (+10% per tier) applied to all skills for players and enemies.</summary>
+    public double GlobalAccuracyBonus { get; init; }
+
+    /// <summary>Global critical bonus (+5% per tier) applied to all skills for players and enemies.</summary>
+    public double GlobalCritBonus { get; init; }
+
+    /// <summary>When true, enemies have 100% guaranteed hits.</summary>
+    public bool EnemiesGuaranteedHit { get; init; }
+
+    /// <summary>When true, enemies always land critical hits.</summary>
+    public bool EnemiesAlwaysCrit { get; init; }
 }
 
 public sealed class CombatBalanceConfig
@@ -50,43 +65,63 @@ public sealed class CombatBalanceConfig
                     PlayerCritBonus = 0.00,
                     EnemyCritBonusAgainstPlayer = 0.00,
                     EnemyAccuracyBonus = 0.00,
+                    GlobalAccuracyBonus = 0.00,
+                    GlobalCritBonus = 0.00,
+                    EnemiesGuaranteedHit = false,
+                    EnemiesAlwaysCrit = false,
                 },
                 new CorruptionTierModifiers
                 {
                     Tier = 1,
                     PlayerDamageDealtMultiplier = 1.00,
                     PlayerDamageTakenMultiplier = 1.00,
-                    PlayerCritBonus = 0.03,
-                    EnemyCritBonusAgainstPlayer = 0.03,
-                    EnemyAccuracyBonus = 0.04,
+                    PlayerCritBonus = 0.05,
+                    EnemyCritBonusAgainstPlayer = 0.05,
+                    EnemyAccuracyBonus = 0.10,
+                    GlobalAccuracyBonus = 0.10,
+                    GlobalCritBonus = 0.05,
+                    EnemiesGuaranteedHit = false,
+                    EnemiesAlwaysCrit = false,
                 },
                 new CorruptionTierModifiers
                 {
                     Tier = 2,
                     PlayerDamageDealtMultiplier = 1.00,
                     PlayerDamageTakenMultiplier = 1.00,
-                    PlayerCritBonus = 0.06,
-                    EnemyCritBonusAgainstPlayer = 0.06,
-                    EnemyAccuracyBonus = 0.08,
+                    PlayerCritBonus = 0.10,
+                    EnemyCritBonusAgainstPlayer = 0.10,
+                    EnemyAccuracyBonus = 0.20,
+                    GlobalAccuracyBonus = 0.20,
+                    GlobalCritBonus = 0.10,
+                    EnemiesGuaranteedHit = false,
+                    EnemiesAlwaysCrit = false,
                 },
                 new CorruptionTierModifiers
                 {
                     Tier = 3,
                     PlayerDamageDealtMultiplier = 1.00,
                     PlayerDamageTakenMultiplier = 1.00,
-                    PlayerCritBonus = 0.10,
-                    EnemyCritBonusAgainstPlayer = 0.10,
-                    EnemyAccuracyBonus = 0.12,
+                    PlayerCritBonus = 0.15,
+                    EnemyCritBonusAgainstPlayer = 0.15,
+                    EnemyAccuracyBonus = 0.30,
+                    GlobalAccuracyBonus = 0.30,
+                    GlobalCritBonus = 0.15,
+                    EnemiesGuaranteedHit = false,
+                    EnemiesAlwaysCrit = false,
                 },
                 new CorruptionTierModifiers
                 {
                     Tier = 4,
                     PlayerDamageDealtMultiplier = 1.00,
                     PlayerDamageTakenMultiplier = 1.45,
-                    PlayerCritBonus = 0.00,
-                    EnemyCritBonusAgainstPlayer = 0.18,
+                    PlayerCritBonus = 0.20,
+                    EnemyCritBonusAgainstPlayer = 0.20,
                     EnemyCritDamageMultiplierAgainstPlayer = 1.35,
-                    EnemyAccuracyBonus = 0.22,
+                    EnemyAccuracyBonus = 0.40,
+                    GlobalAccuracyBonus = 0.40,
+                    GlobalCritBonus = 0.20,
+                    EnemiesGuaranteedHit = true,
+                    EnemiesAlwaysCrit = true,
                 },
             ],
         };

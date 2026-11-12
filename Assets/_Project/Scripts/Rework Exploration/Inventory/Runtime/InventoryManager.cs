@@ -66,6 +66,15 @@ namespace Core.Inventory
 
         private void HandlePermanentChanged(InventorySlotChangedEventArgs args)
         {
+            // Transferência em andamento (TransferTo): o esvaziamento do slot é
+            // intencional e não deve disparar auto-refill. Apenas mantém o snapshot
+            // sincronizado para que o diff do próximo evento normal seja correto.
+            if (_permanent.IsTransferInProgress)
+            {
+                SnapshotPermanent();
+                return;
+            }
+
             // Size changed (or slots not allocated yet when we subscribed): resync, nothing to diff.
             if (_permanentEmpty == null || _permanentEmpty.Length != _permanent.Size)
             {
