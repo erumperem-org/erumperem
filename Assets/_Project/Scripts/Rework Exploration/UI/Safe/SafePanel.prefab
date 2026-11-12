@@ -140,6 +140,7 @@ GameObject:
   - component: {fileID: 6494175726567433354}
   - component: {fileID: 1487608322108064673}
   - component: {fileID: 2079497140162875762}
+  - component: {fileID: 5595231711926037943}
   m_Layer: 5
   m_Name: SafePanel
   m_TagString: Untagged
@@ -241,6 +242,19 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &5595231711926037943
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2051914070261520212}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b73a1e66910d6340afa479243753fc9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SafePanelController
+  safePanel: {fileID: 2051914070261520212}
 --- !u!1 &2663591751084872239
 GameObject:
   m_ObjectHideFlags: 0
