@@ -30,32 +30,14 @@ namespace Erumperem.Combat
         [SerializeField] private int actionZoomPriorityIdle;
 
         [Header("Enquadramento")]
-        [Tooltip("Altura acima do pivot do combatente para onde a câmera mira.")]
+        [Tooltip("Altura acima do pivot do combatente que fica no centro da tela (ajuste até o ator ficar centralizado).")]
         [SerializeField] private float lookHeight = 1.2f;
 
         [Tooltip("Distância da câmera ao ator no Actor Focus. Menor = zoom mais forte.")]
-        [SerializeField] private float actorShotDistance = 3.2f;
-
-        [Header("Zoom dinâmico do Actor Focus (pela distância à câmera geral inicial)")]
-        [Tooltip("Distância ator→câmera geral em que vale o FOV 'perto' (menos zoom).")]
-        [SerializeField, Min(0f)] private float zoomNearDistance = 8f;
-
-        [Tooltip("Distância ator→câmera geral em que vale o FOV 'longe' (mais zoom).")]
-        [SerializeField, Min(0f)] private float zoomFarDistance = 30f;
-
-        [Tooltip("FOV vertical para ator próximo da câmera geral. Maior = menos zoom.")]
-        [SerializeField, Range(10f, 90f)] private float actorShotFieldOfViewNear = 45f;
-
-        [Tooltip("FOV vertical para ator distante da câmera geral. Menor = mais zoom.")]
-        [SerializeField, Range(10f, 90f)] private float actorShotFieldOfViewFar = 20f;
-
-        [Header("Enquadramento (continuação)")]
-
-        [Tooltip("FOV vertical no Target Focus; usado também no cálculo de enquadramento dos afetados.")]
-        [SerializeField, Range(10f, 90f)] private float targetShotFieldOfView = 55f;
+        [SerializeField] private float actorShotDistance = 3f;
 
         [Tooltip("Distância mínima no Target Focus (um único alvo).")]
-        [SerializeField] private float targetShotMinimumDistance = 5f;
+        [SerializeField] private float targetShotMinimumDistance = 7f;
 
         [Tooltip("Margem multiplicativa para caber todos os afetados (1 = colado na borda).")]
         [SerializeField] private float targetShotPadding = 1.35f;
@@ -68,7 +50,6 @@ namespace Erumperem.Combat
         public bool IsConfigured => wideBattleCamera != null && actionZoomCamera != null;
 
         private Quaternion _shotRotation;
-        private Vector3 _wideCameraInitialPosition;
         private CinemachineBlendDefinition _savedDefaultBlend;
         private bool _brainBlendOverrideActive;
 
@@ -82,7 +63,6 @@ namespace Erumperem.Combat
             if (wideBattleCamera != null)
             {
                 wideBattleCamera.Priority = wideBattlePriority;
-                _wideCameraInitialPosition = wideBattleCamera.transform.position;
             }
 
             if (actionZoomCamera != null)
@@ -112,14 +92,7 @@ namespace Erumperem.Combat
             }
 
             DOTween.Kill(TargetSnapTweenId, false);
-            // O ponto de mira fica exatamente no eixo da câmera, então o ator aparece centralizado na tela.
             var lookPoint = actorVisualRoot.position + Vector3.up * lookHeight;
-
-            // Quanto mais longe da posição inicial da câmera geral, menor o FOV (mais zoom).
-            var distanceFromWideCamera = Vector3.Distance(lookPoint, _wideCameraInitialPosition);
-            var zoomT = Mathf.InverseLerp(zoomNearDistance, zoomFarDistance, distanceFromWideCamera);
-            SetZoomCameraFieldOfView(Mathf.Lerp(actorShotFieldOfViewNear, actorShotFieldOfViewFar, zoomT));
-
             actionZoomCamera.transform.SetPositionAndRotation(
                 lookPoint - _shotRotation * Vector3.forward * actorShotDistance,
                 _shotRotation);
@@ -152,8 +125,6 @@ namespace Erumperem.Combat
             {
                 return;
             }
-
-            SetZoomCameraFieldOfView(targetShotFieldOfView);
 
             var forward = _shotRotation * Vector3.forward;
             var up = _shotRotation * Vector3.up;
@@ -190,13 +161,6 @@ namespace Erumperem.Combat
             {
                 wideBattleCamera.Priority = wideBattlePriority;
             }
-        }
-
-        private void SetZoomCameraFieldOfView(float fieldOfView)
-        {
-            var lens = actionZoomCamera.Lens;
-            lens.FieldOfView = fieldOfView;
-            actionZoomCamera.Lens = lens;
         }
 
         private static float SpeedMultiplier => Mathf.Max(0.2f, CombatSpeedSettings.SpeedMultiplier);
