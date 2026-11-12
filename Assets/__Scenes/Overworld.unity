@@ -2515,6 +2515,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4337978413364327026, guid: 3bb137b9d0dfc1b4ba4b89aa452d6e40, type: 3}
   m_PrefabInstance: {fileID: 220584351}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &222452501 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1023324754360294202, guid: 7b95f43684d440d4985deeb61457ef9f, type: 3}
+  m_PrefabInstance: {fileID: 2083476038518981082}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12093af096fe86847be133084cbb6fac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Core.Inventory.InventoryManager
 --- !u!1001 &222612161
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3421,7 +3432,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1371424500324934605, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -40.000244
+      value: -40.000305
       objectReference: {fileID: 0}
     - target: {fileID: 1472920855138562676, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
       propertyPath: m_SizeDelta.x
@@ -3607,6 +3618,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -745.1799
       objectReference: {fileID: 0}
+    - target: {fileID: 3348498258785717650, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -40.00006
+      objectReference: {fileID: 0}
     - target: {fileID: 3369120256866072561, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
       propertyPath: m_AnchorMax.y
       value: 1
@@ -3781,7 +3796,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4747328998819865370, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -44.499878
+      value: -44.499817
       objectReference: {fileID: 0}
     - target: {fileID: 4844115219937544931, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
       propertyPath: m_AnchorMax.y
@@ -4257,7 +4272,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8949215548588005172, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -40.000244
+      value: -40.000305
       objectReference: {fileID: 0}
     - target: {fileID: 9035224901204341221, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
       propertyPath: m_AnchorMax.y
@@ -13963,7 +13978,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2458544750415670159, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2458544750415670159, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
@@ -13972,18 +13987,18 @@ PrefabInstance:
     - target: {fileID: 2458544750415670159, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1803372921}
     - target: {fileID: 2458544750415670159, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2458544750415670159, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: ClearSave
+      value: OnClick
       objectReference: {fileID: 0}
     - target: {fileID: 2458544750415670159, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: PlayerInventorySaveSystem, Assembly-CSharp
+      value: GiveUpExplorationRework, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 2458544750415670159, guid: ad16307581b12244ab60d96f05737038, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
@@ -14217,6 +14232,8 @@ PrefabInstance:
     - {fileID: 7575018512249943058, guid: ad16307581b12244ab60d96f05737038, type: 3}
     - {fileID: 5221772744838239726, guid: ad16307581b12244ab60d96f05737038, type: 3}
     - {fileID: 2958651569059478219, guid: ad16307581b12244ab60d96f05737038, type: 3}
+    - {fileID: 8391243304467903000, guid: ad16307581b12244ab60d96f05737038, type: 3}
+    - {fileID: 43609329185003215, guid: ad16307581b12244ab60d96f05737038, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -14231,7 +14248,7 @@ PrefabInstance:
       addedObject: {fileID: 1803372909}
     - targetCorrespondingSourceObject: {fileID: 4016659781743702863, guid: ad16307581b12244ab60d96f05737038, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1803372914}
+      addedObject: {fileID: 1803372921}
     - targetCorrespondingSourceObject: {fileID: 1805303628286468856, guid: ad16307581b12244ab60d96f05737038, type: 3}
       insertIndex: -1
       addedObject: {fileID: 121127397}
@@ -16304,7 +16321,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1371424500324934605, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -40.000244
+      value: -40.000305
       objectReference: {fileID: 0}
     - target: {fileID: 1394840849929643498, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
       propertyPath: m_Enabled
@@ -16561,6 +16578,10 @@ PrefabInstance:
     - target: {fileID: 3135213684584724737, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
       propertyPath: m_Interactable
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3348498258785717650, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -40.00006
       objectReference: {fileID: 0}
     - target: {fileID: 3369120256866072561, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
       propertyPath: m_AnchorMax.y
@@ -16828,7 +16849,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4747328998819865370, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -44.499878
+      value: -44.499817
       objectReference: {fileID: 0}
     - target: {fileID: 4844115219937544931, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
       propertyPath: m_AnchorMax.y
@@ -17588,7 +17609,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8949215548588005172, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -40.000244
+      value: -40.000305
       objectReference: {fileID: 0}
     - target: {fileID: 9035224901204341221, guid: 7e92c6c438f374f4096ad0cba847f140, type: 3}
       propertyPath: m_AnchorMax.y
@@ -24125,7 +24146,7 @@ MonoBehaviour:
   hoverSound: Hover
   clickSound: Press
   dragTickInterval: 0.1
---- !u!114 &1803372914
+--- !u!114 &1803372921
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -24134,27 +24155,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1803372898}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 297ffd34d0abc384eb938b901618ab45, type: 3}
+  m_Script: {fileID: 11500000, guid: 0f3e5c21ce9996342995890c4057ea88, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GiveUpExploration
-  uiButtonModel:
-    sceneName: Overworld
-  uiButtonView:
-    _defaultEnterEffects: []
-    _defaultExitEffects: []
-    _hoverEnterEffects:
-    - {fileID: 11400000, guid: b4e519ca65770ab42b9057e8fe8af045, type: 2}
-    _hoverExitEffects:
-    - {fileID: 11400000, guid: 4c1ebc9f27a2b2a43b8622fb2c1dfafe, type: 2}
-    _pressedEnterEffects: []
-    _pressedExitEffects: []
-    _disabledEnterEffects: []
-    _disabledExitEffects: []
-  isDisabled: 0
-  playerInventorySaveSystem: {fileID: 0}
-  loadContext: {fileID: 0}
-  manager: {fileID: 0}
-  _transitionDurationSeconds: 2
+  m_EditorClassIdentifier: Assembly-CSharp::GiveUpExplorationRework
+  CharacterController: {fileID: 2023599741}
+  InventoryManager: {fileID: 222452501}
 --- !u!1 &1815103071
 GameObject:
   m_ObjectHideFlags: 0
@@ -28299,6 +28304,14 @@ PrefabInstance:
       propertyPath: _slotContainer
       value: 
       objectReference: {fileID: 925277866}
+    - target: {fileID: 1023324754360294202, guid: 7b95f43684d440d4985deeb61457ef9f, type: 3}
+      propertyPath: losable
+      value: 
+      objectReference: {fileID: 2036153721}
+    - target: {fileID: 1023324754360294202, guid: 7b95f43684d440d4985deeb61457ef9f, type: 3}
+      propertyPath: permanent
+      value: 
+      objectReference: {fileID: 569004522}
     - target: {fileID: 1274333524734782593, guid: 7b95f43684d440d4985deeb61457ef9f, type: 3}
       propertyPath: slotData
       value: 

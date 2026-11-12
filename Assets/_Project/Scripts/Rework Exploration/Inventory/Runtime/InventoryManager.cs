@@ -19,9 +19,13 @@ namespace Core.Inventory
     {
         [SerializeField] private InventorySystem _losable;
         [SerializeField] private InventorySystem _permanent;
+        public InventorySaveSystem losable, permanent;
 
         // Which permanent slots were empty after the last event (to detect slots that just emptied).
         private bool[] _permanentEmpty;
+
+        // True enquanto uma limpeza está em andamento: o esvaziamento é intencional e não deve disparar auto-refill.
+        private bool _suppressAutoRefill;
 
         private void OnEnable()
         {
@@ -64,8 +68,61 @@ namespace Core.Inventory
             Log(LogLevel.Debug, "Losable → permanent migration completed.");
         }
 
+        /// <summary>
+        /// Remove todos os itens do inventário indicado. Retorna o total de unidades removidas.
+        /// Ao limpar o permanente, o auto-refill é suprimido (o inventário fica vazio de fato).
+        /// </summary>
+        public int ClearInventory(InventoryType type)
+        {
+            InventorySystem target = type switch
+            {
+                InventoryType.Losable   => _losable,
+                InventoryType.Permanent => _permanent,
+                _                       => null
+            };
+
+            if (target == null)
+            {
+                Log(LogLevel.Warning, $"ClearInventory: inventário '{type}' não está atribuído.");
+                return 0;
+            }
+
+            int totalRemoved = 0;
+            _suppressAutoRefill = true;
+            try
+            {
+                var slots = target.Slots;
+                for (int i = 0; i < slots.Count; i++)
+                {
+                    // Copia item/quantidade antes de remover (slots pode ser struct).
+                    if (!target.TryGetSlot(i, out IIITem item, out int quantity)) continue;
+
+                    totalRemoved += target.TryRemoveFromSlot(i, item, quantity);
+                }
+            }
+            finally
+            {
+                _suppressAutoRefill = false;
+            }
+
+            // Garante que o snapshot reflita o estado final, caso o alvo seja o permanente.
+            if (type == InventoryType.Permanent)
+                SnapshotPermanent();
+
+            Log(LogLevel.Debug, $"Inventário '{type}' limpo: {totalRemoved} unidade(s) removida(s).");
+            permanent.SaveAsync();
+            return totalRemoved;
+        }
+
         private void HandlePermanentChanged(InventorySlotChangedEventArgs args)
         {
+            // Limpeza intencional em andamento: só mantém o snapshot sincronizado, sem auto-refill.
+            if (_suppressAutoRefill)
+            {
+                SnapshotPermanent();
+                return;
+            }
+
             // Transferência em andamento (TransferTo): o esvaziamento do slot é
             // intencional e não deve disparar auto-refill. Apenas mantém o snapshot
             // sincronizado para que o diff do próximo evento normal seja correto.
@@ -137,5 +194,15 @@ namespace Core.Inventory
 
         private void Log(LogLevel level, string msg) =>
             LoggerService.PrintLogMessage(level, $"[InventoryManager:{gameObject.name}] {msg}", LogCategory.Inventory);
+    }
+}
+
+namespace Core.Inventory
+{
+    /// <summary>Identifica qual dos inventários gerenciados pelo InventoryManager é o alvo de uma operação.</summary>
+    public enum InventoryType
+    {
+        Losable,
+        Permanent
     }
 }
