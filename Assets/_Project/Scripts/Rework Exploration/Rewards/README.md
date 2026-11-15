@@ -66,3 +66,25 @@ The system that owns the chest-tier reevaluation logic is the one calling
 - `RewardGeneratorService` has no built-in duplicate-source protection: if
   two different `LootTable` assets are rolled back-to-back into the same
   external aggregation, merging is entirely the caller's responsibility.
+
+## Distribution + UI layer (routing rolled rewards into Wallet / Inventories)
+
+Rolling (`RewardGeneratorService`) and delivering are separate concerns.
+Delivery is split by SRP into small pieces:
+
+| File | Responsibility |
+|---|---|
+| `Distribution/RewardLine.cs` | Result of one entry: `Requested`, `Accepted`, `Rejected`, `HasRejection`. Pure data. |
+| `Distribution/IRewardReceiver.cs` | Destination contract: `CanReceive`, `Receive`, `Commit` (persist once per batch). Add new destinations without touching the service. |
+| `Distribution/WalletRewardReceiver.cs` | `ICoin` -> `WalletSystem.Deposit`; saves via `WalletSaveSystem`. |
+| `Distribution/InventoryRewardReceiver.cs` | `IIITem` -> losable if the whole amount fits; else permanent if it fits; else fills what it can (losable, then permanent) and rejects the leftover. Saves only inventories that changed. |
+| `Distribution/RewardDistributionService.cs` | Plain C#: picks the first receiver per entry, then `Commit()`s all receivers. |
+| `UI/RewardView.cs` | One element (icon + amount). Tints red when `HasRejection`. |
+| `UI/RewardListView.cs` | Clears and spawns one `RewardView` per line. |
+| `RewardGrantor.cs` | Inspector wiring: builds receivers, calls the service, feeds the UI. Entry point: `Grant(rewards)`. |
+| `CorruptionRewardFlow.cs` | Glue: `Run(corruption)` = dispenser roll + `Grant`. |
+
+Assumptions: `IIITem` derives from `InterfaceStorageable` and exposes `Sprite`.
+
+| `ICorruptionProvider.cs` / `DiskCorruptionProvider.cs` | Source of the corruption value (disk provider reads `Saves/corruption_save.json`, 0 if missing). |
+| `UI/RewardPanel.cs` | Place on the panel: `OnEnable` reads corruption and runs `CorruptionRewardFlow.Run`. |

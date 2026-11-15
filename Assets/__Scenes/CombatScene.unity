@@ -119,6 +119,52 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &55639096
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 55639097}
+  - component: {fileID: 55639098}
+  m_Layer: 0
+  m_Name: CorruptionRewardFlow
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &55639097
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 55639096}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 550392878}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &55639098
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 55639096}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1226199dfdefdcd4f8145b644d7e5aca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Core.Rewards.CorruptionRewardFlow
+  _dispenser: {fileID: 0}
+  _grantor: {fileID: 0}
 --- !u!114 &188358085 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1595995634075578864, guid: ead337ffec35f314599de802b8674835, type: 3}
@@ -221,6 +267,56 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 14f1d0329970b8b4a8f75c74b0d53569, type: 3}
+--- !u!1 &431992617
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 431992618}
+  - component: {fileID: 431992619}
+  m_Layer: 0
+  m_Name: CorruptionRewardDispenser
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &431992618
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 431992617}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 550392878}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &431992619
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 431992617}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9157c14e998fc24ca9a8095cd21fa03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Core.Rewards.CorruptionRewardDispenser
+  _tablesByTier:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!1 &501281862
 GameObject:
   m_ObjectHideFlags: 0
@@ -265,6 +361,41 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed5ecc2b9ac0cde48a589e285431c60c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInventorySystem
+--- !u!1 &550392877
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 550392878}
+  m_Layer: 0
+  m_Name: Rewards
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &550392878
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 550392877}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 915005500}
+  - {fileID: 55639097}
+  - {fileID: 431992618}
+  - {fileID: 1890101386}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &560644802
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1946,6 +2077,57 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 8451351723528569284, guid: 40d16a26ea203754181b6c5b03817652, type: 3}
   m_PrefabInstance: {fileID: 896256413}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &915005499
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 915005500}
+  - component: {fileID: 915005501}
+  m_Layer: 0
+  m_Name: RewardGrantor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &915005500
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 915005499}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 550392878}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &915005501
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 915005499}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49a047392965d8c4fbc8d57ee49691e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Core.Rewards.RewardGrantor
+  _wallet: {fileID: 0}
+  _walletSave: {fileID: 0}
+  _losable: {fileID: 0}
+  _losableSave: {fileID: 0}
+  _permanent: {fileID: 0}
+  _permanentSave: {fileID: 0}
+  _listView: {fileID: 0}
 --- !u!1001 &943759217
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2258,11 +2440,24 @@ PrefabInstance:
     m_RemovedGameObjects:
     - {fileID: 4579578882146307574, guid: ead337ffec35f314599de802b8674835, type: 3}
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2064863028508020754, guid: ead337ffec35f314599de802b8674835, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 943759222}
   m_SourcePrefab: {fileID: 100100000, guid: ead337ffec35f314599de802b8674835, type: 3}
 --- !u!20 &943759218 stripped
 Camera:
   m_CorrespondingSourceObject: {fileID: 237723915510155360, guid: ead337ffec35f314599de802b8674835, type: 3}
+  m_PrefabInstance: {fileID: 943759217}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &943759219 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2064863028508020754, guid: ead337ffec35f314599de802b8674835, type: 3}
+  m_PrefabInstance: {fileID: 943759217}
+  m_PrefabAsset: {fileID: 0}
+--- !u!224 &943759220 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 5777895333009676211, guid: ead337ffec35f314599de802b8674835, type: 3}
   m_PrefabInstance: {fileID: 943759217}
   m_PrefabAsset: {fileID: 0}
 --- !u!114 &943759221 stripped
@@ -2276,6 +2471,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Slider
+--- !u!114 &943759222
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 943759219}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7cd46859e91e4d46b1e2d7757c8a755, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Core.Rewards.UI.RewardListView
+  _rewardViewPrefab: {fileID: 0}
+  _container: {fileID: 943759220}
 --- !u!1 &1007111274
 GameObject:
   m_ObjectHideFlags: 0
@@ -3313,6 +3522,167 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Slider
+--- !u!1001 &1890101385
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 550392878}
+    m_Modifications:
+    - target: {fileID: 6446799684332234804, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_Name
+      value: RewardItem
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 592.49
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 115.2924
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -10.45544
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 1517.754
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 73.35532
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 2701362440733279653, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6446799684332234804, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1890101391}
+  m_SourcePrefab: {fileID: 100100000, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+--- !u!224 &1890101386 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 7102886724506983480, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+  m_PrefabInstance: {fileID: 1890101385}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1890101387 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 901615936884037283, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+  m_PrefabInstance: {fileID: 1890101385}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!114 &1890101388 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1867047687686208799, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+  m_PrefabInstance: {fileID: 1890101385}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!114 &1890101389 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6245956159442615262, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+  m_PrefabInstance: {fileID: 1890101385}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+--- !u!1 &1890101390 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6446799684332234804, guid: 37a0b2777190ac544a4a197d2c9240e9, type: 3}
+  m_PrefabInstance: {fileID: 1890101385}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1890101391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1890101390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4c2d04e15d62684caa5b8a678f31a79, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Core.Rewards.UI.RewardView
+  _icon: {fileID: 1890101389}
+  _nameText: {fileID: 1890101388}
+  _amountText: {fileID: 1890101387}
+  _tintTargets: []
+  _rejectedColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!1001 &1944608869
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4785,3 +5155,4 @@ SceneRoots:
   - {fileID: 1637130478}
   - {fileID: 1810974482}
   - {fileID: 2084326187}
+  - {fileID: 550392878}

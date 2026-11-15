@@ -25,5 +25,6 @@ namespace Core.Economy.Currency
         public string Description => _description;
         public Sprite Sprite => _sprite;
         public IStorageStrategy StorageStrategy => _storageStrategy;
+        public string DisplayName => DisplayName;
     }
 }

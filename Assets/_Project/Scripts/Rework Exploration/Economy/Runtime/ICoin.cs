@@ -11,5 +11,9 @@ namespace Core.Economy.Currency
     public interface ICoin : InterfaceStorageable
     {
         Sprite Sprite { get; }
+        
+        /// <summary>Human-readable name for UI (item panels, tooltips, etc.). Distinct from StorageableId, which is an opaque identifier.</summary>
+        string DisplayName { get; }
+
     }
 }
