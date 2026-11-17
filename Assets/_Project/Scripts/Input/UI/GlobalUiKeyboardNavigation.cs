@@ -45,6 +45,8 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
     private UiKeyboardInputReader _inputReader;
     private UiNavigationSession _navigationSession;
     private float _nextScanTime;
+    private KeyboardNavigablePanel _pendingCancelPanel;
+    private int _pendingCancelFrame = -1;
 
     public static GlobalUiKeyboardNavigation Instance => _instance;
     public UiKeyboardInputReader Reader => _inputReader;
@@ -98,6 +100,9 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
 
     private void OnDisable()
     {
+        _pendingCancelPanel = null;
+        _pendingCancelFrame = -1;
+
         SceneManager.sceneLoaded -= HandleSceneLoaded;
         PanelVisibilityController.OnPanelVisibilityChanged -= HandlePanelVisibilityChanged;
 
@@ -141,6 +146,30 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
         _inputReader.Tick(_navigationSession.HasActivePanel);
     }
 
+    private void LateUpdate()
+    {
+        if (_pendingCancelFrame < 0)
+        {
+            return;
+        }
+
+        KeyboardNavigablePanel requestedPanel = _pendingCancelPanel;
+
+        _pendingCancelPanel = null;
+        _pendingCancelFrame = -1;
+
+        // Player/Pause also uses Escape. If its action already closed a menu
+        // this frame, do not cancel another panel underneath or reopen it.
+        if (requestedPanel == null || KeyboardNavigablePanel.Current != requestedPanel)
+        {
+            return;
+        }
+
+        InputDeviceModeManager.UseKeyboardMode();
+        _navigationSession?.ActivateKeyboardMode();
+        _navigationSession?.Cancel();
+    }
+
     private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         _nextScanTime = 0f;
@@ -160,7 +189,15 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
 
         foreach (Panel panel in panels)
         {
-            if (panel != null && panel.gameObject.scene.IsValid() && panel.name.EndsWith("Panel", StringComparison.OrdinalIgnoreCase))
+            if (panel == null || !panel.gameObject.scene.IsValid())
+            {
+                continue;
+            }
+
+            string name = CleanName(panel.name);
+
+            // Do not register a decorative child literally named "Panel".
+            if (name != "Panel" && name.EndsWith("Panel", StringComparison.OrdinalIgnoreCase))
             {
                 RegisterMenu(panel.gameObject);
             }
@@ -199,7 +236,14 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
             return;
         }
 
-        if (!AdditionalMenuNames.Contains(CleanName(menu.name)) && menu.GetComponent<Panel>() == null && menu.GetComponent<SkillTreeView>() == null)
+        string name = CleanName(menu.name);
+
+        if (!AdditionalMenuNames.Contains(name) && (menu.GetComponent<Panel>() == null || name == "Panel") && menu.GetComponent<SkillTreeView>() == null)
+        {
+            return;
+        }
+
+        if (!AdditionalMenuNames.Contains(name) && menu.GetComponentInParent<KeyboardNavigablePanel>(true) != null)
         {
             return;
         }
@@ -260,8 +304,8 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
 
     private void HandleCancelRequested()
     {
-        InputDeviceModeManager.UseKeyboardMode();
-        _navigationSession?.ActivateKeyboardMode();
-        _navigationSession?.Cancel();
+        // Resolve Escape after all InputAction callbacks (including Pause).
+        _pendingCancelPanel = KeyboardNavigablePanel.Current;
+        _pendingCancelFrame = Time.frameCount;
     }
 }

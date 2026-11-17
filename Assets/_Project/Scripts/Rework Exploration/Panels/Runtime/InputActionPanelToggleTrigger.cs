@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -7,16 +8,6 @@ using UnityEditor;
 
 namespace Core.UI.Panels
 {
-    /// <summary>
-    /// Input-driven panel toggle: alternates its target panel's active
-    /// state on each performed input, broadcasting every change through
-    /// the central, static PanelVisibilityController instead of firing a
-    /// local UnityEvent. Also listens to that same broadcast: whenever a
-    /// DIFFERENT panel becomes active, this one closes its own panel if it
-    /// is currently open — giving an accordion-style "only one panel open
-    /// at a time" behaviour for free, with no direct references between
-    /// panel scripts.
-    /// </summary>
     public sealed class InputActionPanelToggleTrigger : MonoBehaviour
     {
         [Header("Target")]
@@ -29,12 +20,13 @@ namespace Core.UI.Panels
         {
             if (_actionReference != null && _actionReference.action != null)
             {
+                InputBindingsService.Register(_actionReference.action.actionMap);
                 _actionReference.action.Enable();
                 _actionReference.action.performed += HandlePerformed;
             }
             else
             {
-                Debug.LogError($"[InputActionPanelToggleTrigger:{name}] No InputActionReference assigned.", this);
+                Debug.LogError("[InputActionPanelToggleTrigger:" + name + "] No InputActionReference assigned.", this);
             }
 
             PanelVisibilityController.OnPanelVisibilityChanged += HandleOtherPanelVisibilityChanged;
@@ -51,20 +43,44 @@ namespace Core.UI.Panels
             PanelVisibilityController.OnPanelVisibilityChanged -= HandleOtherPanelVisibilityChanged;
         }
 
-        private void HandlePerformed(InputAction.CallbackContext context) => Trigger();
+        private void HandlePerformed(InputAction.CallbackContext context)
+        {
+            if (_target == null)
+            {
+                return;
+            }
 
-        /// <summary>Toggles the target panel and broadcasts the change. Exposed for manual/editor testing.</summary>
+            // The game's Pause action and UI Cancel can both be Escape.
+            // Do not open/close Pause behind a different active menu.
+            if (_target.name.StartsWith("PausePanel", System.StringComparison.OrdinalIgnoreCase))
+            {
+                KeyboardNavigablePanel active = KeyboardNavigablePanel.Current;
+
+                if (active != null && active.gameObject != _target)
+                {
+                    return;
+                }
+            }
+
+            Trigger();
+        }
+
         public void Trigger()
         {
-            if (_target == null) return;
+            if (_target == null)
+            {
+                return;
+            }
+
             SetPanelActive(!_target.activeSelf);
         }
 
         private void HandleOtherPanelVisibilityChanged(GameObject panel, bool isActive)
         {
-            if (!isActive) return;
-            if (panel == _target) return;
-            if (_target == null || !_target.activeSelf) return;
+            if (!isActive || panel == _target || _target == null || !_target.activeSelf)
+            {
+                return;
+            }
 
             SetPanelActive(false);
         }
@@ -84,7 +100,7 @@ namespace Core.UI.Panels
         {
             DrawDefaultInspector();
 
-            var trigger = (InputActionPanelToggleTrigger)target;
+            InputActionPanelToggleTrigger trigger = (InputActionPanelToggleTrigger)target;
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Testing (Play Mode)", EditorStyles.boldLabel);
@@ -96,7 +112,9 @@ namespace Core.UI.Panels
             }
 
             if (GUILayout.Button("Simulate Trigger"))
+            {
                 trigger.Trigger();
+            }
         }
     }
 #endif

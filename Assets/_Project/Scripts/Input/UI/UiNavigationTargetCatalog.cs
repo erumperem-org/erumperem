@@ -27,6 +27,7 @@ public static class UiNavigationTargetCatalog
         }
 
         var customRoots = new HashSet<Transform>();
+        var addedCustomObjects = new HashSet<GameObject>();
         var processedToggleGroups = new HashSet<ToggleGroup>();
         var collapseToggleGroups = IsSettingsPanel(panel);
         var behaviours = navigationRoot.GetComponentsInChildren<MonoBehaviour>(true);
@@ -42,7 +43,7 @@ public static class UiNavigationTargetCatalog
 
             var rectTransform = behaviour.transform as RectTransform;
 
-            if (rectTransform == null)
+            if (rectTransform == null || !addedCustomObjects.Add(behaviour.gameObject))
             {
                 continue;
             }

@@ -1,19 +1,17 @@
 
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public static class UiNavigationEventDispatcher
 {
-    private static Transform _settingsTextTransform;
-    private static Vector3 _settingsTextOriginalScale;
+    public static GameObject FocusedGameObject { get; private set; }
 
     public static void Focus(UiNavigationTarget previous, UiNavigationTarget current)
     {
-        RestoreSettingsTextScale();
-        DispatchPointerExit(previous);
+        DispatchPointerEvent(previous, false);
+        FocusedGameObject = current != null ? current.GameObject : null;
 
         if (EventSystem.current != null)
         {
@@ -25,14 +23,13 @@ public static class UiNavigationEventDispatcher
             }
         }
 
-        DispatchPointerEnter(current);
-        EnlargeSettingsCategoryText(current);
+        DispatchPointerEvent(current, true);
     }
 
     public static void ClearFocus(UiNavigationTarget current)
     {
-        RestoreSettingsTextScale();
-        DispatchPointerExit(current);
+        DispatchPointerEvent(current, false);
+        FocusedGameObject = null;
 
         if (EventSystem.current != null)
         {
@@ -58,28 +55,25 @@ public static class UiNavigationEventDispatcher
         }
 
         EventSystem.current.SetSelectedGameObject(current.GameObject);
-        var selectedBeforeMove = EventSystem.current.currentSelectedGameObject;
-
+        GameObject before = EventSystem.current.currentSelectedGameObject;
         ExecuteMove(current.GameObject, direction);
+        GameObject after = EventSystem.current.currentSelectedGameObject;
 
-        var selectedAfterMove = EventSystem.current.currentSelectedGameObject;
-
-        if (selectedAfterMove == null || selectedAfterMove == selectedBeforeMove || selectedAfterMove == current.GameObject)
+        if (after == null || after == before || after == current.GameObject)
         {
             EventSystem.current.SetSelectedGameObject(null);
             return false;
         }
 
-        var matchingTarget = UiNavigationTargetCatalog.FindForGameObject(targets, selectedAfterMove);
-
+        UiNavigationTarget candidate = UiNavigationTargetCatalog.FindForGameObject(targets, after);
         EventSystem.current.SetSelectedGameObject(null);
 
-        if (matchingTarget == null)
+        if (candidate == null)
         {
             return false;
         }
 
-        selectedTarget = matchingTarget;
+        selectedTarget = candidate;
         return true;
     }
 
@@ -90,8 +84,7 @@ public static class UiNavigationEventDispatcher
             return false;
         }
 
-        var cancelEventData = new BaseEventData(EventSystem.current);
-        return ExecuteEvents.Execute(current.GameObject, cancelEventData, ExecuteEvents.cancelHandler);
+        return ExecuteEvents.Execute(current.GameObject, new BaseEventData(EventSystem.current), ExecuteEvents.cancelHandler);
     }
 
     public static void Activate(KeyboardNavigablePanel panel, UiNavigationTarget target, bool debugActivation)
@@ -101,199 +94,78 @@ public static class UiNavigationEventDispatcher
             return;
         }
 
-        if (debugActivation)
-        {
-            Debug.Log($"[GlobalUiKeyboardNavigation] Confirmando '{target.GameObject.name}'.", target.GameObject);
-        }
-
         if (target.Selectable != null && !target.Selectable.IsInteractable())
         {
             return;
         }
 
-        var pointerEventData = CreatePointerEventData(target);
-
-        if (TryActivateThroughHierarchy(target.GameObject, pointerEventData, debugActivation))
-        {
-            CloseUnwiredLeaveOrClose(panel, target);
-            RestoreKeyboardHoverAfterActivation(target);
-            return;
-        }
-
-        if (TryActivateThroughUiRaycast(panel, pointerEventData, debugActivation))
-        {
-            CloseUnwiredLeaveOrClose(panel, target);
-            RestoreKeyboardHoverAfterActivation(target);
-            return;
-        }
-
-        EventSystem.current.SetSelectedGameObject(target.GameObject);
-
-        var submitEventData = new BaseEventData(EventSystem.current);
-
-        if (ExecuteEvents.Execute(target.GameObject, submitEventData, ExecuteEvents.submitHandler))
-        {
-            RestoreKeyboardHoverAfterActivation(target);
-            return;
-        }
-
-        EventSystem.current.SetSelectedGameObject(null);
+        GameObject source = target.GameObject;
 
         if (debugActivation)
         {
-            Debug.LogWarning($"[GlobalUiKeyboardNavigation] Nenhuma ação encontrada para '{target.GameObject.name}'.", target.GameObject);
+            Debug.Log("[GlobalUiKeyboardNavigation] Confirmando '" + source.name + "'.", source);
         }
-    }
 
-    private static bool TryActivateThroughUiRaycast(KeyboardNavigablePanel panel, PointerEventData pointerEventData, bool debugActivation)
-    {
-        if (panel == null || EventSystem.current == null)
+        // Unity UI's mouse click calls Button.onClick. Use exactly the
+        // same event for Enter/Space, including listeners added at runtime.
+        Button button = source.GetComponent<Button>();
+
+        if (button != null && button.isActiveAndEnabled && button.IsInteractable())
         {
-            return false;
+            button.onClick.Invoke();
+            CloseUnwiredExitButton(panel, source, button);
+            return;
         }
 
-        var panelTransform = panel.transform;
-        var raycastResults = new List<RaycastResult>();
+        // Some of this project's buttons have no Unity Button component.
+        // Their action is in UiButtonController.OnPointerDownHandled.
+        PointerEventData data = CreatePointerEventData(target);
+        MonoBehaviour custom = FindFirstCustomButton(source);
 
-        EventSystem.current.RaycastAll(pointerEventData, raycastResults);
-
-        for (var resultIndex = 0; resultIndex < raycastResults.Count; resultIndex++)
+        if (custom is IPointerDownHandler customDown)
         {
-            var raycastResult = raycastResults[resultIndex];
-
-            if (raycastResult.gameObject == null)
-            {
-                continue;
-            }
-
-            var raycastTransform = raycastResult.gameObject.transform;
-
-            if (raycastTransform != panelTransform && !raycastTransform.IsChildOf(panelTransform))
-            {
-                continue;
-            }
-
-            var pointerDownTarget = ExecuteEvents.GetEventHandler<IPointerDownHandler>(raycastResult.gameObject);
-            var pointerClickTarget = ExecuteEvents.GetEventHandler<IPointerClickHandler>(raycastResult.gameObject);
-
-            if (pointerDownTarget == null && pointerClickTarget == null)
-            {
-                continue;
-            }
-
-            pointerEventData.pointerPressRaycast = raycastResult;
-            pointerEventData.rawPointerPress = raycastResult.gameObject;
-
-            if (debugActivation)
-            {
-                Debug.Log($"[GlobalUiKeyboardNavigation] Raycast encontrou '{raycastResult.gameObject.name}'.", raycastResult.gameObject);
-            }
-
-            if (pointerDownTarget != null)
-            {
-                pointerEventData.pointerPress = pointerDownTarget;
-
-                ExecuteEvents.Execute(pointerDownTarget, pointerEventData, ExecuteEvents.pointerDownHandler);
-
-                if (!pointerDownTarget.activeInHierarchy)
-                {
-                    return true;
-                }
-            }
-
-            var pointerUpTarget = ExecuteEvents.GetEventHandler<IPointerUpHandler>(raycastResult.gameObject);
-
-            if (pointerUpTarget != null && pointerUpTarget.activeInHierarchy)
-            {
-                ExecuteEvents.Execute(pointerUpTarget, pointerEventData, ExecuteEvents.pointerUpHandler);
-            }
-
-            if (pointerClickTarget != null && pointerClickTarget.activeInHierarchy)
-            {
-                ExecuteEvents.Execute(pointerClickTarget, pointerEventData, ExecuteEvents.pointerClickHandler);
-            }
-
-            return true;
+            customDown.OnPointerDown(data);
+            return;
         }
 
-        return false;
-    }
-
-    private static bool TryActivateThroughHierarchy(GameObject source, PointerEventData pointerEventData, bool debugActivation)
-    {
-        if (source == null)
-        {
-            return false;
-        }
-
-        var pointerDownTarget = ExecuteEvents.GetEventHandler<IPointerDownHandler>(source);
-        var pointerClickTarget = ExecuteEvents.GetEventHandler<IPointerClickHandler>(source);
-
-        if (pointerDownTarget == null)
-        {
-            pointerDownTarget = FindNonSelectableHandlerTarget<IPointerDownHandler>(source);
-        }
-
-        if (pointerDownTarget != null)
-        {
-            pointerEventData.pointerPress = pointerDownTarget;
-            pointerEventData.rawPointerPress = source;
-
-            ExecuteEvents.Execute(pointerDownTarget, pointerEventData, ExecuteEvents.pointerDownHandler);
-
-            if (!pointerDownTarget.activeInHierarchy)
-            {
-                return true;
-            }
-        }
-
-        if (pointerClickTarget == null)
-        {
-            pointerClickTarget = FindHandlerTargetInChildren<IPointerClickHandler>(source);
-        }
-
-        var pointerUpTarget = ExecuteEvents.GetEventHandler<IPointerUpHandler>(source);
-
-        if (pointerUpTarget != null && pointerUpTarget.activeInHierarchy)
-        {
-            ExecuteEvents.Execute(pointerUpTarget, pointerEventData, ExecuteEvents.pointerUpHandler);
-        }
-
-        if (pointerClickTarget != null && pointerClickTarget.activeInHierarchy)
-        {
-            ExecuteEvents.Execute(pointerClickTarget, pointerEventData, ExecuteEvents.pointerClickHandler);
-            return true;
-        }
-
-        if (debugActivation && pointerDownTarget != null)
-        {
-            Debug.Log($"[GlobalUiKeyboardNavigation] Ação executada em '{pointerDownTarget.name}'.", pointerDownTarget);
-        }
-
-        return pointerDownTarget != null;
-    }
-
-    private static void CloseUnwiredLeaveOrClose(KeyboardNavigablePanel panel, UiNavigationTarget target)
-    {
-        if (panel == null || !panel.gameObject.activeInHierarchy || target == null || target.GameObject == null)
+        if (ExecuteEvents.Execute(source, new BaseEventData(EventSystem.current), ExecuteEvents.submitHandler))
         {
             return;
         }
 
-        string name = target.GameObject.name;
+        GameObject handler = ExecuteEvents.GetEventHandler<IPointerClickHandler>(source);
 
-        if (name != "Leave" && name != "Close" && name != "BtnClose")
+        if (handler != null)
+        {
+            ExecuteEvents.Execute(handler, data, ExecuteEvents.pointerClickHandler);
+        }
+        else if (debugActivation)
+        {
+            Debug.LogWarning("[GlobalUiKeyboardNavigation] Ação não encontrada em '" + source.name + "'.", source);
+        }
+    }
+
+    public static void RefreshHover(UiNavigationTarget target)
+    {
+        DispatchPointerEvent(target, true);
+    }
+
+    private static void CloseUnwiredExitButton(KeyboardNavigablePanel panel, GameObject source, Button button)
+    {
+        if (panel == null || !panel.gameObject.activeInHierarchy || source == null || button == null)
         {
             return;
         }
 
-        Button button = target.GameObject.GetComponent<Button>();
+        string name = source.name;
 
-        if (button == null)
+        if (name != "Leave" && name != "BtnLeave" && name != "Close" && name != "BtnClose")
         {
             return;
         }
 
+        // Fallback for prefabs whose serialized onClick contains only
+        // missing targets. Do not override any valid persistent binding.
         for (int index = 0; index < button.onClick.GetPersistentEventCount(); index++)
         {
             if (button.onClick.GetPersistentTarget(index) != null)
@@ -312,189 +184,118 @@ public static class UiNavigationEventDispatcher
         }
     }
 
-    public static void RefreshHover(UiNavigationTarget target)
-    {
-        if (UiNavigationTargetCatalog.IsValid(target))
-        {
-            DispatchPointerEnter(target);
-        }
-    }
-
-    private static void EnlargeSettingsCategoryText(UiNavigationTarget target)
-    {
-        if (target == null || target.GameObject == null)
-        {
-            return;
-        }
-
-        string name = target.GameObject.name;
-
-        if (name != "BtnGraphics" && name != "BtnAudio" && name != "BtnGameplay")
-        {
-            return;
-        }
-
-        Transform parent = target.GameObject.transform.parent;
-
-        if (parent == null || parent.name != "ButtonsSettings")
-        {
-            return;
-        }
-
-        TMP_Text label = target.GameObject.GetComponentInChildren<TMP_Text>(true);
-
-        if (label == null)
-        {
-            return;
-        }
-
-        _settingsTextTransform = label.transform;
-        _settingsTextOriginalScale = _settingsTextTransform.localScale;
-        _settingsTextTransform.localScale = _settingsTextOriginalScale * 1.10f;
-    }
-
-    private static void RestoreSettingsTextScale()
-    {
-        if (_settingsTextTransform != null)
-        {
-            _settingsTextTransform.localScale = _settingsTextOriginalScale;
-        }
-
-        _settingsTextTransform = null;
-    }
-
-    private static void RestoreKeyboardHoverAfterActivation(UiNavigationTarget target)
+    private static void DispatchPointerEvent(UiNavigationTarget target, bool entering)
     {
         if (target == null || target.GameObject == null || EventSystem.current == null)
         {
             return;
         }
 
-        if (target.Selectable is TMP_Dropdown || target.Selectable is Dropdown)
+        if (entering && !UiNavigationTargetCatalog.IsValid(target))
         {
             return;
         }
 
-        EventSystem.current.SetSelectedGameObject(null);
+        PointerEventData data = CreatePointerEventData(target);
+        bool handledCustom = false;
+        bool hasHandler = false;
+
+        foreach (MonoBehaviour behaviour in target.GameObject.GetComponents<MonoBehaviour>())
+        {
+            if (behaviour == null || !behaviour.isActiveAndEnabled)
+            {
+                continue;
+            }
+
+            if (IsCustomButton(behaviour))
+            {
+                if (handledCustom)
+                {
+                    continue;
+                }
+
+                handledCustom = true;
+            }
+
+            if (entering && behaviour is IPointerEnterHandler pointerEnter)
+            {
+                pointerEnter.OnPointerEnter(data);
+                hasHandler = true;
+            }
+            else if (!entering && behaviour is IPointerExitHandler pointerExit)
+            {
+                pointerExit.OnPointerExit(data);
+                hasHandler = true;
+            }
+        }
+
+        if (!hasHandler)
+        {
+            GameObject parentHandler = entering ? ExecuteEvents.GetEventHandler<IPointerEnterHandler>(target.GameObject) : ExecuteEvents.GetEventHandler<IPointerExitHandler>(target.GameObject);
+
+            if (parentHandler != null && parentHandler != target.GameObject)
+            {
+                if (entering)
+                {
+                    ExecuteEvents.Execute(parentHandler, data, ExecuteEvents.pointerEnterHandler);
+                }
+                else
+                {
+                    ExecuteEvents.Execute(parentHandler, data, ExecuteEvents.pointerExitHandler);
+                }
+            }
+        }
     }
 
-    private static void DispatchPointerEnter(UiNavigationTarget target)
+    private static MonoBehaviour FindFirstCustomButton(GameObject source)
     {
-        if (!UiNavigationTargetCatalog.IsValid(target) || EventSystem.current == null)
+        foreach (MonoBehaviour behaviour in source.GetComponents<MonoBehaviour>())
         {
-            return;
+            if (IsCustomButton(behaviour) && behaviour.isActiveAndEnabled)
+            {
+                return behaviour;
+            }
         }
 
-        var pointerEventData = CreatePointerEventData(target);
-
-        ExecuteEvents.Execute(target.GameObject, pointerEventData, ExecuteEvents.pointerEnterHandler);
-
-        var additionalEventTarget = FindNonSelectableHandlerTarget<IPointerEnterHandler>(target.GameObject);
-
-        if (additionalEventTarget != null && additionalEventTarget != target.GameObject)
-        {
-            ExecuteEvents.Execute(additionalEventTarget, pointerEventData, ExecuteEvents.pointerEnterHandler);
-        }
+        return null;
     }
 
-    private static void DispatchPointerExit(UiNavigationTarget target)
+    private static bool IsCustomButton(MonoBehaviour behaviour)
     {
-        if (target == null || target.GameObject == null || EventSystem.current == null)
+        if (behaviour == null)
         {
-            return;
+            return false;
         }
 
-        var pointerEventData = CreatePointerEventData(target);
+        System.Type type = behaviour.GetType();
 
-        ExecuteEvents.Execute(target.GameObject, pointerEventData, ExecuteEvents.pointerExitHandler);
-
-        var additionalEventTarget = FindNonSelectableHandlerTarget<IPointerExitHandler>(target.GameObject);
-
-        if (additionalEventTarget != null && additionalEventTarget != target.GameObject)
+        while (type != null)
         {
-            ExecuteEvents.Execute(additionalEventTarget, pointerEventData, ExecuteEvents.pointerExitHandler);
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(UiButtonController<>))
+            {
+                return true;
+            }
+
+            type = type.BaseType;
         }
+
+        return false;
     }
 
     private static void ExecuteMove(GameObject target, UiNavigationDirection direction)
     {
-        var axisEventData = new AxisEventData(EventSystem.current);
-        axisEventData.moveDir = ToMoveDirection(direction);
-        axisEventData.moveVector = UiSpatialNavigation.ToVector(direction);
-
-        ExecuteEvents.Execute(target, axisEventData, ExecuteEvents.moveHandler);
+        AxisEventData data = new AxisEventData(EventSystem.current);
+        data.moveDir = ToMoveDirection(direction);
+        data.moveVector = UiSpatialNavigation.ToVector(direction);
+        ExecuteEvents.Execute(target, data, ExecuteEvents.moveHandler);
     }
 
     private static PointerEventData CreatePointerEventData(UiNavigationTarget target)
     {
-        var pointerEventData = new PointerEventData(EventSystem.current);
-        pointerEventData.button = PointerEventData.InputButton.Left;
-        pointerEventData.position = UiSpatialNavigation.GetScreenCenter(target);
-
-        return pointerEventData;
-    }
-
-    private static GameObject FindNonSelectableHandlerTarget<THandler>(GameObject source) where THandler : IEventSystemHandler
-    {
-        if (source == null)
-        {
-            return null;
-        }
-
-        var current = source.transform;
-
-        while (current != null)
-        {
-            var behaviours = current.GetComponents<MonoBehaviour>();
-
-            for (var behaviourIndex = 0; behaviourIndex < behaviours.Length; behaviourIndex++)
-            {
-                var behaviour = behaviours[behaviourIndex];
-
-                if (behaviour != null && behaviour.enabled && behaviour is THandler && !(behaviour is Selectable))
-                {
-                    return current.gameObject;
-                }
-            }
-
-            current = current.parent;
-        }
-
-        return FindNonSelectableHandlerTargetInChildren<THandler>(source);
-    }
-
-    private static GameObject FindNonSelectableHandlerTargetInChildren<THandler>(GameObject source) where THandler : IEventSystemHandler
-    {
-        var behaviours = source.GetComponentsInChildren<MonoBehaviour>(true);
-
-        for (var behaviourIndex = 0; behaviourIndex < behaviours.Length; behaviourIndex++)
-        {
-            var behaviour = behaviours[behaviourIndex];
-
-            if (behaviour != null && behaviour.enabled && behaviour.gameObject.activeInHierarchy && behaviour is THandler && !(behaviour is Selectable))
-            {
-                return behaviour.gameObject;
-            }
-        }
-
-        return null;
-    }
-
-    private static GameObject FindHandlerTargetInChildren<THandler>(GameObject source) where THandler : IEventSystemHandler
-    {
-        var behaviours = source.GetComponentsInChildren<MonoBehaviour>(true);
-
-        for (var behaviourIndex = 0; behaviourIndex < behaviours.Length; behaviourIndex++)
-        {
-            var behaviour = behaviours[behaviourIndex];
-
-            if (behaviour != null && behaviour.enabled && behaviour.gameObject.activeInHierarchy && behaviour is THandler)
-            {
-                return behaviour.gameObject;
-            }
-        }
-
-        return null;
+        PointerEventData data = new PointerEventData(EventSystem.current);
+        data.button = PointerEventData.InputButton.Left;
+        data.position = UiSpatialNavigation.GetScreenCenter(target);
+        return data;
     }
 
     private static MoveDirection ToMoveDirection(UiNavigationDirection direction)

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Erumperem.Progression;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -42,7 +43,7 @@ public sealed class KeyboardNavigablePanel : MonoBehaviour
     private static long _nextActivationOrder;
     private long _activationOrder;
 
-    public GameObject DefaultSelected => defaultSelected;
+    public GameObject DefaultSelected => ResolveDefaultSelected();
     public GameObject CancelTarget => ResolveCancelTarget();
     public bool WrapNavigation => wrapNavigation;
     public int NavigationPriority => navigationPriority;
@@ -107,6 +108,41 @@ public sealed class KeyboardNavigablePanel : MonoBehaviour
         return transform;
     }
 
+    private GameObject ResolveDefaultSelected()
+    {
+        if (defaultSelected != null && defaultSelected.activeInHierarchy)
+        {
+            return defaultSelected;
+        }
+
+        if (string.Equals(gameObject.name, "MainMenuPanel", StringComparison.OrdinalIgnoreCase))
+        {
+            return FindActiveControlByName("NewGame");
+        }
+
+        if (string.Equals(gameObject.name, "PausePanel", StringComparison.OrdinalIgnoreCase))
+        {
+            return FindActiveControlByName("Continue");
+        }
+
+        return null;
+    }
+
+    private GameObject FindActiveControlByName(string targetName)
+    {
+        Transform[] transforms = GetComponentsInChildren<Transform>(true);
+
+        foreach (Transform candidate in transforms)
+        {
+            if (candidate != null && candidate.gameObject.activeInHierarchy && string.Equals(candidate.name, targetName, StringComparison.OrdinalIgnoreCase) && IsUsableCancelTarget(candidate.gameObject))
+            {
+                return candidate.gameObject;
+            }
+        }
+
+        return null;
+    }
+
     private GameObject ResolveCancelTarget()
     {
         if (IsUsableCancelTarget(cancelTarget))
@@ -118,42 +154,17 @@ public sealed class KeyboardNavigablePanel : MonoBehaviour
 
         if (string.Equals(gameObject.name, "PausePanel", StringComparison.OrdinalIgnoreCase))
         {
-            Button[] pauseButtons = GetComponentsInChildren<Button>(true);
-
-            foreach (Button pauseButton in pauseButtons)
-            {
-                if (IsUsableButton(pauseButton) && string.Equals(pauseButton.name, "Continue", StringComparison.OrdinalIgnoreCase))
-                {
-                    cancelTarget = pauseButton.gameObject;
-                    return cancelTarget;
-                }
-            }
+            cancelTarget = FindActiveControlByName("Continue");
+            return cancelTarget;
         }
-
-        Transform navigationRoot = NavigationRoot;
-
-        if (navigationRoot == null)
-        {
-            return null;
-        }
-
-        Button[] buttons = navigationRoot.GetComponentsInChildren<Button>(true);
 
         foreach (string targetName in AutomaticCancelTargetNames)
         {
-            foreach (Button button in buttons)
+            GameObject target = FindActiveControlByName(targetName);
+
+            if (target != null)
             {
-                if (!IsUsableButton(button))
-                {
-                    continue;
-                }
-
-                if (!string.Equals(button.gameObject.name, targetName, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                cancelTarget = button.gameObject;
+                cancelTarget = target;
                 return cancelTarget;
             }
         }
@@ -168,13 +179,24 @@ public sealed class KeyboardNavigablePanel : MonoBehaviour
             return false;
         }
 
-        Button button = target.GetComponent<Button>();
-        return IsUsableButton(button);
-    }
+        Selectable selectable = target.GetComponent<Selectable>();
 
-    private static bool IsUsableButton(Button button)
-    {
-        return button != null && button.enabled && button.gameObject.activeInHierarchy && button.interactable;
+        if (selectable != null && (!selectable.enabled || !selectable.IsInteractable()))
+        {
+            return false;
+        }
+
+        MonoBehaviour[] behaviours = target.GetComponents<MonoBehaviour>();
+
+        foreach (MonoBehaviour behaviour in behaviours)
+        {
+            if (behaviour != null && behaviour.isActiveAndEnabled && (behaviour is IPointerDownHandler || behaviour is IPointerClickHandler || behaviour is ISubmitHandler))
+            {
+                return true;
+            }
+        }
+
+        return selectable != null && selectable.isActiveAndEnabled;
     }
 
     private static bool IsVisibleAndInteractive(Transform root)

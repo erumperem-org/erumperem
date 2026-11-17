@@ -43,15 +43,17 @@ public class PlayerInputMovementController : MonoBehaviour
 
     private void OnEnable()
     {
-        if (moveAction != null)
+        if (moveAction != null && moveAction.action != null)
         {
+            InputBindingsService.Register(moveAction.action.actionMap);
             moveAction.action.Enable();
             moveAction.action.performed += OnMovePerformed;
             moveAction.action.canceled += OnMoveCanceled;
         }
 
-        if (sprintAction != null)
+        if (sprintAction != null && sprintAction.action != null)
         {
+            InputBindingsService.Register(sprintAction.action.actionMap);
             sprintAction.action.Enable();
             sprintAction.action.performed += OnSprintPerformed;
             sprintAction.action.canceled += OnSprintCanceled;
@@ -115,7 +117,10 @@ public class PlayerInputMovementController : MonoBehaviour
             return;
         }
 
-        Vector3 moveDirection = ConvertToWorldDirection(rawMoveInput);
+        // Read the live InputAction value: an override applied during play
+        // must immediately change movement, without a cached WASD value.
+        Vector2 currentMove = moveAction != null && moveAction.action != null && moveAction.action.enabled ? moveAction.action.ReadValue<Vector2>() : rawMoveInput;
+        Vector3 moveDirection = ConvertToWorldDirection(currentMove);
 
         movement.SetMoveDirection(moveDirection);
         UpdateSprint(moveDirection);

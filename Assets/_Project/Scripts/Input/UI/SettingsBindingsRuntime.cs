@@ -1,9 +1,11 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -25,6 +27,7 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
     private ScrollRect rowsScroll;
     private TMP_Text statusText;
     private bool installed;
+    private readonly Dictionary<TMP_Text, Vector3> categoryTextScales = new Dictionary<TMP_Text, Vector3>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void InstallScanner()
@@ -63,7 +66,101 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         if (gameObject.name != InstallerName)
         {
             InputBindingsService.Cancel();
+
+            foreach (KeyValuePair<TMP_Text, Vector3> pair in categoryTextScales)
+            {
+                if (pair.Key != null)
+                {
+                    pair.Key.transform.localScale = pair.Value;
+                }
+            }
         }
+    }
+
+    private void Update()
+    {
+        if (gameObject.name == InstallerName || !installed)
+        {
+            return;
+        }
+
+        if (categoryTextScales.Count == 0)
+        {
+            CacheCategoryTextScales();
+        }
+
+        GameObject hovered = InputDeviceModeManager.IsKeyboardMode ? UiNavigationEventDispatcher.FocusedGameObject : FindMouseHoveredSettingsCategory();
+        float t = 1f - Mathf.Exp(-16f * Time.unscaledDeltaTime);
+
+        foreach (KeyValuePair<TMP_Text, Vector3> pair in categoryTextScales)
+        {
+            TMP_Text label = pair.Key;
+
+            if (label == null)
+            {
+                continue;
+            }
+
+            bool selected = hovered != null && (hovered == label.gameObject || hovered.transform == label.transform.parent || hovered.transform.IsChildOf(label.transform.parent));
+            Vector3 targetScale = pair.Value * (selected ? 1.12f : 1f);
+            label.transform.localScale = Vector3.Lerp(label.transform.localScale, targetScale, t);
+        }
+    }
+
+    private void CacheCategoryTextScales()
+    {
+        Transform buttons = transform.Find("ButtonsSettings");
+
+        if (buttons == null)
+        {
+            return;
+        }
+
+        foreach (string name in new[] { "BtnGraphics", "BtnAudio", "BtnGameplay" })
+        {
+            Transform category = buttons.Find(name);
+            TMP_Text label = category != null ? category.GetComponentInChildren<TMP_Text>(true) : null;
+
+            if (label != null && !categoryTextScales.ContainsKey(label))
+            {
+                categoryTextScales.Add(label, label.transform.localScale);
+            }
+        }
+    }
+
+    private GameObject FindMouseHoveredSettingsCategory()
+    {
+        if (Mouse.current == null || EventSystem.current == null)
+        {
+            return null;
+        }
+
+        PointerEventData data = new PointerEventData(EventSystem.current);
+        data.position = Mouse.current.position.ReadValue();
+        List<RaycastResult> hits = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(data, hits);
+
+        foreach (RaycastResult hit in hits)
+        {
+            if (hit.gameObject == null)
+            {
+                continue;
+            }
+
+            Transform button = hit.gameObject.transform;
+
+            while (button != null && button != transform)
+            {
+                if (button.parent != null && button.parent.name == "ButtonsSettings")
+                {
+                    return button.gameObject;
+                }
+
+                button = button.parent;
+            }
+        }
+
+        return null;
     }
 
     private IEnumerator FindSettingsPanels()
@@ -128,12 +225,14 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         row.transform.SetParent(content, false);
 
         RectTransform rowRect = row.GetComponent<RectTransform>();
-        rowRect.anchorMin = new Vector2(0f, 1f);
-        rowRect.anchorMax = new Vector2(1f, 1f);
+        rowRect.anchorMin = new Vector2(0.5f, 1f);
+        rowRect.anchorMax = new Vector2(0.5f, 1f);
         rowRect.pivot = new Vector2(0.5f, 1f);
-        rowRect.sizeDelta = new Vector2(0f, 122f);
+        rowRect.sizeDelta = new Vector2(600f, 122f);
 
         LayoutElement rowElement = row.GetComponent<LayoutElement>();
+        rowElement.minWidth = 600f;
+        rowElement.preferredWidth = 600f;
         rowElement.minHeight = 122f;
         rowElement.preferredHeight = 122f;
         rowElement.flexibleWidth = 1f;
@@ -225,7 +324,10 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         viewport.layer = 5;
         viewport.transform.SetParent(scrollObject.transform, false);
 
-        Stretch(viewport.GetComponent<RectTransform>(), Vector2.zero, Vector2.one);
+        RectTransform viewportRect = viewport.GetComponent<RectTransform>();
+        Stretch(viewportRect, Vector2.zero, Vector2.one);
+        viewportRect.offsetMin = new Vector2(200f, 0f);
+        viewportRect.offsetMax = new Vector2(-200f, 0f);
 
         Image viewportImage = viewport.GetComponent<Image>();
         viewportImage.color = new Color(1f, 1f, 1f, 0f);
