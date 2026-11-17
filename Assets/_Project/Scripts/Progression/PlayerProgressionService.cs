@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,30 +12,35 @@ using UnityEngine;
 namespace Erumperem.Progression
 {
     /// <summary>
-    /// Persists skill-tree unlocks and a <see cref="SharedSkillLevel"/> cap (default max 12).
-    /// Wulfric, Buck and Matsuda share the same level value (e.g. 4/12): each may spend up to that many
-    /// points in their own tree; spending on one does not reduce the other's budget.
+    /// Salva os nós desbloqueados de cada personagem.
+    /// Wulfric, Buck e Matsuda possuem o mesmo nível compartilhado,
+    /// mas os pontos gastos em cada árvore são independentes.
     /// </summary>
     public sealed class PlayerProgressionService : MonoBehaviour
     {
         public static PlayerProgressionService? Instance { get; private set; }
 
-        private static readonly string[] DefaultSharedSkillLevelCharacterIds = { "wulfric", "buck", "matsuda" };
+        private static readonly string[] DefaultSharedSkillLevelCharacterIds =
+        {
+            "wulfric",
+            "buck",
+            "matsuda"
+        };
 
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             WriteIndented = true,
-            PropertyNameCaseInsensitive = true,
+            PropertyNameCaseInsensitive = true
         };
 
         [Header("Catalog (StreamingAssets)")]
         [SerializeField] private string _skillTreesResourceRelativePath = "Data/skill_trees.json";
 
         [Header("Shared skill level")]
-        [Tooltip("Maximum shared skill level (UI denominator, e.g. 12 in 4/12).")]
+        [Tooltip("Maximum shared skill level.")]
         [SerializeField] private int _maxSkillPoints = 12;
 
-        [Tooltip("Level assigned on a brand-new save before any external progression sets it.")]
+        [Tooltip("Initial shared level on a new save.")]
         [SerializeField] private int _initialSharedSkillLevel = 12;
 
         private readonly Dictionary<string, Dictionary<string, bool>> _unlockedByCharacter =
@@ -43,6 +49,8 @@ namespace Erumperem.Progression
         private IReadOnlyList<CharacterSkillTreesDefinition> _skillTreesCatalog = Array.Empty<CharacterSkillTreesDefinition>();
         private bool _isSkillTreesCatalogLoaded;
         private int _sharedSkillLevel;
+        private CurrentSlotData _watchedSlot;
+        private string _loadedSlotDirectory;
 
         public int MaxSkillPoints => _maxSkillPoints;
 
@@ -50,24 +58,54 @@ namespace Erumperem.Progression
 
         public IReadOnlyList<string> SharedSkillBudgetCharacterIds => DefaultSharedSkillLevelCharacterIds;
 
-        /// <summary>
-        /// Current shared level shown in UI (e.g. 4 in 4/12). Each shared-level character may spend
-        /// up to this many points in their own tree.
-        /// </summary>
-        public int GetSharedSkillLevel() => _sharedSkillLevel;
+        public int GetSharedSkillLevel()
+        {
+            return _sharedSkillLevel;
+        }
 
-        public int GetRemainingPointsForCharacter(string characterId) =>
-            Math.Max(0, _sharedSkillLevel - GetPointsSpent(characterId));
+        public int GetRemainingPointsForCharacter(string characterId)
+        {
+            return Math.Max(0, _sharedSkillLevel - GetPointsSpent(characterId));
+        }
 
-        public bool IsSharedSkillBudgetCharacter(string characterId) =>
-            !string.IsNullOrWhiteSpace(characterId) &&
-            DefaultSharedSkillLevelCharacterIds.Any(sharedCharacterId =>
-                string.Equals(sharedCharacterId, characterId, StringComparison.OrdinalIgnoreCase));
+        public bool IsSharedSkillBudgetCharacter(string characterId)
+        {
+            return !string.IsNullOrWhiteSpace(characterId) &&
+                   DefaultSharedSkillLevelCharacterIds.Any(sharedCharacterId => string.Equals(sharedCharacterId, characterId, StringComparison.OrdinalIgnoreCase));
+        }
 
-        /// <summary>Raises or lowers the shared level cap (both characters benefit together).</summary>
+        public event Action<string>? OnUnlockedNodesChanged;
+
+        private string SaveFilePath
+        {
+            get
+            {
+                CurrentSlotData slot = SaveSlotAccess.Data;
+
+                return slot != null && slot.HasSlotSelected
+                    ? Path.Combine(slot.SlotDirectory, "player_skill_progression.json")
+                    : null;
+            }
+        }
+
+        private string ActiveSlotDirectory
+        {
+            get
+            {
+                CurrentSlotData slot = SaveSlotAccess.Data;
+                return slot != null && slot.HasSlotSelected ? slot.SlotDirectory : null;
+            }
+        }
+
         public bool TrySetSharedSkillLevel(int newLevel)
         {
-            var clampedLevel = Math.Clamp(newLevel, 0, _maxSkillPoints);
+            if (SaveFilePath == null)
+            {
+                return false;
+            }
+
+            int clampedLevel = Math.Clamp(newLevel, 0, _maxSkillPoints);
+
             if (clampedLevel == _sharedSkillLevel)
             {
                 return false;
@@ -79,30 +117,80 @@ namespace Erumperem.Progression
             return true;
         }
 
-        /// <summary>Fires after a successful unlock, level change, or reset. Empty = refresh all shared-level UIs.</summary>
-        public event Action<string>? OnUnlockedNodesChanged;
-
-        private string SaveFilePath => Path.Combine(Application.persistentDataPath, "player_skill_progression.json");
-
         private void Awake()
         {
             if (Instance != null && Instance != this)
             {
-                // Só remove este componente — CombatLogic partilha o GO com CombatPrototypeController.
                 Destroy(this);
                 return;
             }
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
+
             EnsureSkillTreesCatalogLoaded();
+            SubscribeToSlot();
+            _loadedSlotDirectory = ActiveSlotDirectory;
             LoadFromDisk();
         }
 
-        /// <summary>
-        /// Loads skill_trees.json from StreamingAssets. Retries when the catalog is still empty
-        /// (e.g. DontDestroyOnLoad service created before JSON was present).
-        /// </summary>
+        private void LateUpdate()
+        {
+            SubscribeToSlot();
+
+            if (!string.Equals(_loadedSlotDirectory, ActiveSlotDirectory, StringComparison.Ordinal))
+            {
+                ReloadActiveSlot();
+            }
+        }
+
+        private void SubscribeToSlot()
+        {
+            CurrentSlotData slot = SaveSlotAccess.Data;
+
+            if (ReferenceEquals(_watchedSlot, slot))
+            {
+                return;
+            }
+
+            if (_watchedSlot != null)
+            {
+                _watchedSlot.OnSlotChanged -= HandleSlotChanged;
+            }
+
+            _watchedSlot = slot;
+
+            if (_watchedSlot != null)
+            {
+                _watchedSlot.OnSlotChanged += HandleSlotChanged;
+            }
+        }
+
+        private void HandleSlotChanged(int index, string directory)
+        {
+            ReloadActiveSlot();
+        }
+
+        private void ReloadActiveSlot()
+        {
+            _loadedSlotDirectory = ActiveSlotDirectory;
+            LoadFromDisk();
+            OnUnlockedNodesChanged?.Invoke(string.Empty);
+        }
+
+        private void OnDestroy()
+        {
+            if (_watchedSlot != null)
+            {
+                _watchedSlot.OnSlotChanged -= HandleSlotChanged;
+            }
+
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
         public void EnsureSkillTreesCatalogLoaded()
         {
             if (_isSkillTreesCatalogLoaded && _skillTreesCatalog.Count > 0)
@@ -113,21 +201,13 @@ namespace Erumperem.Progression
             LoadSkillTreesCatalogOrThrow();
         }
 
-        private void OnDestroy()
-        {
-            if (Instance == this)
-            {
-                Instance = null;
-            }
-        }
-
         private void LoadSkillTreesCatalogOrThrow()
         {
-            var path = Path.Combine(Application.streamingAssetsPath, _skillTreesResourceRelativePath);
+            string path = Path.Combine(Application.streamingAssetsPath, _skillTreesResourceRelativePath);
+
             if (!File.Exists(path))
             {
-                Debug.LogError(
-                    $"PlayerProgressionService: missing {path}. Run Erumperem/Combat/Export Catalog so skill_trees.json lives in StreamingAssets/Data.");
+                Debug.LogError("PlayerProgressionService: missing " + path + ". Run Erumperem/Combat/Export Catalog.");
                 _skillTreesCatalog = Array.Empty<CharacterSkillTreesDefinition>();
                 _isSkillTreesCatalogLoaded = false;
                 return;
@@ -138,11 +218,9 @@ namespace Erumperem.Progression
                 _skillTreesCatalog = CombatDataLoader.LoadSkillTrees(path);
                 _isSkillTreesCatalogLoaded = _skillTreesCatalog.Count > 0;
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                Debug.LogError(
-                    $"PlayerProgressionService: failed to parse skill_trees.json at {path} — {ex.Message}",
-                    this);
+                Debug.LogError("PlayerProgressionService: failed to parse skill_trees.json — " + exception.Message, this);
                 _skillTreesCatalog = Array.Empty<CharacterSkillTreesDefinition>();
                 _isSkillTreesCatalogLoaded = false;
             }
@@ -156,32 +234,40 @@ namespace Erumperem.Progression
 
         public IReadOnlyDictionary<string, bool> GetUnlockedNodesForCharacter(string characterId)
         {
-            if (!_unlockedByCharacter.TryGetValue(characterId, out var dict))
+            if (!_unlockedByCharacter.TryGetValue(characterId, out Dictionary<string, bool> map))
             {
                 return new Dictionary<string, bool>(StringComparer.Ordinal);
             }
 
-            return dict.ToDictionary(static entry => entry.Key, static entry => entry.Value, StringComparer.Ordinal);
+            return map.ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
         }
 
-        /// <summary>Total cost of unlocked nodes for one character.</summary>
         public int GetPointsSpent(string characterId)
         {
-            var character = GetCharacterDefinition(characterId);
-            if (character is null)
+            CharacterSkillTreesDefinition character = GetCharacterDefinition(characterId);
+
+            if (character == null)
             {
                 return 0;
             }
 
-            var unlocked = GetUnlockedNodesForCharacter(characterId);
+            IReadOnlyDictionary<string, bool> unlocked = GetUnlockedNodesForCharacter(characterId);
             return SkillTreeLookup.SumUnlockedNodeCosts(character, unlocked);
         }
 
         public bool TryUnlock(string characterId, string nodeId, out string failureReason)
         {
             failureReason = string.Empty;
-            var character = GetCharacterDefinition(characterId);
-            if (character is null)
+
+            if (SaveFilePath == null)
+            {
+                failureReason = "Nenhum save slot selecionado.";
+                return false;
+            }
+
+            CharacterSkillTreesDefinition character = GetCharacterDefinition(characterId);
+
+            if (character == null)
             {
                 failureReason = "Personagem desconhecido.";
                 return false;
@@ -193,21 +279,24 @@ namespace Erumperem.Progression
                 return false;
             }
 
-            var unlocked = GetOrCreateMutableCharacterMap(characterId);
-            if (unlocked.TryGetValue(nodeId, out var isOn) && isOn)
+            Dictionary<string, bool> unlocked = GetOrCreateMutableCharacterMap(characterId);
+
+            if (unlocked.TryGetValue(nodeId, out bool isOn) && isOn)
             {
                 failureReason = "Já desbloqueado.";
                 return false;
             }
 
             IReadOnlyDictionary<string, bool> snapshot = unlocked;
+
             if (!SkillTreeRules.CanUnlockNode(character, elementType.ToString(), nodeId, snapshot))
             {
                 failureReason = "Requisitos não cumpridos.";
                 return false;
             }
 
-            var characterPointsSpent = GetPointsSpent(characterId);
+            int characterPointsSpent = GetPointsSpent(characterId);
+
             if (characterPointsSpent + nodeDefinition.Cost > _sharedSkillLevel)
             {
                 failureReason = "Sem pontos de skill livres para este personagem.";
@@ -222,24 +311,38 @@ namespace Erumperem.Progression
 
         public void ResetAllCharacters()
         {
+            if (SaveFilePath == null)
+            {
+                return;
+            }
+
             _unlockedByCharacter.Clear();
-            //_sharedSkillLevel = Math.Clamp(_initialSharedSkillLevel, 0, _maxSkillPoints);
             DeleteSaveFile();
             SaveToDisk();
             OnUnlockedNodesChanged?.Invoke(string.Empty);
-            Debug.Log($"PlayerProgressionService: save resetado (todos os personagens). Ficheiro: {SaveFilePath}");
+            Debug.Log("PlayerProgressionService: save resetado. Ficheiro: " + SaveFilePath);
         }
 
         public void ResetCharacter(string characterId)
         {
+            if (SaveFilePath == null)
+            {
+                return;
+            }
+
             _unlockedByCharacter.Remove(characterId);
             SaveToDisk();
             OnUnlockedNodesChanged?.Invoke(characterId);
-            Debug.Log($"PlayerProgressionService: save resetado para '{characterId}'. Ficheiro: {SaveFilePath}");
+            Debug.Log("PlayerProgressionService: progressão resetada para '" + characterId + "'.");
         }
 
         private void DeleteSaveFile()
         {
+            if (SaveFilePath == null)
+            {
+                return;
+            }
+
             try
             {
                 if (File.Exists(SaveFilePath))
@@ -247,15 +350,15 @@ namespace Erumperem.Progression
                     File.Delete(SaveFilePath);
                 }
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                Debug.LogWarning($"PlayerProgressionService: falha a apagar save — {ex.Message}");
+                Debug.LogWarning("PlayerProgressionService: falha ao apagar save — " + exception.Message);
             }
         }
 
         private Dictionary<string, bool> GetOrCreateMutableCharacterMap(string characterId)
         {
-            if (!_unlockedByCharacter.TryGetValue(characterId, out var map))
+            if (!_unlockedByCharacter.TryGetValue(characterId, out Dictionary<string, bool> map))
             {
                 map = new Dictionary<string, bool>(StringComparer.Ordinal);
                 _unlockedByCharacter[characterId] = map;
@@ -269,7 +372,7 @@ namespace Erumperem.Progression
             _unlockedByCharacter.Clear();
             _sharedSkillLevel = 0;
 
-            if (!File.Exists(SaveFilePath))
+            if (SaveFilePath == null || !File.Exists(SaveFilePath))
             {
                 ApplyDefaultSharedSkillLevelForNewSave();
                 return;
@@ -277,8 +380,9 @@ namespace Erumperem.Progression
 
             try
             {
-                var json = File.ReadAllText(SaveFilePath);
-                var dto = JsonSerializer.Deserialize<PlayerProgressionSaveDto>(json, JsonOptions);
+                string json = File.ReadAllText(SaveFilePath);
+                PlayerProgressionSaveDto dto = JsonSerializer.Deserialize<PlayerProgressionSaveDto>(json, JsonOptions);
+
                 if (dto?.Characters == null)
                 {
                     ApplyDefaultSharedSkillLevelForNewSave();
@@ -292,7 +396,8 @@ namespace Erumperem.Progression
                         continue;
                     }
 
-                    var map = new Dictionary<string, bool>(StringComparer.Ordinal);
+                    Dictionary<string, bool> map = new Dictionary<string, bool>(StringComparer.Ordinal);
+
                     foreach (var nodeEntry in characterEntry.Value)
                     {
                         if (!string.IsNullOrEmpty(nodeEntry.Key) && nodeEntry.Value)
@@ -307,9 +412,9 @@ namespace Erumperem.Progression
                 _sharedSkillLevel = dto.SharedSkillLevel;
                 ReconcileSharedSkillLevelAfterLoad(dto.Version);
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                Debug.LogWarning($"PlayerProgressionService: falha ao ler save — {ex.Message}");
+                Debug.LogWarning("PlayerProgressionService: falha ao ler save — " + exception.Message);
                 ApplyDefaultSharedSkillLevelForNewSave();
             }
         }
@@ -322,9 +427,9 @@ namespace Erumperem.Progression
                 return;
             }
 
-            // v1 saves had no SharedSkillLevel field: keep at least enough level for existing unlocks.
-            var highestCharacterSpend = 0;
-            foreach (var characterId in DefaultSharedSkillLevelCharacterIds)
+            int highestCharacterSpend = 0;
+
+            foreach (string characterId in DefaultSharedSkillLevelCharacterIds)
             {
                 highestCharacterSpend = Math.Max(highestCharacterSpend, GetPointsSpent(characterId));
             }
@@ -345,16 +450,25 @@ namespace Erumperem.Progression
 
         private void SaveToDisk()
         {
-            var dto = new PlayerProgressionSaveDto
+            string path = SaveFilePath;
+
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                Debug.LogWarning("PlayerProgressionService: sem save slot selecionado.");
+                return;
+            }
+
+            PlayerProgressionSaveDto dto = new PlayerProgressionSaveDto
             {
                 Version = 2,
                 SharedSkillLevel = _sharedSkillLevel,
-                Characters = new Dictionary<string, Dictionary<string, bool>>(StringComparer.OrdinalIgnoreCase),
+                Characters = new Dictionary<string, Dictionary<string, bool>>(StringComparer.OrdinalIgnoreCase)
             };
 
             foreach (var characterEntry in _unlockedByCharacter)
             {
-                var inner = new Dictionary<string, bool>(StringComparer.Ordinal);
+                Dictionary<string, bool> inner = new Dictionary<string, bool>(StringComparer.Ordinal);
+
                 foreach (var nodeEntry in characterEntry.Value)
                 {
                     if (nodeEntry.Value)
@@ -371,12 +485,13 @@ namespace Erumperem.Progression
 
             try
             {
-                var json = JsonSerializer.Serialize(dto, JsonOptions);
-                File.WriteAllText(SaveFilePath, json);
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                string json = JsonSerializer.Serialize(dto, JsonOptions);
+                File.WriteAllText(path, json);
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                Debug.LogError($"PlayerProgressionService: falha ao gravar save — {ex.Message}");
+                Debug.LogError("PlayerProgressionService: falha ao gravar save — " + exception.Message);
             }
         }
 

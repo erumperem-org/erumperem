@@ -1,20 +1,9 @@
+
 using UnityEngine;
 using UnityEngine.InputSystem;
 using BarSystem.Bars.Stamina;
+using Player;
 
-/// <summary>
-/// Controlador do papel "Em Jogo": lê o New Input System e comanda o
-/// PhysicsMovementService.
-///
-/// O estado de movimento do personagem é exposto através do
-/// CharacterStateExposed:
-/// - Idle: sem input de movimento.
-/// - Walk: movimento normal.
-/// - Run: sprint ativo.
-///
-/// As InputActions são compartilhadas entre os personagens. Por isso,
-/// este componente nunca chama Disable() nas ações.
-/// </summary>
 [RequireComponent(typeof(PhysicsMovementService))]
 [RequireComponent(typeof(CharacterStateExposed))]
 public class PlayerInputMovementController : MonoBehaviour
@@ -23,22 +12,22 @@ public class PlayerInputMovementController : MonoBehaviour
     [SerializeField] private InputActionReference moveAction;
     [SerializeField] private InputActionReference sprintAction;
 
-    [Header("Câmera (conversão de input para direção world-space)")]
+    [Header("Camera")]
     [SerializeField] private Transform cameraTransform;
 
     [Header("Stamina (Sprint)")]
-    [Tooltip("Opcional - se não for atribuído, o sprint funciona sem nenhuma restrição de stamina.")]
     [SerializeField] private PlayableCharacterStaminaBarInstaller staminaBar;
 
     public PlayableCharacterStaminaBarInstaller StaminaBar => staminaBar;
 
     [SerializeField] private float staminaCostPerSecond = 20f;
-
-    [Tooltip("Estamina mínima necessária para retomar o sprint depois de ficar exausto.")]
     [SerializeField] private float minStaminaToResumeSprint = 15f;
 
     private PhysicsMovementService movement;
     private CharacterStateExposed characterState;
+    private Rigidbody playerRigidbody;
+    private PlayerInputReader inputReader;
+    private Panel pausePanel;
 
     private Vector2 rawMoveInput;
     private bool isSprintKeyHeld;
@@ -48,6 +37,8 @@ public class PlayerInputMovementController : MonoBehaviour
     {
         movement = GetComponent<PhysicsMovementService>();
         characterState = GetComponent<CharacterStateExposed>();
+        playerRigidbody = GetComponent<Rigidbody>();
+        inputReader = GetComponentInParent<PlayerInputReader>();
     }
 
     private void OnEnable()
@@ -55,7 +46,6 @@ public class PlayerInputMovementController : MonoBehaviour
         if (moveAction != null)
         {
             moveAction.action.Enable();
-
             moveAction.action.performed += OnMovePerformed;
             moveAction.action.canceled += OnMoveCanceled;
         }
@@ -63,7 +53,6 @@ public class PlayerInputMovementController : MonoBehaviour
         if (sprintAction != null)
         {
             sprintAction.action.Enable();
-
             sprintAction.action.performed += OnSprintPerformed;
             sprintAction.action.canceled += OnSprintCanceled;
         }
@@ -94,9 +83,7 @@ public class PlayerInputMovementController : MonoBehaviour
 
         if (characterState != null)
         {
-            characterState.SetMovementState(
-                CharacterStateExposed.CharacterMovementState.Idle
-            );
+            characterState.SetMovementState(CharacterStateExposed.CharacterMovementState.Idle);
         }
     }
 
@@ -122,11 +109,78 @@ public class PlayerInputMovementController : MonoBehaviour
 
     private void Update()
     {
+        if (IsWorldInputBlocked())
+        {
+            StopMovementForUi();
+            return;
+        }
+
         Vector3 moveDirection = ConvertToWorldDirection(rawMoveInput);
 
         movement.SetMoveDirection(moveDirection);
-
         UpdateSprint(moveDirection);
+    }
+
+    private bool IsWorldInputBlocked()
+    {
+        if (GlobalUiKeyboardNavigation.IsAnyUiMenuOpen || InputBindingsService.IsRebinding)
+        {
+            return true;
+        }
+
+        if (inputReader == null)
+        {
+            inputReader = GetComponentInParent<PlayerInputReader>();
+        }
+
+        if (inputReader != null && inputReader.IsBlocked)
+        {
+            return true;
+        }
+
+        if (DialogueManager.Instance != null && DialogueManager.Instance.IsDialogueActive)
+        {
+            return true;
+        }
+
+        if (FindFirstObjectByType<CharacterSelectionPanel>() != null)
+        {
+            return true;
+        }
+
+        return IsPauseOpen();
+    }
+
+    private bool IsPauseOpen()
+    {
+        if (pausePanel == null)
+        {
+            Panel[] panels = FindObjectsByType<Panel>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+            foreach (Panel panel in panels)
+            {
+                if (panel != null && panel.gameObject.scene.IsValid() && panel.gameObject.name.StartsWith("PausePanel", System.StringComparison.Ordinal))
+                {
+                    pausePanel = panel;
+                    break;
+                }
+            }
+        }
+
+        return pausePanel != null && pausePanel.gameObject.activeInHierarchy;
+    }
+
+    private void StopMovementForUi()
+    {
+        movement.SetMoveDirection(Vector3.zero);
+        movement.SetSprinting(false);
+        characterState.SetMovementState(CharacterStateExposed.CharacterMovementState.Idle);
+
+        if (playerRigidbody != null)
+        {
+            Vector3 velocity = playerRigidbody.linearVelocity;
+            playerRigidbody.linearVelocity = new Vector3(0f, velocity.y, 0f);
+        }
     }
 
     private void UpdateSprint(Vector3 moveDirection)
@@ -135,71 +189,47 @@ public class PlayerInputMovementController : MonoBehaviour
 
         if (staminaBar == null)
         {
-            bool isOnSprinting = isSprintKeyHeld && hasMovementInput;
+            bool shouldSprintWithoutStamina = isSprintKeyHeld && hasMovementInput;
 
-            movement.SetSprinting(isOnSprinting);
-
-            UpdateMovementState(
-                hasMovementInput,
-                isOnSprinting
-            );
-
+            movement.SetSprinting(shouldSprintWithoutStamina);
+            UpdateMovementState(hasMovementInput, shouldSprintWithoutStamina);
             return;
         }
 
         float currentStamina = staminaBar.Model.Current;
 
-        // Histerese: só volta a permitir sprint depois de acumular
-        // minStaminaToResumeSprint.
-        if (isStaminaExhausted &&
-            currentStamina >= minStaminaToResumeSprint)
+        if (isStaminaExhausted && currentStamina >= minStaminaToResumeSprint)
         {
             isStaminaExhausted = false;
         }
-        else if (!isStaminaExhausted &&
-                 currentStamina <= staminaBar.Model.Min)
+        else if (!isStaminaExhausted && currentStamina <= staminaBar.Model.Min)
         {
             isStaminaExhausted = true;
         }
 
-        bool isSprinting =
-            isSprintKeyHeld &&
-            !isStaminaExhausted &&
-            hasMovementInput;
+        bool isSprinting = isSprintKeyHeld && !isStaminaExhausted && hasMovementInput;
 
         movement.SetSprinting(isSprinting);
 
         if (isSprinting)
         {
-            staminaBar.Consume(
-                staminaCostPerSecond * Time.deltaTime
-            );
+            staminaBar.Consume(staminaCostPerSecond * Time.deltaTime);
         }
 
-        UpdateMovementState(
-            hasMovementInput,
-            isSprinting
-        );
+        UpdateMovementState(hasMovementInput, isSprinting);
     }
 
-    private void UpdateMovementState(
-        bool hasMovementInput,
-        bool isSprinting)
+    private void UpdateMovementState(bool hasMovementInput, bool isSprinting)
     {
         if (!hasMovementInput)
         {
-            characterState.SetMovementState(
-                CharacterStateExposed.CharacterMovementState.Idle
-            );
-
+            characterState.SetMovementState(CharacterStateExposed.CharacterMovementState.Idle);
             return;
         }
 
-        characterState.SetMovementState(
-            isSprinting
-                ? CharacterStateExposed.CharacterMovementState.Run
-                : CharacterStateExposed.CharacterMovementState.Walk
-        );
+        characterState.SetMovementState(isSprinting
+            ? CharacterStateExposed.CharacterMovementState.Run
+            : CharacterStateExposed.CharacterMovementState.Walk);
     }
 
     private Vector3 ConvertToWorldDirection(Vector2 input)
@@ -209,15 +239,8 @@ public class PlayerInputMovementController : MonoBehaviour
             return Vector3.zero;
         }
 
-        Vector3 forward =
-            cameraTransform != null
-                ? cameraTransform.forward
-                : Vector3.forward;
-
-        Vector3 right =
-            cameraTransform != null
-                ? cameraTransform.right
-                : Vector3.right;
+        Vector3 forward = cameraTransform != null ? cameraTransform.forward : Vector3.forward;
+        Vector3 right = cameraTransform != null ? cameraTransform.right : Vector3.right;
 
         forward.y = 0f;
         right.y = 0f;
@@ -225,9 +248,7 @@ public class PlayerInputMovementController : MonoBehaviour
         forward.Normalize();
         right.Normalize();
 
-        Vector3 direction =
-            forward * input.y +
-            right * input.x;
+        Vector3 direction = forward * input.y + right * input.x;
 
         return Vector3.ClampMagnitude(direction, 1f);
     }

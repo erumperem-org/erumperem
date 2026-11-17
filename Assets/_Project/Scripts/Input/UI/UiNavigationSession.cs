@@ -1,6 +1,9 @@
+
 using System;
 using System.Collections.Generic;
 using TMPro;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,6 +26,10 @@ public sealed class UiNavigationSession
 
     private KeyboardNavigablePanel _activePanel;
     private UiNavigationTarget _currentTarget;
+    private bool _keyboardHoverVisible;
+    private bool _mousePositionKnown;
+    private bool _wasMouseMode;
+    private Vector2 _lastMousePosition;
 
     public bool HasActivePanel => _activePanel != null;
 
@@ -43,7 +50,17 @@ public sealed class UiNavigationSession
 
         if (InputDeviceModeManager.IsMouseMode)
         {
-            ClearFocus();
+            if (_keyboardHoverVisible)
+            {
+                UiNavigationEventDispatcher.ClearFocus(_currentTarget);
+                _keyboardHoverVisible = false;
+            }
+
+            UpdateMouseSelection();
+        }
+        else
+        {
+            _wasMouseMode = false;
         }
     }
 
@@ -62,6 +79,11 @@ public sealed class UiNavigationSession
         {
             FocusDefault();
         }
+        else if (!_keyboardHoverVisible)
+        {
+            UiNavigationEventDispatcher.Focus(null, _currentTarget);
+            _keyboardHoverVisible = true;
+        }
     }
 
     public void Navigate(UiNavigationDirection direction)
@@ -77,6 +99,11 @@ public sealed class UiNavigationSession
         if (!UiNavigationTargetCatalog.IsValid(_currentTarget))
         {
             FocusDefault();
+            return;
+        }
+
+        if (TryScrollFocusedContent(direction))
+        {
             return;
         }
 
@@ -118,6 +145,11 @@ public sealed class UiNavigationSession
         EnsureCurrentTarget();
 
         if (!UiNavigationTargetCatalog.IsValid(_currentTarget))
+        {
+            return;
+        }
+
+        if (_currentTarget.IsScrollRect)
         {
             return;
         }
@@ -676,25 +708,132 @@ public sealed class UiNavigationSession
 
     private void Focus(UiNavigationTarget target)
     {
-        if (!UiNavigationTargetCatalog.IsValid(target) || ReferenceEquals(target, _currentTarget))
+        if (!UiNavigationTargetCatalog.IsValid(target) || (ReferenceEquals(target, _currentTarget) && _keyboardHoverVisible))
         {
             return;
         }
 
-        UiNavigationEventDispatcher.Focus(_currentTarget, target);
+        UiNavigationEventDispatcher.Focus(_keyboardHoverVisible ? _currentTarget : null, target);
         _currentTarget = target;
+        _keyboardHoverVisible = true;
         EnsureTargetVisibleInScrollRect(_currentTarget);
     }
 
     private void ClearFocus()
     {
-        if (_currentTarget == null)
+        if (_currentTarget != null && _keyboardHoverVisible)
+        {
+            UiNavigationEventDispatcher.ClearFocus(_currentTarget);
+        }
+
+        _currentTarget = null;
+        _keyboardHoverVisible = false;
+        _mousePositionKnown = false;
+        _wasMouseMode = false;
+    }
+
+    private void UpdateMouseSelection()
+    {
+        if (_activePanel == null || EventSystem.current == null || Mouse.current == null)
         {
             return;
         }
 
-        UiNavigationEventDispatcher.ClearFocus(_currentTarget);
-        _currentTarget = null;
+        Vector2 position = Mouse.current.position.ReadValue();
+        bool moved = !_mousePositionKnown || (position - _lastMousePosition).sqrMagnitude > 0.25f;
+        bool enteredMouseMode = !_wasMouseMode;
+
+        _mousePositionKnown = true;
+        _lastMousePosition = position;
+        _wasMouseMode = true;
+
+        if (!moved && !enteredMouseMode)
+        {
+            return;
+        }
+
+        RefreshTargets();
+
+        PointerEventData pointer = new PointerEventData(EventSystem.current);
+        pointer.position = position;
+
+        List<RaycastResult> hits = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(pointer, hits);
+
+        foreach (RaycastResult hit in hits)
+        {
+            if (hit.gameObject == null)
+            {
+                continue;
+            }
+
+            Transform hitTransform = hit.gameObject.transform;
+
+            foreach (UiNavigationTarget target in _targets)
+            {
+                if (!UiNavigationTargetCatalog.IsValid(target))
+                {
+                    continue;
+                }
+
+                Transform targetTransform = target.GameObject.transform;
+
+                if (hitTransform == targetTransform || hitTransform.IsChildOf(targetTransform))
+                {
+                    _currentTarget = target;
+                    return;
+                }
+            }
+        }
+    }
+
+    private bool TryScrollFocusedContent(UiNavigationDirection direction)
+    {
+        if (_currentTarget == null || !_currentTarget.IsScrollRect || _currentTarget.GameObject == null)
+        {
+            return false;
+        }
+
+        ScrollRect scroll = _currentTarget.GameObject.GetComponent<ScrollRect>();
+
+        if (scroll == null || scroll.content == null || !scroll.enabled)
+        {
+            return false;
+        }
+
+        const float step = 0.085f;
+        Vector2 before = scroll.normalizedPosition;
+        Vector2 after = before;
+
+        if (scroll.vertical && direction == UiNavigationDirection.Up)
+        {
+            after.y = Mathf.Min(1f, before.y + step);
+        }
+        else if (scroll.vertical && direction == UiNavigationDirection.Down)
+        {
+            after.y = Mathf.Max(0f, before.y - step);
+        }
+        else if (scroll.horizontal && direction == UiNavigationDirection.Right)
+        {
+            after.x = Mathf.Min(1f, before.x + step);
+        }
+        else if (scroll.horizontal && direction == UiNavigationDirection.Left)
+        {
+            after.x = Mathf.Max(0f, before.x - step);
+        }
+        else
+        {
+            return false;
+        }
+
+        if ((after - before).sqrMagnitude <= 0.000001f)
+        {
+            return false;
+        }
+
+        scroll.StopMovement();
+        scroll.normalizedPosition = after;
+        return true;
     }
 
     private static void EnsureTargetVisibleInScrollRect(UiNavigationTarget target)

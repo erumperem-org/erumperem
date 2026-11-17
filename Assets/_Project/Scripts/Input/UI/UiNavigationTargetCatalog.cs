@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -74,6 +75,32 @@ public static class UiNavigationTargetCatalog
 
             targets.Add(new UiNavigationTarget(selectable.gameObject, rectTransform, selectable, false));
         }
+
+        var scrollRects = navigationRoot.GetComponentsInChildren<ScrollRect>(true);
+
+        foreach (ScrollRect scroll in scrollRects)
+        {
+            if (scroll == null || !scroll.enabled || !scroll.gameObject.activeInHierarchy || scroll.content == null || !BelongsToPanel(panel, scroll.transform))
+            {
+                continue;
+            }
+
+            bool containsFocusableControl = false;
+
+            foreach (UiNavigationTarget target in targets)
+            {
+                if (target.GameObject != null && (target.GameObject.transform == scroll.content || target.GameObject.transform.IsChildOf(scroll.content)))
+                {
+                    containsFocusableControl = true;
+                    break;
+                }
+            }
+
+            if (!containsFocusableControl && scroll.transform is RectTransform scrollRect)
+            {
+                targets.Add(new UiNavigationTarget(scroll.gameObject, scrollRect, null, false, true));
+            }
+        }
     }
 
     public static bool IsValid(UiNavigationTarget target)
@@ -81,6 +108,12 @@ public static class UiNavigationTargetCatalog
         if (target == null || target.GameObject == null || target.RectTransform == null || !target.GameObject.activeInHierarchy)
         {
             return false;
+        }
+
+        if (target.IsScrollRect)
+        {
+            ScrollRect scroll = target.GameObject.GetComponent<ScrollRect>();
+            return scroll != null && scroll.enabled && scroll.content != null;
         }
 
         if (!target.IsCustomUiButton)

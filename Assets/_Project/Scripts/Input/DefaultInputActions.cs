@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,8 +8,6 @@ using UnityEngine.InputSystem.Utilities;
 
 /// <summary>
 /// InputActions padrão do projeto criadas por código.
-/// Gameplay: movimento, ponteiro, cliques, skills 1-7, cheats de cena (F1-F4),
-/// F5 = reset do save de exploração, F6/F7 = cheats de combate, F9/F10 = cheats de aliados em combate.
 /// </summary>
 public sealed class DefaultInputActions : IInputActionCollection, IDisposable
 {
@@ -61,46 +60,53 @@ public sealed class DefaultInputActions : IInputActionCollection, IDisposable
 
         _skillSlot1Action = _gameplayMap.AddAction("SkillSlot1", InputActionType.Button);
         _skillSlot1Action.AddBinding("<Keyboard>/1");
+
         _skillSlot2Action = _gameplayMap.AddAction("SkillSlot2", InputActionType.Button);
         _skillSlot2Action.AddBinding("<Keyboard>/2");
+
         _skillSlot3Action = _gameplayMap.AddAction("SkillSlot3", InputActionType.Button);
         _skillSlot3Action.AddBinding("<Keyboard>/3");
+
         _skillSlot4Action = _gameplayMap.AddAction("SkillSlot4", InputActionType.Button);
         _skillSlot4Action.AddBinding("<Keyboard>/4");
+
         _skillSlot5Action = _gameplayMap.AddAction("SkillSlot5", InputActionType.Button);
         _skillSlot5Action.AddBinding("<Keyboard>/5");
+
         _skillSlot6Action = _gameplayMap.AddAction("SkillSlot6", InputActionType.Button);
         _skillSlot6Action.AddBinding("<Keyboard>/6");
+
         _skillSlot7Action = _gameplayMap.AddAction("SkillSlot7", InputActionType.Button);
         _skillSlot7Action.AddBinding("<Keyboard>/7");
 
         _sceneCheat1Action = _gameplayMap.AddAction("SceneCheat1", InputActionType.Button);
         _sceneCheat1Action.AddBinding("<Keyboard>/f1");
+
         _sceneCheat2Action = _gameplayMap.AddAction("SceneCheat2", InputActionType.Button);
         _sceneCheat2Action.AddBinding("<Keyboard>/f2");
+
         _sceneCheat3Action = _gameplayMap.AddAction("SceneCheat3", InputActionType.Button);
         _sceneCheat3Action.AddBinding("<Keyboard>/f3");
+
         _sceneCheat4Action = _gameplayMap.AddAction("SceneCheat4", InputActionType.Button);
         _sceneCheat4Action.AddBinding("<Keyboard>/f4");
-        _explorationCheatResetSaveAction =
-            _gameplayMap.AddAction("ExplorationCheatResetSave", InputActionType.Button);
+
+        _explorationCheatResetSaveAction = _gameplayMap.AddAction("ExplorationCheatResetSave", InputActionType.Button);
         _explorationCheatResetSaveAction.AddBinding("<Keyboard>/f5");
 
-        _combatCheatKillAllEnemiesAction =
-            _gameplayMap.AddAction("CombatCheatKillAllEnemies", InputActionType.Button);
+        _combatCheatKillAllEnemiesAction = _gameplayMap.AddAction("CombatCheatKillAllEnemies", InputActionType.Button);
         _combatCheatKillAllEnemiesAction.AddBinding("<Keyboard>/f6");
 
-        _combatCheatKillAllAlliesAction =
-            _gameplayMap.AddAction("CombatCheatKillAllAllies", InputActionType.Button);
+        _combatCheatKillAllAlliesAction = _gameplayMap.AddAction("CombatCheatKillAllAllies", InputActionType.Button);
         _combatCheatKillAllAlliesAction.AddBinding("<Keyboard>/f7");
 
-        _combatCheatInfiniteAllyHealthAction =
-            _gameplayMap.AddAction("CombatCheatInfiniteAllyHealth", InputActionType.Button);
+        _combatCheatInfiniteAllyHealthAction = _gameplayMap.AddAction("CombatCheatInfiniteAllyHealth", InputActionType.Button);
         _combatCheatInfiniteAllyHealthAction.AddBinding("<Keyboard>/f9");
 
-        _combatCheatDoubleAllyDamageAction =
-            _gameplayMap.AddAction("CombatCheatDoubleAllyDamage", InputActionType.Button);
+        _combatCheatDoubleAllyDamageAction = _gameplayMap.AddAction("CombatCheatDoubleAllyDamage", InputActionType.Button);
         _combatCheatDoubleAllyDamageAction.AddBinding("<Keyboard>/f10");
+
+        InputBindingsService.Register(_gameplayMap);
     }
 
     public InputBinding? bindingMask
@@ -117,27 +123,51 @@ public sealed class DefaultInputActions : IInputActionCollection, IDisposable
 
     public ReadOnlyArray<InputControlScheme> controlSchemes => _asset.controlSchemes;
 
-    public bool Contains(InputAction action) => _asset.Contains(action);
-    public IEnumerator<InputAction> GetEnumerator() => _asset.GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-    public void Enable() => _asset.Enable();
-    public void Disable() => _asset.Disable();
+    public bool Contains(InputAction action)
+    {
+        return _asset.Contains(action);
+    }
+
+    public IEnumerator<InputAction> GetEnumerator()
+    {
+        return _asset.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
+
+    public void Enable()
+    {
+        _asset.Enable();
+    }
+
+    public void Disable()
+    {
+        _asset.Disable();
+    }
 
     public void Dispose()
     {
+        InputBindingsService.Unregister(_gameplayMap);
+
         if (_asset != null)
         {
             UnityEngine.Object.Destroy(_asset);
         }
     }
 
-    public GameplayActions Gameplay => new(this);
+    public GameplayActions Gameplay => new GameplayActions(this);
 
     public struct GameplayActions
     {
         private readonly DefaultInputActions _wrapper;
 
-        public GameplayActions(DefaultInputActions wrapper) => _wrapper = wrapper;
+        public GameplayActions(DefaultInputActions wrapper)
+        {
+            _wrapper = wrapper;
+        }
 
         public InputAction Move => _wrapper._moveAction;
         public InputAction PointerPosition => _wrapper._pointerPositionAction;

@@ -1,3 +1,4 @@
+
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -7,6 +8,8 @@ public sealed class UiKeyboardInputReader : IDisposable
     public event Action<UiNavigationDirection> NavigateRequested;
     public event Action SubmitRequested;
     public event Action CancelRequested;
+
+    public InputActionMap ActionMap => _actionMap;
 
     private readonly float _navigationThreshold;
     private readonly float _firstRepeatDelay;
@@ -44,15 +47,15 @@ public sealed class UiKeyboardInputReader : IDisposable
 
     public void Tick(bool navigationEnabled)
     {
-        if (!navigationEnabled)
+        if (InputBindingsService.IsRebinding || !navigationEnabled)
         {
             _heldDirection = null;
             return;
         }
 
-        var navigation = _navigateAction.ReadValue<Vector2>();
+        Vector2 navigation = _navigateAction.ReadValue<Vector2>();
 
-        if (!TryResolveDirection(navigation, out var direction))
+        if (!TryResolveDirection(navigation, out UiNavigationDirection direction))
         {
             _heldDirection = null;
             return;
@@ -78,6 +81,7 @@ public sealed class UiKeyboardInputReader : IDisposable
     public void Dispose()
     {
         Disable();
+        InputBindingsService.Unregister(_actionMap);
         _actionMap?.Dispose();
         _actionMap = null;
     }
@@ -87,8 +91,18 @@ public sealed class UiKeyboardInputReader : IDisposable
         _actionMap = new InputActionMap("GlobalUiKeyboard");
 
         _navigateAction = _actionMap.AddAction("Navigate", InputActionType.Value);
-        _navigateAction.AddCompositeBinding("2DVector").With("Up", "<Keyboard>/w").With("Down", "<Keyboard>/s").With("Left", "<Keyboard>/a").With("Right", "<Keyboard>/d");
-        _navigateAction.AddCompositeBinding("2DVector").With("Up", "<Keyboard>/upArrow").With("Down", "<Keyboard>/downArrow").With("Left", "<Keyboard>/leftArrow").With("Right", "<Keyboard>/rightArrow");
+
+        _navigateAction.AddCompositeBinding("2DVector")
+            .With("Up", "<Keyboard>/w")
+            .With("Down", "<Keyboard>/s")
+            .With("Left", "<Keyboard>/a")
+            .With("Right", "<Keyboard>/d");
+
+        _navigateAction.AddCompositeBinding("2DVector")
+            .With("Up", "<Keyboard>/upArrow")
+            .With("Down", "<Keyboard>/downArrow")
+            .With("Left", "<Keyboard>/leftArrow")
+            .With("Right", "<Keyboard>/rightArrow");
 
         _submitAction = _actionMap.AddAction("Submit", InputActionType.Button);
         _submitAction.AddBinding("<Keyboard>/enter");
@@ -98,6 +112,8 @@ public sealed class UiKeyboardInputReader : IDisposable
         _cancelAction = _actionMap.AddAction("Cancel", InputActionType.Button);
         _cancelAction.AddBinding("<Keyboard>/escape");
         _cancelAction.AddBinding("<Keyboard>/q");
+
+        InputBindingsService.Register(_actionMap);
     }
 
     private bool TryResolveDirection(Vector2 navigation, out UiNavigationDirection direction)
@@ -121,11 +137,17 @@ public sealed class UiKeyboardInputReader : IDisposable
 
     private void OnSubmitPerformed(InputAction.CallbackContext context)
     {
-        SubmitRequested?.Invoke();
+        if (!InputBindingsService.IsRebinding)
+        {
+            SubmitRequested?.Invoke();
+        }
     }
 
     private void OnCancelPerformed(InputAction.CallbackContext context)
     {
-        CancelRequested?.Invoke();
+        if (!InputBindingsService.IsRebinding)
+        {
+            CancelRequested?.Invoke();
+        }
     }
 }

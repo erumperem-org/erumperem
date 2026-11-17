@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 using Erumperem.Progression;
@@ -27,19 +28,17 @@ public sealed class KeyboardNavigablePanel : MonoBehaviour
     };
 
     [Header("Selection")]
-    [Tooltip("Opcional. Elemento que recebe foco quando este painel abre. Se vazio, o sistema escolhe automaticamente um elemento navegável.")]
+    [Tooltip("Optional. Element selected when this panel opens.")]
     [SerializeField] private GameObject defaultSelected;
 
-    [Tooltip("Opcional. Elemento acionado por Escape ou Q. Se vazio, o sistema procura automaticamente um botão de voltar/fechar.")]
+    [Tooltip("Optional. Element activated by Escape or Q.")]
     [SerializeField] private GameObject cancelTarget;
 
     [Header("Navigation")]
     [SerializeField] private bool wrapNavigation = true;
-
-    [Tooltip("Se mais de um KeyboardNavigablePanel estiver ativo, o maior valor tem prioridade.")]
     [SerializeField] private int navigationPriority;
 
-    private static readonly List<KeyboardNavigablePanel> ActivePanels = new();
+    private static readonly List<KeyboardNavigablePanel> ActivePanels = new List<KeyboardNavigablePanel>();
     private static long _nextActivationOrder;
     private long _activationOrder;
 
@@ -57,11 +56,11 @@ public sealed class KeyboardNavigablePanel : MonoBehaviour
 
             KeyboardNavigablePanel bestPanel = null;
 
-            for (var panelIndex = 0; panelIndex < ActivePanels.Count; panelIndex++)
+            for (int panelIndex = 0; panelIndex < ActivePanels.Count; panelIndex++)
             {
-                var panel = ActivePanels[panelIndex];
+                KeyboardNavigablePanel panel = ActivePanels[panelIndex];
 
-                if (panel == null || !panel.isActiveAndEnabled || !panel.gameObject.activeInHierarchy)
+                if (panel == null || !panel.isActiveAndEnabled || !panel.gameObject.activeInHierarchy || !IsVisibleAndInteractive(panel.transform))
                 {
                     continue;
                 }
@@ -98,7 +97,7 @@ public sealed class KeyboardNavigablePanel : MonoBehaviour
 
     private Transform ResolveNavigationRoot()
     {
-        var skillTreeView = GetComponentInParent<SkillTreeView>(true);
+        SkillTreeView skillTreeView = GetComponentInParent<SkillTreeView>(true);
 
         if (skillTreeView != null)
         {
@@ -117,23 +116,33 @@ public sealed class KeyboardNavigablePanel : MonoBehaviour
 
         cancelTarget = null;
 
-        var navigationRoot = NavigationRoot;
+        if (string.Equals(gameObject.name, "PausePanel", StringComparison.OrdinalIgnoreCase))
+        {
+            Button[] pauseButtons = GetComponentsInChildren<Button>(true);
+
+            foreach (Button pauseButton in pauseButtons)
+            {
+                if (IsUsableButton(pauseButton) && string.Equals(pauseButton.name, "Continue", StringComparison.OrdinalIgnoreCase))
+                {
+                    cancelTarget = pauseButton.gameObject;
+                    return cancelTarget;
+                }
+            }
+        }
+
+        Transform navigationRoot = NavigationRoot;
 
         if (navigationRoot == null)
         {
             return null;
         }
 
-        var buttons = navigationRoot.GetComponentsInChildren<Button>(true);
+        Button[] buttons = navigationRoot.GetComponentsInChildren<Button>(true);
 
-        for (var nameIndex = 0; nameIndex < AutomaticCancelTargetNames.Length; nameIndex++)
+        foreach (string targetName in AutomaticCancelTargetNames)
         {
-            var targetName = AutomaticCancelTargetNames[nameIndex];
-
-            for (var buttonIndex = 0; buttonIndex < buttons.Length; buttonIndex++)
+            foreach (Button button in buttons)
             {
-                var button = buttons[buttonIndex];
-
                 if (!IsUsableButton(button))
                 {
                     continue;
@@ -159,7 +168,7 @@ public sealed class KeyboardNavigablePanel : MonoBehaviour
             return false;
         }
 
-        var button = target.GetComponent<Button>();
+        Button button = target.GetComponent<Button>();
         return IsUsableButton(button);
     }
 
@@ -168,9 +177,41 @@ public sealed class KeyboardNavigablePanel : MonoBehaviour
         return button != null && button.enabled && button.gameObject.activeInHierarchy && button.interactable;
     }
 
+    private static bool IsVisibleAndInteractive(Transform root)
+    {
+        Transform current = root;
+
+        while (current != null)
+        {
+            CanvasGroup[] groups = current.GetComponents<CanvasGroup>();
+
+            foreach (CanvasGroup group in groups)
+            {
+                if (group == null)
+                {
+                    continue;
+                }
+
+                if (group.alpha <= 0.001f || !group.interactable || !group.blocksRaycasts)
+                {
+                    return false;
+                }
+
+                if (group.ignoreParentGroups)
+                {
+                    return true;
+                }
+            }
+
+            current = current.parent;
+        }
+
+        return true;
+    }
+
     private static void CleanupActivePanels()
     {
-        for (var panelIndex = ActivePanels.Count - 1; panelIndex >= 0; panelIndex--)
+        for (int panelIndex = ActivePanels.Count - 1; panelIndex >= 0; panelIndex--)
         {
             if (ActivePanels[panelIndex] == null)
             {
