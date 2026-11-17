@@ -1,3 +1,4 @@
+
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -6,20 +7,31 @@ using UnityEngine.UI;
 
 public static class UiNavigationEventDispatcher
 {
+    private static Transform _settingsTextTransform;
+    private static Vector3 _settingsTextOriginalScale;
+
     public static void Focus(UiNavigationTarget previous, UiNavigationTarget current)
     {
+        RestoreSettingsTextScale();
         DispatchPointerExit(previous);
 
         if (EventSystem.current != null)
         {
             EventSystem.current.SetSelectedGameObject(null);
+
+            if (current != null && current.Selectable != null && current.Selectable.IsInteractable())
+            {
+                EventSystem.current.SetSelectedGameObject(current.GameObject);
+            }
         }
 
         DispatchPointerEnter(current);
+        EnlargeSettingsCategoryText(current);
     }
 
     public static void ClearFocus(UiNavigationTarget current)
     {
+        RestoreSettingsTextScale();
         DispatchPointerExit(current);
 
         if (EventSystem.current != null)
@@ -94,16 +106,23 @@ public static class UiNavigationEventDispatcher
             Debug.Log($"[GlobalUiKeyboardNavigation] Confirmando '{target.GameObject.name}'.", target.GameObject);
         }
 
+        if (target.Selectable != null && !target.Selectable.IsInteractable())
+        {
+            return;
+        }
+
         var pointerEventData = CreatePointerEventData(target);
 
-        if (TryActivateThroughUiRaycast(panel, pointerEventData, debugActivation))
+        if (TryActivateThroughHierarchy(target.GameObject, pointerEventData, debugActivation))
         {
+            CloseUnwiredLeaveOrClose(panel, target);
             RestoreKeyboardHoverAfterActivation(target);
             return;
         }
 
-        if (TryActivateThroughHierarchy(target.GameObject, pointerEventData, debugActivation))
+        if (TryActivateThroughUiRaycast(panel, pointerEventData, debugActivation))
         {
+            CloseUnwiredLeaveOrClose(panel, target);
             RestoreKeyboardHoverAfterActivation(target);
             return;
         }
@@ -252,6 +271,96 @@ public static class UiNavigationEventDispatcher
         }
 
         return pointerDownTarget != null;
+    }
+
+    private static void CloseUnwiredLeaveOrClose(KeyboardNavigablePanel panel, UiNavigationTarget target)
+    {
+        if (panel == null || !panel.gameObject.activeInHierarchy || target == null || target.GameObject == null)
+        {
+            return;
+        }
+
+        string name = target.GameObject.name;
+
+        if (name != "Leave" && name != "Close" && name != "BtnClose")
+        {
+            return;
+        }
+
+        Button button = target.GameObject.GetComponent<Button>();
+
+        if (button == null)
+        {
+            return;
+        }
+
+        for (int index = 0; index < button.onClick.GetPersistentEventCount(); index++)
+        {
+            if (button.onClick.GetPersistentTarget(index) != null)
+            {
+                return;
+            }
+        }
+
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.ClosePanel(panel.gameObject);
+        }
+        else
+        {
+            panel.gameObject.SetActive(false);
+        }
+    }
+
+    public static void RefreshHover(UiNavigationTarget target)
+    {
+        if (UiNavigationTargetCatalog.IsValid(target))
+        {
+            DispatchPointerEnter(target);
+        }
+    }
+
+    private static void EnlargeSettingsCategoryText(UiNavigationTarget target)
+    {
+        if (target == null || target.GameObject == null)
+        {
+            return;
+        }
+
+        string name = target.GameObject.name;
+
+        if (name != "BtnGraphics" && name != "BtnAudio" && name != "BtnGameplay")
+        {
+            return;
+        }
+
+        Transform parent = target.GameObject.transform.parent;
+
+        if (parent == null || parent.name != "ButtonsSettings")
+        {
+            return;
+        }
+
+        TMP_Text label = target.GameObject.GetComponentInChildren<TMP_Text>(true);
+
+        if (label == null)
+        {
+            return;
+        }
+
+        _settingsTextTransform = label.transform;
+        _settingsTextOriginalScale = _settingsTextTransform.localScale;
+        _settingsTextTransform.localScale = _settingsTextOriginalScale * 1.10f;
+    }
+
+    private static void RestoreSettingsTextScale()
+    {
+        if (_settingsTextTransform != null)
+        {
+            _settingsTextTransform.localScale = _settingsTextOriginalScale;
+        }
+
+        _settingsTextTransform = null;
     }
 
     private static void RestoreKeyboardHoverAfterActivation(UiNavigationTarget target)

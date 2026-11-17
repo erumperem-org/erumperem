@@ -1,9 +1,11 @@
 
 using System;
 using System.Collections.Generic;
+using Core.UI.Panels;
+using Erumperem.Progression;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Core.UI.Panels;
+using UnityEngine.UI;
 
 [DefaultExecutionOrder(-50)]
 [DisallowMultipleComponent]
@@ -11,33 +13,25 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
 {
     private static GlobalUiKeyboardNavigation _instance;
 
-    private static readonly HashSet<string> KnownMenuNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> AdditionalMenuNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
-        "MainMenuPanel",
         "PausePanel",
-        "SettingsPanel",
-        "HelpPanel",
-        "PatchNotesPanel",
         "InventoryPanel",
         "NewInventoryPanel",
-        "CharactersPanel",
-        "CharacterSelectionPanel",
         "MarketPanel",
         "NpcPanel",
         "KnightSkillTreePanel",
         "SkillTreePanel",
         "SkillTreeNonInteractPanel",
+        "CharacterSelectionPanel",
         "DialoguePanel",
-        "KeyBindingsPanel",
-        "SettingsUi",
         "PurchasePopup",
         "PurchasePopupPanel",
-        "ItemOptions",
         "ItemOptionsPanel",
         "ItemPopUp",
         "RewardPanel",
         "SafePanel",
-        "Dropdown List"
+        "KeyBindingsPanel"
     };
 
     [Header("Navigation")]
@@ -50,13 +44,12 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
 
     private UiKeyboardInputReader _inputReader;
     private UiNavigationSession _navigationSession;
-    private float _nextMenuScan;
+    private float _nextScanTime;
 
     public static GlobalUiKeyboardNavigation Instance => _instance;
+    public UiKeyboardInputReader Reader => _inputReader;
 
     public static bool IsAnyUiMenuOpen => KeyboardNavigablePanel.Current != null || (DialogueManager.Instance != null && DialogueManager.Instance.IsDialogueActive);
-
-    public UiKeyboardInputReader Reader => _inputReader;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void EnsureInstanceExists()
@@ -80,6 +73,7 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
+
         _inputReader = new UiKeyboardInputReader(navigationThreshold, firstRepeatDelay, repeatInterval);
         _navigationSession = new UiNavigationSession(debugActivation);
     }
@@ -96,16 +90,16 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
         _inputReader.CancelRequested += HandleCancelRequested;
         _inputReader.Enable();
 
-        SceneManager.sceneLoaded += OnSceneLoaded;
-        PanelVisibilityController.OnPanelVisibilityChanged += OnPanelVisibilityChanged;
+        SceneManager.sceneLoaded += HandleSceneLoaded;
+        PanelVisibilityController.OnPanelVisibilityChanged += HandlePanelVisibilityChanged;
 
-        _nextMenuScan = 0f;
+        _nextScanTime = 0f;
     }
 
     private void OnDisable()
     {
-        SceneManager.sceneLoaded -= OnSceneLoaded;
-        PanelVisibilityController.OnPanelVisibilityChanged -= OnPanelVisibilityChanged;
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
+        PanelVisibilityController.OnPanelVisibilityChanged -= HandlePanelVisibilityChanged;
 
         if (_inputReader != null)
         {
@@ -130,19 +124,6 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
         _navigationSession = null;
     }
 
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        _nextMenuScan = 0f;
-    }
-
-    private void OnPanelVisibilityChanged(GameObject panel, bool visible)
-    {
-        if (visible && panel != null)
-        {
-            RegisterMenu(panel);
-        }
-    }
-
     private void Update()
     {
         if (_inputReader == null || _navigationSession == null)
@@ -150,73 +131,60 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
             return;
         }
 
-        if (Time.unscaledTime >= _nextMenuScan)
+        if (Time.unscaledTime >= _nextScanTime)
         {
-            _nextMenuScan = Time.unscaledTime + 0.5f;
-            RegisterSceneMenus();
-        }
-
-        GameObject dropdown = GameObject.Find("Dropdown List");
-
-        if (dropdown != null)
-        {
-            RegisterMenu(dropdown);
+            _nextScanTime = Time.unscaledTime + 0.5f;
+            RegisterMenus();
         }
 
         _navigationSession.Tick();
         _inputReader.Tick(_navigationSession.HasActivePanel);
     }
 
-    private void RegisterSceneMenus()
+    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        _nextScanTime = 0f;
+    }
+
+    private void HandlePanelVisibilityChanged(GameObject panel, bool visible)
+    {
+        if (visible)
+        {
+            RegisterMenu(panel);
+        }
+    }
+
+    private static void RegisterMenus()
+    {
+        Panel[] panels = FindObjectsByType<Panel>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        foreach (Panel panel in panels)
+        {
+            if (panel != null && panel.gameObject.scene.IsValid() && panel.name.EndsWith("Panel", StringComparison.OrdinalIgnoreCase))
+            {
+                RegisterMenu(panel.gameObject);
+            }
+        }
+
+        SkillTreeView[] skillTreeViews = FindObjectsByType<SkillTreeView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        foreach (SkillTreeView view in skillTreeViews)
+        {
+            if (view != null && view.gameObject.scene.IsValid())
+            {
+                RegisterMenu(view.gameObject);
+            }
+        }
+
         RectTransform[] rects = FindObjectsByType<RectTransform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        List<RectTransform> candidates = new List<RectTransform>();
 
         foreach (RectTransform rect in rects)
         {
-            if (rect == null || !rect.gameObject.scene.IsValid())
+            if (rect != null && rect.gameObject.scene.IsValid() && AdditionalMenuNames.Contains(CleanName(rect.name)))
             {
-                continue;
-            }
-
-            if (IsKnownMenuName(rect.name) || IsIndependentPanel(rect))
-            {
-                candidates.Add(rect);
+                RegisterMenu(rect.gameObject);
             }
         }
-
-        candidates.Sort((a, b) => GetHierarchyDepth(a).CompareTo(GetHierarchyDepth(b)));
-
-        foreach (RectTransform candidate in candidates)
-        {
-            RegisterMenu(candidate.gameObject);
-        }
-    }
-
-    private static bool IsKnownMenuName(string name)
-    {
-        if (name == null)
-        {
-            return false;
-        }
-
-        string normalized = name.Replace("(Clone)", string.Empty).Trim();
-        return KnownMenuNames.Contains(normalized);
-    }
-
-    private static bool IsIndependentPanel(RectTransform rect)
-    {
-        if (rect.GetComponent<Panel>() == null)
-        {
-            return false;
-        }
-
-        if (!rect.name.EndsWith("Panel", StringComparison.OrdinalIgnoreCase) || rect.name.IndexOf("HUD", StringComparison.OrdinalIgnoreCase) >= 0)
-        {
-            return false;
-        }
-
-        return rect.GetComponentInParent<KeyboardNavigablePanel>(true) == null;
     }
 
     private static void RegisterMenu(GameObject menu)
@@ -226,24 +194,17 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
             return;
         }
 
-        bool recognized = IsKnownMenuName(menu.name) || menu.GetComponent<Panel>() != null;
-
-        if (!recognized)
-        {
-            return;
-        }
-
         if (menu.GetComponentInParent<Canvas>(true) == null)
         {
             return;
         }
 
-        if (!IsKnownMenuName(menu.name) && menu.GetComponentInParent<KeyboardNavigablePanel>(true) != null)
+        if (!AdditionalMenuNames.Contains(CleanName(menu.name)) && menu.GetComponent<Panel>() == null && menu.GetComponent<SkillTreeView>() == null)
         {
             return;
         }
 
-        if (menu.GetComponentInChildren<UnityEngine.UI.Selectable>(true) == null && menu.GetComponentInChildren<UnityEngine.UI.ScrollRect>(true) == null && !HasCustomButton(menu))
+        if (menu.GetComponentInChildren<Selectable>(true) == null && menu.GetComponentInChildren<ScrollRect>(true) == null && !HasCustomButton(menu))
         {
             return;
         }
@@ -251,9 +212,14 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
         menu.AddComponent<KeyboardNavigablePanel>();
     }
 
-    private static bool HasCustomButton(GameObject root)
+    private static string CleanName(string name)
     {
-        MonoBehaviour[] behaviours = root.GetComponentsInChildren<MonoBehaviour>(true);
+        return name == null ? string.Empty : name.Replace("(Clone)", string.Empty).Trim();
+    }
+
+    private static bool HasCustomButton(GameObject menu)
+    {
+        MonoBehaviour[] behaviours = menu.GetComponentsInChildren<MonoBehaviour>(true);
 
         foreach (MonoBehaviour behaviour in behaviours)
         {
@@ -276,19 +242,6 @@ public sealed class GlobalUiKeyboardNavigation : MonoBehaviour
         }
 
         return false;
-    }
-
-    private static int GetHierarchyDepth(Transform transform)
-    {
-        int depth = 0;
-
-        while (transform.parent != null)
-        {
-            depth++;
-            transform = transform.parent;
-        }
-
-        return depth;
     }
 
     private void HandleNavigateRequested(UiNavigationDirection direction)

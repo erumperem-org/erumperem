@@ -50,24 +50,6 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         InstallInSettings();
     }
 
-    private IEnumerator FindSettingsPanels()
-    {
-        while (true)
-        {
-            KeyboardNavigablePanel[] panels = FindObjectsByType<KeyboardNavigablePanel>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-
-            foreach (KeyboardNavigablePanel panel in panels)
-            {
-                if (panel != null && panel.gameObject.scene.IsValid() && panel.name == SettingsName && panel.GetComponent<SettingsBindingsRuntime>() == null)
-                {
-                    panel.gameObject.AddComponent<SettingsBindingsRuntime>();
-                }
-            }
-
-            yield return new WaitForSecondsRealtime(0.5f);
-        }
-    }
-
     private void OnEnable()
     {
         if (gameObject.name != InstallerName && !installed)
@@ -81,6 +63,26 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         if (gameObject.name != InstallerName)
         {
             InputBindingsService.Cancel();
+        }
+    }
+
+    private IEnumerator FindSettingsPanels()
+    {
+        WaitForSecondsRealtime delay = new WaitForSecondsRealtime(0.5f);
+
+        while (true)
+        {
+            Panel[] panels = FindObjectsByType<Panel>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+            foreach (Panel panel in panels)
+            {
+                if (panel != null && panel.gameObject.scene.IsValid() && panel.gameObject.name == SettingsName && panel.GetComponent<SettingsBindingsRuntime>() == null)
+                {
+                    panel.gameObject.AddComponent<SettingsBindingsRuntime>();
+                }
+            }
+
+            yield return delay;
         }
     }
 
@@ -105,7 +107,7 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
 
         if (content == null || buttonStyle == null || buttonTextStyle == null || optionTextStyle == null || headingTextStyle == null || paperStyle == null)
         {
-            Debug.LogWarning("[SettingsBindingsRuntime] Settings visual references were not found.", this);
+            Debug.LogWarning("[SettingsBindingsRuntime] Original Settings references not available.", this);
             return;
         }
 
@@ -131,18 +133,18 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         rowRect.pivot = new Vector2(0.5f, 1f);
         rowRect.sizeDelta = new Vector2(0f, 122f);
 
-        LayoutElement element = row.GetComponent<LayoutElement>();
-        element.minHeight = 122f;
-        element.preferredHeight = 122f;
-        element.flexibleWidth = 1f;
+        LayoutElement rowElement = row.GetComponent<LayoutElement>();
+        rowElement.minHeight = 122f;
+        rowElement.preferredHeight = 122f;
+        rowElement.flexibleWidth = 1f;
 
         TMP_Text label = CreateText(row.transform, "Label", "Key Bindings", optionTextStyle, 35f, TextAlignmentOptions.MidlineLeft);
         Stretch(label.rectTransform, new Vector2(0.04f, 0.06f), new Vector2(0.55f, 0.94f));
-        AutoSize(label, 21f, 35f);
+        EnableAutosize(label, 21f, 35f);
 
         Button configure = CreateButton(row.transform, "BtnConfigureKeyBindings", "CONFIGURE", 26f);
         Stretch(configure.GetComponent<RectTransform>(), new Vector2(0.57f, 0.12f), new Vector2(0.97f, 0.88f));
-        AutoSize(configure.GetComponentInChildren<TMP_Text>(), 15f, 26f);
+        EnableAutosize(configure.GetComponentInChildren<TMP_Text>(), 15f, 26f);
         configure.onClick.AddListener(Open);
 
         row.transform.SetSiblingIndex(Mathf.Min(1, content.childCount - 1));
@@ -164,9 +166,10 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
             BuildOverlay();
         }
 
+        RebuildRows();
         overlay.SetActive(true);
         overlay.transform.SetAsLastSibling();
-        RebuildRows();
+
         Canvas.ForceUpdateCanvases();
         rowsScroll.verticalNormalizedPosition = 1f;
     }
@@ -187,6 +190,7 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         overlay.layer = 5;
         overlay.SetActive(false);
         overlay.transform.SetParent(transform, false);
+
         Stretch(overlay.GetComponent<RectTransform>(), Vector2.zero, Vector2.one);
         overlay.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.392f);
         overlay.AddComponent<KeyboardNavigablePanel>();
@@ -194,6 +198,7 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         GameObject paper = new GameObject("PaperBG", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         paper.layer = 5;
         paper.transform.SetParent(overlay.transform, false);
+
         Stretch(paper.GetComponent<RectTransform>(), new Vector2(0.14f, 0.02f), new Vector2(0.86f, 0.98f));
         CopyImageStyle(paperStyle, paper.GetComponent<Image>());
 
@@ -202,7 +207,7 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
 
         statusText = CreateText(paper.transform, "Status", "", optionTextStyle, 19f, TextAlignmentOptions.Center);
         Stretch(statusText.rectTransform, new Vector2(0.09f, 0.78f), new Vector2(0.91f, 0.85f));
-        AutoSize(statusText, 14f, 19f);
+        EnableAutosize(statusText, 14f, 19f);
 
         GameObject scrollObject = new GameObject("BindingsScroll", typeof(RectTransform), typeof(ScrollRect));
         scrollObject.layer = 5;
@@ -219,6 +224,7 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         GameObject viewport = new GameObject("Viewport", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(RectMask2D));
         viewport.layer = 5;
         viewport.transform.SetParent(scrollObject.transform, false);
+
         Stretch(viewport.GetComponent<RectTransform>(), Vector2.zero, Vector2.one);
 
         Image viewportImage = viewport.GetComponent<Image>();
@@ -228,6 +234,7 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         GameObject list = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
         list.layer = 5;
         list.transform.SetParent(viewport.transform, false);
+
         rowsContent = list.GetComponent<RectTransform>();
         rowsContent.anchorMin = new Vector2(0f, 1f);
         rowsContent.anchorMax = new Vector2(1f, 1f);
@@ -255,7 +262,8 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
 
         Button restore = CreateButton(paper.transform, "BtnRestoreDefaults", "RESTORE DEFAULTS", 18f);
         Stretch(restore.GetComponent<RectTransform>(), new Vector2(0.22f, 0.05f), new Vector2(0.45f, 0.14f));
-        AutoSize(restore.GetComponentInChildren<TMP_Text>(), 11f, 17f);
+        EnableAutosize(restore.GetComponentInChildren<TMP_Text>(), 11f, 17f);
+
         restore.onClick.AddListener(() =>
         {
             InputBindingsService.RestoreDefaults();
@@ -265,7 +273,7 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
 
         Button back = CreateButton(paper.transform, "BtnBack", "BACK", 20f);
         Stretch(back.GetComponent<RectTransform>(), new Vector2(0.55f, 0.05f), new Vector2(0.78f, 0.14f));
-        AutoSize(back.GetComponentInChildren<TMP_Text>(), 14f, 20f);
+        EnableAutosize(back.GetComponentInChildren<TMP_Text>(), 14f, 20f);
         back.onClick.AddListener(Close);
     }
 
@@ -319,23 +327,23 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         rowsScroll.verticalNormalizedPosition = 1f;
     }
 
-    private void CreateBindingRow(InputActionMap map, InputAction action, int bindingIndex)
+    private void CreateBindingRow(InputActionMap map, InputAction action, int index)
     {
-        GameObject row = new GameObject("Binding_" + action.name + "_" + bindingIndex, typeof(RectTransform), typeof(LayoutElement));
+        GameObject row = new GameObject("Binding_" + action.name + "_" + index, typeof(RectTransform), typeof(LayoutElement));
         row.layer = 5;
         row.transform.SetParent(rowsContent, false);
         row.GetComponent<LayoutElement>().preferredHeight = 58f;
 
-        TMP_Text label = CreateText(row.transform, "Action", GetActionLabel(map, action, bindingIndex), optionTextStyle, 20f, TextAlignmentOptions.MidlineLeft);
+        TMP_Text label = CreateText(row.transform, "Action", GetActionLabel(map, action, index), optionTextStyle, 20f, TextAlignmentOptions.MidlineLeft);
 
         RectTransform labelRect = label.rectTransform;
         labelRect.anchorMin = Vector2.zero;
         labelRect.anchorMax = Vector2.one;
         labelRect.offsetMin = new Vector2(8f, 3f);
         labelRect.offsetMax = new Vector2(-(KeyButtonWidth + 18f), -3f);
-        AutoSize(label, 12f, 20f);
+        EnableAutosize(label, 12f, 20f);
 
-        Button keyButton = CreateButton(row.transform, "KeyButton", action.GetBindingDisplayString(bindingIndex), 18f);
+        Button keyButton = CreateButton(row.transform, "KeyButton", action.GetBindingDisplayString(index), 18f);
 
         RectTransform keyRect = keyButton.GetComponent<RectTransform>();
         keyRect.anchorMin = new Vector2(1f, 0.5f);
@@ -343,10 +351,11 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         keyRect.pivot = new Vector2(1f, 0.5f);
         keyRect.sizeDelta = new Vector2(KeyButtonWidth, KeyButtonHeight);
         keyRect.anchoredPosition = new Vector2(-6f, 0f);
-        AutoSize(keyButton.GetComponentInChildren<TMP_Text>(), 12f, 18f);
+        EnableAutosize(keyButton.GetComponentInChildren<TMP_Text>(), 12f, 18f);
 
         InputAction selectedAction = action;
-        int selectedIndex = bindingIndex;
+        int selectedIndex = index;
+
         keyButton.onClick.AddListener(() => BeginRebinding(selectedAction, selectedIndex));
     }
 
@@ -395,6 +404,7 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         button.targetGraphic = image;
 
         TMP_Text label = CreateText(obj.transform, "Text (TMP)", value, buttonTextStyle, fontSize, TextAlignmentOptions.Center);
+
         Stretch(label.rectTransform, Vector2.zero, Vector2.one);
         label.rectTransform.offsetMin = new Vector2(6f, 2f);
         label.rectTransform.offsetMax = new Vector2(-6f, -2f);
@@ -402,9 +412,9 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         return button;
     }
 
-    private static TMP_Text CreateText(Transform parent, string objectName, string value, TMP_Text style, float size, TextAlignmentOptions alignment)
+    private static TMP_Text CreateText(Transform parent, string name, string value, TMP_Text style, float fontSize, TextAlignmentOptions alignment)
     {
-        GameObject obj = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        GameObject obj = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
         obj.layer = 5;
         obj.transform.SetParent(parent, false);
 
@@ -412,7 +422,7 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         label.font = style.font;
         label.fontSharedMaterial = style.fontSharedMaterial;
         label.fontStyle = style.fontStyle;
-        label.fontSize = size;
+        label.fontSize = fontSize;
         label.color = style.color;
         label.alignment = alignment;
         label.text = value;
@@ -423,16 +433,16 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         return label;
     }
 
-    private static void AutoSize(TMP_Text label, float min, float max)
+    private static void EnableAutosize(TMP_Text text, float minimum, float maximum)
     {
-        if (label == null)
+        if (text == null)
         {
             return;
         }
 
-        label.enableAutoSizing = true;
-        label.fontSizeMin = min;
-        label.fontSizeMax = max;
+        text.enableAutoSizing = true;
+        text.fontSizeMin = minimum;
+        text.fontSizeMax = maximum;
     }
 
     private static void CopyImageStyle(Image source, Image target)
@@ -445,9 +455,9 @@ public sealed class SettingsBindingsRuntime : MonoBehaviour
         target.pixelsPerUnitMultiplier = source.pixelsPerUnitMultiplier;
     }
 
-    private static string SplitName(string value)
+    private static string SplitName(string name)
     {
-        return string.IsNullOrWhiteSpace(value) ? value : System.Text.RegularExpressions.Regex.Replace(value, "([a-z0-9])([A-Z])", "$1 $2");
+        return string.IsNullOrWhiteSpace(name) ? name : System.Text.RegularExpressions.Regex.Replace(name, "([a-z0-9])([A-Z])", "$1 $2");
     }
 
     private static void Stretch(RectTransform rect, Vector2 min, Vector2 max)
