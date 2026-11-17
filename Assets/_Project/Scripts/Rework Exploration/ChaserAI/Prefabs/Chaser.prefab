@@ -271,6 +271,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: GhostEnemyStrong
       objectReference: {fileID: 0}
+    - target: {fileID: 9059233832833152544, guid: dc02c2c2d45f1684892b715ba5d69c11, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -297,6 +301,10 @@ PrefabInstance:
     - target: {fileID: 6256490964612725206, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
       propertyPath: m_Name
       value: GhostEnemy 1 (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6256490964612725206, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6744234788806124396, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
       propertyPath: m_LocalPosition.x
@@ -369,6 +377,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: GhostEnemyMedium
       objectReference: {fileID: 0}
+    - target: {fileID: 2749529366722415044, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3270627941008987006, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -435,6 +447,10 @@ PrefabInstance:
     - target: {fileID: 2749529366722415044, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
       propertyPath: m_Name
       value: GhostEnemyMedium (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 2749529366722415044, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3270627941008987006, guid: 50302f22bfdf7594da6cfb1a236f0dee, type: 3}
       propertyPath: m_LocalPosition.x
@@ -550,13 +566,55 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6256490964612725206, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9035648788752287247}
+    - targetCorrespondingSourceObject: {fileID: 6256490964612725206, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1571318345106623783}
   m_SourcePrefab: {fileID: 100100000, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
 --- !u!1 &3625466933766981477 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6256490964612725206, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
   m_PrefabInstance: {fileID: 7242838878430019251}
   m_PrefabAsset: {fileID: 0}
+--- !u!95 &9035648788752287247
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3625466933766981477}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 0}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &1571318345106623783
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3625466933766981477}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70b342d8ce5c2fd48b8fa3147d48d1d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Animation.Rigging::UnityEngine.Animations.Rigging.Rig
+  m_Weight: 0.112
+  m_Effectors: []
 --- !u!4 &4115144759791279583 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6744234788806124396, guid: 8d1499353f04c6e4a8b300f7896773b8, type: 3}
