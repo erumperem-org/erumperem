@@ -11,6 +11,13 @@ namespace Erumperem.Combat
     /// </summary>
     public static class CombatSkillSlotUiEligibility
     {
+        /// <summary>Quantos slots da barra o herói tem (skills do loadout presentes no catálogo, no máximo 7).</summary>
+        public static int CountSlots(BattleState state, Combatant actor) =>
+            actor.SkillLoadout.Skills
+                .Where(id => state.SkillsById.ContainsKey(id))
+                .Take(CharacterSkillButtonsRowView.MaxVisibleSlots)
+                .Count();
+
         public static bool IsSlotUiInteractable(
             BattleState state,
             BattleSimulator simulator,

@@ -69,6 +69,12 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     private static float _staticHorseBossCombatReentryBlockedUntil;
     private static bool _staticEnteredCombatFromHorseBoss;
     private static IReadOnlyList<string> _cachedPendingCombatAllyCharacterNames;
+    private static string _staticPendingHorseBossInstanceId;
+    private static readonly HashSet<string> DefeatedHorseBossInstanceIds = new HashSet<string>(StringComparer.Ordinal);
+
+    /// <summary>Indica se a instância de Horse Boss do overworld já foi derrotada nesta sessão.</summary>
+    public static bool IsHorseBossInstanceDefeated(string horseBossInstanceId) =>
+        !string.IsNullOrEmpty(horseBossInstanceId) && DefeatedHorseBossInstanceIds.Contains(horseBossInstanceId);
 
     private void Awake()
     {
@@ -151,8 +157,12 @@ public sealed class CombatExplorationBridge : MonoBehaviour
     /// <summary>
     /// Regista encounter Horse Boss vindo do overworld (estático + bridge quando existir).
     /// </summary>
-    public static void RegisterHorseBossOverworldEncounter(int enemyRosterSize = DefaultCombatEnemyRosterSize)
+    public static void RegisterHorseBossOverworldEncounter(
+        string horseBossInstanceId,
+        int enemyRosterSize = DefaultCombatEnemyRosterSize)
     {
+        _staticPendingHorseBossInstanceId = horseBossInstanceId;
+
         if (Instance != null)
         {
             Instance.NotifyEnteringHorseBossCombat(enemyRosterSize);
@@ -517,6 +527,16 @@ public sealed class CombatExplorationBridge : MonoBehaviour
         // TryCompleteReturnToExploration → evita perda do estado em retry.
         if (_enteredCombatFromHorseBoss || _staticEnteredCombatFromHorseBoss)
         {
+            if (alliesWon && !string.IsNullOrEmpty(_staticPendingHorseBossInstanceId))
+            {
+                DefeatedHorseBossInstanceIds.Add(_staticPendingHorseBossInstanceId);
+
+                LoggerService.PrintLogMessage(LogLevel.Debug,
+                    $"[COMBAT-BRIDGE] Horse Boss '{_staticPendingHorseBossInstanceId}' derrotado — removido do overworld.",
+                    LogCategory.Player);
+            }
+
+            _staticPendingHorseBossInstanceId = null;
             BlockHorseBossCombatReentry(HorseBossCombatReentryBlockSeconds);
             // Limpa aqui, não em TryCompleteReturnToExploration
             _enteredCombatFromHorseBoss = false;

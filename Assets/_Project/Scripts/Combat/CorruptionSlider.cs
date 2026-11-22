@@ -1,3 +1,4 @@
+using System;
 using DG.Tweening;
 using Game.Core.Config;
 using TMPro;
@@ -10,14 +11,19 @@ namespace Erumperem.Combat
     /// <summary>
     /// UI do slider de corrupção: não altera layout do <see cref="Slider.fillRect"/> (evita conflito com stretch do Slider).
     /// Anima só <see cref="Slider.value"/> + piscar de cor no fill (DOTween).
-    /// Presentation is 0–100; the real world value may exceed 200. Danger marks along the bar stay hidden —
-    /// a single tier icon beside the bar shows the current tier on hover.
+    /// Presentation is 0–100; the real world value may exceed 200.
+    /// The tier icon beside the bar explains the current tier, and each skull mark along the bar (<c>Lvl1</c>–<c>Lvl4</c>)
+    /// explains what its tier does — both only while the mouse is over them.
     /// </summary>
     [RequireComponent(typeof(Slider))]
     public sealed class CorruptionSlider : MonoBehaviour
     {
         private const float CorruptionSliderMovementDurationSeconds = 1f;
         private const string AlongBarDangerMarksChildName = "Lvls";
+        private const string TierMarkNamePrefix = "Lvl";
+        private const string RuntimeTierMarkHoverPanelObjectName = "CorruptionTierMarkHoverPanel";
+        private const float TierMarkHoverPanelWidthPixels = 220f;
+        private const float TooltipFontSize = 13f;
         private const string RuntimeTierIconObjectName = "CorruptionTierIcon";
         private const string RuntimeTierHoverPanelObjectName = "CorruptionTierHoverPanel";
         private const string RuntimeTierHoverTextObjectName = "CorruptionTierHoverText";
@@ -51,6 +57,8 @@ namespace Erumperem.Combat
         private bool _fillGraphicBaselineCaptured;
         private bool _corruptionEventsSubscribed;
         private int _presentedCorruptionTier = -1;
+        private TextMeshProUGUI _tierMarkHoverLabel;
+        private bool _tierMarkHoverViewsCreated;
 
         private static readonly Color[] FallbackTierIconColors =
         {
@@ -76,7 +84,13 @@ namespace Erumperem.Combat
 
         private void OnEnable()
         {
-            HideAlongBarDangerMarks();
+            if (global::InputDeviceModeManager.Instance != null)
+            {
+                global::InputDeviceModeManager.Instance.ModeChanged -= HandleInputModeChanged;
+                global::InputDeviceModeManager.Instance.ModeChanged += HandleInputModeChanged;
+            }
+
+            EnsureTierMarkHoverViewsCreated();
             EnsureTierIconCreated();
             EnsureFillGraphicBaselineCaptured();
             SubscribeCorruptionEventsIfNeeded();
@@ -86,7 +100,7 @@ namespace Erumperem.Combat
 
         private void Start()
         {
-            HideAlongBarDangerMarks();
+            EnsureTierMarkHoverViewsCreated();
             EnsureTierIconCreated();
             EnsureFillGraphicBaselineCaptured();
             SubscribeCorruptionEventsIfNeeded();
@@ -99,15 +113,187 @@ namespace Erumperem.Combat
             KillAllCorruptionTweens();
             UnsubscribeCorruptionEvents();
             RestoreFillGraphicColorBaseline();
+            HideTierHoverPanel();
+            HideTierMarkHoverPanel();
+
+            if (global::InputDeviceModeManager.Instance != null)
+            {
+                global::InputDeviceModeManager.Instance.ModeChanged -= HandleInputModeChanged;
+            }
         }
 
-        private void HideAlongBarDangerMarks()
+        /// <summary>Em modo teclado o EventSystem é desligado e não manda PointerExit: nenhum balão pode ficar preso aberto.</summary>
+        private void HandleInputModeChanged(InputControlMode mode)
         {
-            var dangerMarksRoot = transform.Find(AlongBarDangerMarksChildName);
-            if (dangerMarksRoot != null)
+            if (mode == InputControlMode.Keyboard)
             {
-                dangerMarksRoot.gameObject.SetActive(false);
+                HideTierHoverPanel();
+                HideTierMarkHoverPanel();
             }
+        }
+
+        /// <summary>Cada caveira ao longo da barra mostra, no hover, o que o seu tier faz.</summary>
+        private void EnsureTierMarkHoverViewsCreated()
+        {
+            if (_tierMarkHoverViewsCreated)
+            {
+                return;
+            }
+
+            var dangerMarksRoot = FindDescendantByName(transform, AlongBarDangerMarksChildName);
+            if (dangerMarksRoot == null)
+            {
+                return;
+            }
+
+            _tierMarkHoverViewsCreated = true;
+            dangerMarksRoot.gameObject.SetActive(true);
+
+            for (var childIndex = 0; childIndex < dangerMarksRoot.childCount; childIndex++)
+            {
+                var mark = dangerMarksRoot.GetChild(childIndex) as RectTransform;
+                if (mark == null ||
+                    !mark.name.StartsWith(TierMarkNamePrefix, StringComparison.Ordinal) ||
+                    !int.TryParse(mark.name.Substring(TierMarkNamePrefix.Length), out var markTier))
+                {
+                    continue;
+                }
+
+                if (mark.TryGetComponent<Graphic>(out var markGraphic))
+                {
+                    markGraphic.raycastTarget = true;
+                }
+
+                if (!mark.TryGetComponent<CorruptionHoverRelay>(out var relay))
+                {
+                    relay = mark.gameObject.AddComponent<CorruptionHoverRelay>();
+                }
+
+                relay.Bind(
+                    () => ShowTierMarkHoverPanel(mark, markTier),
+                    HideTierMarkHoverPanel);
+            }
+        }
+
+        private void ShowTierMarkHoverPanel(RectTransform mark, int markTier)
+        {
+            EnsureTierMarkHoverPanelCreated();
+            if (_tierMarkHoverLabel == null || mark == null)
+            {
+                return;
+            }
+
+            _tierMarkHoverLabel.text = Erumperem.UI.PlayerFacingText.PresentForUi(BuildTierHoverMarkup(markTier));
+
+            var hoverRoot = (RectTransform)_tierMarkHoverLabel.transform.parent;
+            var markBottomWorld = mark.TransformPoint(new Vector3(mark.rect.center.x, mark.rect.yMin, 0f));
+            hoverRoot.localPosition = transform.InverseTransformPoint(markBottomWorld) + new Vector3(0f, -6f, 0f);
+            hoverRoot.SetAsLastSibling();
+            ShowHoverRoot(hoverRoot);
+        }
+
+        private void HideTierMarkHoverPanel()
+        {
+            if (_tierMarkHoverLabel != null)
+            {
+                HideHoverRoot(_tierMarkHoverLabel.transform.parent);
+            }
+        }
+
+        private void EnsureTierMarkHoverPanelCreated()
+        {
+            if (_tierMarkHoverLabel != null)
+            {
+                return;
+            }
+
+            var hoverPanelObject = new GameObject(
+                RuntimeTierMarkHoverPanelObjectName,
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(VerticalLayoutGroup),
+                typeof(ContentSizeFitter));
+            hoverPanelObject.transform.SetParent(transform, false);
+            var hoverPanelRect = hoverPanelObject.GetComponent<RectTransform>();
+            var center = new Vector2(0.5f, 0.5f);
+            hoverPanelRect.anchorMin = center;
+            hoverPanelRect.anchorMax = center;
+            hoverPanelRect.pivot = new Vector2(0.5f, 1f);
+            hoverPanelRect.sizeDelta = new Vector2(TierMarkHoverPanelWidthPixels, 0f);
+
+            hoverPanelObject.GetComponent<Image>().color = new Color(0.08f, 0.08f, 0.1f, 0.92f);
+
+            var layout = hoverPanelObject.GetComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(10, 10, 8, 8);
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+
+            var sizeFitter = hoverPanelObject.GetComponent<ContentSizeFitter>();
+            sizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var hoverTextObject = new GameObject("CorruptionTierMarkHoverText", typeof(RectTransform), typeof(TextMeshProUGUI));
+            hoverTextObject.transform.SetParent(hoverPanelObject.transform, false);
+            _tierMarkHoverLabel = hoverTextObject.GetComponent<TextMeshProUGUI>();
+            _tierMarkHoverLabel.fontSize = TooltipFontSize;
+            _tierMarkHoverLabel.alignment = TextAlignmentOptions.TopLeft;
+            _tierMarkHoverLabel.textWrappingMode = TextWrappingModes.Normal;
+
+            DisableRaycasts(hoverPanelObject.transform);
+            hoverPanelObject.SetActive(false);
+        }
+
+        private static string BuildTierHoverMarkup(int corruptionTier) =>
+            CorruptionPresentation.BuildTierHoverAuthoredMarkup(
+                corruptionTier,
+                CombatBalanceConfig.CreateDefault().GetTierModifiers(corruptionTier));
+
+        private static void ShowHoverRoot(Transform hoverRoot)
+        {
+            hoverRoot.DOKill();
+            hoverRoot.gameObject.SetActive(true);
+            hoverRoot.localScale = Vector3.one;
+            hoverRoot.DOPunchScale(new Vector3(0.08f, 0.1f, 0f), 0.28f, 6, 0.55f)
+                .SetLink(hoverRoot.gameObject);
+        }
+
+        private static void HideHoverRoot(Transform hoverRoot)
+        {
+            hoverRoot.DOKill();
+            hoverRoot.gameObject.SetActive(false);
+            hoverRoot.localScale = Vector3.one;
+        }
+
+        /// <summary>Balões não podem receber o mouse, senão roubam o hover de quem os abriu e piscam.</summary>
+        private static void DisableRaycasts(Transform root)
+        {
+            foreach (var graphic in root.GetComponentsInChildren<Graphic>(true))
+            {
+                graphic.raycastTarget = false;
+            }
+        }
+
+        private static Transform FindDescendantByName(Transform root, string descendantName)
+        {
+            for (var childIndex = 0; childIndex < root.childCount; childIndex++)
+            {
+                var child = root.GetChild(childIndex);
+                if (string.Equals(child.name, descendantName, StringComparison.Ordinal))
+                {
+                    return child;
+                }
+
+                var nested = FindDescendantByName(child, descendantName);
+                if (nested != null)
+                {
+                    return nested;
+                }
+            }
+
+            return null;
         }
 
         private void EnsureTierIconCreated()
@@ -135,11 +321,12 @@ namespace Erumperem.Combat
                 corruptionTierIcon.raycastTarget = true;
             }
 
-            if (corruptionTierIcon.GetComponent<CorruptionTierIconHoverView>() == null)
+            if (!corruptionTierIcon.TryGetComponent<CorruptionHoverRelay>(out var hoverRelay))
             {
-                var hoverView = corruptionTierIcon.gameObject.AddComponent<CorruptionTierIconHoverView>();
-                hoverView.Bind(this);
+                hoverRelay = corruptionTierIcon.gameObject.AddComponent<CorruptionHoverRelay>();
             }
+
+            hoverRelay.Bind(ShowTierHoverPanel, HideTierHoverPanel);
 
             if (corruptionTierHoverLabel == null)
             {
@@ -157,6 +344,15 @@ namespace Erumperem.Combat
             if (corruptionTierHoverLabel == null)
             {
                 CreateRuntimeHoverPanel();
+            }
+
+            // O balão do prefab vem ativo: ele só pode aparecer com o mouse em cima da caveira.
+            if (corruptionTierHoverLabel != null)
+            {
+                corruptionTierHoverLabel.enableAutoSizing = false;
+                corruptionTierHoverLabel.fontSize = TooltipFontSize;
+                DisableRaycasts(corruptionTierHoverLabel.transform.parent);
+                HideTierHoverPanel();
             }
         }
 
@@ -205,12 +401,7 @@ namespace Erumperem.Combat
             }
 
             RefreshTierHoverCopy();
-            corruptionTierHoverLabel.transform.parent.gameObject.SetActive(true);
-            var hoverRoot = corruptionTierHoverLabel.transform.parent;
-            hoverRoot.DOKill();
-            hoverRoot.localScale = Vector3.one;
-            hoverRoot.DOPunchScale(new Vector3(0.08f, 0.1f, 0f), 0.28f, 6, 0.55f)
-                .SetLink(hoverRoot.gameObject);
+            ShowHoverRoot(corruptionTierHoverLabel.transform.parent);
         }
 
         internal void HideTierHoverPanel()
@@ -220,10 +411,7 @@ namespace Erumperem.Combat
                 return;
             }
 
-            var hoverRoot = corruptionTierHoverLabel.transform.parent;
-            hoverRoot.DOKill();
-            hoverRoot.gameObject.SetActive(false);
-            hoverRoot.localScale = Vector3.one;
+            HideHoverRoot(corruptionTierHoverLabel.transform.parent);
         }
 
         public void RefreshTierHoverCopy()
@@ -233,12 +421,8 @@ namespace Erumperem.Combat
                 return;
             }
 
-            var worldCorruption = ResolveCurrentWorldCorruption();
-            var corruptionTier = CorruptionTierCalculator.GetTier(worldCorruption);
-            var tierModifiers = CombatBalanceConfig.CreateDefault().GetTierModifiers(corruptionTier);
-            var authoredMarkup = CorruptionPresentation.BuildTierHoverAuthoredMarkup(corruptionTier, tierModifiers);
-
-            corruptionTierHoverLabel.text = Erumperem.UI.PlayerFacingText.PresentForUi(authoredMarkup);
+            var corruptionTier = CorruptionTierCalculator.GetTier(ResolveCurrentWorldCorruption());
+            corruptionTierHoverLabel.text = Erumperem.UI.PlayerFacingText.PresentForUi(BuildTierHoverMarkup(corruptionTier));
         }
 
         private void EnsureFillGraphicBaselineCaptured()
@@ -483,23 +667,25 @@ namespace Erumperem.Combat
             }
         }
 
-        private sealed class CorruptionTierIconHoverView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+        private sealed class CorruptionHoverRelay : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         {
-            private CorruptionSlider _owner;
+            private Action _onEnter;
+            private Action _onExit;
 
-            public void Bind(CorruptionSlider owner)
+            public void Bind(Action onEnter, Action onExit)
             {
-                _owner = owner;
+                _onEnter = onEnter;
+                _onExit = onExit;
             }
 
             public void OnPointerEnter(PointerEventData eventData)
             {
-                _owner?.ShowTierHoverPanel();
+                _onEnter?.Invoke();
             }
 
             public void OnPointerExit(PointerEventData eventData)
             {
-                _owner?.HideTierHoverPanel();
+                _onExit?.Invoke();
             }
         }
     }

@@ -8,1201 +8,493 @@ using UnityEngine.UI;
 
 namespace Erumperem.Combat
 {
+    /// <summary>O que um botão da barra de skills deve mostrar neste frame.</summary>
+    public readonly struct SkillSlotViewState
+    {
+        public SkillSlotViewState(
+            int slotIndex,
+            Sprite icon,
+            Color iconColor,
+            bool isUsable,
+            bool isFocused,
+            bool isSelected,
+            string descriptionOrNull)
+        {
+            SlotIndex = slotIndex;
+            Icon = icon;
+            IconColor = iconColor;
+            IsUsable = isUsable;
+            IsFocused = isFocused;
+            IsSelected = isSelected;
+            DescriptionOrNull = descriptionOrNull;
+        }
+
+        public int SlotIndex { get; }
+        public Sprite Icon { get; }
+        public Color IconColor { get; }
+
+        /// <summary>A skill pode ser usada agora (custos, cooldown, alvo válido).</summary>
+        public bool IsUsable { get; }
+
+        /// <summary>Cursor da barra (skill central, sob a moldura). Teclado e mouse movem o mesmo cursor.</summary>
+        public bool IsFocused { get; }
+
+        /// <summary>Skill escolhida, aguardando alvo.</summary>
+        public bool IsSelected { get; }
+
+        /// <summary>Texto do balão abaixo do botão; nulo esconde o balão.</summary>
+        public string DescriptionOrNull { get; }
+    }
+
     /// <summary>
-    /// Controla o painel visual de uma skill no combate.
-    /// Mouse:
-    /// - Hover apenas anima o botão.
-    /// - Clique seleciona, centraliza e mostra a descrição completa.
-    ///
-    /// Teclado:
-    /// - O foco mostra a descrição completa.
+    /// Botão de um slot do carrossel de skills. Só desenha o estado recebido em <see cref="Render"/> mais o hover do mouse;
+    /// não decide nada sobre seleção. Cliques são repassados para quem montou a barra.
+    /// Selecionada: maior, com borda dourada pulsando. Cursor: maior (a moldura do HUD marca o centro).
+    /// Hover: cresce, clareia e ganha borda branca. Indisponível: apagada.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class SkillButtonPanelView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
-        private const float PointerEnterScale = 1.05f;
-        private const float PointerEnterDuration = 0.08f;
-        private const float PointerExitDuration = 0.08f;
-        private const float SelectedLocalScale = 1.2f;
-        private const float SelectionTweenDuration = 0.1f;
+        private const string DescriptionPanelName = "SkillDescriptionPanel";
+        private const string DescriptionTextName = "SkillDescriptionText";
+        private const string StateBorderObjectName = "SlotStateBorder";
 
-        private const string DefaultDescriptionPanelName = "SkillDescriptionPanel";
-        private const string DefaultDescriptionTextName = "SkillDescriptionText";
+        private const float SelectedScale = 1.2f;
+        private const float FocusedScale = 1.12f;
+        private const float HoveredScale = 1.07f;
+        private const float HoverScaleBonus = 0.05f;
+        private const float ScaleTweenDuration = 0.1f;
+        private const float SelectedPulseDuration = 0.45f;
+        private const float BorderThickness = 2f;
+        private const float BorderGap = 2f;
 
-        private const float DescriptionShowDuration = 0.16f;
-        private const float DescriptionHideDuration = 0.1f;
+        private static readonly Color SelectedBorderColor = new(1f, 0.8f, 0.25f, 1f);
+        private static readonly Color HoveredBorderColor = new(1f, 1f, 1f, 0.9f);
+        private static readonly Color UnusableIconTint = new(0.45f, 0.45f, 0.45f, 0.55f);
 
-        private const Ease DescriptionShowEase = Ease.OutBack;
-        private const Ease DescriptionHideEase = Ease.InCubic;
+        public event Action<SkillButtonPanelView> Clicked;
 
-        [SerializeField] private string descriptionPanelName = DefaultDescriptionPanelName;
-        [SerializeField] private string descriptionTextName = DefaultDescriptionTextName;
+        private RectTransform _rect;
+        private Button _button;
+        private Image _iconImage;
+        private TextMeshProUGUI _hotkeyLabel;
 
-        [Tooltip("CanvasGroup usado para fade do painel. Se não existir, é criado em runtime.")]
-        [SerializeField] private bool ensureCanvasGroupOnDescriptionPanel = true;
+        private CanvasGroup _borderGroup;
+        private Image[] _borderEdges;
 
-        [Header("Animação")]
-        [SerializeField] private bool useSelectionScaleTween = true;
-
-        public event Action<SkillButtonPanelView> PointerEntered;
-        public event Action<SkillButtonPanelView> PointerExited;
-
-        private Button _skillButton;
-        private RectTransform _buttonRect;
-        private Image _panelBackgroundImage;
-        private Image _buttonImage;
-        private RectTransform _rootRectTransform;
-
-        private RectTransform _descriptionPanel;
+        private GameObject _descriptionPanel;
         private TextMeshProUGUI _descriptionText;
-        private CanvasGroup _descriptionCanvasGroup;
+        private string _shownDescription;
 
-        private Vector3 _descriptionPanelBaseScale = Vector3.one;
+        private SkillSlotViewState _state;
+        private bool _hasState;
+        private bool _isHovered;
 
-        private Vector2 _rootAnchoredBase;
-        private Vector3 _rootLocalScaleBase = Vector3.one;
-        private Vector2 _rootSizeDeltaBase;
+        private float _appliedScale = -1f;
+        private Tweener _scaleTween;
+        private Tweener _pulseTween;
+        private Tweener _rejectTween;
 
-        private Vector2 _buttonAnchoredBase;
-        private Vector3 _buttonLocalScaleBase = Vector3.one;
-        private Vector2 _buttonSizeDeltaBase;
+        public int SlotIndex => _state.SlotIndex;
 
-        private Color _panelColorBase;
-        private Color _buttonColorBase;
+        public bool IsHovered => _isHovered && isActiveAndEnabled;
 
-        private CanvasGroup _buttonCanvasGroup;
-        private SkillButtonSlotPointerRelay _pointerRelay;
-        private CharacterSkillButtonsRowView _parentRow;
-
-        private bool _isInteractable;
-        private bool _isSelected;
-
-        private Color _skillIconColor = Color.white;
-
-        private Selectable.Transition _buttonTransitionBeforeSelectionLock =
-            Selectable.Transition.ColorTint;
-
-        private bool _isButtonTransitionLockedForSelection;
-
-        private string _playerDescriptionLine = string.Empty;
-
-        private bool _isDescriptionPanelVisible;
-        private bool _descriptionLayoutInitialized;
-        private bool? _lastAppliedIsSelected;
-
-        private TextMeshProUGUI _hotkeyDigitLabel;
-
-        private int _zeroBasedSlotIndex;
-
-        private bool _initialLayoutCaptured;
-        private bool _isPointerInside;
-        private bool _descriptionPinnedByMouseSelection;
-
-        private InfinitySkillScroll _skillScroll;
-
-        public int ZeroBasedSlotIndex => _zeroBasedSlotIndex;
-
-        private void Awake()
+        public void Wire()
         {
-            EnsureButtonReferencesResolved();
-        }
+            ResolveReferences();
 
-        private void Start()
-        {
-            CaptureInitialLayout();
-            CacheParentRow();
-            TryResolveDescriptionUi();
-        }
-
-        public void Wire(int zeroBasedSlotIndex, Action onSlotClickRequested)
-        {
-            EnsureButtonReferencesResolved();
-
-            _zeroBasedSlotIndex = zeroBasedSlotIndex;
-
-            if (_skillButton == null)
+            if (_button != null)
             {
-                return;
+                // A barra é dona do visual: sem tint do Button e sem navegação do EventSystem (A/D é do combate).
+                _button.transition = Selectable.Transition.None;
+                _button.navigation = new Navigation { mode = Navigation.Mode.None };
+                _button.interactable = true;
+                _button.onClick.RemoveAllListeners();
+                _button.onClick.AddListener(HandleClicked);
             }
 
-            _skillButton.onClick.RemoveAllListeners();
-
-            _skillButton.onClick.AddListener(() =>
+            if (_iconImage != null)
             {
-                if (!_skillButton.interactable)
-                {
-                    return;
-                }
-
-                PlayClickFeedback();
-
-                onSlotClickRequested?.Invoke();
-
-                if (!global::InputDeviceModeManager.IsMouseMode)
-                {
-                    return;
-                }
-
-                CacheParentRow();
-
-                _parentRow?.DismissOtherDescriptionPanels(this);
-
-                _descriptionPinnedByMouseSelection = true;
-
-                CenterOnThisSkill();
-
-                ShowFullDescription();
-            });
-
-            _pointerRelay =
-                _skillButton.gameObject.GetComponent<SkillButtonSlotPointerRelay>();
-
-            if (_pointerRelay == null)
-            {
-                _pointerRelay =
-                    _skillButton.gameObject.AddComponent<SkillButtonSlotPointerRelay>();
+                _iconImage.raycastTarget = true;
+                _iconImage.preserveAspect = false;
             }
 
-            _pointerRelay.Init(this);
-
-            if (_skillButton.targetGraphic != null)
-            {
-                _skillButton.targetGraphic.raycastTarget = true;
-            }
-
-            TryCacheHotkeyDigitLabel();
-            TryResolveDescriptionUi();
-        }
-
-        private void EnsureButtonReferencesResolved()
-        {
-            if (_rootRectTransform == null)
-            {
-                _rootRectTransform = transform as RectTransform;
-            }
-
-            if (_panelBackgroundImage == null)
-            {
-                _panelBackgroundImage = GetComponent<Image>();
-
-                if (_panelBackgroundImage != null)
-                {
-                    _panelColorBase = _panelBackgroundImage.color;
-                    _panelBackgroundImage.raycastTarget = true;
-                }
-            }
-
-            if (_skillButton == null)
-            {
-                _skillButton = GetComponent<Button>();
-
-                if (_skillButton == null)
-                {
-                    _skillButton = GetComponentInChildren<Button>(true);
-                }
-            }
-
-            if (_skillButton == null)
-            {
-                return;
-            }
-
-            if (_buttonImage == null)
-            {
-                _buttonImage = _skillButton.targetGraphic as Image;
-
-                if (_buttonImage != null)
-                {
-                    _buttonColorBase = _buttonImage.color;
-                }
-            }
-
-            if (_buttonRect == null)
-            {
-                _buttonRect = _skillButton.transform as RectTransform;
-            }
-        }
-
-        public void OnPointerEnter(PointerEventData eventData)
-        {
-            HandlePointerEnter();
-        }
-
-        public void OnPointerExit(PointerEventData eventData)
-        {
-            HandlePointerExit();
-        }
-
-        public void DismissDescriptionFromSiblings()
-        {
-            HideDescriptionPanel();
+            ShowDescription(null);
         }
 
         public void SetVisible(bool visible)
         {
             if (!visible)
             {
-                ForceHideDescriptionPanelImmediate();
-
-                _lastAppliedIsSelected = null;
-                _isSelected = false;
-
-                if (_isButtonTransitionLockedForSelection &&
-                    _skillButton != null)
-                {
-                    _skillButton.transition =
-                        _buttonTransitionBeforeSelectionLock;
-
-                    _isButtonTransitionLockedForSelection = false;
-                }
+                ClearHover();
+                _hasState = false;
             }
 
-            gameObject.SetActive(visible);
+            if (gameObject.activeSelf != visible)
+            {
+                gameObject.SetActive(visible);
+            }
         }
 
-        public void ApplyVisuals(
-            Sprite skillIconOrNull,
-            Color skillIconColor,
-            bool interactable,
-            bool selected,
-            string playerDescriptionLine,
-            int hotkeyLabelOneToSeven)
+        public void Render(SkillSlotViewState state)
         {
-            var wasSelected = _isSelected;
+            ResolveReferences();
 
-            _playerDescriptionLine =
-                PlayerFacingText.PresentForUi(
-                    playerDescriptionLine ?? string.Empty);
+            _state = state;
+            _hasState = true;
 
-            _isInteractable = interactable;
-            _isSelected = selected;
-            _skillIconColor = skillIconColor;
-
-            if (!selected)
+            if (_iconImage != null && state.Icon != null)
             {
-                _descriptionPinnedByMouseSelection = false;
+                _iconImage.sprite = state.Icon;
             }
 
-            TryCacheHotkeyDigitLabel();
-
-            if (_hotkeyDigitLabel != null &&
-                hotkeyLabelOneToSeven >= 1 &&
-                hotkeyLabelOneToSeven <=
-                CharacterSkillButtonsRowView.MaxVisibleSlots)
+            if (_hotkeyLabel != null)
             {
-                _hotkeyDigitLabel.text =
-                    hotkeyLabelOneToSeven.ToString();
+                _hotkeyLabel.text = (state.SlotIndex + 1).ToString();
             }
 
-            ApplySkillIconVisuals(
-                skillIconOrNull,
-                skillIconColor,
-                interactable);
+            ShowDescription(state.DescriptionOrNull);
+            ApplyVisualState();
+        }
 
-            if (_skillButton != null)
+        /// <summary>Balança o botão quando o jogador tenta usar uma skill indisponível.</summary>
+        public void PlayRejectFeedback()
+        {
+            if (_rect == null || !isActiveAndEnabled)
             {
-                _skillButton.interactable = interactable;
-
-                _buttonCanvasGroup =
-                    _buttonCanvasGroup != null
-                        ? _buttonCanvasGroup
-                        : _skillButton.GetComponent<CanvasGroup>();
-
-                if (_buttonCanvasGroup == null)
-                {
-                    _buttonCanvasGroup =
-                        _skillButton.gameObject.AddComponent<CanvasGroup>();
-                }
-
-                _buttonCanvasGroup.interactable = true;
-                _buttonCanvasGroup.blocksRaycasts = interactable;
-            }
-
-            if (_rootRectTransform == null)
-            {
-                SyncSelectedPressedChrome();
                 return;
             }
 
-            if (!_initialLayoutCaptured)
+            _rejectTween?.Kill();
+            _rect.localRotation = Quaternion.identity;
+            _rejectTween = _rect
+                .DOPunchRotation(new Vector3(0f, 0f, 12f), 0.3f, 10, 0.5f)
+                .SetLink(gameObject)
+                .OnKill(() => _rect.localRotation = Quaternion.identity);
+        }
+
+        public void ClearHover()
+        {
+            if (!_isHovered)
             {
-                CaptureInitialLayout();
+                return;
             }
 
-            var wasFirstLayoutApply =
-                !_lastAppliedIsSelected.HasValue;
+            _isHovered = false;
 
-            var selectionStateChanged =
-                !wasFirstLayoutApply &&
-                _lastAppliedIsSelected.Value != selected;
-
-            _lastAppliedIsSelected = selected;
-
-            if (selectionStateChanged ||
-                wasFirstLayoutApply)
+            if (_hasState)
             {
-                KillTweensOnButtonChrome();
+                ApplyVisualState();
+            }
+        }
 
-                if (wasFirstLayoutApply &&
-                    !selected)
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (_isHovered)
+            {
+                return;
+            }
+
+            _isHovered = true;
+
+            if (_hasState)
+            {
+                ApplyVisualState();
+            }
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            ClearHover();
+        }
+
+        private void HandleClicked()
+        {
+            // Evita que o EventSystem mantenha o botão "selecionado" e receba Submit/navegação.
+            if (EventSystem.current != null &&
+                EventSystem.current.currentSelectedGameObject == gameObject)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+            }
+
+            Clicked?.Invoke(this);
+        }
+
+        private void ApplyVisualState()
+        {
+            var isUsable = _state.IsUsable;
+            var showHover = _isHovered;
+
+            if (_iconImage != null)
+            {
+                var iconColor = _state.IconColor;
+                if (!isUsable)
                 {
-                    RestoreRootLayout();
+                    iconColor *= UnusableIconTint;
                 }
-                else if (useSelectionScaleTween)
+                else if (showHover)
                 {
-                    if (selected)
+                    iconColor = Color.Lerp(iconColor, Color.white, 0.25f);
+                }
+
+                _iconImage.color = iconColor;
+            }
+
+            ApplyBorder(isUsable, showHover);
+            ApplyScale(ResolveTargetScale(isUsable, showHover));
+        }
+
+        private float ResolveTargetScale(bool isUsable, bool showHover)
+        {
+            var hoverBonus = showHover && isUsable ? HoverScaleBonus : 0f;
+            if (_state.IsSelected)
+            {
+                return SelectedScale + hoverBonus;
+            }
+
+            if (_state.IsFocused)
+            {
+                return FocusedScale + hoverBonus;
+            }
+
+            return showHover && isUsable ? HoveredScale : 1f;
+        }
+
+        private void ApplyBorder(bool isUsable, bool showHover)
+        {
+            if (_borderGroup == null)
+            {
+                return;
+            }
+
+            if (_state.IsSelected)
+            {
+                SetBorderColor(SelectedBorderColor);
+                StartSelectedPulse();
+                return;
+            }
+
+            StopSelectedPulse();
+            var showHoverBorder = showHover && isUsable;
+            if (showHoverBorder)
+            {
+                SetBorderColor(HoveredBorderColor);
+            }
+
+            _borderGroup.alpha = showHoverBorder ? 1f : 0f;
+        }
+
+        private void SetBorderColor(Color color)
+        {
+            for (var edgeIndex = 0; edgeIndex < _borderEdges.Length; edgeIndex++)
+            {
+                _borderEdges[edgeIndex].color = color;
+            }
+        }
+
+        private void StartSelectedPulse()
+        {
+            if (_pulseTween != null && _pulseTween.IsActive())
+            {
+                return;
+            }
+
+            _borderGroup.alpha = 1f;
+            _pulseTween = _borderGroup
+                .DOFade(0.35f, SelectedPulseDuration)
+                .SetEase(Ease.InOutSine)
+                .SetLoops(-1, LoopType.Yoyo)
+                .SetLink(gameObject);
+        }
+
+        private void StopSelectedPulse()
+        {
+            _pulseTween?.Kill();
+            _pulseTween = null;
+        }
+
+        private void ApplyScale(float targetScale)
+        {
+            if (_rect == null || Mathf.Approximately(_appliedScale, targetScale))
+            {
+                return;
+            }
+
+            var isFirstApply = _appliedScale < 0f;
+            _appliedScale = targetScale;
+            _scaleTween?.Kill();
+
+            if (isFirstApply)
+            {
+                _rect.localScale = Vector3.one * targetScale;
+                return;
+            }
+
+            _scaleTween = _rect
+                .DOScale(targetScale, ScaleTweenDuration)
+                .SetEase(Ease.OutCubic)
+                .SetLink(gameObject);
+        }
+
+        private void ShowDescription(string descriptionOrNull)
+        {
+            if (_descriptionPanel == null)
+            {
+                return;
+            }
+
+            var hasDescription = !string.IsNullOrEmpty(descriptionOrNull);
+            if (_descriptionPanel.activeSelf != hasDescription)
+            {
+                _descriptionPanel.SetActive(hasDescription);
+            }
+
+            if (!hasDescription || _descriptionText == null ||
+                string.Equals(_shownDescription, descriptionOrNull, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _shownDescription = descriptionOrNull;
+            _descriptionText.text = PlayerFacingText.PresentForUi(descriptionOrNull);
+            _descriptionText.color = Color.white;
+        }
+
+        private void ResolveReferences()
+        {
+            if (_rect == null)
+            {
+                _rect = transform as RectTransform;
+            }
+
+            if (_button == null)
+            {
+                if (!TryGetComponent(out _button))
+                {
+                    _button = GetComponentInChildren<Button>(true);
+                }
+            }
+
+            if (_iconImage == null)
+            {
+                _iconImage = _button != null ? _button.targetGraphic as Image : null;
+                if (_iconImage == null)
+                {
+                    TryGetComponent(out _iconImage);
+                }
+            }
+
+            if (_hotkeyLabel == null)
+            {
+                var hotkeyTransform = transform.Find("SkillButtonNumberText");
+                _hotkeyLabel = hotkeyTransform != null ? hotkeyTransform.GetComponent<TextMeshProUGUI>() : null;
+            }
+
+            if (_descriptionPanel == null)
+            {
+                var panelTransform = transform.Find(DescriptionPanelName);
+                if (panelTransform != null)
+                {
+                    _descriptionPanel = panelTransform.gameObject;
+                    var textTransform = panelTransform.Find(DescriptionTextName);
+                    _descriptionText = textTransform != null
+                        ? textTransform.GetComponent<TextMeshProUGUI>()
+                        : panelTransform.GetComponentInChildren<TextMeshProUGUI>(true);
+
+                    // Versões antigas da barra encolhiam/apagavam o balão para animar; aqui ele só liga e desliga.
+                    panelTransform.localScale = Vector3.one;
+                    if (panelTransform.TryGetComponent<CanvasGroup>(out var panelGroup))
                     {
-                        var targetScale =
-                            GetSelectedRootScale();
-
-                        _rootRectTransform
-                            .DOScale(
-                                targetScale,
-                                SelectionTweenDuration)
-                            .SetEase(Ease.OutCubic)
-                            .SetLink(gameObject)
-                            .OnComplete(
-                                RestoreRootLayoutForCurrentSelection);
+                        panelGroup.alpha = 1f;
                     }
-                    else
+
+                    // Texto centralizado embaixo da skill do centro.
+                    if (panelTransform.TryGetComponent<HorizontalOrVerticalLayoutGroup>(out var panelLayout))
                     {
-                        _rootRectTransform
-                            .DOScale(
-                                _rootLocalScaleBase,
-                                SelectionTweenDuration)
-                            .SetEase(Ease.OutCubic)
-                            .SetLink(gameObject)
-                            .OnComplete(
-                                RestoreRootLayoutForCurrentSelection);
+                        panelLayout.childAlignment = TextAnchor.UpperCenter;
+                    }
+
+                    if (_descriptionText != null)
+                    {
+                        _descriptionText.alignment = TextAlignmentOptions.Top;
                     }
                 }
-                else
-                {
-                    RestoreRootLayoutForCurrentSelection();
-                }
-            }
-            else
-            {
-                RestoreRootLayoutForCurrentSelection();
             }
 
-            SyncSelectedPressedChrome();
-
-            if (wasSelected &&
-                !selected &&
-                _isDescriptionPanelVisible)
+            if (_borderGroup == null && _rect != null)
             {
-                HideDescriptionPanel();
-                return;
-            }
-
-            if (_isDescriptionPanelVisible)
-            {
-                UpdateDescriptionText();
+                CreateStateBorder();
             }
         }
 
-        public void HandlePointerEnter()
+        /// <summary>
+        /// Borda retangular fina por fora do ícone (quatro barras). Não usa <see cref="Outline"/>,
+        /// que redesenha o sprite deslocado e duplica a imagem do ícone.
+        /// </summary>
+        private void CreateStateBorder()
         {
-            _isPointerInside = true;
+            var borderObject = new GameObject(StateBorderObjectName, typeof(RectTransform), typeof(CanvasGroup));
+            var borderRect = (RectTransform)borderObject.transform;
+            borderRect.SetParent(_rect, false);
+            borderRect.anchorMin = Vector2.zero;
+            borderRect.anchorMax = Vector2.one;
+            borderRect.offsetMin = new Vector2(-(BorderGap + BorderThickness), -(BorderGap + BorderThickness));
+            borderRect.offsetMax = new Vector2(BorderGap + BorderThickness, BorderGap + BorderThickness);
 
-            CacheParentRow();
+            _borderGroup = borderObject.GetComponent<CanvasGroup>();
+            _borderGroup.alpha = 0f;
+            _borderGroup.interactable = false;
+            _borderGroup.blocksRaycasts = false;
 
-            /*
-             * MOUSE:
-             * Hover não altera o painel de descrição.
-             *
-             * TECLADO:
-             * CombatInputController chama este método para simular o foco,
-             * então mostramos a descrição normalmente.
-             */
-            if (!global::InputDeviceModeManager.IsMouseMode)
+            _borderEdges = new[]
             {
-                _parentRow?.DismissOtherDescriptionPanels(this);
-                ShowFullDescription();
-            }
-
-            TweenButtonHoverEnter();
-
-            PointerEntered?.Invoke(this);
-
-            if (_rootRectTransform == null ||
-                _isSelected)
-            {
-                return;
-            }
-
-            if (!_isInteractable)
-            {
-                return;
-            }
-
-            _rootRectTransform.DOKill(false);
-
-            _rootRectTransform
-                .DOScale(
-                    _rootLocalScaleBase * PointerEnterScale,
-                    PointerEnterDuration)
-                .SetEase(Ease.OutQuad)
-                .SetLink(gameObject)
-                .OnComplete(
-                    RestoreRootLayoutForCurrentSelection);
+                CreateBorderEdge(borderRect, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -BorderThickness), Vector2.zero),
+                CreateBorderEdge(borderRect, new Vector2(0f, 0f), new Vector2(1f, 0f), Vector2.zero, new Vector2(0f, BorderThickness)),
+                CreateBorderEdge(borderRect, new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, new Vector2(BorderThickness, 0f)),
+                CreateBorderEdge(borderRect, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-BorderThickness, 0f), Vector2.zero),
+            };
         }
 
-        public void HandlePointerExit()
+        private static Image CreateBorderEdge(
+            RectTransform parent,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            Vector2 offsetMin,
+            Vector2 offsetMax)
         {
-            _isPointerInside = false;
+            var edgeObject = new GameObject("Edge", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var edgeRect = (RectTransform)edgeObject.transform;
+            edgeRect.SetParent(parent, false);
+            edgeRect.anchorMin = anchorMin;
+            edgeRect.anchorMax = anchorMax;
+            edgeRect.offsetMin = offsetMin;
+            edgeRect.offsetMax = offsetMax;
 
-            /*
-             * Em Mouse Mode o hover nunca abriu a descrição.
-             *
-             * Se a descrição estiver aberta porque a skill foi clicada,
-             * ela permanece aberta.
-             *
-             * Em Keyboard Mode o foco funciona como antes e a descrição
-             * do item anterior é fechada ao sair dele.
-             */
-            if (!global::InputDeviceModeManager.IsMouseMode)
-            {
-                HideDescriptionPanel();
-            }
-            else if (!_isSelected &&
-                     !_descriptionPinnedByMouseSelection)
-            {
-                HideDescriptionPanel();
-            }
-
-            TweenButtonHoverExit();
-
-            HandlePointerExited(
-                animate: true);
-
-            PointerExited?.Invoke(this);
-        }
-
-        private void CaptureInitialLayout()
-        {
-            if (_rootRectTransform != null)
-            {
-                _rootAnchoredBase =
-                    _rootRectTransform.anchoredPosition;
-
-                _rootLocalScaleBase =
-                    _rootRectTransform.localScale;
-
-                _rootSizeDeltaBase =
-                    _rootRectTransform.sizeDelta;
-            }
-
-            if (_buttonRect != null)
-            {
-                _buttonAnchoredBase =
-                    _buttonRect.anchoredPosition;
-
-                _buttonLocalScaleBase =
-                    _buttonRect.localScale;
-
-                _buttonSizeDeltaBase =
-                    _buttonRect.sizeDelta;
-            }
-
-            _initialLayoutCaptured =
-                _rootRectTransform != null;
-        }
-
-        private void RestoreRootLayout()
-        {
-            if (_rootRectTransform == null)
-            {
-                return;
-            }
-
-            _rootRectTransform.anchoredPosition =
-                _rootAnchoredBase;
-
-            _rootRectTransform.localScale =
-                _rootLocalScaleBase;
-
-            _rootRectTransform.sizeDelta =
-                _rootSizeDeltaBase;
-        }
-
-        private void RestoreRootLayoutForCurrentSelection()
-        {
-            if (_rootRectTransform == null)
-            {
-                return;
-            }
-
-            _rootRectTransform.anchoredPosition =
-                _rootAnchoredBase;
-
-            _rootRectTransform.sizeDelta =
-                _rootSizeDeltaBase;
-
-            _rootRectTransform.localScale =
-                _isSelected
-                    ? GetSelectedRootScale()
-                    : _rootLocalScaleBase;
-        }
-
-        private Vector3 GetSelectedRootScale()
-        {
-            return new Vector3(
-                SelectedLocalScale *
-                _rootLocalScaleBase.x,
-
-                SelectedLocalScale *
-                _rootLocalScaleBase.y,
-
-                SelectedLocalScale *
-                _rootLocalScaleBase.z);
-        }
-
-        private void RestoreButtonLayout()
-        {
-            if (_buttonRect == null)
-            {
-                return;
-            }
-
-            _buttonRect.anchoredPosition =
-                _buttonAnchoredBase;
-
-            _buttonRect.localScale =
-                _buttonLocalScaleBase;
-
-            _buttonRect.sizeDelta =
-                _buttonSizeDeltaBase;
-        }
-
-        private void KillTweensOnButtonChrome()
-        {
-            if (_rootRectTransform != null)
-            {
-                _rootRectTransform.DOKill(false);
-            }
-
-            if (_buttonRect != null)
-            {
-                _buttonRect.DOKill(false);
-            }
-        }
-
-        private void TweenButtonHoverEnter()
-        {
-            if (_buttonRect == null ||
-                _isSelected)
-            {
-                return;
-            }
-
-            _buttonRect.DOKill(false);
-
-            _buttonRect
-                .DOPunchScale(
-                    new Vector3(
-                        0.06f,
-                        0.06f,
-                        0.06f),
-                    0.14f,
-                    6,
-                    0.3f)
-                .SetLink(
-                    _buttonRect.gameObject)
-                .OnComplete(() =>
-                {
-                    RestoreButtonLayout();
-                });
-        }
-
-        private void TweenButtonHoverExit()
-        {
-            if (_buttonRect == null)
-            {
-                return;
-            }
-
-            _buttonRect.DOKill(false);
-
-            RestoreButtonLayout();
-        }
-
-        private void HandlePointerExited(
-            bool animate)
-        {
-            if (_rootRectTransform == null ||
-                _isSelected)
-            {
-                return;
-            }
-
-            if (!animate)
-            {
-                RestoreRootLayout();
-                return;
-            }
-
-            _rootRectTransform.DOKill(false);
-
-            _rootRectTransform
-                .DOScale(
-                    _rootLocalScaleBase,
-                    PointerExitDuration)
-                .SetEase(Ease.OutQuad)
-                .SetLink(gameObject)
-                .OnComplete(
-                    RestoreRootLayoutForCurrentSelection);
-        }
-
-        private void PlayClickFeedback()
-        {
-            if (_rootRectTransform == null)
-            {
-                return;
-            }
-
-            _rootRectTransform
-                .DOScale(
-                    new Vector3(
-                        0.95f,
-                        0.95f,
-                        0.95f),
-                    0.1f)
-                .SetEase(Ease.OutQuad)
-                .SetLink(gameObject)
-                .OnComplete(
-                    RestoreRootLayoutForCurrentSelection);
-        }
-
-        private void ApplySkillIconVisuals(
-            Sprite skillIconOrNull,
-            Color skillIconColor,
-            bool interactable)
-        {
-            EnsureButtonReferencesResolved();
-
-            if (_buttonImage == null)
-            {
-                return;
-            }
-
-            if (skillIconOrNull != null)
-            {
-                _buttonImage.sprite =
-                    skillIconOrNull;
-            }
-
-            _buttonImage.preserveAspect = false;
-
-            _skillIconColor =
-                skillIconColor;
-
-            _buttonImage.color =
-                BuildDisplayedSkillIconColor(
-                    skillIconColor,
-                    interactable,
-                    _isSelected);
-        }
-
-        private void SyncSelectedPressedChrome()
-        {
-            EnsureButtonReferencesResolved();
-
-            if (_skillButton == null ||
-                _buttonImage == null)
-            {
-                return;
-            }
-
-            if (_isSelected)
-            {
-                if (!_isButtonTransitionLockedForSelection)
-                {
-                    _buttonTransitionBeforeSelectionLock =
-                        _skillButton.transition;
-
-                    _isButtonTransitionLockedForSelection =
-                        true;
-                }
-
-                _skillButton.transition =
-                    Selectable.Transition.None;
-
-                _buttonImage.color =
-                    BuildDisplayedSkillIconColor(
-                        _skillIconColor,
-                        _isInteractable,
-                        isSelected: true);
-
-                _buttonImage.CrossFadeColor(
-                    _buttonImage.color,
-                    0f,
-                    true,
-                    true);
-
-                return;
-            }
-
-            if (_isButtonTransitionLockedForSelection)
-            {
-                _skillButton.transition =
-                    _buttonTransitionBeforeSelectionLock;
-
-                _isButtonTransitionLockedForSelection =
-                    false;
-            }
-
-            _buttonImage.color =
-                BuildDisplayedSkillIconColor(
-                    _skillIconColor,
-                    _isInteractable,
-                    isSelected: false);
-
-            _buttonImage.CrossFadeColor(
-                _buttonImage.color,
-                0f,
-                true,
-                true);
-        }
-
-        private Color BuildDisplayedSkillIconColor(
-            Color skillIconColor,
-            bool interactable,
-            bool isSelected)
-        {
-            var displayedColor =
-                skillIconColor;
-
-            displayedColor.a =
-                interactable
-                    ? skillIconColor.a
-                    : skillIconColor.a * 0.45f;
-
-            return displayedColor;
-        }
-
-        private void CacheParentRow()
-        {
-            _parentRow =
-                GetComponentInParent<CharacterSkillButtonsRowView>();
+            var edgeImage = edgeObject.GetComponent<Image>();
+            edgeImage.raycastTarget = false;
+            return edgeImage;
         }
 
         private void OnDisable()
         {
-            ForceHideDescriptionPanelImmediate();
+            _isHovered = false;
+            _scaleTween?.Kill();
+            _scaleTween = null;
+            StopSelectedPulse();
+            _rejectTween?.Kill();
+            _rejectTween = null;
 
-            KillTweensOnButtonChrome();
-
-            if (_isButtonTransitionLockedForSelection &&
-                _skillButton != null)
+            if (_borderGroup != null)
             {
-                _skillButton.transition =
-                    _buttonTransitionBeforeSelectionLock;
-
-                _isButtonTransitionLockedForSelection =
-                    false;
+                _borderGroup.alpha = 0f;
             }
 
-            if (_rootRectTransform != null)
+            if (_rect != null)
             {
-                RestoreRootLayout();
+                _appliedScale = -1f;
+                _rect.localScale = Vector3.one;
+                _rect.localRotation = Quaternion.identity;
             }
-
-            if (_buttonRect != null)
-            {
-                RestoreButtonLayout();
-            }
-        }
-
-        private void TryCacheHotkeyDigitLabel()
-        {
-            if (_hotkeyDigitLabel != null ||
-                _skillButton == null)
-            {
-                return;
-            }
-
-            if (_skillButton.transform.childCount > 0)
-            {
-                var firstChild =
-                    _skillButton.transform.GetChild(0);
-
-                _hotkeyDigitLabel =
-                    firstChild.GetComponent<TextMeshProUGUI>();
-            }
-
-            if (_hotkeyDigitLabel == null)
-            {
-                _hotkeyDigitLabel =
-                    _skillButton
-                        .GetComponentInChildren<TextMeshProUGUI>(
-                            true);
-            }
-        }
-
-        private void TryResolveDescriptionUi()
-        {
-            if (_skillButton == null)
-            {
-                return;
-            }
-
-            if (_descriptionPanel == null)
-            {
-                _descriptionPanel =
-                    FindDescendantByName(
-                        _skillButton.transform,
-                        descriptionPanelName)
-                    as RectTransform;
-            }
-
-            if (_descriptionPanel == null)
-            {
-                return;
-            }
-
-            if (!_descriptionLayoutInitialized)
-            {
-                _descriptionPanelBaseScale =
-                    _descriptionPanel.localScale.sqrMagnitude <
-                    0.0001f
-                        ? Vector3.one
-                        : _descriptionPanel.localScale;
-            }
-
-            if (_descriptionText == null)
-            {
-                if (!string.IsNullOrEmpty(
-                        descriptionTextName))
-                {
-                    var textTransform =
-                        FindDescendantByName(
-                            _descriptionPanel,
-                            descriptionTextName);
-
-                    if (textTransform != null)
-                    {
-                        _descriptionText =
-                            textTransform
-                                .GetComponent<TextMeshProUGUI>();
-                    }
-                }
-
-                if (_descriptionText == null)
-                {
-                    _descriptionText =
-                        _descriptionPanel
-                            .GetComponentInChildren<TextMeshProUGUI>(
-                                true);
-                }
-            }
-
-            if (ensureCanvasGroupOnDescriptionPanel)
-            {
-                if (_descriptionCanvasGroup == null)
-                {
-                    _descriptionCanvasGroup =
-                        _descriptionPanel
-                            .GetComponent<CanvasGroup>();
-
-                    if (_descriptionCanvasGroup == null)
-                    {
-                        _descriptionCanvasGroup =
-                            _descriptionPanel.gameObject
-                                .AddComponent<CanvasGroup>();
-                    }
-                }
-            }
-
-            if (_descriptionLayoutInitialized)
-            {
-                return;
-            }
-
-            _descriptionLayoutInitialized = true;
-
-            if (_descriptionCanvasGroup != null)
-            {
-                _descriptionCanvasGroup.alpha = 0f;
-                _descriptionCanvasGroup.interactable = false;
-                _descriptionCanvasGroup.blocksRaycasts = false;
-            }
-
-            _descriptionPanel.localScale =
-                Vector3.zero;
-
-            if (!_isDescriptionPanelVisible)
-            {
-                _descriptionPanel.gameObject
-                    .SetActive(false);
-            }
-        }
-
-        private static Transform FindDescendantByName(
-            Transform searchRoot,
-            string nameToMatch)
-        {
-            if (searchRoot == null ||
-                string.IsNullOrEmpty(nameToMatch))
-            {
-                return null;
-            }
-
-            var all =
-                searchRoot.GetComponentsInChildren<Transform>(
-                    true);
-
-            for (var index = 0;
-                 index < all.Length;
-                 index++)
-            {
-                var current =
-                    all[index];
-
-                if (current != null &&
-                    string.Equals(
-                        current.name,
-                        nameToMatch,
-                        StringComparison.Ordinal))
-                {
-                    return current;
-                }
-            }
-
-            for (var index = 0;
-                 index < all.Length;
-                 index++)
-            {
-                var current =
-                    all[index];
-
-                if (current != null &&
-                    string.Equals(
-                        current.name,
-                        nameToMatch,
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    return current;
-                }
-            }
-
-            return null;
-        }
-
-        private void ShowFullDescription()
-        {
-            TryResolveDescriptionUi();
-
-            if (string.IsNullOrEmpty(
-                    _playerDescriptionLine) ||
-                _descriptionPanel == null)
-            {
-                return;
-            }
-
-            UpdateDescriptionText();
-
-            if (_descriptionCanvasGroup == null)
-            {
-                _descriptionCanvasGroup =
-                    _descriptionPanel
-                        .GetComponent<CanvasGroup>();
-            }
-
-            _descriptionPanel.DOKill(false);
-
-            if (_descriptionCanvasGroup != null)
-            {
-                _descriptionCanvasGroup.DOKill(false);
-            }
-
-            _descriptionPanel.gameObject.SetActive(true);
-
-            if (_isDescriptionPanelVisible)
-            {
-                _descriptionPanel.localScale =
-                    _descriptionPanelBaseScale;
-
-                if (_descriptionCanvasGroup != null)
-                {
-                    _descriptionCanvasGroup.alpha =
-                        1f;
-                }
-
-                return;
-            }
-
-            _isDescriptionPanelVisible = true;
-
-            _descriptionPanel.localScale =
-                Vector3.zero;
-
-            if (_descriptionCanvasGroup != null)
-            {
-                _descriptionCanvasGroup.alpha =
-                    0f;
-
-                _descriptionCanvasGroup
-                    .DOFade(
-                        1f,
-                        DescriptionShowDuration * 0.9f)
-                    .SetEase(
-                        DescriptionShowEase)
-                    .SetLink(
-                        _descriptionPanel.gameObject);
-            }
-
-            _descriptionPanel
-                .DOScale(
-                    _descriptionPanelBaseScale,
-                    DescriptionShowDuration)
-                .SetEase(
-                    DescriptionShowEase)
-                .SetLink(
-                    _descriptionPanel.gameObject);
-        }
-
-        private void UpdateDescriptionText()
-        {
-            if (_descriptionText == null)
-            {
-                return;
-            }
-
-            _descriptionText.text =
-                _playerDescriptionLine;
-
-            _descriptionText.color =
-                new Color(
-                    1f,
-                    1f,
-                    1f,
-                    1f);
-
-            _descriptionText.ForceMeshUpdate(
-                true);
-        }
-
-        private void CenterOnThisSkill()
-        {
-            if (_skillScroll == null)
-            {
-                _skillScroll =
-                    FindFirstObjectByType<InfinitySkillScroll>();
-            }
-
-            if (_skillScroll == null)
-            {
-                return;
-            }
-
-            _skillScroll.ScrollToItem(
-                _zeroBasedSlotIndex);
-        }
-
-        private void HideDescriptionPanel()
-        {
-            if (_descriptionPanel == null ||
-                !_isDescriptionPanelVisible)
-            {
-                return;
-            }
-
-            _descriptionPanel.DOKill(false);
-
-            if (_descriptionCanvasGroup != null)
-            {
-                _descriptionCanvasGroup.DOKill(false);
-
-                _descriptionCanvasGroup
-                    .DOFade(
-                        0f,
-                        DescriptionHideDuration)
-                    .SetEase(
-                        DescriptionHideEase)
-                    .SetLink(
-                        _descriptionPanel.gameObject);
-            }
-
-            _descriptionPanel
-                .DOScale(
-                    0f,
-                    DescriptionHideDuration)
-                .SetEase(
-                    DescriptionHideEase)
-                .SetLink(
-                    _descriptionPanel.gameObject)
-                .OnComplete(() =>
-                {
-                    if (_descriptionPanel != null)
-                    {
-                        if (_descriptionCanvasGroup != null)
-                        {
-                            _descriptionCanvasGroup.alpha =
-                                0f;
-                        }
-
-                        _descriptionPanel.gameObject
-                            .SetActive(false);
-                    }
-
-                    _isDescriptionPanelVisible =
-                        false;
-                });
-        }
-
-        private void ForceHideDescriptionPanelImmediate()
-        {
-            if (_descriptionPanel == null)
-            {
-                return;
-            }
-
-            _descriptionPanel.DOKill(false);
-
-            if (_descriptionCanvasGroup != null)
-            {
-                _descriptionCanvasGroup.DOKill(false);
-                _descriptionCanvasGroup.alpha = 0f;
-            }
-
-            _descriptionPanel.localScale =
-                Vector3.zero;
-
-            _descriptionPanel.gameObject
-                .SetActive(false);
-
-            _isDescriptionPanelVisible = false;
-            _descriptionPinnedByMouseSelection = false;
-            _isPointerInside = false;
-        }
-    }
-
-    [DisallowMultipleComponent]
-    public sealed class SkillButtonSlotPointerRelay :
-        MonoBehaviour,
-        IPointerEnterHandler,
-        IPointerExitHandler
-    {
-        private SkillButtonPanelView _host;
-
-        public void Init(
-            SkillButtonPanelView host)
-        {
-            _host = host;
-        }
-
-        public void OnPointerEnter(
-            PointerEventData eventData)
-        {
-            _host?.HandlePointerEnter();
-        }
-
-        public void OnPointerExit(
-            PointerEventData eventData)
-        {
-            _host?.HandlePointerExit();
         }
     }
 }

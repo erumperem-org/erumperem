@@ -21,54 +21,42 @@ public static class CorruptionPresentation
     public static float ToPresentedSliderNormalizedValue(double worldCorruptionValue) =>
         (float)(ClampToPresentedSliderValue(worldCorruptionValue) / PresentedSliderMaximum);
 
+    /// <summary>Compact tooltip for a corruption tier: one short line per effect the engine applies.</summary>
     public static string BuildTierHoverAuthoredMarkup(
         int corruptionTier,
         CorruptionTierModifiers tierModifiers)
     {
         var markupBuilder = new StringBuilder();
-        markupBuilder.Append("[c danger]Corruption Tier ");
+        markupBuilder.Append("[c danger]Tier ");
         markupBuilder.Append(corruptionTier.ToString(CultureInfo.InvariantCulture));
         markupBuilder.Append("[/c]");
 
         if (corruptionTier <= 0)
         {
-            markupBuilder.Append('\n');
-            markupBuilder.Append("The world is calm. No accuracy or critical bonus from corruption.");
+            markupBuilder.Append("\nNo effects.");
             return markupBuilder.ToString();
         }
 
-        markupBuilder.Append('\n');
-        markupBuilder.Append("All skills gain ");
+        markupBuilder.Append("\nEveryone: ");
         markupBuilder.Append(FormatSignedPercent(tierModifiers.GlobalAccuracyBonus));
-        markupBuilder.Append(" accuracy and ");
+        markupBuilder.Append(" hit, ");
         markupBuilder.Append(FormatSignedPercent(tierModifiers.GlobalCritBonus));
-        markupBuilder.Append(" critical chance.");
+        markupBuilder.Append(" crit");
 
-        if (corruptionTier >= 1 && corruptionTier <= 3)
+        if (corruptionTier <= 3)
         {
-            markupBuilder.Append('\n');
-            markupBuilder.Append("Hero corruption passives through this tier are active.");
-            markupBuilder.Append('\n');
-            markupBuilder.Append("Player damage caused and taken are unchanged by this bar.");
+            markupBuilder.Append("\nHero corruption passives active");
+            return markupBuilder.ToString();
         }
 
-        if (corruptionTier >= 4)
-        {
-            markupBuilder.Append('\n');
-            markupBuilder.Append("<color=#FF4444>Enemies have guaranteed hits and always crit!</color>");
-            markupBuilder.Append('\n');
-            markupBuilder.Append("You take ");
-            markupBuilder.Append(FormatSignedPercent(tierModifiers.PlayerDamageTakenMultiplier - 1.0));
-            markupBuilder.Append(" damage.");
-            markupBuilder.Append('\n');
-            markupBuilder.Append("Enemy critical hits against you deal ×");
-            markupBuilder.Append(
-                tierModifiers.EnemyCritDamageMultiplierAgainstPlayer.ToString("0.##", CultureInfo.InvariantCulture));
-            markupBuilder.Append(" damage.");
-            markupBuilder.Append('\n');
-            markupBuilder.Append("Hero corruption passives remain at tier 3 strength.");
-        }
-
+        markupBuilder.Append("\n<color=#FF4444>Enemies always hit and crit</color>");
+        markupBuilder.Append("\nYou take ");
+        markupBuilder.Append(FormatSignedPercent(tierModifiers.PlayerDamageTakenMultiplier - 1.0));
+        markupBuilder.Append(" damage");
+        markupBuilder.Append("\nEnemy crits ×");
+        markupBuilder.Append(
+            tierModifiers.EnemyCritDamageMultiplierAgainstPlayer.ToString("0.##", CultureInfo.InvariantCulture));
+        markupBuilder.Append("\nHero passives capped at tier 3");
         return markupBuilder.ToString();
     }
 

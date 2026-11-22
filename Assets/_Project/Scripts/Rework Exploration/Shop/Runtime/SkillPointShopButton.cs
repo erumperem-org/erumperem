@@ -105,7 +105,7 @@ namespace Core.Shop
 
         private void GrantLevelUp(int level)
         {
-            _playerProgression.TrySetSharedSkillLevel(level * _pointsPerLevel);
+            _playerProgression.TrySetSharedSkillLevel(_playerProgression.InitialSharedSkillLevel + level * _pointsPerLevel);
         }
 
         private bool TryResolveCurrentTier(out ICoin currency, out int price)

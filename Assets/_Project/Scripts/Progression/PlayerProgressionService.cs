@@ -11,7 +11,7 @@ using UnityEngine;
 namespace Erumperem.Progression
 {
     /// <summary>
-    /// Persists skill-tree unlocks and a <see cref="SharedSkillLevel"/> cap (default max 12).
+    /// Persists skill-tree unlocks and a <see cref="SharedSkillLevel"/> cap (default max 20, starting at 8).
     /// Wulfric, Buck and Matsuda share the same level value (e.g. 4/12): each may spend up to that many
     /// points in their own tree; spending on one does not reduce the other's budget.
     /// </summary>
@@ -31,11 +31,11 @@ namespace Erumperem.Progression
         [SerializeField] private string _skillTreesResourceRelativePath = "Data/skill_trees.json";
 
         [Header("Shared skill level")]
-        [Tooltip("Maximum shared skill level (UI denominator, e.g. 12 in 4/12).")]
-        [SerializeField] private int _maxSkillPoints = 12;
+        [Tooltip("Maximum shared skill level (UI denominator, e.g. 20 in 8/20).")]
+        [SerializeField] private int _maxSkillPoints = 20;
 
-        [Tooltip("Level assigned on a brand-new save before any external progression sets it.")]
-        [SerializeField] private int _initialSharedSkillLevel = 12;
+        [Tooltip("Level every character starts with; shop level-ups are granted on top of it.")]
+        [SerializeField] private int _initialSharedSkillLevel = 8;
 
         private readonly Dictionary<string, Dictionary<string, bool>> _unlockedByCharacter =
             new(StringComparer.OrdinalIgnoreCase);
@@ -45,6 +45,9 @@ namespace Erumperem.Progression
         private int _sharedSkillLevel;
 
         public int MaxSkillPoints => _maxSkillPoints;
+
+        /// <summary>Starting shared level; shop level-ups add to this base.</summary>
+        public int InitialSharedSkillLevel => Math.Clamp(_initialSharedSkillLevel, 0, _maxSkillPoints);
 
         public bool IsSkillTreesCatalogLoaded => _isSkillTreesCatalogLoaded && _skillTreesCatalog.Count > 0;
 
@@ -318,7 +321,8 @@ namespace Erumperem.Progression
         {
             if (saveVersion >= 2 && _sharedSkillLevel > 0)
             {
-                _sharedSkillLevel = Math.Clamp(_sharedSkillLevel, 0, _maxSkillPoints);
+                // Saves from before the starting level existed: never leave a player below it.
+                _sharedSkillLevel = Math.Clamp(Math.Max(_sharedSkillLevel, InitialSharedSkillLevel), 0, _maxSkillPoints);
                 return;
             }
 
@@ -331,7 +335,7 @@ namespace Erumperem.Progression
 
             if (highestCharacterSpend > 0)
             {
-                _sharedSkillLevel = Math.Clamp(highestCharacterSpend, 0, _maxSkillPoints);
+                _sharedSkillLevel = Math.Clamp(Math.Max(highestCharacterSpend, InitialSharedSkillLevel), 0, _maxSkillPoints);
                 return;
             }
 
@@ -340,7 +344,7 @@ namespace Erumperem.Progression
 
         private void ApplyDefaultSharedSkillLevelForNewSave()
         {
-            _sharedSkillLevel = Math.Clamp(_initialSharedSkillLevel, 0, _maxSkillPoints);
+            _sharedSkillLevel = InitialSharedSkillLevel;
         }
 
         private void SaveToDisk()

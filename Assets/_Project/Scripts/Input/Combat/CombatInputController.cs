@@ -6,7 +6,6 @@ using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
 using UnityEngine;
-using UnityEngine.UI;
 
 public enum CombatInputPhase
 {
@@ -24,7 +23,6 @@ public sealed class CombatInputController : MonoBehaviour
     [Header("Combat")]
     [SerializeField] private CombatPrototypeController combatSession;
     [SerializeField] private CombatSkillButtonBarUIManager skillBarUiManager;
-    [SerializeField] private InfinitySkillScroll skillScroll;
 
     [Header("Enemy Direction Mapping - Stable Slots")]
     [Tooltip("Slot lógico fixo do inimigo selecionado quando o jogador aperta Cima.")]
@@ -40,17 +38,16 @@ public sealed class CombatInputController : MonoBehaviour
     [SerializeField, Min(1)] private int rightEnemyRank = 2;
 
     private CombatInputPhase _phase;
-    private SkillButtonPanelView _focusedSkillPanel;
-    private int? _focusedSkillSlotIndex;
     private string _focusedTargetCombatantId;
 
     public event Action<CombatInputPhase> PhaseChanged;
-    public event Action<int?> SkillFocusChanged;
     public event Action<string> TargetFocusChanged;
 
     public CombatInputPhase CurrentPhase => _phase;
-    public int? FocusedSkillSlotIndex => _focusedSkillSlotIndex;
     public string FocusedTargetCombatantId => _focusedTargetCombatantId;
+
+    private CombatSkillBarSelectionController SkillBarSelection =>
+        skillBarUiManager != null ? skillBarUiManager.SelectionController : null;
 
     private void Awake()
     {
@@ -68,7 +65,6 @@ public sealed class CombatInputController : MonoBehaviour
     {
         UnsubscribeInput();
         UnsubscribeInputMode();
-        ClearSkillHover();
         SetFocusedTarget(null);
         SetPhase(CombatInputPhase.Inactive);
     }
@@ -94,11 +90,6 @@ public sealed class CombatInputController : MonoBehaviour
         if (skillBarUiManager == null)
         {
             skillBarUiManager = FindFirstObjectByType<CombatSkillButtonBarUIManager>();
-        }
-
-        if (skillScroll == null)
-        {
-            skillScroll = FindFirstObjectByType<InfinitySkillScroll>();
         }
     }
 
@@ -155,14 +146,7 @@ public sealed class CombatInputController : MonoBehaviour
     {
         if (mode == InputControlMode.Mouse)
         {
-            ClearSkillHover();
             SetFocusedTarget(null);
-            return;
-        }
-
-        if (_phase == CombatInputPhase.SkillSelection)
-        {
-            FocusInitialSkill();
             return;
         }
 
@@ -178,31 +162,17 @@ public sealed class CombatInputController : MonoBehaviour
 
         if (desiredPhase == _phase)
         {
-            if (_phase == CombatInputPhase.SkillSelection && !IsFocusedSkillPanelUsable())
-            {
-                FocusInitialSkill();
-            }
-
             return;
         }
 
         SetPhase(desiredPhase);
 
-        if (_phase == CombatInputPhase.SkillSelection)
-        {
-            SetFocusedTarget(null);
-            FocusInitialSkill();
-            return;
-        }
-
         if (_phase == CombatInputPhase.TargetSelection)
         {
-            ClearSkillHover();
             PrepareInitialTarget();
             return;
         }
 
-        ClearSkillHover();
         SetFocusedTarget(null);
     }
 
@@ -294,222 +264,22 @@ public sealed class CombatInputController : MonoBehaviour
         SyncPhaseWithCombat();
     }
 
+    /// <summary>Esquerda/Cima anda para trás no carrossel, Direita/Baixo para frente (dá a volta na lista).</summary>
     private void NavigateSkills(CombatInputDirection direction)
     {
-        var panels = GetInteractableSkillPanels();
-
-        if (panels.Count == 0)
-        {
-            ClearSkillHover();
-            return;
-        }
-
-        var currentIndex = _focusedSkillPanel != null
-            ? panels.IndexOf(_focusedSkillPanel)
-            : -1;
-
-        if (currentIndex < 0)
-        {
-            FocusSkillPanel(panels[0]);
-            return;
-        }
-
         var step =
             direction == CombatInputDirection.Left ||
             direction == CombatInputDirection.Up
                 ? -1
                 : 1;
 
-        var nextIndex =
-            (currentIndex + step + panels.Count) %
-            panels.Count;
-
-        FocusSkillPanel(panels[nextIndex]);
+        SkillBarSelection?.MoveCursor(step);
     }
 
-    private bool IsFocusedSkillPanelUsable()
-    {
-        if (_focusedSkillPanel == null || !_focusedSkillPanel.gameObject.activeInHierarchy)
-        {
-            return false;
-        }
-
-        var button =
-            _focusedSkillPanel.GetComponentInChildren<Button>(true);
-
-        return button != null && button.interactable;
-    }
-
-    private void FocusInitialSkill()
-    {
-        var panels = GetInteractableSkillPanels();
-
-        if (panels.Count == 0)
-        {
-            ClearSkillHover();
-            return;
-        }
-
-        if (_focusedSkillSlotIndex.HasValue)
-        {
-            var matchingPanel =
-                panels.FirstOrDefault(
-                    panel =>
-                        panel.ZeroBasedSlotIndex ==
-                        _focusedSkillSlotIndex.Value);
-
-            if (matchingPanel != null)
-            {
-                FocusSkillPanel(matchingPanel);
-                return;
-            }
-        }
-
-        FocusSkillPanel(panels[0]);
-    }
-
-    private List<SkillButtonPanelView> GetInteractableSkillPanels()
-    {
-        var result =
-            new List<SkillButtonPanelView>();
-
-        var row =
-            skillBarUiManager != null
-                ? skillBarUiManager.SkillsRowView
-                : null;
-
-        if (row == null)
-        {
-            return result;
-        }
-
-        var panels =
-            row.GetComponentsInChildren<SkillButtonPanelView>(true);
-
-        for (var panelIndex = 0; panelIndex < panels.Length; panelIndex++)
-        {
-            var panel =
-                panels[panelIndex];
-
-            if (panel == null || !panel.gameObject.activeInHierarchy)
-            {
-                continue;
-            }
-
-            var button =
-                panel.GetComponentInChildren<Button>(true);
-
-            if (button == null || !button.interactable)
-            {
-                continue;
-            }
-
-            result.Add(panel);
-        }
-
-        result.Sort(
-            (left, right) =>
-                left.ZeroBasedSlotIndex
-                    .CompareTo(right.ZeroBasedSlotIndex));
-
-        return result;
-    }
-
-    private void FocusSkillPanel(SkillButtonPanelView panel)
-    {
-        if (panel == null || ReferenceEquals(panel, _focusedSkillPanel))
-        {
-            return;
-        }
-
-        if (_focusedSkillPanel != null)
-        {
-            _focusedSkillPanel.HandlePointerExit();
-        }
-
-        _focusedSkillPanel = panel;
-        _focusedSkillSlotIndex = panel.ZeroBasedSlotIndex;
-
-        _focusedSkillPanel.HandlePointerEnter();
-
-        CenterFocusedSkill();
-
-        SkillFocusChanged?.Invoke(_focusedSkillSlotIndex);
-    }
-
-    private void CenterFocusedSkill()
-    {
-        if (!_focusedSkillSlotIndex.HasValue)
-        {
-            return;
-        }
-
-        if (skillScroll == null)
-        {
-            skillScroll =
-                FindFirstObjectByType<InfinitySkillScroll>();
-        }
-
-        if (skillScroll == null)
-        {
-            return;
-        }
-
-        skillScroll.ScrollToItem(
-            _focusedSkillSlotIndex.Value);
-    }
-
-    private void ClearSkillHover()
-    {
-        if (_focusedSkillPanel == null)
-        {
-            return;
-        }
-
-        _focusedSkillPanel.HandlePointerExit();
-        _focusedSkillPanel = null;
-    }
-
+    /// <summary>Espaço seleciona a skill do cursor — o mesmo caminho do clique do mouse.</summary>
     private void ConfirmSkill()
     {
-        if (combatSession == null)
-        {
-            return;
-        }
-
-        if (_focusedSkillPanel == null)
-        {
-            FocusInitialSkill();
-        }
-
-        if (_focusedSkillPanel == null)
-        {
-            return;
-        }
-
-        var ownerCombatantId =
-            combatSession.PendingPlayerCombatantId;
-
-        if (string.IsNullOrEmpty(ownerCombatantId))
-        {
-            return;
-        }
-
-        var selectedSlot =
-            _focusedSkillPanel.ZeroBasedSlotIndex;
-
-        if (!combatSession.TrySelectSkillBarSlot(
-                ownerCombatantId,
-                selectedSlot))
-        {
-            combatSession.NotifySkillBarSlotRequestFailed(
-                selectedSlot);
-
-            return;
-        }
-
-        _focusedSkillSlotIndex = selectedSlot;
-
+        SkillBarSelection?.ConfirmCursor();
         SyncPhaseWithCombat();
     }
 
@@ -699,7 +469,6 @@ public sealed class CombatInputController : MonoBehaviour
         }
 
         SetFocusedTarget(null);
-        ClearSkillHover();
         SetPhase(CombatInputPhase.Inactive);
     }
 

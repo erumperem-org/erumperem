@@ -187,9 +187,9 @@ namespace Erumperem.Combat
             {
                 zeroBasedSlotIndex = selectedSlot.Value;
             }
-            else if (skillsRowView != null && skillsRowView.HoveredZeroBasedSlotIndex.HasValue)
+            else if (skillsRowView != null && skillsRowView.PreviewedZeroBasedSlotIndex.HasValue)
             {
-                zeroBasedSlotIndex = skillsRowView.HoveredZeroBasedSlotIndex.Value;
+                zeroBasedSlotIndex = skillsRowView.PreviewedZeroBasedSlotIndex.Value;
             }
             else
             {

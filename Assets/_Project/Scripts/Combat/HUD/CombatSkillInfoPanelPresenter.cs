@@ -27,7 +27,7 @@ namespace Erumperem.Combat
 
         [SerializeField] private CombatSkillButtonBarUIManager skillButtonBarUIManager;
         [SerializeField] private TextMeshProUGUI skillTitleLabel;
-        [Tooltip("Descrição persistente da skill atual. Se vazio, é criado em runtime a partir do SkillTitle.")]
+        [Tooltip("Opcional: texto extra com a descrição da skill atual. A descrição padrão é o balão abaixo da skill central.")]
         [SerializeField] private TextMeshProUGUI skillDescriptionLabel;
         [SerializeField] private TextMeshProUGUI targetCountLabel;
         [SerializeField] private TextMeshProUGUI damageRangeLabel;
@@ -40,7 +40,6 @@ namespace Erumperem.Combat
         private CharacterSkillButtonsRowView _skillsRowView;
         private string _lastRenderedDisplaySignature = string.Empty;
         private readonly Dictionary<string, int> _lastShownSlotByOwner = new();
-        private bool _descriptionLabelIsRuntimeClone;
 
         private void Awake()
         {
@@ -229,10 +228,9 @@ namespace Erumperem.Combat
                 skillTitleLabel.text = skillDefinition.Name;
             }
 
-            var descriptionLabel = ResolveDescriptionLabel();
-            if (descriptionLabel != null)
+            if (skillDescriptionLabel != null)
             {
-                descriptionLabel.text = PlayerFacingText.PresentForUi(
+                skillDescriptionLabel.text = PlayerFacingText.PresentForUi(
                     CombatSkillPlayerDescriptionFormatter.BuildSummaryLine(
                         skillDefinition,
                         _combatSession.BattleState,
@@ -292,23 +290,20 @@ namespace Erumperem.Combat
                 return false;
             }
 
-            _combatSession.GetSkillBarSelection(out var selectedSlot, out var selectedOwnerCombatantId);
-            var hasLockedSelection = selectedSlot.HasValue &&
-                string.Equals(selectedOwnerCombatantId, ownerCombatantId, StringComparison.Ordinal);
-
             var skillIds = actingCombatant.SkillLoadout.Skills
                 .Where(skillId => battleState.SkillsById.ContainsKey(skillId))
                 .Take(CharacterSkillButtonsRowView.MaxVisibleSlots)
                 .ToList();
 
-            // Selecao > hover > ultima skill mostrada > primeira: a descricao nunca fica vazia no turno do heroi.
+            // Mouse, senao cursor da barra (que segue a selecao) > ultima mostrada > primeira:
+            // a descricao fica sempre visivel no turno do heroi, sem precisar selecionar.
             int? lastShownSlot = _lastShownSlotByOwner.TryGetValue(ownerCombatantId, out var rememberedSlot)
                 ? rememberedSlot
                 : null;
             var resolvedSlot = CombatSkillDescriptionSlotResolver.Resolve(
                 skillIds.Count,
-                hasLockedSelection ? selectedSlot : null,
-                _skillsRowView.HoveredZeroBasedSlotIndex,
+                _skillsRowView.PreviewedZeroBasedSlotIndex,
+                null,
                 lastShownSlot);
             if (!resolvedSlot.HasValue)
             {
@@ -353,56 +348,6 @@ namespace Erumperem.Combat
             int corruptionTier,
             string previewTargetElement) =>
             $"{ownerCombatantId}|{zeroBasedSlotIndex}|{previewTargetCombatantId}|{corruptionTier}|{previewTargetElement}";
-
-        private TextMeshProUGUI ResolveDescriptionLabel()
-        {
-            if (skillDescriptionLabel == null && skillTitleLabel != null)
-            {
-                // Sem objeto na cena: clona o SkillTitle logo abaixo dele (ajustar layout no Editor se preciso).
-                skillDescriptionLabel = Instantiate(skillTitleLabel, skillTitleLabel.transform.parent, false);
-                skillDescriptionLabel.name = "SkillDescription";
-                skillDescriptionLabel.transform.SetSiblingIndex(skillTitleLabel.transform.GetSiblingIndex() + 1);
-                skillDescriptionLabel.enableAutoSizing = true;
-                skillDescriptionLabel.fontSizeMin = 8f;
-                skillDescriptionLabel.fontSizeMax = Mathf.Max(10f, skillTitleLabel.fontSize * 0.6f);
-                skillDescriptionLabel.textWrappingMode = TextWrappingModes.Normal;
-                _descriptionLabelIsRuntimeClone = true;
-            }
-
-            if (_descriptionLabelIsRuntimeClone)
-            {
-                PositionDescriptionBelowSkillIcons();
-            }
-
-            return skillDescriptionLabel;
-        }
-
-        /// <summary>Ancora o clone runtime abaixo da fileira de ícones de skills, sem cobri-los.</summary>
-        private void PositionDescriptionBelowSkillIcons()
-        {
-            if (_skillsRowView == null || skillDescriptionLabel == null)
-            {
-                return;
-            }
-
-            if (_skillsRowView.transform is not RectTransform rowRect
-                || skillDescriptionLabel.transform.parent is not RectTransform parentRect)
-            {
-                return;
-            }
-
-            var corners = new Vector3[4];
-            rowRect.GetWorldCorners(corners);
-            var bottomLeft = parentRect.InverseTransformPoint(corners[0]);
-            var bottomRight = parentRect.InverseTransformPoint(corners[3]);
-            var width = Mathf.Max(200f, Mathf.Abs(bottomRight.x - bottomLeft.x));
-
-            var label = skillDescriptionLabel.rectTransform;
-            label.anchorMin = label.anchorMax = new Vector2(0.5f, 0.5f);
-            label.pivot = new Vector2(0.5f, 1f);
-            label.sizeDelta = new Vector2(width, 90f);
-            label.localPosition = new Vector3((bottomLeft.x + bottomRight.x) * 0.5f, bottomLeft.y - 12f, 0f);
-        }
 
         private void ClearSkillInfoPanel()
         {

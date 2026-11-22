@@ -30,25 +30,34 @@ namespace Erumperem.Combat
         [SerializeField] private int actionZoomPriorityIdle;
 
         [Header("Enquadramento")]
-        [Tooltip("Altura acima do pivot do combatente para onde a câmera mira.")]
+        [Tooltip("Sem mesh encontrada: altura acima do pivot do combatente para onde a câmera mira.")]
         [SerializeField] private float lookHeight = 1.2f;
 
-        [Tooltip("Distância da câmera ao ator no Actor Focus. Menor = zoom mais forte.")]
+        [Tooltip("Sem mesh encontrada: distância da câmera ao ator no Actor Focus.")]
         [SerializeField] private float actorShotDistance = 3.2f;
 
         [Tooltip("FOV vertical no Actor Focus. Menor = zoom mais forte (lente tele).")]
         [SerializeField, Range(10f, 90f)] private float actorShotFieldOfView = 32f;
 
-        [Tooltip("Actor Focus quando o ator é inimigo: um pouco menos de zoom que o dos aliados.")]
+        [Tooltip("Margem multiplicativa sobre o bounding box da mesh do ator aliado (1 = colado na borda).")]
+        [SerializeField] private float actorShotPadding = 1.1f;
+
+        [Tooltip("Sem mesh encontrada: distância no Actor Focus quando o ator é inimigo.")]
         [SerializeField] private float enemyActorShotDistance = 4.2f;
 
         [SerializeField, Range(10f, 90f)] private float enemyActorShotFieldOfView = 40f;
 
+        [Tooltip("Actor Focus quando o ator é inimigo: um pouco menos de zoom que o dos aliados.")]
+        [SerializeField] private float enemyActorShotPadding = 1.25f;
+
+        [Tooltip("Distância mínima no Actor Focus, para combatentes minúsculos não encostarem na lente.")]
+        [SerializeField] private float actorShotMinimumDistance = 1f;
+
         [Tooltip("FOV vertical no Target Focus; usado também no cálculo de enquadramento dos afetados.")]
         [SerializeField, Range(10f, 90f)] private float targetShotFieldOfView = 55f;
 
-        [Tooltip("Distância mínima no Target Focus (um único alvo).")]
-        [SerializeField] private float targetShotMinimumDistance = 5f;
+        [Tooltip("Distância mínima no Target Focus. O tamanho real vem do bounding box das meshes dos afetados.")]
+        [SerializeField] private float targetShotMinimumDistance = 2f;
 
         [Tooltip("Margem multiplicativa para caber todos os afetados (1 = colado na borda).")]
         [SerializeField] private float targetShotPadding = 1.35f;
@@ -105,11 +114,25 @@ namespace Erumperem.Combat
             DOTween.Kill(TargetSnapTweenId, false);
             SetZoomCameraFieldOfView(isEnemyActor ? enemyActorShotFieldOfView : actorShotFieldOfView);
 
-            // O ponto de mira fica exatamente no eixo da câmera, então o ator aparece centralizado na tela.
-            var lookPoint = actorVisualRoot.position + Vector3.up * lookHeight;
-            actionZoomCamera.transform.SetPositionAndRotation(
-                lookPoint - _shotRotation * Vector3.forward * (isEnemyActor ? enemyActorShotDistance : actorShotDistance),
-                _shotRotation);
+            // O centro do enquadramento fica exatamente no eixo da câmera, então o ator aparece centralizado na tela.
+            Vector3 shotPosition;
+            if (TryGetMeshBounds(actorVisualRoot, out var bounds))
+            {
+                var points = new List<System.Numerics.Vector3>(8);
+                AddBoundsCorners(bounds, points);
+                shotPosition = FramePoints(
+                    points,
+                    isEnemyActor ? enemyActorShotPadding : actorShotPadding,
+                    actorShotMinimumDistance);
+            }
+            else
+            {
+                var lookPoint = actorVisualRoot.position + Vector3.up * lookHeight;
+                shotPosition = lookPoint
+                    - _shotRotation * Vector3.forward * (isEnemyActor ? enemyActorShotDistance : actorShotDistance);
+            }
+
+            actionZoomCamera.transform.SetPositionAndRotation(shotPosition, _shotRotation);
 
             SetBrainBlend(actorFocusBlendSeconds);
             actionZoomCamera.Priority = actionZoomPriorityActive;
@@ -123,7 +146,7 @@ namespace Erumperem.Combat
                 return;
             }
 
-            var points = new List<System.Numerics.Vector3>(affectedVisualRoots.Count);
+            var points = new List<System.Numerics.Vector3>(affectedVisualRoots.Count * 8);
             foreach (var root in affectedVisualRoots)
             {
                 if (root == null)
@@ -131,8 +154,15 @@ namespace Erumperem.Combat
                     continue;
                 }
 
-                var lookPoint = root.position + Vector3.up * lookHeight;
-                points.Add(new System.Numerics.Vector3(lookPoint.x, lookPoint.y, lookPoint.z));
+                if (TryGetMeshBounds(root, out var bounds))
+                {
+                    AddBoundsCorners(bounds, points);
+                }
+                else
+                {
+                    var lookPoint = root.position + Vector3.up * lookHeight;
+                    points.Add(new System.Numerics.Vector3(lookPoint.x, lookPoint.y, lookPoint.z));
+                }
             }
 
             if (points.Count == 0)
@@ -141,19 +171,7 @@ namespace Erumperem.Combat
             }
 
             SetZoomCameraFieldOfView(targetShotFieldOfView);
-
-            var forward = _shotRotation * Vector3.forward;
-            var up = _shotRotation * Vector3.up;
-            var distance = ActionShotFraming.RequiredDistance(
-                points,
-                new System.Numerics.Vector3(forward.x, forward.y, forward.z),
-                new System.Numerics.Vector3(up.x, up.y, up.z),
-                actionZoomCamera.Lens.FieldOfView,
-                ResolveAspect(),
-                targetShotPadding,
-                targetShotMinimumDistance);
-            var center = ActionShotFraming.Center(points);
-            var shotPosition = new Vector3(center.X, center.Y, center.Z) - forward * distance;
+            var shotPosition = FramePoints(points, targetShotPadding, targetShotMinimumDistance);
 
             DOTween.Kill(TargetSnapTweenId, false);
             actionZoomCamera.transform
@@ -176,6 +194,70 @@ namespace Erumperem.Combat
             if (wideBattleCamera != null)
             {
                 wideBattleCamera.Priority = wideBattlePriority;
+            }
+        }
+
+        /// <summary>Posição da câmera (rotação fixa do prefab) que enquadra todos os pontos com o FOV atual.</summary>
+        private Vector3 FramePoints(List<System.Numerics.Vector3> points, float padding, float minimumDistance)
+        {
+            var forward = _shotRotation * Vector3.forward;
+            var up = _shotRotation * Vector3.up;
+            var distance = ActionShotFraming.RequiredDistance(
+                points,
+                new System.Numerics.Vector3(forward.x, forward.y, forward.z),
+                new System.Numerics.Vector3(up.x, up.y, up.z),
+                actionZoomCamera.Lens.FieldOfView,
+                ResolveAspect(),
+                padding,
+                minimumDistance);
+            var center = ActionShotFraming.Center(points);
+            return new Vector3(center.X, center.Y, center.Z) - forward * distance;
+        }
+
+        // Prefere SkinnedMeshRenderer (o corpo do combatente) para não incluir acessórios estáticos filhos do
+        // visual root, como o marcador de turno; sem skinned mesh, usa os MeshRenderer.
+        private static bool TryGetMeshBounds(Transform root, out Bounds bounds)
+        {
+            return TryEncapsulate(root.GetComponentsInChildren<SkinnedMeshRenderer>(), out bounds)
+                || TryEncapsulate(root.GetComponentsInChildren<MeshRenderer>(), out bounds);
+        }
+
+        private static bool TryEncapsulate<TRenderer>(TRenderer[] renderers, out Bounds bounds)
+            where TRenderer : Renderer
+        {
+            bounds = default;
+            var found = false;
+            foreach (var meshRenderer in renderers)
+            {
+                if (!meshRenderer.enabled)
+                {
+                    continue;
+                }
+
+                if (found)
+                {
+                    bounds.Encapsulate(meshRenderer.bounds);
+                }
+                else
+                {
+                    bounds = meshRenderer.bounds;
+                    found = true;
+                }
+            }
+
+            return found;
+        }
+
+        private static void AddBoundsCorners(Bounds bounds, List<System.Numerics.Vector3> points)
+        {
+            var min = bounds.min;
+            var max = bounds.max;
+            for (var corner = 0; corner < 8; corner++)
+            {
+                points.Add(new System.Numerics.Vector3(
+                    (corner & 1) == 0 ? min.x : max.x,
+                    (corner & 2) == 0 ? min.y : max.y,
+                    (corner & 4) == 0 ? min.z : max.z));
             }
         }
 

@@ -44,25 +44,35 @@ namespace Erumperem.Combat.Runtime
             _session.Simulator.EmitBattleEnded(_session.State);
             LogLastEvents();
 
+            // Notifica o bridge antes da UI: uma falha no painel não pode impedir o registo do resultado.
+            CombatExplorationBridge.Instance?.NotifyCombatEnded(
+                _session.State,
+                alliesWon: _session.State.Winner == Side.Allies);
+
             if (_session.State.Winner == Side.Allies)
             {
                 _victoryPanel.SetActive(true);
-                _victoryPanel.GetComponent<CorruptionRewardGenerator>()
-                    .GenerateRewardsForCombatExit(_session.State.CorruptionValue);
+                var rewardGenerator = _victoryPanel.GetComponentInChildren<CorruptionRewardGenerator>(true);
+                if (rewardGenerator != null)
+                {
+                    rewardGenerator.GenerateRewardsForCombatExit(_session.State.CorruptionValue);
+                }
+                else
+                {
+                    Debug.LogWarning(
+                        $"[Combat] '{_victoryPanel.name}' não tem CorruptionRewardGenerator — recompensas não geradas.",
+                        _victoryPanel);
+                }
             }
             else if (_session.State.Winner == Side.Enemies)
             {
                 _defeatPanel.SetActive(true);
-                UnityEngine.Object.FindAnyObjectByType<PlayerInventorySaveSystem>().ClearSave();
+                UnityEngine.Object.FindAnyObjectByType<PlayerInventorySaveSystem>()?.ClearSave();
             }
             else
             {
                 Debug.Log("Empate?");
             }
-
-            CombatExplorationBridge.Instance?.NotifyCombatEnded(
-                _session.State,
-                alliesWon: _session.State.Winner == Side.Allies);
 
             _sessionHub?.RaiseCombatSessionClosed();
         }

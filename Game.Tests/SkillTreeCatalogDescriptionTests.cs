@@ -19,6 +19,31 @@ public sealed class SkillTreeCatalogDescriptionTests
     }
 
     [Fact]
+    public void HudEssentialsLine_KeepsEffectsAndDropsStatsTheHudAlreadyShows()
+    {
+        var focusedInstability = LoadSkill("wulfric_tree1_tier1_active");
+
+        var essentials = SkillPlayerDescriptionBuilder.BuildHudEssentialsLine(focusedInstability);
+
+        Assert.Contains("Controlled Instability", essentials, StringComparison.Ordinal);
+        Assert.DoesNotContain("Focused Instability", essentials, StringComparison.Ordinal);
+        Assert.DoesNotContain("corruption", essentials, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("damage", essentials, StringComparison.OrdinalIgnoreCase);
+        Assert.True(essentials.Length < SkillPlayerDescriptionBuilder.BuildSummaryLine(focusedInstability).Length);
+    }
+
+    [Fact]
+    public void HudEssentialsLine_StartsWithDamageForDamagingSkills()
+    {
+        var swordCleave = LoadSkill("wulfric_innate_active1");
+
+        var essentials = SkillPlayerDescriptionBuilder.BuildHudEssentialsLine(swordCleave);
+
+        Assert.StartsWith("6–10 damage", essentials, StringComparison.Ordinal);
+        Assert.DoesNotContain("Sword cleave", essentials, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ReStabilization_DescribesConsumeHeal()
     {
         var reStabilization = LoadSkill("wulfric_tree1_tier2_active");
