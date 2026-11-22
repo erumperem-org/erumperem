@@ -1,6 +1,9 @@
+
 using System;
 using System.Collections.Generic;
 using TMPro;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,6 +26,10 @@ public sealed class UiNavigationSession
 
     private KeyboardNavigablePanel _activePanel;
     private UiNavigationTarget _currentTarget;
+    private bool _keyboardHoverVisible;
+    private bool _hasMousePosition;
+    private Vector2 _lastMousePosition;
+    private int _initialHoverFrame = -1;
 
     public bool HasActivePanel => _activePanel != null;
 
@@ -41,9 +48,31 @@ public sealed class UiNavigationSession
             return;
         }
 
+        if (_initialHoverFrame >= 0 && Time.frameCount >= _initialHoverFrame)
+        {
+            _initialHoverFrame = -1;
+            RefreshTargets();
+
+            if (!UiNavigationTargetCatalog.IsValid(_currentTarget))
+            {
+                _currentTarget = UiSpatialNavigation.FindDefault(_activePanel, _targets);
+            }
+
+            if (UiNavigationTargetCatalog.IsValid(_currentTarget))
+            {
+                UiNavigationEventDispatcher.Focus(null, _currentTarget);
+                _keyboardHoverVisible = true;
+            }
+        }
+
         if (InputDeviceModeManager.IsMouseMode)
         {
-            ClearFocus();
+            UpdateMouseSelection();
+        }
+        else if (!UiNavigationTargetCatalog.IsValid(_currentTarget))
+        {
+            RefreshTargets();
+            FocusDefault();
         }
     }
 
@@ -62,6 +91,11 @@ public sealed class UiNavigationSession
         {
             FocusDefault();
         }
+        else if (!_keyboardHoverVisible)
+        {
+            UiNavigationEventDispatcher.Focus(null, _currentTarget);
+            _keyboardHoverVisible = true;
+        }
     }
 
     public void Navigate(UiNavigationDirection direction)
@@ -77,6 +111,11 @@ public sealed class UiNavigationSession
         if (!UiNavigationTargetCatalog.IsValid(_currentTarget))
         {
             FocusDefault();
+            return;
+        }
+
+        if (TryScrollFocusedContent(direction))
+        {
             return;
         }
 
@@ -122,6 +161,11 @@ public sealed class UiNavigationSession
             return;
         }
 
+        if (_currentTarget.IsScrollRect)
+        {
+            return;
+        }
+
         if (IsSettingsPanel() && TryToggleCurrentSettingsToggle())
         {
             return;
@@ -142,16 +186,15 @@ public sealed class UiNavigationSession
             return;
         }
 
-        if (IsSettingsPanel())
+        if (_currentTarget != null && _currentTarget.Selectable is TMP_Dropdown dropdown && dropdown.IsExpanded)
         {
-            HideSettingsDropdowns();
-            ActivateCancelTarget();
+            dropdown.Hide();
             return;
         }
 
-        if (UiNavigationEventDispatcher.TryExecuteCancel(_currentTarget))
+        if (IsSettingsPanel())
         {
-            return;
+            HideSettingsDropdowns();
         }
 
         ActivateCancelTarget();
@@ -402,36 +445,64 @@ public sealed class UiNavigationSession
             return;
         }
 
-        GameObject cancelTargetObject = _activePanel.CancelTarget;
+        GameObject cancelObject = _activePanel.CancelTarget;
 
-        if (cancelTargetObject == null && IsSettingsPanel())
+        if (cancelObject == null)
         {
-            cancelTargetObject = FindDescendantByName(_activePanel.transform, BackButtonName)?.gameObject;
+            string[] names =
+            {
+                "BtnBack",
+                "Back",
+                "BackButton",
+                "Close",
+                "BtnClose",
+                "CloseButton",
+                "Leave",
+                "BtnLeave",
+                "Return",
+                "BtnReturn",
+                "Cancel",
+                "BtnCancel",
+                "Continue",
+                "BtnExit",
+                "Exit",
+                "ReturnToExpeditionButton"
+            };
+
+            foreach (string name in names)
+            {
+                Transform candidate = FindDescendantByName(_activePanel.transform, name);
+
+                if (candidate != null && candidate.gameObject.activeInHierarchy && candidate.GetComponent<Button>() is Button button && button.IsInteractable())
+                {
+                    cancelObject = candidate.gameObject;
+                    break;
+                }
+            }
         }
 
-        if (cancelTargetObject == null)
+        if (cancelObject == null || !cancelObject.activeInHierarchy)
         {
+            if (_activePanel.name == "DialoguePanel" && DialogueManager.Instance != null && DialogueManager.Instance.IsDialogueActive)
+            {
+                DialogueManager.Instance.EndDialogue();
+            }
+
             return;
         }
 
         RefreshTargets();
+        UiNavigationTarget cancelTarget = UiNavigationTargetCatalog.FindForGameObject(_targets, cancelObject);
 
-        var cancelTarget = UiNavigationTargetCatalog.FindForGameObject(_targets, cancelTargetObject);
+        if (cancelTarget == null && cancelObject.transform is RectTransform rect)
+        {
+            cancelTarget = new UiNavigationTarget(cancelObject, rect, cancelObject.GetComponent<Selectable>(), false);
+        }
 
-        if (cancelTarget != null)
+        if (UiNavigationTargetCatalog.IsValid(cancelTarget))
         {
             UiNavigationEventDispatcher.Activate(_activePanel, cancelTarget, _debugActivation);
-            return;
         }
-
-        var cancelButton = cancelTargetObject.GetComponent<Button>();
-
-        if (cancelButton == null || !cancelButton.enabled || !cancelButton.interactable || !cancelButton.gameObject.activeInHierarchy)
-        {
-            return;
-        }
-
-        cancelButton.onClick.Invoke();
     }
 
     private bool IsSettingsPanel()
@@ -646,11 +717,10 @@ public sealed class UiNavigationSession
 
         _eventSystemNavigationGuard.Capture();
         RefreshTargets();
+        _currentTarget = UiSpatialNavigation.FindDefault(_activePanel, _targets);
 
-        if (InputDeviceModeManager.IsKeyboardMode)
-        {
-            FocusDefault();
-        }
+        _keyboardHoverVisible = false;
+        _initialHoverFrame = Time.frameCount + 1;
     }
 
     private void EnsureCurrentTarget()
@@ -676,25 +746,142 @@ public sealed class UiNavigationSession
 
     private void Focus(UiNavigationTarget target)
     {
-        if (!UiNavigationTargetCatalog.IsValid(target) || ReferenceEquals(target, _currentTarget))
+        if (!UiNavigationTargetCatalog.IsValid(target))
         {
             return;
         }
 
-        UiNavigationEventDispatcher.Focus(_currentTarget, target);
+        if (_currentTarget != null && _currentTarget.GameObject == target.GameObject && _keyboardHoverVisible)
+        {
+            return;
+        }
+
+        UiNavigationEventDispatcher.Focus(_keyboardHoverVisible ? _currentTarget : null, target);
         _currentTarget = target;
+        _keyboardHoverVisible = true;
+        _initialHoverFrame = -1;
+
         EnsureTargetVisibleInScrollRect(_currentTarget);
     }
 
     private void ClearFocus()
     {
-        if (_currentTarget == null)
+        if (_currentTarget != null && _keyboardHoverVisible)
+        {
+            UiNavigationEventDispatcher.ClearFocus(_currentTarget);
+        }
+
+        _currentTarget = null;
+        _keyboardHoverVisible = false;
+        _hasMousePosition = false;
+        _initialHoverFrame = -1;
+    }
+
+    private void UpdateMouseSelection()
+    {
+        if (_activePanel == null || EventSystem.current == null || Mouse.current == null)
         {
             return;
         }
 
-        UiNavigationEventDispatcher.ClearFocus(_currentTarget);
-        _currentTarget = null;
+        Vector2 position = Mouse.current.position.ReadValue();
+        bool moved = _hasMousePosition && (position - _lastMousePosition).sqrMagnitude > 0.25f;
+
+        _hasMousePosition = true;
+        _lastMousePosition = position;
+
+        if (!moved)
+        {
+            return;
+        }
+
+        if (_keyboardHoverVisible)
+        {
+            UiNavigationEventDispatcher.ClearFocus(_currentTarget);
+            _keyboardHoverVisible = false;
+        }
+
+        RefreshTargets();
+
+        PointerEventData pointer = new PointerEventData(EventSystem.current) { position = position };
+        List<RaycastResult> hits = new List<RaycastResult>();
+
+        EventSystem.current.RaycastAll(pointer, hits);
+
+        foreach (RaycastResult hit in hits)
+        {
+            if (hit.gameObject == null)
+            {
+                continue;
+            }
+
+            Transform hitTransform = hit.gameObject.transform;
+
+            foreach (UiNavigationTarget target in _targets)
+            {
+                if (!UiNavigationTargetCatalog.IsValid(target))
+                {
+                    continue;
+                }
+
+                Transform targetTransform = target.GameObject.transform;
+
+                if (hitTransform == targetTransform || hitTransform.IsChildOf(targetTransform))
+                {
+                    _currentTarget = target;
+                    return;
+                }
+            }
+        }
+    }
+
+    private bool TryScrollFocusedContent(UiNavigationDirection direction)
+    {
+        if (_currentTarget == null || !_currentTarget.IsScrollRect || _currentTarget.GameObject == null)
+        {
+            return false;
+        }
+
+        ScrollRect scroll = _currentTarget.GameObject.GetComponent<ScrollRect>();
+
+        if (scroll == null || scroll.content == null)
+        {
+            return false;
+        }
+
+        Vector2 previous = scroll.normalizedPosition;
+        Vector2 next = previous;
+        const float step = 0.085f;
+
+        if (scroll.vertical && direction == UiNavigationDirection.Up)
+        {
+            next.y = Mathf.Min(1f, previous.y + step);
+        }
+        else if (scroll.vertical && direction == UiNavigationDirection.Down)
+        {
+            next.y = Mathf.Max(0f, previous.y - step);
+        }
+        else if (scroll.horizontal && direction == UiNavigationDirection.Left)
+        {
+            next.x = Mathf.Max(0f, previous.x - step);
+        }
+        else if (scroll.horizontal && direction == UiNavigationDirection.Right)
+        {
+            next.x = Mathf.Min(1f, previous.x + step);
+        }
+        else
+        {
+            return false;
+        }
+
+        if ((next - previous).sqrMagnitude < 0.000001f)
+        {
+            return false;
+        }
+
+        scroll.StopMovement();
+        scroll.normalizedPosition = next;
+        return true;
     }
 
     private static void EnsureTargetVisibleInScrollRect(UiNavigationTarget target)
