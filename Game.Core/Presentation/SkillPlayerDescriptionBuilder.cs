@@ -61,6 +61,46 @@ public static class SkillPlayerDescriptionBuilder
         return $"{translatedName}: {string.Join(" | ", detailParts)}.";
     }
 
+    /// <summary>
+    /// Short line for the combat HUD balloon: damage plus what the HUD stat boxes (name, targets, crit, corruption)
+    /// do not already show — effects, scaling, follow-ups, extra turns, reduced hit chance and passive bonuses.
+    /// Skills without direct damage skip the damage part instead of saying "no direct damage".
+    /// </summary>
+    public static string BuildHudEssentialsLine(SkillDefinition skill, SkillDescriptionContext? context = null)
+    {
+        if (skill == null)
+        {
+            return string.Empty;
+        }
+
+        var essentialParts = new List<string>();
+        if (HasDirectDamage(skill))
+        {
+            AppendIfNotEmpty(essentialParts, DescribeDirectDamage(skill));
+        }
+
+        AppendIfNotEmpty(essentialParts, DescribeEffects(skill.EffectsOnHit, skill, prefix: null));
+        AppendIfNotEmpty(essentialParts, DescribeDebuffScaling(skill));
+        AppendIfNotEmpty(essentialParts, DescribeBonusDamagePerOwnToken(skill));
+        AppendIfNotEmpty(essentialParts, DescribeFollowUpSkills(skill, context));
+        AppendIfNotEmpty(essentialParts, DescribeExtraTurn(skill));
+        AppendIfNotEmpty(essentialParts, DescribeHitChance(skill, context));
+        AppendIfNotEmpty(essentialParts, DescribeAccuracyPenaltyPerLivingEnemy(skill));
+
+        foreach (var passivePart in DescribePassiveModifiersForSkill(skill, context))
+        {
+            AppendIfNotEmpty(essentialParts, passivePart);
+        }
+
+        if (essentialParts.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var line = string.Join(" · ", essentialParts);
+        return char.ToUpperInvariant(line[0]) + line.Substring(1);
+    }
+
     private static void AppendIfNotEmpty(List<string> parts, string phrase)
     {
         if (!string.IsNullOrEmpty(phrase))

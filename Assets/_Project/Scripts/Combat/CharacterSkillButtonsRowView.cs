@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using DG.Tweening;
-using Game.Core.Domain;
 using Game.Core.Engine;
 using Game.Core.Models;
 using UnityEngine;
@@ -9,8 +8,10 @@ using UnityEngine;
 namespace Erumperem.Combat
 {
     /// <summary>
-    /// Spawns up to <see cref="MaxSlots"/> <see cref="SkillButtonCombat"/> instances inside the combat HUD
-    /// <c>SkillsPanel</c> horizontal layout.
+    /// Carrossel de skills do herói no turno do jogador, dentro do <c>SkillsPanel</c> da HUD.
+    /// Uma janela fixa de botões: o do meio mostra a skill do cursor e cada vizinho a skill seguinte/anterior,
+    /// dando a volta na lista (depois da última vem a primeira). Com poucas skills a mesma skill pode aparecer
+    /// dos dois lados; nunca a central.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CharacterSkillButtonsRowView : MonoBehaviour
@@ -20,31 +21,62 @@ namespace Erumperem.Combat
         /// Must stay aligned with PlayerActionBuilder / keys 1–7.
         /// </summary>
         public const int MaxVisibleSlots = 7;
-        private const int MaxSlots = MaxVisibleSlots;
+
+        private const int MaxSideSlots = 3;
+        private const int WindowSize = MaxSideSlots * 2 + 1;
         private const float RowIntroScaleFrom = 0.94f;
         private const float RowIntroDuration = 0.2f;
 
-        private readonly SkillButtonPanelView[] _slots = new SkillButtonPanelView[MaxSlots];
+        private readonly SkillButtonPanelView[] _windowViews = new SkillButtonPanelView[WindowSize];
+        private readonly bool[] _slotUsableScratch = new bool[MaxVisibleSlots];
         private string _combatantId = string.Empty;
-        private int? _hoveredZeroBasedSlotIndex;
-        private CombatSkillButtonBarUIManager _barManager;
-        private GameObject _skillButtonCombatPrefab;
+        private int? _cursorSlot;
+        private bool _isShowing;
+        private InfinitySkillScroll _carousel;
         private SkillVisualCatalog _skillVisualCatalog;
         private RectTransform _rowRect;
 
-        public string CombatantId => _combatantId;
+        /// <summary>Herói cujas skills estão na barra; vazio fora do turno do jogador.</summary>
+        public string CombatantId => _isShowing ? _combatantId : string.Empty;
 
-        public int? HoveredZeroBasedSlotIndex => _hoveredZeroBasedSlotIndex;
+        public bool IsShowing => _isShowing;
+
+        /// <summary>Slot sob o mouse (só em modo mouse).</summary>
+        public int? HoveredZeroBasedSlotIndex
+        {
+            get
+            {
+                if (!_isShowing || global::InputDeviceModeManager.IsKeyboardMode)
+                {
+                    return null;
+                }
+
+                for (var viewIndex = 0; viewIndex < WindowSize; viewIndex++)
+                {
+                    var view = _windowViews[viewIndex];
+                    if (view != null && view.IsHovered)
+                    {
+                        return view.SlotIndex;
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        /// <summary>Skill que a HUD descreve agora: a do mouse, senão a do cursor.</summary>
+        public int? PreviewedZeroBasedSlotIndex => _isShowing ? HoveredZeroBasedSlotIndex ?? _cursorSlot : null;
 
         public void Build(
-            CombatSkillButtonBarUIManager barManager,
             GameObject skillButtonCombatPrefab,
             SkillVisualCatalog skillVisualCatalog,
-            CombatSkillBarSelectionController skillBarSelectionOrNull = null)
+            InfinitySkillScroll carouselOrNull,
+            Action<int, int> onSlotClickedAtOffset)
         {
-            _barManager = barManager;
-            _skillButtonCombatPrefab = skillButtonCombatPrefab;
             _skillVisualCatalog = skillVisualCatalog;
+            _carousel = carouselOrNull;
+            _rowRect = (RectTransform)transform;
+            _carousel?.Configure(_rowRect);
 
             for (var childIndex = transform.childCount - 1; childIndex >= 0; childIndex--)
             {
@@ -55,82 +87,68 @@ namespace Erumperem.Combat
                 }
             }
 
-            for (var slotIndex = 0; slotIndex < MaxSlots; slotIndex++)
+            for (var viewIndex = 0; viewIndex < WindowSize; viewIndex++)
             {
-                var skillButtonInstance = Instantiate(_skillButtonCombatPrefab, transform, false);
-                var slot = skillButtonInstance.GetComponent<SkillButtonPanelView>() ??
-                           skillButtonInstance.AddComponent<SkillButtonPanelView>();
-                var indexCopy = slotIndex;
-                if (skillBarSelectionOrNull != null)
+                var instance = Instantiate(skillButtonCombatPrefab, transform, false);
+                if (!instance.TryGetComponent<SkillButtonPanelView>(out var view))
                 {
-                    slot.Wire(
-                        indexCopy,
-                        () => skillBarSelectionOrNull.RequestSelectSkillSlot(_combatantId, indexCopy));
-                }
-                else
-                {
-                    slot.Wire(
-                        indexCopy,
-                        () => _barManager.NotifySkillBarSlotSelected(_combatantId, indexCopy));
+                    view = instance.AddComponent<SkillButtonPanelView>();
                 }
 
-                var capturedSlotIndex = slotIndex;
-                slot.PointerEntered += _ => HandleSkillSlotPointerEntered(capturedSlotIndex);
-                slot.PointerExited += _ => HandleSkillSlotPointerExited(capturedSlotIndex);
-
-                _slots[slotIndex] = slot;
+                var offsetFromCenter = viewIndex - MaxSideSlots;
+                view.Wire();
+                view.Clicked += clickedView => onSlotClickedAtOffset?.Invoke(clickedView.SlotIndex, offsetFromCenter);
+                _carousel?.PlaceSlot((RectTransform)instance.transform, offsetFromCenter);
+                view.SetVisible(false);
+                _windowViews[viewIndex] = view;
             }
         }
-
-        private void HandleSkillSlotPointerEntered(int zeroBasedSlotIndex)
-        {
-            _hoveredZeroBasedSlotIndex = zeroBasedSlotIndex;
-        }
-
-        private void HandleSkillSlotPointerExited(int zeroBasedSlotIndex)
-        {
-            if (_hoveredZeroBasedSlotIndex == zeroBasedSlotIndex)
-            {
-                _hoveredZeroBasedSlotIndex = null;
-            }
-        }
-
-        public void SetActiveCombatantId(string combatantId) =>
-            _combatantId = combatantId ?? string.Empty;
 
         public void HideAllSlots()
         {
-            _hoveredZeroBasedSlotIndex = null;
-            for (var slotIndex = 0; slotIndex < MaxSlots; slotIndex++)
+            _isShowing = false;
+            _cursorSlot = null;
+            for (var viewIndex = 0; viewIndex < WindowSize; viewIndex++)
             {
-                _slots[slotIndex]?.SetVisible(false);
+                _windowViews[viewIndex]?.SetVisible(false);
             }
         }
 
-        public void DismissOtherDescriptionPanels(SkillButtonPanelView openSlot)
+        public void ClearHover()
         {
-            for (var slotIndex = 0; slotIndex < MaxSlots; slotIndex++)
+            for (var viewIndex = 0; viewIndex < WindowSize; viewIndex++)
             {
-                var slot = _slots[slotIndex];
-                if (slot == null || slot == openSlot)
-                {
-                    continue;
-                }
-
-                slot.DismissDescriptionFromSiblings();
+                _windowViews[viewIndex]?.ClearHover();
             }
         }
 
-        private void OnEnable()
+        /// <summary>Balança todas as cópias visíveis da skill recusada.</summary>
+        public void PlayRejectFeedback(int zeroBasedSlot)
+        {
+            for (var viewIndex = 0; viewIndex < WindowSize; viewIndex++)
+            {
+                var view = _windowViews[viewIndex];
+                if (view != null && view.isActiveAndEnabled && view.SlotIndex == zeroBasedSlot)
+                {
+                    view.PlayRejectFeedback();
+                }
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_rowRect != null)
+            {
+                _rowRect.DOKill(false);
+                _rowRect.localScale = Vector3.one;
+            }
+        }
+
+        private void PlayIntro()
         {
             if (_rowRect == null)
             {
                 _rowRect = (RectTransform)transform;
-            }
-
-            if (_rowRect == null)
-            {
-                return;
             }
 
             _rowRect.DOKill(false);
@@ -141,23 +159,12 @@ namespace Erumperem.Combat
                 .SetLink(_rowRect.gameObject);
         }
 
-        private void OnDisable()
-        {
-            if (_rowRect == null)
-            {
-                return;
-            }
-
-            _rowRect.DOKill(false);
-        }
-
         public void Refresh(
             BattleState battleState,
             BattleSimulator battleSimulator,
             Combatant subject,
-            bool canThisRowIssuePlayerCommands,
-            int? barSelectedZeroBased,
-            string barSelectedOwnerCombatantId,
+            int cursorSlot,
+            int? selectedSlot,
             Combatant selectedEnemyOrNull)
         {
             if (subject == null || string.IsNullOrEmpty(subject.Identity.Id))
@@ -166,58 +173,80 @@ namespace Erumperem.Combat
                 return;
             }
 
-            _combatantId = subject.Identity.Id;
-            var isEnemy = subject.Position.Side == Side.Enemies;
             var skillIds = subject.SkillLoadout.Skills
                 .Where(skillId => battleState.SkillsById.ContainsKey(skillId))
-                .Take(MaxSlots)
+                .Take(MaxVisibleSlots)
                 .ToList();
-
-            for (var slotIndex = 0; slotIndex < MaxSlots; slotIndex++)
+            var slotCount = skillIds.Count;
+            if (slotCount == 0)
             {
-                var slot = _slots[slotIndex];
-                if (slotIndex >= skillIds.Count)
-                {
-                    slot.SetVisible(false);
-                    continue;
-                }
+                HideAllSlots();
+                return;
+            }
 
-                var skillId = skillIds[slotIndex];
-                if (!battleState.SkillsById.TryGetValue(skillId, out var skillDefinition))
-                {
-                    slot.SetVisible(false);
-                    continue;
-                }
+            if (!_isShowing)
+            {
+                // A barra reaparece no começo do turno: nenhum hover antigo sobrevive.
+                ClearHover();
+                PlayIntro();
+            }
 
-                var playerLine = CombatSkillPlayerDescriptionFormatter.BuildSummaryLine(
-                    skillDefinition,
+            _isShowing = true;
+            _combatantId = subject.Identity.Id;
+            _cursorSlot = Mathf.Clamp(cursorSlot, 0, slotCount - 1);
+
+            for (var slotIndex = 0; slotIndex < slotCount; slotIndex++)
+            {
+                _slotUsableScratch[slotIndex] = CombatSkillSlotUiEligibility.IsSlotUiInteractable(
+                    battleState,
+                    battleSimulator,
+                    subject,
+                    slotIndex,
+                    selectedEnemyOrNull);
+            }
+
+            // O balão de descrição fica sempre no botão do centro: mostra a skill sob o mouse, senão a do cursor.
+            var describedSlot = Mathf.Clamp(PreviewedZeroBasedSlotIndex ?? _cursorSlot.Value, 0, slotCount - 1);
+            var centerDescription = battleState.SkillsById.TryGetValue(skillIds[describedSlot], out var describedSkill)
+                ? CombatSkillPlayerDescriptionFormatter.BuildHudEssentialsLine(
+                    describedSkill,
                     battleState,
                     subject,
-                    selectedEnemyOrNull);
-                ResolveSkillIconVisuals(skillId, out var skillIcon, out var skillIconColor);
-                var interactable = !isEnemy && canThisRowIssuePlayerCommands &&
-                    CombatSkillSlotUiEligibility.IsSlotUiInteractable(
-                        battleState,
-                        battleSimulator,
-                        subject,
-                        slotIndex,
-                        selectedEnemyOrNull);
+                    selectedEnemyOrNull)
+                : null;
 
-                var isSelected = barSelectedZeroBased.HasValue &&
-                    barSelectedZeroBased.Value == slotIndex &&
-                    !string.IsNullOrEmpty(barSelectedOwnerCombatantId) &&
-                    string.Equals(
-                        barSelectedOwnerCombatantId,
-                        _combatantId,
-                        StringComparison.Ordinal);
-                slot.SetVisible(true);
-                slot.ApplyVisuals(
+            var sideSlots = Mathf.Min(
+                _carousel != null ? _carousel.SideSlotCount : MaxSideSlots,
+                slotCount - 1);
+
+            for (var viewIndex = 0; viewIndex < WindowSize; viewIndex++)
+            {
+                var view = _windowViews[viewIndex];
+                if (view == null)
+                {
+                    continue;
+                }
+
+                var offsetFromCenter = viewIndex - MaxSideSlots;
+                if (Mathf.Abs(offsetFromCenter) > sideSlots)
+                {
+                    view.SetVisible(false);
+                    continue;
+                }
+
+                var slotIndex = ((_cursorSlot.Value + offsetFromCenter) % slotCount + slotCount) % slotCount;
+                var isCenter = offsetFromCenter == 0;
+                ResolveSkillIconVisuals(skillIds[slotIndex], out var skillIcon, out var skillIconColor);
+
+                view.SetVisible(true);
+                view.Render(new SkillSlotViewState(
+                    slotIndex,
                     skillIcon,
                     skillIconColor,
-                    interactable,
-                    isSelected,
-                    playerLine,
-                    hotkeyLabelOneToSeven: slotIndex + 1);
+                    _slotUsableScratch[slotIndex],
+                    isFocused: isCenter,
+                    isSelected: isCenter && selectedSlot == slotIndex,
+                    descriptionOrNull: isCenter ? centerDescription : null));
             }
         }
 
