@@ -31,7 +31,8 @@ public class GrassEnvironmentController : MonoBehaviour
             // Adiciona a turbulência usando o tempo
             float turbulence = Mathf.Sin(Time.time * windZone.windPulseFrequency) * windZone.windTurbulence;
             
-            Shader.SetGlobalVector("_GlobalWindForce", windForce + (windZone.transform.forward * turbulence));
+            float windMultiplier = GraphicsSettingsService.GroundWindMultiplier;
+            Shader.SetGlobalVector("_GlobalWindForce", (windForce + (windZone.transform.forward * turbulence)) * windMultiplier);
         }
     }
 }
