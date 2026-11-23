@@ -9,21 +9,43 @@ public sealed class TorchThreatCameraShake : CinemachineExtension
     private float _strength;
     private float _proximityStrength;
 
-    public void SetProximityStrength(float strength) => _proximityStrength = Mathf.Max(0f, strength);
+    public void SetProximityStrength(float strength)
+    {
+        _proximityStrength = GraphicsSettingsService.ScreenShakeEnabled ? Mathf.Max(0f, strength) : 0f;
+    }
 
     public void Play(float duration, float strength)
     {
+        if (!GraphicsSettingsService.ScreenShakeEnabled)
+        {
+            Stop();
+            return;
+        }
+
         _startedAt = Time.time;
         _duration = Mathf.Max(0.01f, duration);
         _strength = strength;
     }
 
-    public void Stop() => _duration = 0f;
+    public void Stop()
+    {
+        _duration = 0f;
+        _strength = 0f;
+        _proximityStrength = 0f;
+    }
 
     protected override void PostPipelineStageCallback(CinemachineVirtualCameraBase vcam,
         CinemachineCore.Stage stage, ref CameraState state, float deltaTime)
     {
         if (stage != CinemachineCore.Stage.Noise || deltaTime < 0f) return;
+        if (!GraphicsSettingsService.ScreenShakeEnabled)
+        {
+            _duration = 0f;
+            _strength = 0f;
+            _proximityStrength = 0f;
+            return;
+        }
+
         float elapsed = Time.time - _startedAt;
         float strength = _proximityStrength;
         if (_duration > 0f && elapsed < _duration)
