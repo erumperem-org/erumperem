@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -17,6 +18,7 @@ namespace Player
 
         public Vector2 MoveInput { get; private set; }
         public bool IsBlocked { get; set; }
+
         public bool CanAcceptWorldInput => isActiveAndEnabled && !IsBlocked && _actionMap != null && _actionMap.enabled;
 
         public event System.Action OnInteract;
@@ -30,7 +32,7 @@ namespace Player
         private System.Action _currentDetectionSystemInteract;
         private bool _initialized;
 
-        // ── Unity lifecycle ───────────────────────────────────────────────
+        [SerializeField] private PlayerDetectionSystem _pendingDetectionSystem;
 
         private void Awake()
         {
@@ -42,24 +44,26 @@ namespace Player
             }
 
             _actionMap = _inputActions.FindActionMap(_actionMapName, throwIfNotFound: true);
+            InputBindingsService.Register(_actionMap);
+
             _moveAction = _actionMap.FindAction(_moveActionName, throwIfNotFound: true);
             _interactAction = _actionMap.FindAction(_interactActionName, throwIfNotFound: true);
             _torchAction = _actionMap.FindAction(_torchActionName, throwIfNotFound: true);
 
-            // performed: dispara uma vez por press — requer que a Action
-            // esteja configurada como "Button" no InputActionAsset.
-            // Se estiver como "Value/Vector2", troque por WasPressedThisFrame() no Update.
             _interactAction.performed += _ =>
             {
-                if (IsBlocked) return;
+                if (IsBlocked)
+                {
+                    return;
+                }
+
                 OnInteract?.Invoke();
             };
+
             _torchAction.performed += _ => OnTorch?.Invoke();
 
             _initialized = true;
 
-            // Caso BindDetectionSystem tenha sido chamado antes do Awake,
-            // reaplicamos o bind pendente agora que as actions existem.
             if (_pendingDetectionSystem != null)
             {
                 BindDetectionSystem(_pendingDetectionSystem);
@@ -67,12 +71,20 @@ namespace Player
             }
         }
 
-        private void OnEnable() => _actionMap?.Enable();
+        private void OnEnable()
+        {
+            _actionMap?.Enable();
+        }
 
         private void OnDisable()
         {
             _actionMap?.Disable();
             MoveInput = Vector2.zero;
+        }
+
+        private void OnDestroy()
+        {
+            InputBindingsService.Unregister(_actionMap);
         }
 
         private void Update()
@@ -82,15 +94,10 @@ namespace Player
                 : Vector2.zero;
         }
 
-        // ── API pública ───────────────────────────────────────────────────
-
-        [SerializeField] private PlayerDetectionSystem _pendingDetectionSystem;
-
         public void BindDetectionSystem(PlayerDetectionSystem detectionSystem)
         {
             if (!_initialized)
             {
-                // Awake ainda não rodou — guarda para aplicar depois.
                 _pendingDetectionSystem = detectionSystem;
                 return;
             }

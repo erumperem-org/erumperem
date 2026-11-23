@@ -1,6 +1,8 @@
+
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Erumperem.Progression;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -25,6 +27,7 @@ public static class UiNavigationTargetCatalog
         }
 
         var customRoots = new HashSet<Transform>();
+        var addedCustomObjects = new HashSet<GameObject>();
         var processedToggleGroups = new HashSet<ToggleGroup>();
         var collapseToggleGroups = IsSettingsPanel(panel);
         var behaviours = navigationRoot.GetComponentsInChildren<MonoBehaviour>(true);
@@ -40,13 +43,29 @@ public static class UiNavigationTargetCatalog
 
             var rectTransform = behaviour.transform as RectTransform;
 
-            if (rectTransform == null)
+            if (rectTransform == null || !addedCustomObjects.Add(behaviour.gameObject))
             {
                 continue;
             }
 
             customRoots.Add(behaviour.transform);
             targets.Add(new UiNavigationTarget(behaviour.gameObject, rectTransform, behaviour.GetComponent<Selectable>(), true));
+        }
+
+        SkillTreeNodePresenter[] skillNodes = navigationRoot.GetComponentsInChildren<SkillTreeNodePresenter>(true);
+
+        foreach (SkillTreeNodePresenter skillNode in skillNodes)
+        {
+            if (skillNode == null || !skillNode.enabled || !skillNode.gameObject.activeInHierarchy || skillNode.NodeAsset == null || !BelongsToPanel(panel, skillNode.transform))
+            {
+                continue;
+            }
+
+            if (skillNode.transform is RectTransform skillRect)
+            {
+                customRoots.Add(skillNode.transform);
+                targets.Add(new UiNavigationTarget(skillNode.gameObject, skillRect, skillNode.GetComponent<Button>(), true));
+            }
         }
 
         var selectables = navigationRoot.GetComponentsInChildren<Selectable>(true);
@@ -74,6 +93,32 @@ public static class UiNavigationTargetCatalog
 
             targets.Add(new UiNavigationTarget(selectable.gameObject, rectTransform, selectable, false));
         }
+
+        ScrollRect[] scrolls = navigationRoot.GetComponentsInChildren<ScrollRect>(true);
+
+        foreach (ScrollRect scroll in scrolls)
+        {
+            if (scroll == null || !scroll.enabled || !scroll.gameObject.activeInHierarchy || scroll.content == null || !BelongsToPanel(panel, scroll.transform))
+            {
+                continue;
+            }
+
+            bool hasFocusableContent = false;
+
+            foreach (UiNavigationTarget target in targets)
+            {
+                if (target.GameObject != null && (target.GameObject.transform == scroll.content || target.GameObject.transform.IsChildOf(scroll.content)))
+                {
+                    hasFocusableContent = true;
+                    break;
+                }
+            }
+
+            if (!hasFocusableContent && scroll.transform is RectTransform rect)
+            {
+                targets.Add(new UiNavigationTarget(scroll.gameObject, rect, null, false, true));
+            }
+        }
     }
 
     public static bool IsValid(UiNavigationTarget target)
@@ -81,6 +126,19 @@ public static class UiNavigationTargetCatalog
         if (target == null || target.GameObject == null || target.RectTransform == null || !target.GameObject.activeInHierarchy)
         {
             return false;
+        }
+
+        SkillTreeNodePresenter skill = target.GameObject.GetComponent<SkillTreeNodePresenter>();
+
+        if (skill != null)
+        {
+            return skill.enabled && skill.NodeAsset != null && AreParentCanvasGroupsInteractive(skill.transform);
+        }
+
+        if (target.IsScrollRect)
+        {
+            ScrollRect scroll = target.GameObject.GetComponent<ScrollRect>();
+            return scroll != null && scroll.enabled && scroll.content != null && AreParentCanvasGroupsInteractive(scroll.transform);
         }
 
         if (!target.IsCustomUiButton)
