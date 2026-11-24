@@ -386,7 +386,9 @@ public sealed class GraphicsSettingsService : MonoBehaviour
         bool fancy = FancyQualityEnabled;
         QualitySettings.globalTextureMipmapLimit = fancy ? FancyTextureMipmapLimit : SimpleTextureMipmapLimit;
         QualitySettings.lodBias = fancy ? FancyQualityLodBias : SimpleQualityLodBias;
-        QualitySettings.shadowResolution = fancy ? ShadowResolution.VeryHigh : ShadowResolution.Low;
+        QualitySettings.shadowResolution = fancy
+    ? UnityEngine.ShadowResolution.VeryHigh
+    : UnityEngine.ShadowResolution.Low;
         QualitySettings.anisotropicFiltering = fancy
             ? AnisotropicFiltering.ForceEnable
             : AnisotropicFiltering.Disable;
