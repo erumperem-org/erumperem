@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -26,30 +27,47 @@ public sealed class GraphicsSettingsService : MonoBehaviour
     private const int DefaultBrightness = 50;
     private const float MinimumBrightnessExposure = -0.55f;
     private const float MaximumBrightnessExposure = 0.4f;
-    private const float DisabledGroundWindMultiplier = 0.15f;
-    private const float MotionBlurIntensity = 0.35f;
+    private const float DisabledGroundWindMultiplier = 0f;
+    private const float MotionBlurIntensity = 1f;
+    private const float MotionBlurClamp = 0.2f;
+    private const float SimpleQualityLodBias = 0.5f;
+    private const float FancyQualityLodBias = 2f;
+    private const int SimpleTextureMipmapLimit = 1;
+    private const int FancyTextureMipmapLimit = 0;
     private const float PreferenceSaveDelaySeconds = 0.35f;
     private const float ParticleScanIntervalSeconds = 0.75f;
+    private const float GraphicsScanIntervalSeconds = 2f;
     private const int MaximumFrameRate = 100;
     private const int MinimumFrameRate = 1;
     private const int MaximumBrightness = 100;
     private const int MinimumBrightness = 1;
 
+    private static readonly int GrassWindForceProperty = Shader.PropertyToID("_Wind_Force");
+    private static readonly int LegacyGrassWindStrengthProperty = Shader.PropertyToID("_WindStrength");
+    private static readonly int LegacyGrassWindSpeedProperty = Shader.PropertyToID("_WindSpeed");
+
     private static GraphicsSettingsService _instance;
 
     private readonly Dictionary<ParticleSystem, ParticleSystemState> _particleSystemStates =
         new Dictionary<ParticleSystem, ParticleSystemState>();
+    private readonly Dictionary<Light, LightShadows> _originalLightShadowTypes =
+        new Dictionary<Light, LightShadows>();
+    private readonly Dictionary<Material, GrassWindMaterialState> _grassWindMaterialStates =
+        new Dictionary<Material, GrassWindMaterialState>();
 
     private VolumeProfile _runtimeVolumeProfile;
     private ColorAdjustments _colorAdjustments;
     private MotionBlur _motionBlur;
     private UniversalAdditionalCameraData _managedCameraData;
     private Camera _managedCamera;
+    private LayerMask _managedCameraOriginalVolumeMask;
     private bool _managedCameraOriginallyProcessed;
     private bool _enabledPostProcessingForCamera;
+    private bool _modifiedCameraVolumeMask;
     private bool _preferencesDirty;
     private float _savePreferencesAt;
     private float _scanParticlesAt;
+    private float _scanGraphicsAt;
 
     /// <summary>Returns whether fullscreen is enabled in the saved graphics preferences.</summary>
     public static bool FullscreenEnabled => ReadBoolean(FullscreenPreferenceKey, false);
@@ -123,6 +141,9 @@ public sealed class GraphicsSettingsService : MonoBehaviour
             return;
 
         SceneManager.sceneLoaded -= OnSceneLoaded;
+        RestoreManagedCameraPostProcessing();
+        RestoreOriginalLightShadowTypes();
+        RestoreGrassWindMaterials();
         if (_runtimeVolumeProfile != null)
             Destroy(_runtimeVolumeProfile);
         _instance = null;
@@ -132,6 +153,16 @@ public sealed class GraphicsSettingsService : MonoBehaviour
     {
         if (_preferencesDirty && Time.unscaledTime >= _savePreferencesAt)
             SavePreferences();
+
+        if (MotionBlurEnabled || BrightnessPercent != DefaultBrightness)
+            UpdateMainCameraPostProcessing();
+
+        if (Time.unscaledTime >= _scanGraphicsAt)
+        {
+            _scanGraphicsAt = Time.unscaledTime + GraphicsScanIntervalSeconds;
+            ApplySmoothLighting();
+            ApplyGroundDetails();
+        }
 
         if (!ParticleEffectsEnabled && Time.unscaledTime >= _scanParticlesAt)
         {
@@ -264,7 +295,9 @@ public sealed class GraphicsSettingsService : MonoBehaviour
             return;
 
         PlayerPrefs.SetInt(GroundDetailsPreferenceKey, enabled ? 1 : 0);
-        EnsureInstance().MarkPreferencesDirty();
+        GraphicsSettingsService service = EnsureInstance();
+        service.MarkPreferencesDirty();
+        service.ApplyGroundDetails();
     }
 
     /// <summary>Saves the particle-effects preference and updates loaded particle systems.</summary>
@@ -300,7 +333,9 @@ public sealed class GraphicsSettingsService : MonoBehaviour
         _motionBlur.active = false;
         _motionBlur.intensity.overrideState = true;
         _motionBlur.mode.overrideState = true;
+        _motionBlur.clamp.overrideState = true;
         _motionBlur.mode.value = MotionBlurMode.CameraOnly;
+        _motionBlur.clamp.value = MotionBlurClamp;
 
         Volume runtimeVolume = gameObject.AddComponent<Volume>();
         runtimeVolume.isGlobal = true;
@@ -314,6 +349,7 @@ public sealed class GraphicsSettingsService : MonoBehaviour
         ApplyDisplaySettings();
         ApplyQualitySettings();
         ApplySmoothLighting();
+        ApplyGroundDetails();
         ApplyFrameRate();
         ApplyPostProcessingSettings();
         ApplyParticleEffects();
@@ -340,12 +376,20 @@ public sealed class GraphicsSettingsService : MonoBehaviour
     private void ApplyQualitySettings()
     {
         string[] qualityNames = QualitySettings.names;
-        if (qualityNames == null || qualityNames.Length == 0)
-            return;
+        if (qualityNames != null && qualityNames.Length > 0)
+        {
+            int targetQualityIndex = FindQualityIndex(qualityNames, FancyQualityEnabled);
+            if (QualitySettings.GetQualityLevel() != targetQualityIndex)
+                QualitySettings.SetQualityLevel(targetQualityIndex, true);
+        }
 
-        int targetQualityIndex = FindQualityIndex(qualityNames, FancyQualityEnabled);
-        if (QualitySettings.GetQualityLevel() != targetQualityIndex)
-            QualitySettings.SetQualityLevel(targetQualityIndex, true);
+        bool fancy = FancyQualityEnabled;
+        QualitySettings.globalTextureMipmapLimit = fancy ? FancyTextureMipmapLimit : SimpleTextureMipmapLimit;
+        QualitySettings.lodBias = fancy ? FancyQualityLodBias : SimpleQualityLodBias;
+        QualitySettings.shadowResolution = fancy ? ShadowResolution.VeryHigh : ShadowResolution.Low;
+        QualitySettings.anisotropicFiltering = fancy
+            ? AnisotropicFiltering.ForceEnable
+            : AnisotropicFiltering.Disable;
     }
 
     private static int FindQualityIndex(string[] qualityNames, bool fancy)
@@ -362,9 +406,142 @@ public sealed class GraphicsSettingsService : MonoBehaviour
 
     private void ApplySmoothLighting()
     {
-        QualitySettings.shadows = SmoothLightingEnabled
+        bool enabled = SmoothLightingEnabled;
+        QualitySettings.shadows = enabled
             ? UnityEngine.ShadowQuality.All
             : UnityEngine.ShadowQuality.HardOnly;
+
+        Light[] lights = FindObjectsByType<Light>(FindObjectsSortMode.None);
+        foreach (Light light in lights)
+        {
+            if (light == null)
+                continue;
+
+            if (!_originalLightShadowTypes.TryGetValue(light, out LightShadows originalShadowType))
+            {
+                originalShadowType = light.shadows;
+                _originalLightShadowTypes.Add(light, originalShadowType);
+            }
+
+            if (originalShadowType == LightShadows.None)
+                continue;
+
+            light.shadows = enabled ? LightShadows.Soft : LightShadows.Hard;
+        }
+
+        RemoveDestroyedLights();
+    }
+
+    private void RestoreOriginalLightShadowTypes()
+    {
+        foreach (KeyValuePair<Light, LightShadows> pair in _originalLightShadowTypes)
+        {
+            if (pair.Key != null)
+                pair.Key.shadows = pair.Value;
+        }
+
+        _originalLightShadowTypes.Clear();
+    }
+
+    private void RemoveDestroyedLights()
+    {
+        List<Light> destroyedLights = null;
+        foreach (KeyValuePair<Light, LightShadows> pair in _originalLightShadowTypes)
+        {
+            if (pair.Key != null)
+                continue;
+
+            if (destroyedLights == null)
+                destroyedLights = new List<Light>();
+            destroyedLights.Add(pair.Key);
+        }
+
+        if (destroyedLights == null)
+            return;
+
+        foreach (Light light in destroyedLights)
+            _originalLightShadowTypes.Remove(light);
+    }
+
+    private void ApplyGroundDetails()
+    {
+        Material[] materials = Resources.FindObjectsOfTypeAll<Material>();
+        bool enabled = GroundDetailsEnabled;
+
+        foreach (Material material in materials)
+        {
+            if (material == null || material.name.IndexOf("grass", StringComparison.OrdinalIgnoreCase) < 0)
+                continue;
+
+            if (!_grassWindMaterialStates.TryGetValue(material, out GrassWindMaterialState state))
+            {
+                state = CaptureGrassWindMaterialState(material);
+                if (!state.HasWindProperties)
+                    continue;
+
+                _grassWindMaterialStates.Add(material, state);
+            }
+
+            ApplyGrassWindMaterialState(material, state, enabled);
+        }
+
+        RemoveDestroyedGrassMaterials();
+    }
+
+    private static GrassWindMaterialState CaptureGrassWindMaterialState(Material material)
+    {
+        bool hasWindForce = material.HasProperty(GrassWindForceProperty);
+        bool hasWindStrength = material.HasProperty(LegacyGrassWindStrengthProperty);
+        bool hasWindSpeed = material.HasProperty(LegacyGrassWindSpeedProperty);
+
+        return new GrassWindMaterialState(
+            hasWindForce,
+            hasWindForce ? material.GetFloat(GrassWindForceProperty) : 0f,
+            hasWindStrength,
+            hasWindStrength ? material.GetFloat(LegacyGrassWindStrengthProperty) : 0f,
+            hasWindSpeed,
+            hasWindSpeed ? material.GetFloat(LegacyGrassWindSpeedProperty) : 0f);
+    }
+
+    private static void ApplyGrassWindMaterialState(Material material, GrassWindMaterialState state, bool enabled)
+    {
+        if (state.HasWindForce)
+            material.SetFloat(GrassWindForceProperty, enabled ? state.WindForce : 0f);
+        if (state.HasWindStrength)
+            material.SetFloat(LegacyGrassWindStrengthProperty, enabled ? state.WindStrength : 0f);
+        if (state.HasWindSpeed)
+            material.SetFloat(LegacyGrassWindSpeedProperty, enabled ? state.WindSpeed : 0f);
+    }
+
+    private void RestoreGrassWindMaterials()
+    {
+        foreach (KeyValuePair<Material, GrassWindMaterialState> pair in _grassWindMaterialStates)
+        {
+            if (pair.Key != null)
+                ApplyGrassWindMaterialState(pair.Key, pair.Value, true);
+        }
+
+        _grassWindMaterialStates.Clear();
+    }
+
+    private void RemoveDestroyedGrassMaterials()
+    {
+        List<Material> destroyedMaterials = null;
+        foreach (KeyValuePair<Material, GrassWindMaterialState> pair in _grassWindMaterialStates)
+        {
+            if (pair.Key != null)
+                continue;
+
+            if (destroyedMaterials == null)
+                destroyedMaterials = new List<Material>();
+            destroyedMaterials.Add(pair.Key);
+        }
+
+        if (destroyedMaterials == null)
+            return;
+
+        foreach (Material material in destroyedMaterials)
+            _grassWindMaterialStates.Remove(material);
     }
 
     private void ApplyPostProcessingSettings()
@@ -379,6 +556,7 @@ public sealed class GraphicsSettingsService : MonoBehaviour
         {
             _motionBlur.active = MotionBlurEnabled;
             _motionBlur.intensity.value = MotionBlurEnabled ? MotionBlurIntensity : 0f;
+            _motionBlur.clamp.value = MotionBlurClamp;
         }
 
         UpdateMainCameraPostProcessing();
@@ -394,7 +572,12 @@ public sealed class GraphicsSettingsService : MonoBehaviour
             _managedCameraData = mainCamera != null
                 ? mainCamera.GetComponent<UniversalAdditionalCameraData>()
                 : null;
-            _managedCameraOriginallyProcessed = _managedCameraData != null && _managedCameraData.renderPostProcessing;
+            _managedCameraOriginalVolumeMask = default;
+            if (_managedCameraData != null)
+            {
+                _managedCameraOriginallyProcessed = _managedCameraData.renderPostProcessing;
+                _managedCameraOriginalVolumeMask = _managedCameraData.volumeLayerMask;
+            }
             _enabledPostProcessingForCamera = false;
         }
 
@@ -403,10 +586,31 @@ public sealed class GraphicsSettingsService : MonoBehaviour
             return;
 
         if (_managedCameraData == null && needsPostProcessing)
+        {
             _managedCameraData = _managedCamera.gameObject.AddComponent<UniversalAdditionalCameraData>();
+            _managedCameraOriginallyProcessed = _managedCameraData.renderPostProcessing;
+            _managedCameraOriginalVolumeMask = _managedCameraData.volumeLayerMask;
+        }
 
         if (_managedCameraData == null)
             return;
+
+        int runtimeVolumeLayer = 1 << gameObject.layer;
+        LayerMask currentVolumeMask = _managedCameraData.volumeLayerMask;
+        bool runtimeVolumeLayerIncluded = (currentVolumeMask.value & runtimeVolumeLayer) != 0;
+        if (needsPostProcessing && !runtimeVolumeLayerIncluded)
+        {
+            _managedCameraOriginalVolumeMask = currentVolumeMask;
+            LayerMask expandedVolumeMask = currentVolumeMask;
+            expandedVolumeMask.value |= runtimeVolumeLayer;
+            _managedCameraData.volumeLayerMask = expandedVolumeMask;
+            _modifiedCameraVolumeMask = true;
+        }
+        else if (!needsPostProcessing && _modifiedCameraVolumeMask)
+        {
+            _managedCameraData.volumeLayerMask = _managedCameraOriginalVolumeMask;
+            _modifiedCameraVolumeMask = false;
+        }
 
         if (needsPostProcessing && !_managedCameraData.renderPostProcessing)
         {
@@ -422,12 +626,18 @@ public sealed class GraphicsSettingsService : MonoBehaviour
 
     private void RestoreManagedCameraPostProcessing()
     {
-        if (_managedCameraData != null && _enabledPostProcessingForCamera)
-            _managedCameraData.renderPostProcessing = _managedCameraOriginallyProcessed;
+        if (_managedCameraData != null)
+        {
+            if (_enabledPostProcessingForCamera)
+                _managedCameraData.renderPostProcessing = _managedCameraOriginallyProcessed;
+            if (_modifiedCameraVolumeMask)
+                _managedCameraData.volumeLayerMask = _managedCameraOriginalVolumeMask;
+        }
 
         _managedCamera = null;
         _managedCameraData = null;
         _enabledPostProcessingForCamera = false;
+        _modifiedCameraVolumeMask = false;
     }
 
     private static float GetBrightnessExposure(int percentage)
@@ -541,6 +751,28 @@ public sealed class GraphicsSettingsService : MonoBehaviour
 
         PlayerPrefs.Save();
         _preferencesDirty = false;
+    }
+
+    private sealed class GrassWindMaterialState
+    {
+        public readonly bool HasWindForce;
+        public readonly float WindForce;
+        public readonly bool HasWindStrength;
+        public readonly float WindStrength;
+        public readonly bool HasWindSpeed;
+        public readonly float WindSpeed;
+        public bool HasWindProperties => HasWindForce || HasWindStrength || HasWindSpeed;
+
+        public GrassWindMaterialState(bool hasWindForce, float windForce, bool hasWindStrength,
+            float windStrength, bool hasWindSpeed, float windSpeed)
+        {
+            HasWindForce = hasWindForce;
+            WindForce = windForce;
+            HasWindStrength = hasWindStrength;
+            WindStrength = windStrength;
+            HasWindSpeed = hasWindSpeed;
+            WindSpeed = windSpeed;
+        }
     }
 
     private readonly struct ParticleSystemState
