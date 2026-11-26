@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -14,9 +13,9 @@ public sealed class GraphicsSettingsService : MonoBehaviour
     public const string ResolutionHeightPreferenceKey = "Graphics.ResolutionHeight";
     public const string FrameRatePreferenceKey = "Graphics.FrameRate";
     public const string BrightnessPreferenceKey = "Graphics.Brightness";
-    public const string FancyQualityPreferenceKey = "Graphics.FancyQuality";
     public const string SmoothLightingPreferenceKey = "Graphics.SmoothLighting";
     public const string MotionBlurPreferenceKey = "Graphics.MotionBlur";
+    public const string MotionBlurPercentPreferenceKey = "Graphics.MotionBlurPercent";
     public const string ScreenShakePreferenceKey = "Graphics.ScreenShake";
     public const string GroundDetailsPreferenceKey = "Graphics.GroundDetails";
     public const string ParticleEffectsPreferenceKey = "Graphics.ParticleEffects";
@@ -25,26 +24,20 @@ public sealed class GraphicsSettingsService : MonoBehaviour
     private const int DefaultResolutionHeight = 720;
     private const int DefaultFrameRate = 60;
     private const int DefaultBrightness = 50;
-    private const float MinimumBrightnessExposure = -0.55f;
-    private const float MaximumBrightnessExposure = 0.4f;
+    private const float MinimumBrightnessExposure = -0.75f;
+    private const float MaximumBrightnessExposure = 0.55f;
     private const float DisabledGroundWindMultiplier = 0f;
-    private const float MotionBlurIntensity = 1f;
     private const float MotionBlurClamp = 0.2f;
-    private const float SimpleQualityLodBias = 0.5f;
-    private const float FancyQualityLodBias = 2f;
-    private const int SimpleTextureMipmapLimit = 1;
-    private const int FancyTextureMipmapLimit = 0;
+    private const float ReducedTerrainDetailDensity = 0.3f;
     private const float PreferenceSaveDelaySeconds = 0.35f;
     private const float ParticleScanIntervalSeconds = 0.75f;
     private const float GraphicsScanIntervalSeconds = 2f;
     private const int MaximumFrameRate = 100;
     private const int MinimumFrameRate = 1;
     private const int MaximumBrightness = 100;
-    private const int MinimumBrightness = 1;
-
-    private static readonly int GrassWindForceProperty = Shader.PropertyToID("_Wind_Force");
-    private static readonly int LegacyGrassWindStrengthProperty = Shader.PropertyToID("_WindStrength");
-    private static readonly int LegacyGrassWindSpeedProperty = Shader.PropertyToID("_WindSpeed");
+    private const int MinimumBrightness = 0;
+    private const int MinimumMotionBlurPercent = 0;
+    private const int MaximumMotionBlurPercent = 100;
 
     private static GraphicsSettingsService _instance;
 
@@ -52,8 +45,10 @@ public sealed class GraphicsSettingsService : MonoBehaviour
         new Dictionary<ParticleSystem, ParticleSystemState>();
     private readonly Dictionary<Light, LightShadows> _originalLightShadowTypes =
         new Dictionary<Light, LightShadows>();
-    private readonly Dictionary<Material, GrassWindMaterialState> _grassWindMaterialStates =
-        new Dictionary<Material, GrassWindMaterialState>();
+    private readonly Dictionary<Terrain, float> _originalTerrainDensities =
+        new Dictionary<Terrain, float>();
+    private readonly Dictionary<TerrainData, TerrainGrassState> _originalTerrainGrassStates =
+        new Dictionary<TerrainData, TerrainGrassState>();
 
     private VolumeProfile _runtimeVolumeProfile;
     private ColorAdjustments _colorAdjustments;
@@ -84,19 +79,22 @@ public sealed class GraphicsSettingsService : MonoBehaviour
     /// <summary>Returns the saved brightness percentage, clamped to the supported slider range.</summary>
     public static int BrightnessPercent => Mathf.Clamp(PlayerPrefs.GetInt(BrightnessPreferenceKey, DefaultBrightness), MinimumBrightness, MaximumBrightness);
 
-    /// <summary>Returns whether the Fancy quality preset is selected.</summary>
-    public static bool FancyQualityEnabled => ReadBoolean(FancyQualityPreferenceKey, false);
-
     /// <summary>Returns whether soft shadows are enabled.</summary>
     public static bool SmoothLightingEnabled => ReadBoolean(SmoothLightingPreferenceKey, true);
 
+    /// <summary>Returns the saved motion-blur percentage.</summary>
+    public static int MotionBlurPercent => Mathf.Clamp(
+        PlayerPrefs.GetInt(MotionBlurPercentPreferenceKey,
+            ReadBoolean(MotionBlurPreferenceKey, false) ? MaximumMotionBlurPercent : MinimumMotionBlurPercent),
+        MinimumMotionBlurPercent, MaximumMotionBlurPercent);
+
     /// <summary>Returns whether motion blur is enabled.</summary>
-    public static bool MotionBlurEnabled => ReadBoolean(MotionBlurPreferenceKey, false);
+    public static bool MotionBlurEnabled => MotionBlurPercent > MinimumMotionBlurPercent;
 
     /// <summary>Returns whether camera shake is enabled.</summary>
     public static bool ScreenShakeEnabled => ReadBoolean(ScreenShakePreferenceKey, true);
 
-    /// <summary>Returns whether animated ground details are enabled.</summary>
+    /// <summary>Returns whether Terrain details and grass wind are enabled.</summary>
     public static bool GroundDetailsEnabled => ReadBoolean(GroundDetailsPreferenceKey, true);
 
     /// <summary>Returns whether particle effects are enabled.</summary>
@@ -143,7 +141,7 @@ public sealed class GraphicsSettingsService : MonoBehaviour
         SceneManager.sceneLoaded -= OnSceneLoaded;
         RestoreManagedCameraPostProcessing();
         RestoreOriginalLightShadowTypes();
-        RestoreGrassWindMaterials();
+        RestoreTerrainDetails();
         if (_runtimeVolumeProfile != null)
             Destroy(_runtimeVolumeProfile);
         _instance = null;
@@ -154,8 +152,7 @@ public sealed class GraphicsSettingsService : MonoBehaviour
         if (_preferencesDirty && Time.unscaledTime >= _savePreferencesAt)
             SavePreferences();
 
-        if (MotionBlurEnabled || BrightnessPercent != DefaultBrightness)
-            UpdateMainCameraPostProcessing();
+        UpdateMainCameraPostProcessing();
 
         if (Time.unscaledTime >= _scanGraphicsAt)
         {
@@ -240,18 +237,24 @@ public sealed class GraphicsSettingsService : MonoBehaviour
         service.ApplyPostProcessingSettings();
     }
 
-    /// <summary>Saves and applies the Simple or Fancy quality preference.</summary>
-    public static void SetFancyQuality(bool enabled)
+    /// <summary>Saves and applies the motion-blur percentage.</summary>
+    public static void SetMotionBlurPercent(int percentage)
     {
-        if (FancyQualityEnabled == enabled)
+        percentage = Mathf.Clamp(percentage, MinimumMotionBlurPercent, MaximumMotionBlurPercent);
+        if (MotionBlurPercent == percentage)
             return;
 
-        PlayerPrefs.SetInt(FancyQualityPreferenceKey, enabled ? 1 : 0);
+        PlayerPrefs.SetInt(MotionBlurPercentPreferenceKey, percentage);
+        PlayerPrefs.SetInt(MotionBlurPreferenceKey, percentage > MinimumMotionBlurPercent ? 1 : 0);
         GraphicsSettingsService service = EnsureInstance();
         service.MarkPreferencesDirty();
-        service.ApplyQualitySettings();
-        service.ApplySmoothLighting();
-        service.ApplyFrameRate();
+        service.ApplyPostProcessingSettings();
+    }
+
+    /// <summary>Saves and applies the motion-blur preference as a full-strength switch.</summary>
+    public static void SetMotionBlur(bool enabled)
+    {
+        SetMotionBlurPercent(enabled ? MaximumMotionBlurPercent : MinimumMotionBlurPercent);
     }
 
     /// <summary>Saves and applies the smooth-lighting preference.</summary>
@@ -266,17 +269,7 @@ public sealed class GraphicsSettingsService : MonoBehaviour
         service.ApplySmoothLighting();
     }
 
-    /// <summary>Saves and applies the motion-blur preference.</summary>
-    public static void SetMotionBlur(bool enabled)
-    {
-        if (MotionBlurEnabled == enabled)
-            return;
 
-        PlayerPrefs.SetInt(MotionBlurPreferenceKey, enabled ? 1 : 0);
-        GraphicsSettingsService service = EnsureInstance();
-        service.MarkPreferencesDirty();
-        service.ApplyPostProcessingSettings();
-    }
 
     /// <summary>Saves the screen-shake preference for camera-shake systems.</summary>
     public static void SetScreenShake(bool enabled)
@@ -288,7 +281,7 @@ public sealed class GraphicsSettingsService : MonoBehaviour
         EnsureInstance().MarkPreferencesDirty();
     }
 
-    /// <summary>Saves the ground-detail preference used by the grass wind controller.</summary>
+    /// <summary>Saves the Terrain detail density and grass wind preference.</summary>
     public static void SetGroundDetails(bool enabled)
     {
         if (GroundDetailsEnabled == enabled)
@@ -330,11 +323,11 @@ public sealed class GraphicsSettingsService : MonoBehaviour
         _colorAdjustments.postExposure.overrideState = true;
 
         _motionBlur = _runtimeVolumeProfile.Add<MotionBlur>(false);
-        _motionBlur.active = false;
+        _motionBlur.active = true;
         _motionBlur.intensity.overrideState = true;
         _motionBlur.mode.overrideState = true;
         _motionBlur.clamp.overrideState = true;
-        _motionBlur.mode.value = MotionBlurMode.CameraOnly;
+        _motionBlur.mode.value = MotionBlurMode.CameraAndObjects;
         _motionBlur.clamp.value = MotionBlurClamp;
 
         Volume runtimeVolume = gameObject.AddComponent<Volume>();
@@ -347,7 +340,6 @@ public sealed class GraphicsSettingsService : MonoBehaviour
     private void ApplyAllSettings()
     {
         ApplyDisplaySettings();
-        ApplyQualitySettings();
         ApplySmoothLighting();
         ApplyGroundDetails();
         ApplyFrameRate();
@@ -371,39 +363,6 @@ public sealed class GraphicsSettingsService : MonoBehaviour
     {
         QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = TargetFrameRate;
-    }
-
-    private void ApplyQualitySettings()
-    {
-        string[] qualityNames = QualitySettings.names;
-        if (qualityNames != null && qualityNames.Length > 0)
-        {
-            int targetQualityIndex = FindQualityIndex(qualityNames, FancyQualityEnabled);
-            if (QualitySettings.GetQualityLevel() != targetQualityIndex)
-                QualitySettings.SetQualityLevel(targetQualityIndex, true);
-        }
-
-        bool fancy = FancyQualityEnabled;
-        QualitySettings.globalTextureMipmapLimit = fancy ? FancyTextureMipmapLimit : SimpleTextureMipmapLimit;
-        QualitySettings.lodBias = fancy ? FancyQualityLodBias : SimpleQualityLodBias;
-        QualitySettings.shadowResolution = fancy
-    ? UnityEngine.ShadowResolution.VeryHigh
-    : UnityEngine.ShadowResolution.Low;
-        QualitySettings.anisotropicFiltering = fancy
-            ? AnisotropicFiltering.ForceEnable
-            : AnisotropicFiltering.Disable;
-    }
-
-    private static int FindQualityIndex(string[] qualityNames, bool fancy)
-    {
-        string preferredName = fancy ? "pc" : "mobile";
-        for (int index = 0; index < qualityNames.Length; index++)
-        {
-            if (qualityNames[index].ToLowerInvariant().Contains(preferredName))
-                return index;
-        }
-
-        return fancy ? qualityNames.Length - 1 : 0;
     }
 
     private void ApplySmoothLighting()
@@ -467,84 +426,116 @@ public sealed class GraphicsSettingsService : MonoBehaviour
 
     private void ApplyGroundDetails()
     {
-        Material[] materials = Resources.FindObjectsOfTypeAll<Material>();
+        Terrain[] terrains = FindObjectsByType<Terrain>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         bool enabled = GroundDetailsEnabled;
 
-        foreach (Material material in materials)
+        foreach (Terrain terrain in terrains)
         {
-            if (material == null || material.name.IndexOf("grass", StringComparison.OrdinalIgnoreCase) < 0)
+            if (terrain == null)
                 continue;
 
-            if (!_grassWindMaterialStates.TryGetValue(material, out GrassWindMaterialState state))
+            if (!_originalTerrainDensities.TryGetValue(terrain, out float originalDensity))
             {
-                state = CaptureGrassWindMaterialState(material);
-                if (!state.HasWindProperties)
-                    continue;
-
-                _grassWindMaterialStates.Add(material, state);
+                originalDensity = terrain.detailObjectDensity;
+                _originalTerrainDensities.Add(terrain, originalDensity);
             }
 
-            ApplyGrassWindMaterialState(material, state, enabled);
+            float targetDensity = enabled
+                ? originalDensity
+                : originalDensity * ReducedTerrainDetailDensity;
+            if (!Mathf.Approximately(terrain.detailObjectDensity, targetDensity))
+                terrain.detailObjectDensity = targetDensity;
+
+            TerrainData terrainData = terrain.terrainData;
+            if (terrainData == null)
+                continue;
+
+            if (!_originalTerrainGrassStates.TryGetValue(terrainData, out TerrainGrassState grassState))
+            {
+                grassState = new TerrainGrassState(
+                    terrainData.wavingGrassStrength,
+                    terrainData.wavingGrassAmount,
+                    terrainData.wavingGrassSpeed);
+                _originalTerrainGrassStates.Add(terrainData, grassState);
+            }
+
+            float targetStrength = enabled ? grassState.Strength : 0f;
+            float targetAmount = enabled ? grassState.Amount : 0f;
+            float targetSpeed = enabled ? grassState.Speed : 0f;
+            if (!Mathf.Approximately(terrainData.wavingGrassStrength, targetStrength))
+                terrainData.wavingGrassStrength = targetStrength;
+            if (!Mathf.Approximately(terrainData.wavingGrassAmount, targetAmount))
+                terrainData.wavingGrassAmount = targetAmount;
+            if (!Mathf.Approximately(terrainData.wavingGrassSpeed, targetSpeed))
+                terrainData.wavingGrassSpeed = targetSpeed;
         }
 
-        RemoveDestroyedGrassMaterials();
+        RemoveDestroyedTerrains();
+        RemoveDestroyedTerrainData();
     }
 
-    private static GrassWindMaterialState CaptureGrassWindMaterialState(Material material)
+    private void RestoreTerrainDetails()
     {
-        bool hasWindForce = material.HasProperty(GrassWindForceProperty);
-        bool hasWindStrength = material.HasProperty(LegacyGrassWindStrengthProperty);
-        bool hasWindSpeed = material.HasProperty(LegacyGrassWindSpeedProperty);
-
-        return new GrassWindMaterialState(
-            hasWindForce,
-            hasWindForce ? material.GetFloat(GrassWindForceProperty) : 0f,
-            hasWindStrength,
-            hasWindStrength ? material.GetFloat(LegacyGrassWindStrengthProperty) : 0f,
-            hasWindSpeed,
-            hasWindSpeed ? material.GetFloat(LegacyGrassWindSpeedProperty) : 0f);
-    }
-
-    private static void ApplyGrassWindMaterialState(Material material, GrassWindMaterialState state, bool enabled)
-    {
-        if (state.HasWindForce)
-            material.SetFloat(GrassWindForceProperty, enabled ? state.WindForce : 0f);
-        if (state.HasWindStrength)
-            material.SetFloat(LegacyGrassWindStrengthProperty, enabled ? state.WindStrength : 0f);
-        if (state.HasWindSpeed)
-            material.SetFloat(LegacyGrassWindSpeedProperty, enabled ? state.WindSpeed : 0f);
-    }
-
-    private void RestoreGrassWindMaterials()
-    {
-        foreach (KeyValuePair<Material, GrassWindMaterialState> pair in _grassWindMaterialStates)
+        foreach (KeyValuePair<Terrain, float> pair in _originalTerrainDensities)
         {
             if (pair.Key != null)
-                ApplyGrassWindMaterialState(pair.Key, pair.Value, true);
+                pair.Key.detailObjectDensity = pair.Value;
         }
 
-        _grassWindMaterialStates.Clear();
+        foreach (KeyValuePair<TerrainData, TerrainGrassState> pair in _originalTerrainGrassStates)
+        {
+            if (pair.Key == null)
+                continue;
+
+            pair.Key.wavingGrassStrength = pair.Value.Strength;
+            pair.Key.wavingGrassAmount = pair.Value.Amount;
+            pair.Key.wavingGrassSpeed = pair.Value.Speed;
+        }
+
+        _originalTerrainDensities.Clear();
+        _originalTerrainGrassStates.Clear();
     }
 
-    private void RemoveDestroyedGrassMaterials()
+    private void RemoveDestroyedTerrains()
     {
-        List<Material> destroyedMaterials = null;
-        foreach (KeyValuePair<Material, GrassWindMaterialState> pair in _grassWindMaterialStates)
+        List<Terrain> destroyedTerrains = null;
+        foreach (KeyValuePair<Terrain, float> pair in _originalTerrainDensities)
         {
             if (pair.Key != null)
                 continue;
 
-            if (destroyedMaterials == null)
-                destroyedMaterials = new List<Material>();
-            destroyedMaterials.Add(pair.Key);
+            if (destroyedTerrains == null)
+                destroyedTerrains = new List<Terrain>();
+            destroyedTerrains.Add(pair.Key);
         }
 
-        if (destroyedMaterials == null)
+        if (destroyedTerrains == null)
             return;
 
-        foreach (Material material in destroyedMaterials)
-            _grassWindMaterialStates.Remove(material);
+        foreach (Terrain terrain in destroyedTerrains)
+            _originalTerrainDensities.Remove(terrain);
     }
+
+    private void RemoveDestroyedTerrainData()
+    {
+        List<TerrainData> destroyedTerrainData = null;
+        foreach (KeyValuePair<TerrainData, TerrainGrassState> pair in _originalTerrainGrassStates)
+        {
+            if (pair.Key != null)
+                continue;
+
+            if (destroyedTerrainData == null)
+                destroyedTerrainData = new List<TerrainData>();
+            destroyedTerrainData.Add(pair.Key);
+        }
+
+        if (destroyedTerrainData == null)
+            return;
+
+        foreach (TerrainData terrainData in destroyedTerrainData)
+            _originalTerrainGrassStates.Remove(terrainData);
+    }
+
 
     private void ApplyPostProcessingSettings()
     {
@@ -556,8 +547,8 @@ public sealed class GraphicsSettingsService : MonoBehaviour
 
         if (_motionBlur != null)
         {
-            _motionBlur.active = MotionBlurEnabled;
-            _motionBlur.intensity.value = MotionBlurEnabled ? MotionBlurIntensity : 0f;
+            _motionBlur.active = true;
+            _motionBlur.intensity.value = MotionBlurPercent / (float)MaximumMotionBlurPercent;
             _motionBlur.clamp.value = MotionBlurClamp;
         }
 
@@ -583,7 +574,9 @@ public sealed class GraphicsSettingsService : MonoBehaviour
             _enabledPostProcessingForCamera = false;
         }
 
-        bool needsPostProcessing = MotionBlurEnabled || BrightnessPercent != DefaultBrightness;
+        bool needsPostProcessing = _managedCameraOriginallyProcessed
+            || MotionBlurEnabled
+            || BrightnessPercent != DefaultBrightness;
         if (_managedCamera == null)
             return;
 
@@ -755,25 +748,17 @@ public sealed class GraphicsSettingsService : MonoBehaviour
         _preferencesDirty = false;
     }
 
-    private sealed class GrassWindMaterialState
+    private readonly struct TerrainGrassState
     {
-        public readonly bool HasWindForce;
-        public readonly float WindForce;
-        public readonly bool HasWindStrength;
-        public readonly float WindStrength;
-        public readonly bool HasWindSpeed;
-        public readonly float WindSpeed;
-        public bool HasWindProperties => HasWindForce || HasWindStrength || HasWindSpeed;
+        public readonly float Strength;
+        public readonly float Amount;
+        public readonly float Speed;
 
-        public GrassWindMaterialState(bool hasWindForce, float windForce, bool hasWindStrength,
-            float windStrength, bool hasWindSpeed, float windSpeed)
+        public TerrainGrassState(float strength, float amount, float speed)
         {
-            HasWindForce = hasWindForce;
-            WindForce = windForce;
-            HasWindStrength = hasWindStrength;
-            WindStrength = windStrength;
-            HasWindSpeed = hasWindSpeed;
-            WindSpeed = windSpeed;
+            Strength = strength;
+            Amount = amount;
+            Speed = speed;
         }
     }
 

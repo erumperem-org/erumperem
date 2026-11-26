@@ -9,9 +9,8 @@ public sealed class GraphicsSettingsPanel : MonoBehaviour
 {
     private const string OnToggleName = "OnToggle";
     private const string OffToggleName = "OffToggle";
-    private const string SimpleQualityToggleName = "SimpleToggle";
-    private const string FancyQualityToggleName = "FancyToggle";
     private const int MinimumSettingValue = 1;
+    private const int MinimumBrightnessValue = 0;
     private const int MaximumSettingValue = 100;
 
     [Header("Controls")]
@@ -20,6 +19,8 @@ public sealed class GraphicsSettingsPanel : MonoBehaviour
     [SerializeField] private TMP_Text _frameRateValue;
     [SerializeField] private Slider _brightnessSlider;
     [SerializeField] private TMP_Text _brightnessValue;
+    [SerializeField] private Slider _motionBlurSlider;
+    [SerializeField] private TMP_Text _motionBlurValue;
 
     [Header("Toggle Rows")]
     [SerializeField] private GameObject _fullscreenRow;
@@ -30,12 +31,14 @@ public sealed class GraphicsSettingsPanel : MonoBehaviour
     [SerializeField] private GameObject _groundDetailsRow;
     [SerializeField] private GameObject _particleEffectsRow;
 
-    private Toggle _simpleQualityToggle;
-    private Toggle _fancyQualityToggle;
+
 
     private void Awake()
     {
         ValidateInspectorReferences();
+
+        if (_qualityRow != null)
+            _qualityRow.SetActive(false);
 
         if (_resolutionDropdown != null)
             _resolutionDropdown.onValueChanged.AddListener(OnResolutionChanged);
@@ -50,19 +53,31 @@ public sealed class GraphicsSettingsPanel : MonoBehaviour
 
         if (_brightnessSlider != null)
         {
-            _brightnessSlider.minValue = MinimumSettingValue;
+            _brightnessSlider.minValue = MinimumBrightnessValue;
             _brightnessSlider.maxValue = MaximumSettingValue;
             _brightnessSlider.wholeNumbers = true;
             _brightnessSlider.onValueChanged.AddListener(OnBrightnessChanged);
         }
 
+        if (_motionBlurSlider != null)
+        {
+            _motionBlurSlider.minValue = 0;
+            _motionBlurSlider.maxValue = MaximumSettingValue;
+            _motionBlurSlider.wholeNumbers = true;
+            _motionBlurSlider.onValueChanged.AddListener(OnMotionBlurChanged);
+            HideLegacyMotionBlurToggles();
+        }
+        else
+        {
+            BindBooleanTogglePair(_motionBlurRow,
+                enabled => GraphicsSettingsService.SetMotionBlurPercent(enabled ? MaximumSettingValue : 0));
+        }
+
         BindBooleanTogglePair(_fullscreenRow, GraphicsSettingsService.SetFullscreen);
         BindBooleanTogglePair(_smoothLightingRow, GraphicsSettingsService.SetSmoothLighting);
-        BindBooleanTogglePair(_motionBlurRow, GraphicsSettingsService.SetMotionBlur);
         BindBooleanTogglePair(_screenShakeRow, GraphicsSettingsService.SetScreenShake);
         BindBooleanTogglePair(_groundDetailsRow, GraphicsSettingsService.SetGroundDetails);
         BindBooleanTogglePair(_particleEffectsRow, GraphicsSettingsService.SetParticleEffects);
-        BindQualityTogglePair();
     }
 
     private void ValidateInspectorReferences()
@@ -72,6 +87,8 @@ public sealed class GraphicsSettingsPanel : MonoBehaviour
         ValidateInspectorReference(_frameRateValue, nameof(_frameRateValue));
         ValidateInspectorReference(_brightnessSlider, nameof(_brightnessSlider));
         ValidateInspectorReference(_brightnessValue, nameof(_brightnessValue));
+        ValidateInspectorReference(_motionBlurSlider, nameof(_motionBlurSlider));
+        ValidateInspectorReference(_motionBlurValue, nameof(_motionBlurValue));
         ValidateInspectorReference(_fullscreenRow, nameof(_fullscreenRow));
         ValidateInspectorReference(_qualityRow, nameof(_qualityRow));
         ValidateInspectorReference(_smoothLightingRow, nameof(_smoothLightingRow));
@@ -105,6 +122,8 @@ public sealed class GraphicsSettingsPanel : MonoBehaviour
             _frameRateSlider.onValueChanged.RemoveListener(OnFrameRateChanged);
         if (_brightnessSlider != null)
             _brightnessSlider.onValueChanged.RemoveListener(OnBrightnessChanged);
+        if (_motionBlurSlider != null)
+            _motionBlurSlider.onValueChanged.RemoveListener(OnMotionBlurChanged);
     }
 
     private void RefreshControlsFromPreferences()
@@ -119,13 +138,21 @@ public sealed class GraphicsSettingsPanel : MonoBehaviour
             _brightnessSlider.SetValueWithoutNotify(GraphicsSettingsService.BrightnessPercent);
         UpdateBrightnessReadout(GraphicsSettingsService.BrightnessPercent);
 
+        if (_motionBlurSlider != null)
+        {
+            _motionBlurSlider.SetValueWithoutNotify(GraphicsSettingsService.MotionBlurPercent);
+            UpdateMotionBlurReadout(GraphicsSettingsService.MotionBlurPercent);
+        }
+        else
+        {
+            SetTogglePair(_motionBlurRow, GraphicsSettingsService.MotionBlurPercent > 0);
+        }
+
         SetTogglePair(_fullscreenRow, GraphicsSettingsService.FullscreenEnabled);
         SetTogglePair(_smoothLightingRow, GraphicsSettingsService.SmoothLightingEnabled);
-        SetTogglePair(_motionBlurRow, GraphicsSettingsService.MotionBlurEnabled);
         SetTogglePair(_screenShakeRow, GraphicsSettingsService.ScreenShakeEnabled);
         SetTogglePair(_groundDetailsRow, GraphicsSettingsService.GroundDetailsEnabled);
         SetTogglePair(_particleEffectsRow, GraphicsSettingsService.ParticleEffectsEnabled);
-        SetQualityToggles(GraphicsSettingsService.FancyQualityEnabled);
     }
 
     private void RefreshResolutionDropdown()
@@ -168,9 +195,22 @@ public sealed class GraphicsSettingsPanel : MonoBehaviour
 
     private void OnBrightnessChanged(float value)
     {
-        int brightness = Mathf.Clamp(Mathf.RoundToInt(value), MinimumSettingValue, MaximumSettingValue);
+        int brightness = Mathf.Clamp(Mathf.RoundToInt(value), MinimumBrightnessValue, MaximumSettingValue);
         GraphicsSettingsService.SetBrightness(brightness);
         UpdateBrightnessReadout(brightness);
+    }
+
+    private void OnMotionBlurChanged(float value)
+    {
+        int percentage = Mathf.Clamp(Mathf.RoundToInt(value), 0, MaximumSettingValue);
+        GraphicsSettingsService.SetMotionBlurPercent(percentage);
+        UpdateMotionBlurReadout(percentage);
+    }
+
+    private void UpdateMotionBlurReadout(int percentage)
+    {
+        if (_motionBlurValue != null)
+            _motionBlurValue.text = percentage.ToString(CultureInfo.InvariantCulture) + "%";
     }
 
     private void UpdateFrameRateReadout(int frameRate)
@@ -196,17 +236,6 @@ public sealed class GraphicsSettingsPanel : MonoBehaviour
             offToggle.onValueChanged.AddListener(isOn => { if (isOn) onChanged(false); });
     }
 
-    private void BindQualityTogglePair()
-    {
-        _simpleQualityToggle = FindToggleInRow(_qualityRow, SimpleQualityToggleName);
-        _fancyQualityToggle = FindToggleInRow(_qualityRow, FancyQualityToggleName);
-
-        if (_simpleQualityToggle != null)
-            _simpleQualityToggle.onValueChanged.AddListener(isOn => { if (isOn) GraphicsSettingsService.SetFancyQuality(false); });
-        if (_fancyQualityToggle != null)
-            _fancyQualityToggle.onValueChanged.AddListener(isOn => { if (isOn) GraphicsSettingsService.SetFancyQuality(true); });
-    }
-
     private void SetTogglePair(GameObject row, bool enabled)
     {
         Toggle onToggle = FindToggleInRow(row, OnToggleName);
@@ -218,12 +247,20 @@ public sealed class GraphicsSettingsPanel : MonoBehaviour
             offToggle.SetIsOnWithoutNotify(!enabled);
     }
 
-    private void SetQualityToggles(bool fancy)
+    private void HideLegacyMotionBlurToggles()
     {
-        if (_simpleQualityToggle != null)
-            _simpleQualityToggle.SetIsOnWithoutNotify(!fancy);
-        if (_fancyQualityToggle != null)
-            _fancyQualityToggle.SetIsOnWithoutNotify(fancy);
+        if (_motionBlurRow == null)
+            return;
+
+        Transform[] descendants = _motionBlurRow.GetComponentsInChildren<Transform>(true);
+        foreach (Transform descendant in descendants)
+        {
+            if (descendant != _motionBlurRow.transform && descendant.name == "Toggle")
+            {
+                descendant.gameObject.SetActive(false);
+                return;
+            }
+        }
     }
 
     private static Toggle FindToggleInRow(GameObject row, string toggleName)
