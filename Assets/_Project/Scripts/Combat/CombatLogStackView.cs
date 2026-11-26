@@ -47,6 +47,10 @@ namespace Erumperem.Combat
         private bool _removalRoutineRunning;
         private int _layoutSuspendCount;
 
+        /// <summary>Returns the root transform containing transient combat notifications.</summary>
+        public GameObject NotificationsRoot => notificationsContainer != null ? notificationsContainer.gameObject : null;
+
+
         public void Push(string message)
         {
             if (notificationsContainer == null || notificationPanelPrefab == null || string.IsNullOrEmpty(message))

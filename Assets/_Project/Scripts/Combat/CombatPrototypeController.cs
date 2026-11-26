@@ -287,11 +287,30 @@ namespace Erumperem.Combat
             PublishPlayerSkillHelpForAlly(_runtime.PendingPlayerActor, FindAllyIndex(_runtime.PendingPlayerActor));
         }
 
-        public void DebugKillAllEnemiesInstantly() =>
-            _debugCheats?.DebugKillAllEnemiesInstantly(() => _playerTargetSelection?.ClearSkillBarSelection());
+        public void DebugKillAllEnemiesInstantly()
+        {
+            if (GameplaySettingsService.WinCombatCheatEnabled)
+                _debugCheats?.DebugKillAllEnemiesInstantly(() => _playerTargetSelection?.ClearSkillBarSelection());
+        }
 
-        public void DebugKillAllAlliesInstantly() =>
-            _debugCheats?.DebugKillAllAlliesInstantly(() => _playerTargetSelection?.ClearSkillBarSelection());
+        public void DebugKillAllAlliesInstantly()
+        {
+            if (GameplaySettingsService.LoseCombatCheatEnabled)
+                _debugCheats?.DebugKillAllAlliesInstantly(() => _playerTargetSelection?.ClearSkillBarSelection());
+        }
+
+        /// <summary>Applies persistent gameplay cheat preferences to the active battle.</summary>
+        public void ApplyGameplayCheatPreferences(bool infiniteAllyHealthEnabled, bool doubleAllyDamageEnabled)
+        {
+            if (_runtime.State == null || _runtime.BattleEnded)
+                return;
+
+            EnsureCollaboratorsCreated();
+            if (_runtime.IsInfiniteAllyHealthCheatActive != infiniteAllyHealthEnabled)
+                _debugCheats.ToggleInfiniteAllyHealthCheat();
+            if (_runtime.IsDoubleAllyDamageCheatActive != doubleAllyDamageEnabled)
+                _debugCheats.ToggleDoubleAllyDamageCheat();
+        }
 
         private void Awake()
         {
@@ -687,6 +706,9 @@ namespace Erumperem.Combat
             while (SceneTransitionHandler.IsTransitioning)
                 yield return null;
 
+            ApplyGameplayCheatPreferences(
+                GameplaySettingsService.InfiniteAllyHealthEnabled,
+                GameplaySettingsService.DoubleAllyDamageEnabled);
             _runtime.Simulator.EmitBattleStarted(_runtime.State);
             _battleOutcomeMonitor.Begin(_runtime.State, _runtime.EventCollector, EndBattle);
             EnsurePhaseGHudPresenters();

@@ -39,6 +39,9 @@ public sealed class ChangeSceneFKeysCheat : MonoBehaviour
 
     private void HandleSceneCheatPressed(int sceneSlotIndex)
     {
+        if (!GameplaySettingsService.SceneChangeCheatEnabled)
+            return;
+
         switch (sceneSlotIndex)
         {
             case 0:
