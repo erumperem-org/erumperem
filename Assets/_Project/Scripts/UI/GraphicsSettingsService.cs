@@ -32,8 +32,8 @@ public sealed class GraphicsSettingsService : MonoBehaviour
     private const float PreferenceSaveDelaySeconds = 0.35f;
     private const float ParticleScanIntervalSeconds = 0.75f;
     private const float GraphicsScanIntervalSeconds = 2f;
-    private const int MaximumFrameRate = 100;
-    private const int MinimumFrameRate = 1;
+    private const int MaximumFrameRate = 240;
+    private const int MinimumFrameRate = 30;
     private const int MaximumBrightness = 100;
     private const int MinimumBrightness = 0;
     private const int MinimumMotionBlurPercent = 0;

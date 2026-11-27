@@ -23,7 +23,7 @@ public sealed class GameplaySettingsPanel : MonoBehaviour
     private const float MinimumExplorationFieldOfView = 40f;
     private const float MaximumExplorationFieldOfView = 80f;
     private const float MinimumCombatFieldOfView = 65f;
-    private const float MaximumCombatFieldOfView = 100f;
+    private const float MaximumCombatFieldOfView = 80f;
 
     private readonly List<ToggleListener> _toggleListeners = new List<ToggleListener>();
     private readonly List<SliderListener> _sliderListeners = new List<SliderListener>();

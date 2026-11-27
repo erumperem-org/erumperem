@@ -27,11 +27,11 @@ public sealed class GameplaySettingsService : MonoBehaviour
     private const string CombatSkillsHudName = "Skills";
     private const string TorchThreatCanvasName = "TorchThreatCanvas";
     private const float DefaultExplorationFieldOfView = 60f;
-    private const float DefaultCombatFieldOfView = 70f;
-    private const float MinimumExplorationFieldOfView = 40f;
-    private const float MaximumExplorationFieldOfView = 80f;
+    private const float DefaultCombatFieldOfView = 50f;
+    private const float MinimumExplorationFieldOfView = 30f;
+    private const float MaximumExplorationFieldOfView = 65f;
     private const float MinimumCombatFieldOfView = 65f;
-    private const float MaximumCombatFieldOfView = 100f;
+    private const float MaximumCombatFieldOfView = 80f;
     private const float RefreshIntervalSeconds = 0.25f;
 
     private static GameplaySettingsService _instance;
