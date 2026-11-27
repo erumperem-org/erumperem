@@ -9,7 +9,6 @@ public sealed class GraphicsSettingsPanel : MonoBehaviour
 {
     private const string OnToggleName = "OnToggle";
     private const string OffToggleName = "OffToggle";
-    private const int MinimumSettingValue = 1;
     private const int MinimumBrightnessValue = 0;
     private const int MaximumSettingValue = 100;
 
@@ -45,8 +44,8 @@ public sealed class GraphicsSettingsPanel : MonoBehaviour
 
         if (_frameRateSlider != null)
         {
-            _frameRateSlider.minValue = MinimumSettingValue;
-            _frameRateSlider.maxValue = MaximumSettingValue;
+            _frameRateSlider.minValue = GraphicsSettingsService.MinimumFrameRate;
+            _frameRateSlider.maxValue = GraphicsSettingsService.MaximumFrameRate;
             _frameRateSlider.wholeNumbers = true;
             _frameRateSlider.onValueChanged.AddListener(OnFrameRateChanged);
         }
@@ -188,7 +187,8 @@ public sealed class GraphicsSettingsPanel : MonoBehaviour
 
     private void OnFrameRateChanged(float value)
     {
-        int frameRate = Mathf.Clamp(Mathf.RoundToInt(value), MinimumSettingValue, MaximumSettingValue);
+        int frameRate = Mathf.Clamp(Mathf.RoundToInt(value),
+            GraphicsSettingsService.MinimumFrameRate, GraphicsSettingsService.MaximumFrameRate);
         GraphicsSettingsService.SetTargetFrameRate(frameRate);
         UpdateFrameRateReadout(frameRate);
     }
