@@ -366,6 +366,7 @@ GameObject:
   - component: {fileID: 8705685040902118680}
   - component: {fileID: 5297790831843597735}
   - component: {fileID: 3237367571971820732}
+  - component: {fileID: 7458543560900748945}
   m_Layer: 5
   m_Name: Fill
   m_TagString: Untagged
@@ -420,7 +421,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 5205e6bbf5862da4f980a84e08cc185b, type: 3}
+  m_Sprite: {fileID: -182281288, guid: 56feb16a410dce94b9bc4f308faf1d83, type: 3}
   m_Type: 3
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -430,6 +431,28 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!95 &7458543560900748945
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6814609111877485920}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 2c7ff6bda289888489159c44f3a827d4, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &7735494289213721904
 GameObject:
   m_ObjectHideFlags: 0
@@ -488,7 +511,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.68235296}
+  m_Color: {r: 1, g: 0, b: 0, a: 0.68235296}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -515,8 +538,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1482223534971399415}
   - component: {fileID: 6615279202266750059}
+  - component: {fileID: 3221783675737040659}
   m_Layer: 5
-  m_Name: Slider
+  m_Name: CorruptionSlider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -595,6 +619,19 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &3221783675737040659
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8714889894349308194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58351b45cfc78854686fbae57b9a6ba5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BarSystem.View.UISliderBarView
+  _slider: {fileID: 6615279202266750059}
 --- !u!1 &9024184123897726610
 GameObject:
   m_ObjectHideFlags: 0
